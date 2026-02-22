@@ -1,0 +1,142 @@
+<template>
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
+    <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-y-auto border border-gray-700">
+      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">设置</h2>
+        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+      
+      <div class="p-6 space-y-6">
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">API 配置</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Base URL</label>
+              <input 
+                v-model="settings.api_base_url"
+                type="text" 
+                placeholder="https://api.openai.com/v1"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">API Key</label>
+              <input 
+                v-model="settings.api_key"
+                type="password" 
+                placeholder="sk-..."
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">模型名称</label>
+              <input 
+                v-model="settings.model_name"
+                type="text" 
+                placeholder="gpt-4o"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">时间策略</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">截图间隔 (分钟)</label>
+              <input 
+                v-model.number="settings.screenshot_interval"
+                type="number" 
+                min="1"
+                max="60"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">每日总结时间</label>
+              <input 
+                v-model="settings.summary_time"
+                type="time" 
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">输出配置</h3>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Obsidian Vault 路径</label>
+            <input 
+              v-model="settings.obsidian_path"
+              type="text" 
+              placeholder="C:\Users\YourName\Documents\Obsidian Vault"
+              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">快捷键</h3>
+          <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
+            闪念胶囊: Alt + Space
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+        <button 
+          @click="$emit('close')"
+          class="px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors"
+        >
+          取消
+        </button>
+        <button 
+          @click="saveSettings"
+          class="px-4 py-2 bg-primary rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+        >
+          保存
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
+
+const emit = defineEmits(['close'])
+
+const settings = ref({
+  api_base_url: '',
+  api_key: '',
+  model_name: 'gpt-4o',
+  screenshot_interval: 5,
+  summary_time: '18:00',
+  obsidian_path: ''
+})
+
+const loadSettings = async () => {
+  try {
+    const loaded = await invoke('get_settings')
+    settings.value = { ...settings.value, ...loaded }
+  } catch (err) {
+    console.error('Failed to load settings:', err)
+  }
+}
+
+const saveSettings = async () => {
+  try {
+    await invoke('save_settings', { settings: settings.value })
+    emit('close')
+  } catch (err) {
+    console.error('Failed to save settings:', err)
+  }
+}
+
+onMounted(() => {
+  loadSettings()
+})
+</script>
