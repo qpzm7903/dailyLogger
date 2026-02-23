@@ -48,6 +48,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUST_BACKTRACE: "1"
         with:
           tagName: v__VERSION__
           releaseName: 'DailyLogger v__VERSION__'
@@ -55,6 +56,15 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+      - name: Show build output on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== Build failed ==="
+          echo "Checking target directory..."
+          ls -la src-tauri/target/ 2>/dev/null || echo "No target dir"
+          echo "Checking bundle directory..."
+          ls -la src-tauri/target/release/bundle/ 2>/dev/null || ls -la src-tauri/target/debug/bundle/ 2>/dev/null || echo "No bundle dir"
 
   # Build only - no release
   build-only:
