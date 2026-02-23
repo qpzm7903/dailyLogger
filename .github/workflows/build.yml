@@ -45,6 +45,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
+        if: matrix.platform != 'windows-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,6 +57,13 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+      - name: Build Tauri app (Windows debug)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          npm run tauri build -- --debug
+        env:
+          RUST_BACKTRACE: "full"
+          RUST_LOG: "debug"
       - name: Show build output on failure
         if: failure()
         shell: bash
