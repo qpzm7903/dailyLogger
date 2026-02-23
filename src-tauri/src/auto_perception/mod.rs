@@ -1,12 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::interval;
 use tauri::command;
 
 use crate::memory_storage;
-use crate::APP_STATE;
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -37,14 +35,16 @@ impl Default for CaptureSettings {
 }
 
 fn capture_screen() -> Result<String, String> {
-    let screens = screenshots::Screen::all().map_err(|e| format!("Failed to get screens: {}", e))?;
+    let screens = screenshots::Screen::all()
+        .map_err(|e| format!("Failed to get screens: {}. Make sure to grant Screen Recording permission in System Preferences > Privacy & Security > Screen Recording. You may need to add Terminal or your IDE to the allowed list.", e))?;
     
     if screens.is_empty() {
         return Err("No screens found".to_string());
     }
     
     let screen = &screens[0];
-    let capture = screen.capture().map_err(|e| format!("Failed to capture screen: {}", e))?;
+    let capture = screen.capture()
+        .map_err(|e| format!("Failed to capture screen: {}. Make sure Screen Recording permission is granted.", e))?;
     
     let mut buffer = Vec::new();
     let mut cursor = std::io::Cursor::new(&mut buffer);
@@ -52,6 +52,34 @@ fn capture_screen() -> Result<String, String> {
         .map_err(|e| format!("Failed to encode image: {}", e))?;
     
     Ok(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &buffer))
+}
+
+fn save_screenshot(image_base64: &str) -> Option<String> {
+    use std::path::PathBuf;
+    
+    let screenshot_dir = dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("DailyLogger")
+        .join("screenshots");
+    
+    if let Err(e) = std::fs::create_dir_all(&screenshot_dir) {
+        tracing::error!("Failed to create screenshot directory: {}", e);
+        return None;
+    }
+    
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S").to_string();
+    let filename = format!("screenshot_{}.png", timestamp);
+    let screenshot_path = screenshot_dir.join(&filename);
+    
+    let image_data = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)
+        .map_err(|e| format!("Failed to decode base64: {}", e)).ok()?;
+    
+    if let Err(e) = std::fs::write(&screenshot_path, &image_data) {
+        tracing::error!("Failed to save screenshot: {}", e);
+        return None;
+    }
+    
+    Some(screenshot_path.to_string_lossy().to_string())
 }
 
 async fn analyze_screen(settings: &CaptureSettings, image_base64: &str) -> Result<ScreenAnalysis, String> {
@@ -125,6 +153,8 @@ async fn capture_and_store() {
 
     match capture_screen() {
         Ok(image_base64) => {
+            let screenshot_path = save_screenshot(&image_base64);
+            
             match analyze_screen(&settings, &image_base64).await {
                 Ok(analysis) => {
                     let content = serde_json::json!({
@@ -133,7 +163,7 @@ async fn capture_and_store() {
                         "context_keywords": analysis.context_keywords
                     }).to_string();
 
-                    if let Err(e) = memory_storage::add_record("auto", &content) {
+                    if let Err(e) = memory_storage::add_record("auto", &content, screenshot_path.as_deref()) {
                         tracing::error!("Failed to store capture: {}", e);
                     } else {
                         tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
@@ -194,5 +224,12 @@ pub async fn start_auto_capture() -> Result<(), String> {
 pub async fn stop_auto_capture() -> Result<(), String> {
     AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
     tracing::info!("Auto capture stopped");
+    Ok(())
+}
+
+#[command]
+pub async fn trigger_capture() -> Result<(), String> {
+    capture_and_store().await;
+    tracing::info!("Manual capture triggered");
     Ok(())
 }

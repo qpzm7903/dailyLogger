@@ -30,10 +30,17 @@ pub fn init_database() -> Result<(), String> {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT NOT NULL,
             source_type TEXT NOT NULL,
-            content TEXT NOT NULL
+            content TEXT NOT NULL,
+            screenshot_path TEXT
         )",
         [],
     ).map_err(|e| format!("Failed to create records table: {}", e))?;
+    
+    // Migrate: add screenshot_path column if not exists (for existing databases)
+    let _ = conn.execute(
+        "ALTER TABLE records ADD COLUMN screenshot_path TEXT",
+        [],
+    );
     
     conn.execute(
         "CREATE TABLE IF NOT EXISTS settings (
@@ -68,6 +75,7 @@ pub struct Record {
     pub timestamp: String,
     pub source_type: String,
     pub content: String,
+    pub screenshot_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -82,18 +90,18 @@ pub struct Settings {
     pub last_summary_path: Option<String>,
 }
 
-pub fn add_record(source_type: &str, content: &str) -> Result<(), String> {
+pub fn add_record(source_type: &str, content: &str, screenshot_path: Option<&str>) -> Result<i64, String> {
     let db = DB_CONNECTION.lock().map_err(|e| format!("Lock error: {}", e))?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
     
     let timestamp = chrono::Utc::now().to_rfc3339();
     
     conn.execute(
-        "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
-        params![timestamp, source_type, content],
+        "INSERT INTO records (timestamp, source_type, content, screenshot_path) VALUES (?1, ?2, ?3, ?4)",
+        params![timestamp, source_type, content, screenshot_path],
     ).map_err(|e| format!("Failed to insert record: {}", e))?;
     
-    Ok(())
+    Ok(conn.last_insert_rowid())
 }
 
 pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
@@ -106,7 +114,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
         .to_rfc3339();
     
     let mut stmt = conn.prepare(
-        "SELECT id, timestamp, source_type, content FROM records 
+        "SELECT id, timestamp, source_type, content, screenshot_path FROM records 
          WHERE timestamp >= ?1 ORDER BY timestamp DESC"
     ).map_err(|e| format!("Failed to prepare query: {}", e))?;
     
@@ -116,6 +124,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
             timestamp: row.get(1)?,
             source_type: row.get(2)?,
             content: row.get(3)?,
+            screenshot_path: row.get(4)?,
         })
     }).map_err(|e| format!("Failed to query records: {}", e))?
     .collect::<Result<Vec<_>, _>>()
