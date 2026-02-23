@@ -5,11 +5,8 @@ pub mod synthesis;
 
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
-use tauri::Manager;
 
-pub static APP_STATE: Lazy<Mutex<AppState>> = Lazy::new(|| {
-    Mutex::new(AppState::default())
-});
+pub static APP_STATE: Lazy<Mutex<AppState>> = Lazy::new(|| Mutex::new(AppState::default()));
 
 #[derive(Default)]
 pub struct AppState {
