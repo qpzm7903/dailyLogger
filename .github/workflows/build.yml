@@ -9,6 +9,39 @@ on:
     branches: [main]
 
 jobs:
+  # For PRs: only build on macOS to ensure code compiles
+  # Full cross-platform builds happen on push to main
+  build-pr:
+    name: Build (macOS)
+    runs-on: macos-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run tauri build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app-pr
+          path: src-tauri/target/release/bundle/macos/*.app
+
+  # Full build for main branch releases (all platforms)
   build:
     permissions:
       contents: write
@@ -21,6 +54,7 @@ jobs:
           - platform: 'windows-latest'
 
     runs-on: ${{ matrix.platform }}
+    if: github.event_name != 'pull_request'
 
     steps:
       - name: Checkout repository
@@ -45,11 +79,9 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        if: matrix.platform != 'windows-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUST_BACKTRACE: "1"
         with:
           tagName: v__VERSION__
           releaseName: 'DailyLogger v__VERSION__'
@@ -57,22 +89,6 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
-      - name: Build Tauri app (Windows debug)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          npm run tauri build -- --debug
-        env:
-          RUST_BACKTRACE: "full"
-          RUST_LOG: "debug"
-      - name: Show build output on failure
-        if: failure()
-        shell: bash
-        run: |
-          echo "=== Build failed ==="
-          echo "Checking target directory..."
-          ls -la src-tauri/target/ 2>/dev/null || echo "No target dir"
-          echo "Checking bundle directory..."
-          ls -la src-tauri/target/release/bundle/ 2>/dev/null || ls -la src-tauri/target/debug/bundle/ 2>/dev/null || echo "No bundle dir"
 
   # Build only - no release
   build-only:
