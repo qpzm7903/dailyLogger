@@ -1,0 +1,54 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-rust:
+    name: Rust Tests & Lint
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+        working-directory: src-tauri
+
+      - name: Clippy lint
+        run: cargo clippy -- -D warnings
+        working-directory: src-tauri
+
+      - name: Run tests
+        run: cargo test
+        working-directory: src-tauri
+
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test

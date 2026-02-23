@@ -26,13 +26,22 @@
             <p class="text-sm text-gray-400 mb-4">定时截取屏幕并分析工作上下文</p>
             <div class="flex items-center justify-between">
               <span class="text-xs text-gray-500">状态: {{ autoCaptureEnabled ? '运行中' : '已停止' }}</span>
-              <button 
-                @click="toggleAutoCapture"
-                :class="autoCaptureEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
-                class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              >
-                {{ autoCaptureEnabled ? '停止' : '启动' }}
-              </button>
+              <div class="flex items-center gap-2">
+                <button 
+                  @click="triggerCapture"
+                  :disabled="isCapturing"
+                  class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors"
+                >
+                  {{ isCapturing ? '截图...' : '📸 截图' }}
+                </button>
+                <button 
+                  @click="toggleAutoCapture"
+                  :class="autoCaptureEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
+                  class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {{ autoCaptureEnabled ? '停止' : '启动' }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -59,6 +68,13 @@
             <div class="flex items-center gap-2">
               <span class="text-2xl">📊</span>
               <h2 class="font-medium">今日工作流</h2>
+              <button 
+                v-if="screenshotCount > 0"
+                @click="showScreenshotGallery = true"
+                class="ml-2 text-xs text-primary hover:underline"
+              >
+                (📷 {{ screenshotCount }} 张截图)
+              </button>
             </div>
             <button 
               @click="generateSummary"
@@ -75,11 +91,14 @@
             <div 
               v-for="record in todayRecords" 
               :key="record.id"
+              @click="record.source_type === 'auto' && record.screenshot_path && openScreenshot(record)"
+              :class="record.source_type === 'auto' && record.screenshot_path ? 'cursor-pointer hover:border-primary' : ''"
               class="bg-darker rounded-lg p-3 border border-gray-700"
             >
               <div class="flex items-center justify-between mb-1">
                 <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
-                <span :class="record.source_type === 'auto' ? 'text-blue-400' : 'text-green-400'" class="text-xs">
+                <span :class="record.source_type === 'auto' ? 'text-blue-400' : 'text-green-400'" class="text-xs flex items-center gap-1">
+                  <span v-if="record.source_type === 'auto' && record.screenshot_path">📷 </span>
                   {{ record.source_type === 'auto' ? '🖥️ 自动' : '⚡ 手动' }}
                 </span>
               </div>
@@ -94,7 +113,10 @@
             <h2 class="font-medium">输出文件</h2>
           </div>
           <div v-if="summaryPath" class="bg-darker rounded-lg p-3 border border-gray-700">
-            <p class="text-sm text-gray-300">{{ summaryPath }}</p>
+            <p 
+              @click="showSummaryViewer = true"
+              class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
+            >{{ summaryPath }}</p>
           </div>
           <div v-else class="text-center py-4 text-gray-500 text-sm">
             尚未生成日报
@@ -105,6 +127,9 @@
 
     <SettingsModal v-if="showSettings" @close="showSettings = false" />
     <QuickNoteModal v-if="showQuickNote" @close="showQuickNote = false" @save="handleQuickNote" />
+    <ScreenshotModal v-if="showScreenshot" :record="selectedScreenshot" @close="showScreenshot = false" />
+    <ScreenshotGallery v-if="showScreenshotGallery" @close="showScreenshotGallery = false" />
+    <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
   </div>
 </template>
 
@@ -114,15 +139,28 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import SettingsModal from './components/SettingsModal.vue'
 import QuickNoteModal from './components/QuickNoteModal.vue'
+import ScreenshotModal from './components/ScreenshotModal.vue'
+import ScreenshotGallery from './components/ScreenshotGallery.vue'
+import DailySummaryViewer from './components/DailySummaryViewer.vue'
 
 const currentTime = ref('')
 const autoCaptureEnabled = ref(false)
 const quickNotesCount = ref(0)
 const todayRecords = ref([])
 const isGenerating = ref(false)
+const isCapturing = ref(false)
 const summaryPath = ref('')
 const showSettings = ref(false)
 const showQuickNote = ref(false)
+const showScreenshot = ref(false)
+const showScreenshotGallery = ref(false)
+const showSummaryViewer = ref(false)
+const selectedScreenshot = ref(null)
+
+// Computed
+const screenshotCount = computed(() => {
+  return todayRecords.value.filter(r => r.source_type === 'auto' && r.screenshot_path).length
+})
 
 let timeInterval = null
 
@@ -155,6 +193,11 @@ const toggleAutoCapture = async () => {
 
 const openQuickNote = () => {
   showQuickNote.value = true
+}
+
+const openScreenshot = (record) => {
+  selectedScreenshot.value = record
+  showScreenshot.value = true
 }
 
 const handleQuickNote = async (content) => {
@@ -203,6 +246,9 @@ const loadSettings = async () => {
 onMounted(async () => {
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
+  
+  // Auto-refresh records every 30 seconds
+  setInterval(loadTodayRecords, 30000)
   
   await loadSettings()
   await loadTodayRecords()

@@ -35,14 +35,18 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app"],
+    "targets": ["dmg", "app", "nsis"],
     "icon": [
       "icons/icon.png"
     ],
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": ""
+      "timestampUrl": "",
+      "wix": null,
+      "nsis": {
+        "installMode": "currentUser"
+      }
     }
   },
   "plugins": {
