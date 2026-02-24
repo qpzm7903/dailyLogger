@@ -256,3 +256,14 @@ pub async fn trigger_capture() -> Result<(), String> {
     tracing::info!("Manual capture triggered");
     Ok(())
 }
+
+/// 只截图并保存到磁盘，不调用 AI 分析，不写数据库记录。
+/// 返回截图文件的绝对路径，供前端直接预览。
+#[command]
+pub async fn take_screenshot() -> Result<String, String> {
+    let image_base64 = capture_screen()?;
+    let path = save_screenshot(&image_base64)
+        .ok_or_else(|| "截图保存失败".to_string())?;
+    tracing::info!("Screenshot saved for preview: {}", path);
+    Ok(path)
+}

@@ -50,6 +50,7 @@ fn main() {
             daily_logger_lib::auto_perception::start_auto_capture,
             daily_logger_lib::auto_perception::stop_auto_capture,
             daily_logger_lib::auto_perception::trigger_capture,
+            daily_logger_lib::auto_perception::take_screenshot,
             daily_logger_lib::manual_entry::add_quick_note,
             daily_logger_lib::manual_entry::get_screenshot,
             daily_logger_lib::manual_entry::read_file,

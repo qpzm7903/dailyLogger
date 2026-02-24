@@ -9,86 +9,142 @@ on:
     branches: [main]
 
 jobs:
+  # ── PR 构建：验证两平台均可编译 ──────────────────────────────────────────────
   build-pr:
-    name: Build
+    name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}
+    if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: 'macos-latest'
           - platform: 'windows-latest'
-    if: github.event_name == 'pull_request'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
 
-      - name: Install npm dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Build
+      - name: Build (macOS)
+        if: matrix.platform == 'macos-latest'
         run: npm run tauri build
 
-      - name: Upload artifact
+      - name: Build Windows app (no installer)
+        if: matrix.platform == 'windows-latest'
+        run: npm run tauri build -- --bundles none
+
+      - name: Package Windows portable zip
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          Copy-Item "src-tauri\target\release\daily-logger.exe" "DailyLogger.exe"
+          Compress-Archive -Path "DailyLogger.exe" -DestinationPath "DailyLogger-windows-portable.zip"
+
+      - name: Upload macOS artifact
+        if: matrix.platform == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: app-${{ matrix.platform }}
+          name: app-macos
           path: src-tauri/target/release/bundle/**/*
 
-  build:
+      - name: Upload Windows artifact
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-windows-portable
+          path: DailyLogger-windows-portable.zip
+
+  # ── Tag 推送：先建 Release，再并行构建两平台 ──────────────────────────────────
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'windows-latest'
-
-    runs-on: ${{ matrix.platform }}
-    if: startsWith(github.ref_name, 'v')
+    outputs:
+      release_id: ${{ steps.create.outputs.release_id }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Create draft release
+        id: create
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "DailyLogger ${{ github.ref_name }}" \
+            --notes "See the assets to download this version." \
+            --draft
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/${{ github.ref_name }} --jq .id)
+          echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
+
+  build-macos:
+    name: Build macOS
+    needs: create-release
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
 
-      - name: Install dependencies (Ubuntu)
-        if: matrix.platform == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
 
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'DailyLogger v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: '--target aarch64-apple-darwin'
+
+  build-windows:
+    name: Build Windows (Portable)
+    needs: create-release
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: npm ci
+
+      - name: Build Windows app (no installer)
+        run: npm run tauri build -- --bundles none
+
+      - name: Package as portable zip
+        shell: pwsh
+        run: |
+          Copy-Item "src-tauri\target\release\daily-logger.exe" "DailyLogger.exe"
+          Compress-Archive -Path "DailyLogger.exe" `
+            -DestinationPath "DailyLogger-${{ github.ref_name }}-windows-portable.zip"
+
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-windows-portable.zip"
