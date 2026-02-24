@@ -20,9 +20,12 @@
         <div class="mt-4 p-4 bg-darker rounded-lg">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
-            <span class="text-xs text-blue-400">🖥️ 自动截图</span>
+            <span class="text-xs" :class="record.content ? 'text-blue-400' : 'text-gray-500'">
+              {{ record.content ? '🖥️ 已分析' : '📸 仅截图预览' }}
+            </span>
           </div>
-          <p class="text-sm text-gray-300 whitespace-pre-wrap">{{ parseContent(record.content) }}</p>
+          <p v-if="record.content" class="text-sm text-gray-300 whitespace-pre-wrap">{{ parseContent(record.content) }}</p>
+          <p v-else class="text-sm text-gray-500 italic">未进行 AI 分析</p>
         </div>
       </div>
     </div>

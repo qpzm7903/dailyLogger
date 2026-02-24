@@ -9,8 +9,8 @@
       </div>
       <div class="flex items-center gap-4">
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
-        <button @click="showLogViewer = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors" title="查看日志">
-          🗒️
+        <button @click="showLogViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+          🗒️ 日志
         </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
@@ -34,12 +34,20 @@
               </div>
               <div class="flex items-center gap-2">
                 <button
+                  @click="takeScreenshot"
+                  :disabled="isCapturing"
+                  class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-colors"
+                  title="截图查看，不做 AI 分析"
+                >
+                  {{ isCapturing ? '截图中…' : '📸 截图' }}
+                </button>
+                <button
                   @click="triggerCapture"
                   :disabled="isCapturing"
                   class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-colors"
-                  title="立即截图一次"
+                  title="截图并进行 AI 分析，保存到记录"
                 >
-                  {{ isCapturing ? '截图中…' : '📸 立即截图' }}
+                  🤖 分析
                 </button>
                 <button
                   @click="toggleAutoCapture"
@@ -209,6 +217,24 @@ const toggleAutoCapture = async () => {
     autoCaptureEnabled.value = !autoCaptureEnabled.value
   } catch (err) {
     console.error('Failed to toggle auto capture:', err)
+  }
+}
+
+const takeScreenshot = async () => {
+  if (isCapturing.value) return
+  isCapturing.value = true
+  try {
+    const path = await invoke('take_screenshot')
+    selectedScreenshot.value = {
+      screenshot_path: path,
+      timestamp: new Date().toISOString(),
+      content: null,
+    }
+    showScreenshot.value = true
+  } catch (err) {
+    console.error('Failed to take screenshot:', err)
+  } finally {
+    isCapturing.value = false
   }
 }
 
