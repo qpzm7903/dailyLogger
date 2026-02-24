@@ -110,9 +110,34 @@ All new features and bug fixes must follow Red → Green → Refactor:
 
 **Prohibited**: Submitting business logic code without a corresponding test. Modifying test assertions to make tests pass (unless requirements changed).
 
+### Bug Fix Testing Rule
+
+Every bug fix commit **must** include a regression test that reproduces the bug. The test must:
+1. Fail on the old code (proves the test catches the bug)
+2. Pass on the new code (proves the fix works)
+3. Target the boundary condition or root cause, not just the symptom
+
+A bug fix PR without a reproducing test will not be merged.
+
+### Test Priority Guide
+
+Focus testing effort on code with **high bug probability** — not on what's easy to test:
+- **Must test**: Time/timezone conversions, query boundaries, state transitions, data format parsing
+- **Must test**: Any function that converts between representations (local↔UTC, JSON↔struct, path↔string)
+- **Should test**: Business logic with multiple code paths, error handling branches
+- **Low priority**: Simple CRUD wrappers, configuration loading, straightforward delegation
+
+### Test Isolation with Global State
+
+`DB_CONNECTION` is a global `Lazy<Mutex<…>>` — Rust runs tests in parallel within the same process. Tests that use the shared DB must:
+- Never assert on `records.len()` or `records[0]` — other tests may have inserted data
+- Use `.iter().any()` or `.find()` to locate specific records by content
+- Use `setup_test_db()` (creates a fresh in-memory DB) but accept that parallel tests may interleave
+
 ## Common Pitfalls
 
 - **Database locked**: Always acquire the global `Mutex` — never create a separate `Connection`
 - **Tauri command not found at runtime**: Register new commands in `generate_handler![]` in `main.rs`
 - **Screenshot path**: Stored relative to the app data dir; use `app.path().app_data_dir()` to resolve
 - **OpenAI calls**: Screenshots are Base64-encoded before being sent to the Vision API
+- **Timezone**: Never use `.and_utc()` on a `NaiveDateTime` derived from `Local::now()`. Use `.and_local_timezone(chrono::Local).unwrap().with_timezone(&chrono::Utc)` to correctly convert local time to UTC. The `records` table stores timestamps in UTC RFC3339 format.

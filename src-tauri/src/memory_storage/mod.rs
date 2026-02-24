@@ -119,7 +119,9 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
         .date_naive()
         .and_hms_opt(0, 0, 0)
         .unwrap()
-        .and_utc()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
         .to_rfc3339();
 
     let mut stmt = conn
@@ -229,4 +231,177 @@ pub async fn get_settings() -> Result<Settings, String> {
 #[command]
 pub async fn save_settings(settings: Settings) -> Result<(), String> {
     save_settings_sync(&settings)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Initializes an in-memory database for testing.
+    fn setup_test_db() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                screenshot_path TEXT
+            )",
+            [],
+        )
+        .unwrap();
+        let mut db = DB_CONNECTION.lock().unwrap();
+        *db = Some(conn);
+    }
+
+    /// Helper: insert a record with a specific UTC timestamp string.
+    fn insert_record_with_ts(ts: &str, content: &str) {
+        let db = DB_CONNECTION.lock().unwrap();
+        let conn = db.as_ref().unwrap();
+        conn.execute(
+            "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+            params![ts, "manual", content],
+        )
+        .unwrap();
+    }
+
+    /// Helper: convert a local NaiveDateTime to UTC RFC3339 string.
+    fn local_to_utc_rfc3339(naive: chrono::NaiveDateTime) -> String {
+        naive
+            .and_local_timezone(chrono::Local)
+            .unwrap()
+            .with_timezone(&chrono::Utc)
+            .to_rfc3339()
+    }
+
+    // ── Boundary tests for get_today_records_sync ──
+
+    #[test]
+    fn finds_record_saved_near_local_midnight() {
+        setup_test_db();
+
+        // Local 01:00 today — in UTC+8 this is yesterday 17:00 UTC.
+        // The old .and_utc() bug would miss this record.
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(1, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "early morning note");
+
+        let records = get_today_records_sync().unwrap();
+        assert!(
+            records.iter().any(|r| r.content == "early morning note"),
+            "Record at local 01:00 (UTC {}) must appear in today's records",
+            ts
+        );
+    }
+
+    #[test]
+    fn finds_record_at_last_second_of_local_today() {
+        setup_test_db();
+
+        // Local 23:59:59 today — should still be "today".
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(23, 59, 59).unwrap());
+        insert_record_with_ts(&ts, "end of day note");
+
+        let records = get_today_records_sync().unwrap();
+        assert!(
+            records.iter().any(|r| r.content == "end of day note"),
+            "Record at local 23:59:59 (UTC {}) must appear in today's records",
+            ts
+        );
+    }
+
+    #[test]
+    fn excludes_record_from_yesterday() {
+        setup_test_db();
+
+        // Local 23:59:59 yesterday — must NOT appear in today's records.
+        let yesterday = chrono::Local::now().date_naive() - chrono::Duration::days(1);
+        let ts = local_to_utc_rfc3339(yesterday.and_hms_opt(23, 59, 59).unwrap());
+        insert_record_with_ts(&ts, "yesterday's note");
+
+        let records = get_today_records_sync().unwrap();
+        assert!(
+            !records.iter().any(|r| r.content == "yesterday's note"),
+            "Record at local yesterday 23:59:59 (UTC {}) must NOT appear in today's records",
+            ts
+        );
+    }
+
+    #[test]
+    fn finds_record_at_exact_local_midnight() {
+        setup_test_db();
+
+        // Local 00:00:00 today — the boundary itself should be included.
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(0, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "midnight note");
+
+        let records = get_today_records_sync().unwrap();
+        assert!(
+            records.iter().any(|r| r.content == "midnight note"),
+            "Record at exactly local midnight (UTC {}) must appear in today's records",
+            ts
+        );
+    }
+
+    // ── End-to-end: add_record → get_today_records_sync ──
+
+    #[test]
+    fn add_record_then_query_returns_it() {
+        setup_test_db();
+
+        let id = add_record("manual", "e2e test note", None).unwrap();
+        assert!(id > 0);
+
+        let records = get_today_records_sync().unwrap();
+        assert!(
+            records.iter().any(|r| r.content == "e2e test note"),
+            "Record saved via add_record must be queryable via get_today_records_sync"
+        );
+    }
+
+    #[test]
+    fn add_record_with_screenshot_path_persists() {
+        setup_test_db();
+
+        let id = add_record("auto", "screenshot analysis", Some("/tmp/shot.png")).unwrap();
+        assert!(id > 0);
+
+        let records = get_today_records_sync().unwrap();
+        let rec = records
+            .iter()
+            .find(|r| r.content == "screenshot analysis")
+            .expect("Record with screenshot must be queryable");
+        assert_eq!(rec.screenshot_path.as_deref(), Some("/tmp/shot.png"));
+        assert_eq!(rec.source_type, "auto");
+    }
+
+    #[test]
+    fn records_ordered_by_timestamp_descending() {
+        setup_test_db();
+
+        // Insert two records with known order
+        let today = chrono::Local::now().date_naive();
+        let ts_early = local_to_utc_rfc3339(today.and_hms_opt(9, 0, 0).unwrap());
+        let ts_late = local_to_utc_rfc3339(today.and_hms_opt(15, 0, 0).unwrap());
+
+        insert_record_with_ts(&ts_early, "morning");
+        insert_record_with_ts(&ts_late, "afternoon");
+
+        let records = get_today_records_sync().unwrap();
+        // Find positions of our two records (other tests may have added records
+        // to the shared global DB_CONNECTION when running in parallel).
+        let pos_afternoon = records.iter().position(|r| r.content == "afternoon");
+        let pos_morning = records.iter().position(|r| r.content == "morning");
+        assert!(
+            pos_afternoon.is_some() && pos_morning.is_some(),
+            "Both records must be present"
+        );
+        assert!(
+            pos_afternoon.unwrap() < pos_morning.unwrap(),
+            "afternoon (15:00) should appear before morning (09:00) in DESC order"
+        );
+    }
 }
