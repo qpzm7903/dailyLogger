@@ -34,57 +34,120 @@ impl Default for CaptureSettings {
     }
 }
 
+// ─── Windows：Windows Graphics Capture API ───────────────────────
+#[cfg(target_os = "windows")]
 fn capture_screen() -> Result<String, String> {
-    use scap::capturer::{Capturer, Options, Resolution};
-    use scap::frame::{Frame, FrameType, VideoFrame};
-
-    if !scap::is_supported() {
-        return Err("Screen capture is not supported on this platform".to_string());
-    }
-
-    if !scap::has_permission() && !scap::request_permission() {
-        return Err("Screen capture permission was denied".to_string());
-    }
-
-    let options = Options {
-        fps: 1,
-        target: None,
-        show_cursor: false,
-        show_highlight: false,
-        output_type: FrameType::BGRAFrame,
-        output_resolution: Resolution::Captured,
-        ..Default::default()
+    use std::sync::mpsc;
+    use windows_capture::{
+        capture::{Context, GraphicsCaptureApiHandler},
+        frame::Frame,
+        graphics_capture_api::InternalCaptureControl,
+        monitor::Monitor,
+        settings::{
+            ColorFormat, CursorCaptureSettings, DirtyRegionSettings, DrawBorderSettings,
+            MinimumUpdateIntervalSettings, SecondaryWindowSettings, Settings,
+        },
     };
 
-    let mut capturer = Capturer::build(options)
-        .map_err(|e| format!("Failed to initialize screen capturer: {:?}", e))?;
+    type FrameResult = Result<(u32, u32, Vec<u8>), String>;
 
-    capturer.start_capture();
-    let frame = capturer
-        .get_next_frame()
-        .map_err(|e| format!("Failed to capture frame: {}", e))?;
-    capturer.stop_capture();
+    struct OneShot {
+        tx: mpsc::SyncSender<FrameResult>,
+    }
 
-    let (width, height, rgba_data) = match frame {
-        Frame::Video(VideoFrame::BGRA(bgra)) => {
-            let rgba: Vec<u8> = bgra
-                .data
-                .chunks_exact(4)
-                .flat_map(|b| [b[2], b[1], b[0], b[3]])
-                .collect();
-            (bgra.width as u32, bgra.height as u32, rgba)
+    impl GraphicsCaptureApiHandler for OneShot {
+        type Flags = mpsc::SyncSender<FrameResult>;
+        type Error = Box<dyn std::error::Error + Send + Sync>;
+
+        fn new(ctx: Context<Self::Flags>) -> Result<Self, Self::Error> {
+            Ok(Self { tx: ctx.flags })
         }
-        _ => return Err("Unexpected frame format from screen capturer".to_string()),
-    };
+
+        fn on_frame_arrived(
+            &mut self,
+            frame: &mut Frame,
+            capture_control: InternalCaptureControl,
+        ) -> Result<(), Self::Error> {
+            let width = frame.width();
+            let height = frame.height();
+            let mut buffer = frame.buffer()?;
+            let raw = buffer.as_raw_buffer();
+            let row_pitch = buffer.row_pitch() as usize;
+            let row_bytes = width as usize * 4; // Rgba8: 4 bytes/pixel
+
+            // 逐行复制，跳过 GPU 对齐 padding
+            let mut rgba_data = Vec::with_capacity(row_bytes * height as usize);
+            for y in 0..(height as usize) {
+                let start = y * row_pitch;
+                rgba_data.extend_from_slice(&raw[start..start + row_bytes]);
+            }
+
+            let _ = self.tx.send(Ok((width, height, rgba_data)));
+            capture_control.stop();
+            Ok(())
+        }
+
+        fn on_closed(&mut self) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    let (tx, rx) = mpsc::sync_channel(1);
+    let monitor = Monitor::primary()
+        .map_err(|e| format!("Failed to get primary monitor: {e}"))?;
+
+    let settings = Settings::new(
+        monitor,
+        CursorCaptureSettings::Default,
+        DrawBorderSettings::Default,
+        SecondaryWindowSettings::Default,
+        MinimumUpdateIntervalSettings::Default,
+        DirtyRegionSettings::Default,
+        ColorFormat::Rgba8,
+        tx,
+    );
+
+    let _control = OneShot::start_free_threaded(settings)
+        .map_err(|e| format!("Failed to start screen capture: {e}"))?;
+
+    let (width, height, rgba_data) = rx
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .map_err(|_| "Screen capture timed out after 5s".to_string())?
+        .map_err(|e| e)?;
 
     let image = image::RgbaImage::from_raw(width, height, rgba_data)
         .ok_or_else(|| "Failed to construct image from frame data".to_string())?;
 
+    let mut buf = Vec::new();
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode PNG: {e}"))?;
+
+    Ok(base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        &buf,
+    ))
+}
+
+// ─── 非 Windows（macOS / Linux）：xcap ───────────────────────────
+#[cfg(not(target_os = "windows"))]
+fn capture_screen() -> Result<String, String> {
+    let monitors =
+        xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+
+    if monitors.is_empty() {
+        return Err("No monitors found".to_string());
+    }
+
+    let rgba_image = monitors[0]
+        .capture_image()
+        .map_err(|e| format!("Failed to capture screen: {}", e))?;
+
     let mut buffer = Vec::new();
     let mut cursor = std::io::Cursor::new(&mut buffer);
-    image::DynamicImage::ImageRgba8(image)
+    image::DynamicImage::ImageRgba8(rgba_image)
         .write_to(&mut cursor, image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode image as PNG: {}", e))?;
+        .map_err(|e| format!("Failed to encode image: {}", e))?;
 
     Ok(base64::Engine::encode(
         &base64::engine::general_purpose::STANDARD,

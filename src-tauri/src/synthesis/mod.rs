@@ -42,7 +42,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .iter()
         .map(|r| {
             let time = chrono::DateTime::parse_from_rfc3339(&r.timestamp)
-                .map(|dt| dt.format("%H:%M").to_string())
+                .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
                 .unwrap_or_else(|_| "unknown".to_string());
 
             let source = if r.source_type == "auto" {
