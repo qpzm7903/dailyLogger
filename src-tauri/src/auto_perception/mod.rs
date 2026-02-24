@@ -35,8 +35,7 @@ impl Default for CaptureSettings {
 }
 
 fn capture_screen() -> Result<String, String> {
-    let monitors =
-        xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
     if monitors.is_empty() {
         return Err("No monitors found".to_string());
@@ -256,8 +255,7 @@ pub async fn trigger_capture() -> Result<(), String> {
 #[command]
 pub async fn take_screenshot() -> Result<String, String> {
     let image_base64 = capture_screen()?;
-    let path = save_screenshot(&image_base64)
-        .ok_or_else(|| "截图保存失败".to_string())?;
+    let path = save_screenshot(&image_base64).ok_or_else(|| "截图保存失败".to_string())?;
     tracing::info!("Screenshot saved for preview: {}", path);
     Ok(path)
 }

@@ -2,7 +2,7 @@
  * App.vue - triggerCapture 功能测试
  *
  * 覆盖行为：
- *  1. 点击"立即截图"按钮时调用后端 trigger_capture 命令
+ *  1. 点击"🤖 分析"按钮时调用后端 trigger_capture 命令
  *  2. 截图成功后自动刷新今日记录（loadTodayRecords）
  *  3. 截图失败时不触发记录刷新
  *  4. 截图失败后按钮恢复可点击状态（isCapturing 重置）
@@ -49,11 +49,11 @@ describe('App.vue - triggerCapture', () => {
     setupInvoke()
   })
 
-  it('点击"立即截图"按钮时调用 trigger_capture 命令', async () => {
+  it('点击"🤖 分析"按钮时调用 trigger_capture 命令', async () => {
     const wrapper = mount(App, { global: { stubs: STUBS } })
     await flushPromises()
 
-    await wrapper.find('[title="立即截图一次"]').trigger('click')
+    await wrapper.find('[title="截图并进行 AI 分析，保存到记录"]').trigger('click')
     await flushPromises()
 
     expect(invoke).toHaveBeenCalledWith('trigger_capture')
@@ -67,7 +67,7 @@ describe('App.vue - triggerCapture', () => {
     invoke.mockClear()
     setupInvoke()
 
-    await wrapper.find('[title="立即截图一次"]').trigger('click')
+    await wrapper.find('[title="截图并进行 AI 分析，保存到记录"]').trigger('click')
     await flushPromises()
 
     expect(invoke).toHaveBeenCalledWith('get_today_records')
@@ -80,7 +80,7 @@ describe('App.vue - triggerCapture', () => {
     invoke.mockClear()
     setupInvoke({ trigger_capture: new Error('screenshot failed') })
 
-    await wrapper.find('[title="立即截图一次"]').trigger('click')
+    await wrapper.find('[title="截图并进行 AI 分析，保存到记录"]').trigger('click')
     await flushPromises()
 
     expect(invoke).not.toHaveBeenCalledWith('get_today_records')
@@ -91,11 +91,11 @@ describe('App.vue - triggerCapture', () => {
     const wrapper = mount(App, { global: { stubs: STUBS } })
     await flushPromises()
 
-    const btn = wrapper.find('[title="立即截图一次"]')
+    const btn = wrapper.find('[title="截图并进行 AI 分析，保存到记录"]')
     await btn.trigger('click')
     await flushPromises()
 
-    expect(btn.text()).toBe('📸 立即截图')
+    expect(btn.text()).toBe('🤖 分析')
     expect(btn.attributes('disabled')).toBeUndefined()
   })
 })
