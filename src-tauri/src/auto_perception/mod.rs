@@ -34,6 +34,102 @@ impl Default for CaptureSettings {
     }
 }
 
+// ─── Windows：Windows Graphics Capture API ───────────────────────
+#[cfg(target_os = "windows")]
+fn capture_screen() -> Result<String, String> {
+    use std::sync::mpsc;
+    use windows_capture::{
+        capture::{Context, GraphicsCaptureApiHandler},
+        frame::Frame,
+        graphics_capture_api::InternalCaptureControl,
+        monitor::Monitor,
+        settings::{
+            ColorFormat, CursorCaptureSettings, DirtyRegionSettings, DrawBorderSettings,
+            MinimumUpdateIntervalSettings, SecondaryWindowSettings, Settings,
+        },
+    };
+
+    type FrameResult = Result<(u32, u32, Vec<u8>), String>;
+
+    struct OneShot {
+        tx: mpsc::SyncSender<FrameResult>,
+    }
+
+    impl GraphicsCaptureApiHandler for OneShot {
+        type Flags = mpsc::SyncSender<FrameResult>;
+        type Error = Box<dyn std::error::Error + Send + Sync>;
+
+        fn new(ctx: Context<Self::Flags>) -> Result<Self, Self::Error> {
+            Ok(Self { tx: ctx.flags })
+        }
+
+        fn on_frame_arrived(
+            &mut self,
+            frame: &mut Frame,
+            capture_control: InternalCaptureControl,
+        ) -> Result<(), Self::Error> {
+            let width = frame.width();
+            let height = frame.height();
+            let mut buffer = frame.buffer()?;
+            let row_pitch = buffer.row_pitch() as usize;
+            let raw = buffer.as_raw_buffer();
+            let row_bytes = width as usize * 4; // Rgba8: 4 bytes/pixel
+
+            // 逐行复制，跳过 GPU 对齐 padding
+            let mut rgba_data = Vec::with_capacity(row_bytes * height as usize);
+            for y in 0..(height as usize) {
+                let start = y * row_pitch;
+                rgba_data.extend_from_slice(&raw[start..start + row_bytes]);
+            }
+
+            let _ = self.tx.send(Ok((width, height, rgba_data)));
+            capture_control.stop();
+            Ok(())
+        }
+
+        fn on_closed(&mut self) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    let (tx, rx) = mpsc::sync_channel(1);
+    let monitor = Monitor::primary().map_err(|e| format!("Failed to get primary monitor: {e}"))?;
+
+    let settings = Settings::new(
+        monitor,
+        CursorCaptureSettings::Default,
+        DrawBorderSettings::Default,
+        SecondaryWindowSettings::Default,
+        MinimumUpdateIntervalSettings::Default,
+        DirtyRegionSettings::Default,
+        ColorFormat::Rgba8,
+        tx,
+    );
+
+    let _control = OneShot::start_free_threaded(settings)
+        .map_err(|e| format!("Failed to start screen capture: {e}"))?;
+
+    let (width, height, rgba_data) = rx
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .map_err(|_| "Screen capture timed out after 5s".to_string())?
+        .map_err(|e| e)?;
+
+    let image = image::RgbaImage::from_raw(width, height, rgba_data)
+        .ok_or_else(|| "Failed to construct image from frame data".to_string())?;
+
+    let mut buf = Vec::new();
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode PNG: {e}"))?;
+
+    Ok(base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        &buf,
+    ))
+}
+
+// ─── 非 Windows（macOS / Linux）：xcap ───────────────────────────
+#[cfg(not(target_os = "windows"))]
 fn capture_screen() -> Result<String, String> {
     let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
@@ -258,4 +354,40 @@ pub async fn take_screenshot() -> Result<String, String> {
     let path = save_screenshot(&image_base64).ok_or_else(|| "截图保存失败".to_string())?;
     tracing::info!("Screenshot saved for preview: {}", path);
     Ok(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::Engine;
+
+    fn make_minimal_png_base64() -> String {
+        // 1×1 transparent PNG (RGBA)
+        let image = image::RgbaImage::from_raw(1, 1, vec![0u8, 0, 0, 0]).unwrap();
+        let mut buffer = Vec::new();
+        image::DynamicImage::ImageRgba8(image)
+            .write_to(
+                &mut std::io::Cursor::new(&mut buffer),
+                image::ImageFormat::Png,
+            )
+            .unwrap();
+        base64::engine::general_purpose::STANDARD.encode(&buffer)
+    }
+
+    #[test]
+    fn save_screenshot_creates_file_and_returns_path() {
+        let b64 = make_minimal_png_base64();
+        let path = save_screenshot(&b64).expect("save_screenshot should succeed");
+        assert!(
+            std::path::Path::new(&path).exists(),
+            "screenshot file should exist at {path}"
+        );
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn save_screenshot_rejects_invalid_base64() {
+        let result = save_screenshot("not-valid-base64!!!");
+        assert!(result.is_none(), "invalid base64 should return None");
+    }
 }
