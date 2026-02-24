@@ -1,3 +1,4 @@
+<!-- Windows build fix test PR -->
 # AGENTS.md — DailyLogger Agent Instructions
 
 > 架构与命令详见 [CLAUDE.md](./CLAUDE.md)。本文件只包含 AI Agent 专属约束与快速反馈命令。
