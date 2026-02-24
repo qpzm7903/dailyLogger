@@ -35,33 +35,26 @@ impl Default for CaptureSettings {
 }
 
 fn capture_screen() -> Result<String, String> {
-    // TODO: Re-enable screenshots after fixing Windows build
-    Err("Screenshots temporarily disabled due to Windows build issues".to_string())
-    // let screens = screenshots::Screen::all()
-    //     .map_err(|e| format!("Failed to get screens: {}. Make sure to grant Screen Recording permission in System Preferences > Privacy & Security > Screen Recording. You may need to add Terminal or your IDE to the allowed list.", e))?;
+    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
-    // if screens.is_empty() {
-    //     return Err("No screens found".to_string());
-    // }
+    if monitors.is_empty() {
+        return Err("No monitors found".to_string());
+    }
 
-    // let screen = &screens[0];
-    // let capture = screen.capture().map_err(|e| {
-    //     format!(
-    //         "Failed to capture screen: {}. Make sure Screen Recording permission is granted.",
-    //         e
-    //     )
-    // })?;
+    let rgba_image = monitors[0]
+        .capture_image()
+        .map_err(|e| format!("Failed to capture screen: {}", e))?;
 
-    // let mut buffer = Vec::new();
-    // let mut cursor = std::io::Cursor::new(&mut buffer);
-    // capture
-    //     .write_to(&mut cursor, screenshots::image::ImageFormat::Png)
-    //     .map_err(|e| format!("Failed to encode image: {}", e))?;
+    let mut buffer = Vec::new();
+    let mut cursor = std::io::Cursor::new(&mut buffer);
+    image::DynamicImage::ImageRgba8(rgba_image)
+        .write_to(&mut cursor, image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode image: {}", e))?;
 
-    // Ok(base64::Engine::encode(
-    //     &base64::engine::general_purpose::STANDARD,
-    //     &buffer,
-    // ))
+    Ok(base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        &buffer,
+    ))
 }
 
 fn save_screenshot(image_base64: &str) -> Option<String> {
@@ -262,8 +255,7 @@ pub async fn trigger_capture() -> Result<(), String> {
 #[command]
 pub async fn take_screenshot() -> Result<String, String> {
     let image_base64 = capture_screen()?;
-    let path = save_screenshot(&image_base64)
-        .ok_or_else(|| "截图保存失败".to_string())?;
+    let path = save_screenshot(&image_base64).ok_or_else(|| "截图保存失败".to_string())?;
     tracing::info!("Screenshot saved for preview: {}", path);
     Ok(path)
 }

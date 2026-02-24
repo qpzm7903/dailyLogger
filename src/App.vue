@@ -58,6 +58,10 @@
                 </button>
               </div>
             </div>
+            <div v-if="captureError" class="mt-2 bg-red-900/30 border border-red-700 rounded-lg px-3 py-2 flex items-start justify-between gap-2">
+              <p class="text-xs text-red-400">{{ captureError }}</p>
+              <button @click="captureError = ''" class="text-red-500 hover:text-red-300 text-xs flex-shrink-0">✕</button>
+            </div>
           </div>
 
           <div class="bg-dark rounded-xl p-5 border border-gray-700">
@@ -178,6 +182,7 @@ const isGenerating = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
 const summaryError = ref('')
+const captureError = ref('')
 const showSettings = ref(false)
 const showQuickNote = ref(false)
 const showScreenshot = ref(false)
@@ -223,6 +228,7 @@ const toggleAutoCapture = async () => {
 const takeScreenshot = async () => {
   if (isCapturing.value) return
   isCapturing.value = true
+  captureError.value = ''
   try {
     const path = await invoke('take_screenshot')
     selectedScreenshot.value = {
@@ -233,6 +239,7 @@ const takeScreenshot = async () => {
     showScreenshot.value = true
   } catch (err) {
     console.error('Failed to take screenshot:', err)
+    captureError.value = `截图失败: ${err}`
   } finally {
     isCapturing.value = false
   }
@@ -241,11 +248,13 @@ const takeScreenshot = async () => {
 const triggerCapture = async () => {
   if (isCapturing.value) return
   isCapturing.value = true
+  captureError.value = ''
   try {
     await invoke('trigger_capture')
     await loadTodayRecords()
   } catch (err) {
     console.error('Failed to trigger capture:', err)
+    captureError.value = `分析失败: ${err}`
   } finally {
     isCapturing.value = false
   }
