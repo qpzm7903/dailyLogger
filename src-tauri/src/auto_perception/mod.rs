@@ -35,31 +35,33 @@ impl Default for CaptureSettings {
 }
 
 fn capture_screen() -> Result<String, String> {
-    let screens = screenshots::Screen::all()
-        .map_err(|e| format!("Failed to get screens: {}. Make sure to grant Screen Recording permission in System Preferences > Privacy & Security > Screen Recording. You may need to add Terminal or your IDE to the allowed list.", e))?;
+    // TODO: Re-enable screenshots after fixing Windows build
+    Err("Screenshots temporarily disabled due to Windows build issues".to_string())
+    // let screens = screenshots::Screen::all()
+    //     .map_err(|e| format!("Failed to get screens: {}. Make sure to grant Screen Recording permission in System Preferences > Privacy & Security > Screen Recording. You may need to add Terminal or your IDE to the allowed list.", e))?;
 
-    if screens.is_empty() {
-        return Err("No screens found".to_string());
-    }
+    // if screens.is_empty() {
+    //     return Err("No screens found".to_string());
+    // }
 
-    let screen = &screens[0];
-    let capture = screen.capture().map_err(|e| {
-        format!(
-            "Failed to capture screen: {}. Make sure Screen Recording permission is granted.",
-            e
-        )
-    })?;
+    // let screen = &screens[0];
+    // let capture = screen.capture().map_err(|e| {
+    //     format!(
+    //         "Failed to capture screen: {}. Make sure Screen Recording permission is granted.",
+    //         e
+    //     )
+    // })?;
 
-    let mut buffer = Vec::new();
-    let mut cursor = std::io::Cursor::new(&mut buffer);
-    capture
-        .write_to(&mut cursor, screenshots::image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode image: {}", e))?;
+    // let mut buffer = Vec::new();
+    // let mut cursor = std::io::Cursor::new(&mut buffer);
+    // capture
+    //     .write_to(&mut cursor, screenshots::image::ImageFormat::Png)
+    //     .map_err(|e| format!("Failed to encode image: {}", e))?;
 
-    Ok(base64::Engine::encode(
-        &base64::engine::general_purpose::STANDARD,
-        &buffer,
-    ))
+    // Ok(base64::Engine::encode(
+    //     &base64::engine::general_purpose::STANDARD,
+    //     &buffer,
+    // ))
 }
 
 fn save_screenshot(image_base64: &str) -> Option<String> {
