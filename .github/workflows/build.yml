@@ -80,11 +80,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "DailyLogger ${{ github.ref_name }}" \
-            --notes "See the assets to download this version." \
-            --draft
-          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/${{ github.ref_name }} --jq .id)
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases \
+            -f tag_name="${{ github.ref_name }}" \
+            -f name="DailyLogger ${{ github.ref_name }}" \
+            -f body="See the assets to download this version." \
+            -F draft=true \
+            --jq .id)
           echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
 
   build-macos:
