@@ -222,6 +222,12 @@ Return ONLY valid JSON, no other text. Example format:
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
+        // Give a clear, actionable message for vision-unsupported endpoints.
+        if body.contains("image_url") && body.contains("unknown variant") {
+            return Err("当前模型不支持图像分析（Vision）。\
+请在设置中将模型改为支持视觉功能的型号，例如 gpt-4o 或 gpt-4-turbo。"
+                .to_string());
+        }
         return Err(format!("API error ({}): {}", status, body));
     }
 
