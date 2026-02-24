@@ -240,6 +240,18 @@ Return ONLY valid JSON, no other text. Example format:
         .as_str()
         .ok_or("No content in response")?;
 
+    // Some models wrap JSON in markdown code fences (```json ... ```) despite
+    // being instructed otherwise. Strip those before parsing.
+    let content = content.trim();
+    let content = if let Some(inner) = content
+        .strip_prefix("```json")
+        .or_else(|| content.strip_prefix("```"))
+    {
+        inner.trim_end_matches("```").trim()
+    } else {
+        content
+    };
+
     let analysis: ScreenAnalysis = serde_json::from_str(content)
         .map_err(|e| format!("Failed to parse analysis: {}. Content: {}", e, content))?;
 
@@ -394,5 +406,36 @@ mod tests {
     fn save_screenshot_rejects_invalid_base64() {
         let result = save_screenshot("not-valid-base64!!!");
         assert!(result.is_none(), "invalid base64 should return None");
+    }
+
+    /// Helper: strip markdown fences the same way analyze_screen does.
+    fn strip_code_fence(content: &str) -> &str {
+        let content = content.trim();
+        if let Some(inner) = content
+            .strip_prefix("```json")
+            .or_else(|| content.strip_prefix("```"))
+        {
+            inner.trim_end_matches("```").trim()
+        } else {
+            content
+        }
+    }
+
+    #[test]
+    fn strip_code_fence_handles_json_fence() {
+        let wrapped = "```json\n{\"a\":1}\n```";
+        assert_eq!(strip_code_fence(wrapped), "{\"a\":1}");
+    }
+
+    #[test]
+    fn strip_code_fence_handles_plain_fence() {
+        let wrapped = "```\n{\"a\":1}\n```";
+        assert_eq!(strip_code_fence(wrapped), "{\"a\":1}");
+    }
+
+    #[test]
+    fn strip_code_fence_leaves_bare_json_unchanged() {
+        let bare = "{\"a\":1}";
+        assert_eq!(strip_code_fence(bare), bare);
     }
 }
