@@ -38,5 +38,3 @@ strip = true
 lto = true
 codegen-units = 1
 panic = "abort"
-[profile.release.target."x86_64-pc-windows-msvc"]
-lto = false
