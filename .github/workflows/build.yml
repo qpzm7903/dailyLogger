@@ -56,7 +56,7 @@ jobs:
             args: '--target aarch64-apple-darwin'
           - platform: 'windows-latest'
     runs-on: ${{ matrix.platform }}
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout repository
