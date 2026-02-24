@@ -93,8 +93,7 @@ fn capture_screen() -> Result<String, String> {
     }
 
     let (tx, rx) = mpsc::sync_channel(1);
-    let monitor = Monitor::primary()
-        .map_err(|e| format!("Failed to get primary monitor: {e}"))?;
+    let monitor = Monitor::primary().map_err(|e| format!("Failed to get primary monitor: {e}"))?;
 
     let settings = Settings::new(
         monitor,
@@ -132,8 +131,7 @@ fn capture_screen() -> Result<String, String> {
 // ─── 非 Windows（macOS / Linux）：xcap ───────────────────────────
 #[cfg(not(target_os = "windows"))]
 fn capture_screen() -> Result<String, String> {
-    let monitors =
-        xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
     if monitors.is_empty() {
         return Err("No monitors found".to_string());
