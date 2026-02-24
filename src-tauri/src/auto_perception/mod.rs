@@ -71,8 +71,8 @@ fn capture_screen() -> Result<String, String> {
             let width = frame.width();
             let height = frame.height();
             let mut buffer = frame.buffer()?;
-            let raw = buffer.as_raw_buffer();
             let row_pitch = buffer.row_pitch() as usize;
+            let raw = buffer.as_raw_buffer();
             let row_bytes = width as usize * 4; // Rgba8: 4 bytes/pixel
 
             // 逐行复制，跳过 GPU 对齐 padding
