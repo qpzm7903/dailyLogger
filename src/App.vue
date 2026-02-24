@@ -112,13 +112,16 @@
             <span class="text-2xl">📁</span>
             <h2 class="font-medium">输出文件</h2>
           </div>
+          <div v-if="summaryError" class="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-2">
+            <p class="text-sm text-red-400">生成失败: {{ summaryError }}</p>
+          </div>
           <div v-if="summaryPath" class="bg-darker rounded-lg p-3 border border-gray-700">
-            <p 
+            <p
               @click="showSummaryViewer = true"
               class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
             >{{ summaryPath }}</p>
           </div>
-          <div v-else class="text-center py-4 text-gray-500 text-sm">
+          <div v-else-if="!summaryError" class="text-center py-4 text-gray-500 text-sm">
             尚未生成日报
           </div>
         </div>
@@ -150,6 +153,7 @@ const todayRecords = ref([])
 const isGenerating = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
+const summaryError = ref('')
 const showSettings = ref(false)
 const showQuickNote = ref(false)
 const showScreenshot = ref(false)
@@ -213,11 +217,13 @@ const handleQuickNote = async (content) => {
 const generateSummary = async () => {
   if (isGenerating.value) return
   isGenerating.value = true
+  summaryError.value = ''
   try {
     const result = await invoke('generate_daily_summary')
     summaryPath.value = result
   } catch (err) {
     console.error('Failed to generate summary:', err)
+    summaryError.value = String(err)
   } finally {
     isGenerating.value = false
   }
