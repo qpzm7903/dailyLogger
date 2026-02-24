@@ -19,21 +19,32 @@ jobs:
           - platform: 'macos-latest'
           - platform: 'windows-latest'
     if: github.event_name == 'pull_request'
+    
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install npm dependencies
         run: npm ci
+
+      - name: Build
         run: npm run tauri build
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.platform }}
           path: src-tauri/target/release/bundle/**/*
 
-  # Full build for main branch releases (all platforms)
   build:
     permissions:
       contents: write
@@ -82,7 +93,6 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-  # Build only - no release
   build-only:
     runs-on: macos-latest
     
