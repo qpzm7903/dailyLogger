@@ -144,7 +144,7 @@ jobs:
           RUST_BACKTRACE: "full"
         shell: pwsh
         run: |
-          php:false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
+          '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
           npm run tauri build -- --config nobundle.json
 
       - name: Package as portable zip
