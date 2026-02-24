@@ -119,7 +119,9 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
         .date_naive()
         .and_hms_opt(0, 0, 0)
         .unwrap()
-        .and_utc()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
         .to_rfc3339();
 
     let mut stmt = conn
@@ -229,4 +231,64 @@ pub async fn get_settings() -> Result<Settings, String> {
 #[command]
 pub async fn save_settings(settings: Settings) -> Result<(), String> {
     save_settings_sync(&settings)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Initializes an in-memory database for testing.
+    fn setup_test_db() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                screenshot_path TEXT
+            )",
+            [],
+        )
+        .unwrap();
+        let mut db = DB_CONNECTION.lock().unwrap();
+        *db = Some(conn);
+    }
+
+    #[test]
+    fn get_today_records_finds_record_saved_near_local_midnight() {
+        setup_test_db();
+
+        // Simulate a record saved at local 01:00 today.
+        // In UTC+8 that's yesterday 17:00 UTC — the old bug would miss this
+        // because it used local midnight as if it were UTC midnight.
+        let local_now = chrono::Local::now();
+        let today_1am_local = local_now
+            .date_naive()
+            .and_hms_opt(1, 0, 0)
+            .unwrap()
+            .and_local_timezone(chrono::Local)
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        let ts = today_1am_local.to_rfc3339();
+
+        // Insert directly with the crafted timestamp
+        {
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                params![ts, "manual", "early morning note"],
+            )
+            .unwrap();
+        }
+
+        let records = get_today_records_sync().unwrap();
+        assert!(
+            !records.is_empty(),
+            "Record at local 01:00 (UTC {}) should be found in today's records",
+            ts
+        );
+        assert_eq!(records[0].content, "early morning note");
+    }
 }
