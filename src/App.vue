@@ -200,7 +200,12 @@ let timeInterval = null
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  if (isNaN(date.getTime())) return '--:--'
+  // Use getHours/getMinutes (always local time) instead of toLocaleTimeString,
+  // which can display UTC on some Windows WebView2 environments.
+  const h = date.getHours().toString().padStart(2, '0')
+  const m = date.getMinutes().toString().padStart(2, '0')
+  return `${h}:${m}`
 }
 
 const updateTime = () => {

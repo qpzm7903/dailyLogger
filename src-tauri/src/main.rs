@@ -6,22 +6,30 @@
 use daily_logger_lib::init_app;
 use std::path::PathBuf;
 use tauri::Manager;
+use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-fn setup_logging() {
+fn setup_logging() -> WorkerGuard {
     let log_dir = get_app_data_dir().join("logs");
     std::fs::create_dir_all(&log_dir).ok();
 
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, log_dir, "daily-logger.log");
+    // Rotation::NEVER keeps filename as "daily-logger.log" (no date suffix),
+    // which matches what get_recent_logs() reads.
+    let file_appender = RollingFileAppender::new(Rotation::NEVER, log_dir, "daily-logger.log");
 
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::registry()
         .with(EnvFilter::new("info"))
         .with(fmt::layer().with_writer(non_blocking))
         .with(fmt::layer().with_writer(std::io::stdout))
         .init();
+
+    // Return guard so it stays alive until main() exits.
+    // If dropped early, the background logging thread terminates and all log
+    // messages are silently discarded.
+    guard
 }
 
 fn get_app_data_dir() -> PathBuf {
@@ -31,7 +39,9 @@ fn get_app_data_dir() -> PathBuf {
 }
 
 fn main() {
-    setup_logging();
+    // _log_guard must live until main() returns; dropping it early stops the
+    // background logging thread and discards all subsequent log messages.
+    let _log_guard = setup_logging();
 
     if let Err(e) = init_app() {
         tracing::error!("Failed to initialize app: {}", e);

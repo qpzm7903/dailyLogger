@@ -69,7 +69,7 @@ const loading = ref(false)
 const autoRefresh = ref(false)
 const activelevels = ref(new Set(['INFO', 'WARN', 'ERROR']))
 
-const logPath = '~/Library/Application Support/DailyLogger/logs/'
+const logPath = 'DailyLogger/logs/daily-logger.log'
 
 const levels = [
   { key: 'INFO',  label: 'INFO',  activeClass: 'bg-blue-900/60 text-blue-300' },
