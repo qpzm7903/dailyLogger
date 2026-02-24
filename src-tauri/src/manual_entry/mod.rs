@@ -28,3 +28,31 @@ pub async fn get_screenshot(path: String) -> Result<String, String> {
 pub async fn read_file(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
 }
+
+#[command]
+pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
+    let log_path = dirs::data_dir()
+        .ok_or_else(|| "Cannot determine data directory".to_string())?
+        .join("DailyLogger")
+        .join("logs")
+        .join("daily-logger.log");
+
+    if !log_path.exists() {
+        return Ok(String::new());
+    }
+
+    let content = std::fs::read_to_string(&log_path)
+        .map_err(|e| format!("Failed to read log file: {}", e))?;
+
+    let n = lines.unwrap_or(300);
+    let recent: Vec<&str> = content
+        .lines()
+        .rev()
+        .take(n)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
+
+    Ok(recent.join("\n"))
+}

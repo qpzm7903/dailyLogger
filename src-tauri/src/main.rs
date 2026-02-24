@@ -53,6 +53,7 @@ fn main() {
             daily_logger_lib::manual_entry::add_quick_note,
             daily_logger_lib::manual_entry::get_screenshot,
             daily_logger_lib::manual_entry::read_file,
+            daily_logger_lib::manual_entry::get_recent_logs,
             daily_logger_lib::memory_storage::get_today_records,
             daily_logger_lib::memory_storage::get_settings,
             daily_logger_lib::memory_storage::save_settings,
