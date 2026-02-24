@@ -35,21 +35,56 @@ impl Default for CaptureSettings {
 }
 
 fn capture_screen() -> Result<String, String> {
-    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+    use scap::capturer::{Capturer, Options, Resolution};
+    use scap::frame::{Frame, FrameType, VideoFrame};
 
-    if monitors.is_empty() {
-        return Err("No monitors found".to_string());
+    if !scap::is_supported() {
+        return Err("Screen capture is not supported on this platform".to_string());
     }
 
-    let rgba_image = monitors[0]
-        .capture_image()
-        .map_err(|e| format!("Failed to capture screen: {}", e))?;
+    if !scap::has_permission() && !scap::request_permission() {
+        return Err("Screen capture permission was denied".to_string());
+    }
+
+    let options = Options {
+        fps: 1,
+        target: None,
+        show_cursor: false,
+        show_highlight: false,
+        output_type: FrameType::BGRAFrame,
+        output_resolution: Resolution::Captured,
+        ..Default::default()
+    };
+
+    let mut capturer = Capturer::build(options)
+        .map_err(|e| format!("Failed to initialize screen capturer: {:?}", e))?;
+
+    capturer.start_capture();
+    let frame = capturer
+        .get_next_frame()
+        .map_err(|e| format!("Failed to capture frame: {}", e))?;
+    capturer.stop_capture();
+
+    let (width, height, rgba_data) = match frame {
+        Frame::Video(VideoFrame::BGRA(bgra)) => {
+            let rgba: Vec<u8> = bgra
+                .data
+                .chunks_exact(4)
+                .flat_map(|b| [b[2], b[1], b[0], b[3]])
+                .collect();
+            (bgra.width as u32, bgra.height as u32, rgba)
+        }
+        _ => return Err("Unexpected frame format from screen capturer".to_string()),
+    };
+
+    let image = image::RgbaImage::from_raw(width, height, rgba_data)
+        .ok_or_else(|| "Failed to construct image from frame data".to_string())?;
 
     let mut buffer = Vec::new();
     let mut cursor = std::io::Cursor::new(&mut buffer);
-    image::DynamicImage::ImageRgba8(rgba_image)
+    image::DynamicImage::ImageRgba8(image)
         .write_to(&mut cursor, image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode image: {}", e))?;
+        .map_err(|e| format!("Failed to encode image as PNG: {}", e))?;
 
     Ok(base64::Engine::encode(
         &base64::engine::general_purpose::STANDARD,
@@ -258,4 +293,40 @@ pub async fn take_screenshot() -> Result<String, String> {
     let path = save_screenshot(&image_base64).ok_or_else(|| "截图保存失败".to_string())?;
     tracing::info!("Screenshot saved for preview: {}", path);
     Ok(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::Engine;
+
+    fn make_minimal_png_base64() -> String {
+        // 1×1 transparent PNG (RGBA)
+        let image = image::RgbaImage::from_raw(1, 1, vec![0u8, 0, 0, 0]).unwrap();
+        let mut buffer = Vec::new();
+        image::DynamicImage::ImageRgba8(image)
+            .write_to(
+                &mut std::io::Cursor::new(&mut buffer),
+                image::ImageFormat::Png,
+            )
+            .unwrap();
+        base64::engine::general_purpose::STANDARD.encode(&buffer)
+    }
+
+    #[test]
+    fn save_screenshot_creates_file_and_returns_path() {
+        let b64 = make_minimal_png_base64();
+        let path = save_screenshot(&b64).expect("save_screenshot should succeed");
+        assert!(
+            std::path::Path::new(&path).exists(),
+            "screenshot file should exist at {path}"
+        );
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn save_screenshot_rejects_invalid_base64() {
+        let result = save_screenshot("not-valid-base64!!!");
+        assert!(result.is_none(), "invalid base64 should return None");
+    }
 }
