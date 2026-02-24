@@ -38,6 +38,14 @@ npm run test
 
 CI runs these automatically on PRs. All checks must pass before merging. No direct pushes to `main`.
 
+### Git pre-commit hook (install once per clone)
+```bash
+git config core.hooksPath .githooks
+```
+The hook at `.githooks/pre-commit` runs `cargo fmt --check` and `cargo clippy` automatically on every commit, catching CI failures locally before push.
+
+> **`cargo fmt` is CI-blocking.** If `cargo fmt -- --check` fails in CI, fix it with `cd src-tauri && cargo fmt`, then re-commit. Never manually reformat lines to match rustfmt — always let the tool do it.
+
 ## Architecture
 
 DailyLogger is a Tauri v2 desktop app: Vue 3 frontend + Rust backend + SQLite.

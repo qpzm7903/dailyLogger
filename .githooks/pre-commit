@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Pre-commit hook: mirrors the CI "Rust Tests & Lint" checks.
+# Install once: git config core.hooksPath .githooks
+set -euo pipefail
+
+CARGO="${HOME}/.cargo/bin/cargo"
+if ! command -v cargo &>/dev/null; then
+  if [[ -x "$CARGO" ]]; then
+    export PATH="${HOME}/.cargo/bin:$PATH"
+  else
+    echo "⚠️  cargo not found — skipping Rust checks"
+    exit 0
+  fi
+fi
+
+TAURI_DIR="$(git rev-parse --show-toplevel)/src-tauri"
+
+echo "🔍 [pre-commit] cargo fmt --check ..."
+if ! cargo fmt --manifest-path "$TAURI_DIR/Cargo.toml" -- --check; then
+  echo ""
+  echo "❌ rustfmt check failed."
+  echo "   Run:  cd src-tauri && cargo fmt"
+  echo "   Then re-stage and commit."
+  exit 1
+fi
+
+echo "🔍 [pre-commit] cargo clippy ..."
+if ! cargo clippy --manifest-path "$TAURI_DIR/Cargo.toml" -- -D warnings 2>&1; then
+  echo ""
+  echo "❌ clippy found warnings (treated as errors in CI)."
+  exit 1
+fi
+
+echo "✅ Rust checks passed."
