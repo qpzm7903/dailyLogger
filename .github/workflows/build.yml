@@ -39,7 +39,10 @@ jobs:
 
       - name: Build Windows app (no installer)
         if: matrix.platform == 'windows-latest'
-        run: npm run tauri build -- --bundles none
+        shell: pwsh
+        run: |
+          '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
+          npm run tauri build -- --config nobundle.json
 
       - name: Package Windows portable zip
         if: matrix.platform == 'windows-latest'
@@ -136,7 +139,10 @@ jobs:
       - run: npm ci
 
       - name: Build Windows app (no installer)
-        run: npm run tauri build -- --bundles none
+        shell: pwsh
+        run: |
+          '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
+          npm run tauri build -- --config nobundle.json
 
       - name: Package as portable zip
         shell: pwsh
