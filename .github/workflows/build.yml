@@ -135,13 +135,16 @@ jobs:
           cache: 'npm'
 
       - uses: dtolnay/rust-toolchain@stable
-
-      - run: npm ci
-
+      - name: Set Rust environment
+        env:
+          RUST_BACKTRACE: "full"
+        run: npm ci
       - name: Build Windows app (no installer)
+        env:
+          RUST_BACKTRACE: "full"
         shell: pwsh
         run: |
-          '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
+          php:false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
           npm run tauri build -- --config nobundle.json
 
       - name: Package as portable zip
