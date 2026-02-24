@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tauri::command;
-use tokio::time::interval;
 
 use crate::memory_storage;
 
@@ -223,6 +222,12 @@ Return ONLY valid JSON, no other text. Example format:
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
+        // Give a clear, actionable message for vision-unsupported endpoints.
+        if body.contains("image_url") && body.contains("unknown variant") {
+            return Err("当前模型不支持图像分析（Vision）。\
+请在设置中将模型改为支持视觉功能的型号，例如 gpt-4o 或 gpt-4-turbo。"
+                .to_string());
+        }
         return Err(format!("API error ({}): {}", status, body));
     }
 
@@ -235,13 +240,25 @@ Return ONLY valid JSON, no other text. Example format:
         .as_str()
         .ok_or("No content in response")?;
 
+    // Some models wrap JSON in markdown code fences (```json ... ```) despite
+    // being instructed otherwise. Strip those before parsing.
+    let content = content.trim();
+    let content = if let Some(inner) = content
+        .strip_prefix("```json")
+        .or_else(|| content.strip_prefix("```"))
+    {
+        inner.trim_end_matches("```").trim()
+    } else {
+        content
+    };
+
     let analysis: ScreenAnalysis = serde_json::from_str(content)
         .map_err(|e| format!("Failed to parse analysis: {}. Content: {}", e, content))?;
 
     Ok(analysis)
 }
 
-async fn capture_and_store() {
+async fn capture_and_store() -> Result<(), String> {
     let settings = match memory_storage::get_settings_sync() {
         Ok(s) => CaptureSettings {
             api_base_url: s.api_base_url.unwrap_or_default(),
@@ -253,40 +270,26 @@ async fn capture_and_store() {
     };
 
     if settings.api_key.is_empty() {
-        tracing::warn!("API key not configured, skipping capture");
-        return;
+        return Err("API 密钥未配置，请在设置中配置".to_string());
     }
 
-    match capture_screen() {
-        Ok(image_base64) => {
-            let screenshot_path = save_screenshot(&image_base64);
+    let image_base64 = capture_screen()?;
+    let screenshot_path = save_screenshot(&image_base64);
 
-            match analyze_screen(&settings, &image_base64).await {
-                Ok(analysis) => {
-                    let content = serde_json::json!({
-                        "current_focus": analysis.current_focus,
-                        "active_software": analysis.active_software,
-                        "context_keywords": analysis.context_keywords
-                    })
-                    .to_string();
+    let analysis = analyze_screen(&settings, &image_base64).await?;
 
-                    if let Err(e) =
-                        memory_storage::add_record("auto", &content, screenshot_path.as_deref())
-                    {
-                        tracing::error!("Failed to store capture: {}", e);
-                    } else {
-                        tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
-                    }
-                }
-                Err(e) => {
-                    tracing::error!("Failed to analyze screen: {}", e);
-                }
-            }
-        }
-        Err(e) => {
-            tracing::error!("Failed to capture screen: {}", e);
-        }
-    }
+    let content = serde_json::json!({
+        "current_focus": analysis.current_focus,
+        "active_software": analysis.active_software,
+        "context_keywords": analysis.context_keywords
+    })
+    .to_string();
+
+    memory_storage::add_record("auto", &content, screenshot_path.as_deref())
+        .map_err(|e| format!("Failed to store capture: {}", e))?;
+
+    tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
+    Ok(())
 }
 
 #[command]
@@ -294,8 +297,6 @@ pub async fn start_auto_capture() -> Result<(), String> {
     if AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst) {
         return Ok(());
     }
-
-    AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
 
     let settings = match memory_storage::get_settings_sync() {
         Ok(s) => CaptureSettings {
@@ -307,21 +308,34 @@ pub async fn start_auto_capture() -> Result<(), String> {
         Err(_) => CaptureSettings::default(),
     };
 
+    if settings.api_key.is_empty() {
+        return Err("API 密钥未配置，请在设置中配置".to_string());
+    }
+
+    AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
+
     let interval_minutes = settings.screenshot_interval;
 
     tokio::spawn(async move {
-        let mut ticker = interval(Duration::from_secs(interval_minutes * 60));
-
-        capture_and_store().await;
+        // Execute immediately on start
+        if let Err(e) = capture_and_store().await {
+            tracing::error!("Initial capture failed: {}", e);
+        }
 
         loop {
+            // Use sleep instead of interval to avoid the immediate first-tick
+            // behavior of tokio::time::interval (which would cause a double
+            // capture right at startup).
+            tokio::time::sleep(Duration::from_secs(interval_minutes * 60)).await;
+
             if !AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst) {
                 tracing::info!("Auto capture stopped");
                 break;
             }
 
-            ticker.tick().await;
-            capture_and_store().await;
+            if let Err(e) = capture_and_store().await {
+                tracing::error!("Auto capture failed: {}", e);
+            }
         }
     });
 
@@ -341,7 +355,10 @@ pub async fn stop_auto_capture() -> Result<(), String> {
 
 #[command]
 pub async fn trigger_capture() -> Result<(), String> {
-    capture_and_store().await;
+    capture_and_store().await.map_err(|e| {
+        tracing::error!("Trigger capture failed: {}", e);
+        e
+    })?;
     tracing::info!("Manual capture triggered");
     Ok(())
 }
@@ -389,5 +406,36 @@ mod tests {
     fn save_screenshot_rejects_invalid_base64() {
         let result = save_screenshot("not-valid-base64!!!");
         assert!(result.is_none(), "invalid base64 should return None");
+    }
+
+    /// Helper: strip markdown fences the same way analyze_screen does.
+    fn strip_code_fence(content: &str) -> &str {
+        let content = content.trim();
+        if let Some(inner) = content
+            .strip_prefix("```json")
+            .or_else(|| content.strip_prefix("```"))
+        {
+            inner.trim_end_matches("```").trim()
+        } else {
+            content
+        }
+    }
+
+    #[test]
+    fn strip_code_fence_handles_json_fence() {
+        let wrapped = "```json\n{\"a\":1}\n```";
+        assert_eq!(strip_code_fence(wrapped), "{\"a\":1}");
+    }
+
+    #[test]
+    fn strip_code_fence_handles_plain_fence() {
+        let wrapped = "```\n{\"a\":1}\n```";
+        assert_eq!(strip_code_fence(wrapped), "{\"a\":1}");
+    }
+
+    #[test]
+    fn strip_code_fence_leaves_bare_json_unchanged() {
+        let bare = "{\"a\":1}";
+        assert_eq!(strip_code_fence(bare), bare);
     }
 }
