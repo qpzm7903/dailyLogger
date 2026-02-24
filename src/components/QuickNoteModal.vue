@@ -6,7 +6,7 @@
           <span class="text-xl">⚡</span>
           <h2 class="text-lg font-semibold">闪念胶囊</h2>
         </div>
-        <span class="text-xs text-gray-500">按 Enter 快速保存</span>
+        <span class="text-xs text-gray-500">Enter 保存 &nbsp;·&nbsp; Shift+Enter 换行</span>
       </div>
       
       <div class="p-6">

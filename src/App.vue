@@ -9,6 +9,9 @@
       </div>
       <div class="flex items-center gap-4">
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
+        <button @click="showLogViewer = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors" title="查看日志">
+          🗒️
+        </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
@@ -25,16 +28,20 @@
             </div>
             <p class="text-sm text-gray-400 mb-4">定时截取屏幕并分析工作上下文</p>
             <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500">状态: {{ autoCaptureEnabled ? '运行中' : '已停止' }}</span>
               <div class="flex items-center gap-2">
-                <button 
+                <span :class="autoCaptureEnabled ? 'bg-green-400 animate-pulse' : 'bg-gray-500'" class="w-2 h-2 rounded-full inline-block"></span>
+                <span class="text-xs text-gray-400">{{ autoCaptureEnabled ? '运行中' : '已停止' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
                   @click="triggerCapture"
                   :disabled="isCapturing"
-                  class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors"
+                  class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-colors"
+                  title="立即截图一次"
                 >
-                  {{ isCapturing ? '截图...' : '📸 截图' }}
+                  {{ isCapturing ? '截图中…' : '📸 立即截图' }}
                 </button>
-                <button 
+                <button
                   @click="toggleAutoCapture"
                   :class="autoCaptureEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
                   class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
@@ -87,22 +94,29 @@
           <div v-if="todayRecords.length === 0" class="text-center py-8 text-gray-500">
             暂无记录
           </div>
-          <div v-else class="space-y-3 max-h-80 overflow-y-auto">
-            <div 
-              v-for="record in todayRecords" 
+          <div v-else class="space-y-3 max-h-80 overflow-y-auto pr-1">
+            <div
+              v-for="record in todayRecords"
               :key="record.id"
               @click="record.source_type === 'auto' && record.screenshot_path && openScreenshot(record)"
-              :class="record.source_type === 'auto' && record.screenshot_path ? 'cursor-pointer hover:border-primary' : ''"
-              class="bg-darker rounded-lg p-3 border border-gray-700"
+              :class="record.source_type === 'auto' && record.screenshot_path
+                ? 'cursor-pointer hover:border-primary hover:bg-gray-800/40 group'
+                : 'cursor-default'"
+              class="bg-darker rounded-lg p-3 border border-gray-700 transition-colors"
             >
               <div class="flex items-center justify-between mb-1">
                 <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
-                <span :class="record.source_type === 'auto' ? 'text-blue-400' : 'text-green-400'" class="text-xs flex items-center gap-1">
-                  <span v-if="record.source_type === 'auto' && record.screenshot_path">📷 </span>
-                  {{ record.source_type === 'auto' ? '🖥️ 自动' : '⚡ 手动' }}
-                </span>
+                <div class="flex items-center gap-2">
+                  <span
+                    v-if="record.source_type === 'auto' && record.screenshot_path"
+                    class="text-xs text-gray-600 group-hover:text-primary transition-colors"
+                  >点击查看截图</span>
+                  <span :class="record.source_type === 'auto' ? 'text-blue-400' : 'text-green-400'" class="text-xs">
+                    {{ record.source_type === 'auto' ? '🖥️ 自动' : '⚡ 手动' }}
+                  </span>
+                </div>
               </div>
-              <p class="text-sm text-gray-300">{{ record.content }}</p>
+              <p class="text-sm text-gray-300 line-clamp-3">{{ record.content }}</p>
             </div>
           </div>
         </div>
@@ -133,6 +147,7 @@
     <ScreenshotModal v-if="showScreenshot" :record="selectedScreenshot" @close="showScreenshot = false" />
     <ScreenshotGallery v-if="showScreenshotGallery" @close="showScreenshotGallery = false" />
     <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
+    <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
   </div>
 </template>
 
@@ -145,6 +160,7 @@ import QuickNoteModal from './components/QuickNoteModal.vue'
 import ScreenshotModal from './components/ScreenshotModal.vue'
 import ScreenshotGallery from './components/ScreenshotGallery.vue'
 import DailySummaryViewer from './components/DailySummaryViewer.vue'
+import LogViewer from './components/LogViewer.vue'
 
 const currentTime = ref('')
 const autoCaptureEnabled = ref(false)
@@ -159,6 +175,7 @@ const showQuickNote = ref(false)
 const showScreenshot = ref(false)
 const showScreenshotGallery = ref(false)
 const showSummaryViewer = ref(false)
+const showLogViewer = ref(false)
 const selectedScreenshot = ref(null)
 
 // Computed
@@ -192,6 +209,19 @@ const toggleAutoCapture = async () => {
     autoCaptureEnabled.value = !autoCaptureEnabled.value
   } catch (err) {
     console.error('Failed to toggle auto capture:', err)
+  }
+}
+
+const triggerCapture = async () => {
+  if (isCapturing.value) return
+  isCapturing.value = true
+  try {
+    await invoke('trigger_capture')
+    await loadTodayRecords()
+  } catch (err) {
+    console.error('Failed to trigger capture:', err)
+  } finally {
+    isCapturing.value = false
   }
 }
 
