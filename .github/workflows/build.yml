@@ -9,37 +9,29 @@ on:
     branches: [main]
 
 jobs:
-  # For PRs: only build on macOS to ensure code compiles
-  # Full cross-platform builds happen on push to main
   build-pr:
-    name: Build (macOS)
-    runs-on: macos-latest
+    name: Build
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+          - platform: 'windows-latest'
     if: github.event_name == 'pull_request'
-    
-    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-
-      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Install npm dependencies
         run: npm ci
-
-      - name: Build
         run: npm run tauri build
-
-      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-app-pr
-          path: src-tauri/target/release/bundle/macos/*.app
+          name: app-${{ matrix.platform }}
+          path: src-tauri/target/release/bundle/**/*
 
   # Full build for main branch releases (all platforms)
   build:
