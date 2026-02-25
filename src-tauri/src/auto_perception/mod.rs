@@ -20,6 +20,7 @@ pub struct CaptureSettings {
     pub api_key: String,
     pub model_name: String,
     pub screenshot_interval: u64,
+    pub analysis_prompt: Option<String>,
 }
 
 impl Default for CaptureSettings {
@@ -29,6 +30,7 @@ impl Default for CaptureSettings {
             api_key: String::new(),
             model_name: "gpt-4o".to_string(),
             screenshot_interval: 5,
+            analysis_prompt: None,
         }
     }
 }
@@ -182,19 +184,25 @@ fn save_screenshot(image_base64: &str) -> Option<String> {
     Some(screenshot_path.to_string_lossy().to_string())
 }
 
-async fn analyze_screen(
-    settings: &CaptureSettings,
-    image_base64: &str,
-) -> Result<ScreenAnalysis, String> {
-    let client = reqwest::Client::new();
-
-    let prompt = r#"Analyze this screenshot and return a JSON object with:
+const DEFAULT_ANALYSIS_PROMPT: &str = r#"Analyze this screenshot and return a JSON object with:
 - current_focus: What is the user currently working on? (1-2 sentences in Chinese)
 - active_software: What software is being used? (in Chinese)
 - context_keywords: What are the key topics/technologies? (array of strings, in Chinese)
 
 Return ONLY valid JSON, no other text. Example format:
 {"current_focus": "编写 Rust 后端代码", "active_software": "VS Code", "context_keywords": ["Rust", "Tauri", "异步编程"]}"#;
+
+async fn analyze_screen(
+    settings: &CaptureSettings,
+    image_base64: &str,
+) -> Result<ScreenAnalysis, String> {
+    let client = reqwest::Client::new();
+
+    let prompt = settings
+        .analysis_prompt
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_ANALYSIS_PROMPT);
 
     let request_body = serde_json::json!({
         "model": settings.model_name,
@@ -223,6 +231,7 @@ Return ONLY valid JSON, no other text. Example format:
             "api_key_masked": masked_key,
             "has_image": true,
             "image_base64_len": image_base64.len(),
+            "prompt": prompt,
         })
     );
 
@@ -276,6 +285,10 @@ Return ONLY valid JSON, no other text. Example format:
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
+    let content = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("No content in response")?;
+
     tracing::info!(
         "{}",
         serde_json::json!({
@@ -286,12 +299,9 @@ Return ONLY valid JSON, no other text. Example format:
             "usage": response_json.get("usage"),
             "model": response_json.get("model"),
             "response_id": response_json.get("id"),
+            "content": content,
         })
     );
-
-    let content = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
 
     // Some models wrap JSON in markdown code fences (```json ... ```) despite
     // being instructed otherwise. Strip those before parsing.
@@ -318,6 +328,7 @@ async fn capture_and_store() -> Result<(), String> {
             api_key: s.api_key.unwrap_or_default(),
             model_name: s.model_name.unwrap_or_else(|| "gpt-4o".to_string()),
             screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
+            analysis_prompt: s.analysis_prompt,
         },
         Err(_) => CaptureSettings::default(),
     };
@@ -357,6 +368,7 @@ pub async fn start_auto_capture() -> Result<(), String> {
             api_key: s.api_key.unwrap_or_default(),
             model_name: s.model_name.unwrap_or_else(|| "gpt-4o".to_string()),
             screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
+            analysis_prompt: s.analysis_prompt,
         },
         Err(_) => CaptureSettings::default(),
     };

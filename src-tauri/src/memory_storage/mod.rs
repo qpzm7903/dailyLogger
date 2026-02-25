@@ -50,7 +50,10 @@ pub fn init_database() -> Result<(), String> {
             summary_time TEXT DEFAULT '18:00',
             obsidian_path TEXT,
             auto_capture_enabled INTEGER DEFAULT 0,
-            last_summary_path TEXT
+            last_summary_path TEXT,
+            summary_model_name TEXT,
+            analysis_prompt TEXT,
+            summary_prompt TEXT
         )",
         [],
     )
@@ -58,6 +61,14 @@ pub fn init_database() -> Result<(), String> {
 
     conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
         .map_err(|e| format!("Failed to initialize settings: {}", e))?;
+
+    // Migrate: add new columns for split model/prompt config
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN summary_model_name TEXT",
+        [],
+    );
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN analysis_prompt TEXT", []);
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN summary_prompt TEXT", []);
 
     let mut db = DB_CONNECTION
         .lock()
@@ -87,6 +98,9 @@ pub struct Settings {
     pub obsidian_path: Option<String>,
     pub auto_capture_enabled: Option<bool>,
     pub last_summary_path: Option<String>,
+    pub summary_model_name: Option<String>,
+    pub analysis_prompt: Option<String>,
+    pub summary_prompt: Option<String>,
 }
 
 pub fn add_record(
@@ -160,8 +174,9 @@ pub fn get_settings_sync() -> Result<Settings, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT api_base_url, api_key, model_name, screenshot_interval, 
-                summary_time, obsidian_path, auto_capture_enabled, last_summary_path
+            "SELECT api_base_url, api_key, model_name, screenshot_interval,
+                summary_time, obsidian_path, auto_capture_enabled, last_summary_path,
+                summary_model_name, analysis_prompt, summary_prompt
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -177,6 +192,9 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 obsidian_path: row.get(5)?,
                 auto_capture_enabled: row.get::<_, Option<i32>>(6)?.map(|v| v != 0),
                 last_summary_path: row.get(7)?,
+                summary_model_name: row.get(8)?,
+                analysis_prompt: row.get(9)?,
+                summary_prompt: row.get(10)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -191,7 +209,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     conn.execute(
-        "UPDATE settings SET 
+        "UPDATE settings SET
             api_base_url = ?1,
             api_key = ?2,
             model_name = ?3,
@@ -199,7 +217,10 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             summary_time = ?5,
             obsidian_path = ?6,
             auto_capture_enabled = ?7,
-            last_summary_path = ?8
+            last_summary_path = ?8,
+            summary_model_name = ?9,
+            analysis_prompt = ?10,
+            summary_prompt = ?11
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -209,7 +230,10 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.summary_time,
             settings.obsidian_path,
             settings.auto_capture_enabled.map(|v| if v { 1 } else { 0 }),
-            settings.last_summary_path
+            settings.last_summary_path,
+            settings.summary_model_name,
+            settings.analysis_prompt,
+            settings.summary_prompt
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

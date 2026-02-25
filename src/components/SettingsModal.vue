@@ -12,9 +12,9 @@
           <div class="space-y-3">
             <div>
               <label class="text-xs text-gray-500 block mb-1">Base URL</label>
-              <input 
+              <input
                 v-model="settings.api_base_url"
-                type="text" 
+                type="text"
                 placeholder="https://api.openai.com/v1"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
@@ -36,13 +36,54 @@
                 >{{ showApiKey ? '隐藏' : '显示' }}</button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">截图分析 (Vision)</h3>
+          <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-500 block mb-1">模型名称</label>
-              <input 
+              <label class="text-xs text-gray-500 block mb-1">分析模型</label>
+              <input
                 v-model="settings.model_name"
-                type="text" 
+                type="text"
                 placeholder="gpt-4o"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">需要支持 Vision 能力的模型</span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">分析 Prompt</label>
+              <textarea
+                v-model="settings.analysis_prompt"
+                rows="4"
+                placeholder="留空使用默认 Prompt"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none resize-y"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">日报生成</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">日报模型</label>
+              <input
+                v-model="settings.summary_model_name"
+                type="text"
+                placeholder="留空则使用分析模型"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">纯文本模型即可，不需要 Vision</span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">日报 Prompt</label>
+              <textarea
+                v-model="settings.summary_prompt"
+                rows="4"
+                placeholder="留空使用默认 Prompt。用 {records} 表示今日记录的插入位置"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none resize-y"
               />
             </div>
           </div>
@@ -134,7 +175,10 @@ const settings = ref({
   model_name: 'gpt-4o',
   screenshot_interval: 5,
   summary_time: '18:00',
-  obsidian_path: ''
+  obsidian_path: '',
+  summary_model_name: '',
+  analysis_prompt: '',
+  summary_prompt: ''
 })
 
 const loadSettings = async () => {
