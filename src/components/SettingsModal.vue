@@ -12,9 +12,9 @@
           <div class="space-y-3">
             <div>
               <label class="text-xs text-gray-500 block mb-1">Base URL</label>
-              <input 
+              <input
                 v-model="settings.api_base_url"
-                type="text" 
+                type="text"
                 placeholder="https://api.openai.com/v1"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
@@ -36,13 +36,54 @@
                 >{{ showApiKey ? '隐藏' : '显示' }}</button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">截图分析 (Vision)</h3>
+          <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-500 block mb-1">模型名称</label>
-              <input 
+              <label class="text-xs text-gray-500 block mb-1">分析模型</label>
+              <input
                 v-model="settings.model_name"
-                type="text" 
+                type="text"
                 placeholder="gpt-4o"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">需要支持 Vision 能力的模型</span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">分析 Prompt</label>
+              <textarea
+                v-model="settings.analysis_prompt"
+                rows="4"
+                placeholder="留空使用默认 Prompt"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none resize-y"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">日报生成</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">日报模型</label>
+              <input
+                v-model="settings.summary_model_name"
+                type="text"
+                placeholder="留空则使用分析模型"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">纯文本模型即可，不需要 Vision</span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">日报 Prompt</label>
+              <textarea
+                v-model="settings.summary_prompt"
+                rows="4"
+                placeholder="留空使用默认 Prompt。用 {records} 表示今日记录的插入位置"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none resize-y"
               />
             </div>
           </div>
@@ -63,11 +104,39 @@
             </div>
             <div>
               <label class="text-xs text-gray-500 block mb-1">每日总结时间</label>
-              <input 
+              <input
                 v-model="settings.summary_time"
-                type="time" 
+                type="time"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">智能去重</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">变化阈值 (%)</label>
+              <input
+                v-model.number="settings.change_threshold"
+                type="number"
+                min="1"
+                max="20"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">屏幕变化低于此比例时跳过截图，避免重复记录</span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">最大静默时间 (分钟)</label>
+              <input
+                v-model.number="settings.max_silent_minutes"
+                type="number"
+                min="5"
+                max="120"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">即使屏幕无变化，超过此时间也会强制记录一次</span>
             </div>
           </div>
         </div>
@@ -134,7 +203,12 @@ const settings = ref({
   model_name: 'gpt-4o',
   screenshot_interval: 5,
   summary_time: '18:00',
-  obsidian_path: ''
+  obsidian_path: '',
+  summary_model_name: '',
+  analysis_prompt: '',
+  summary_prompt: '',
+  change_threshold: 3,
+  max_silent_minutes: 30
 })
 
 const loadSettings = async () => {

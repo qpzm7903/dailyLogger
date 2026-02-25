@@ -3,6 +3,19 @@ use tauri::command;
 
 use crate::memory_storage;
 
+const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个工作日志助手。请根据以下今日工作记录，生成一份结构化的 Markdown 格式日报。
+
+要求：
+1. 按时间顺序组织
+2. 提取关键工作内容和技术关键词
+3. 总结今日工作成果和遇到的问题
+4. 输出纯 Markdown 格式，不要有其他说明文字
+
+今日记录：
+{records}
+
+请生成日报："#;
+
 #[command]
 pub async fn generate_daily_summary() -> Result<String, String> {
     let settings = memory_storage::get_settings_sync()
@@ -22,9 +35,12 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .clone()
         .ok_or("API Base URL not configured")?;
     let api_key = settings.api_key.clone().ok_or("API Key not configured")?;
+    // 日报生成优先使用 summary_model_name，未配置时回退到 model_name
     let model_name = settings
-        .model_name
+        .summary_model_name
         .clone()
+        .filter(|s| !s.is_empty())
+        .or_else(|| settings.model_name.clone())
         .unwrap_or_else(|| "gpt-4o".to_string());
 
     if api_key.is_empty() {
@@ -56,21 +72,13 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .collect::<Vec<_>>()
         .join("\n");
 
-    let prompt = format!(
-        r#"你是一个工作日志助手。请根据以下今日工作记录，生成一份结构化的 Markdown 格式日报。
+    let prompt_template = settings
+        .summary_prompt
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_SUMMARY_PROMPT);
 
-要求：
-1. 按时间顺序组织
-2. 提取关键工作内容和技术关键词
-3. 总结今日工作成果和遇到的问题
-4. 输出纯 Markdown 格式，不要有其他说明文字
-
-今日记录：
-{}
-
-请生成日报："#,
-        records_text
-    );
+    let prompt = prompt_template.replace("{records}", &records_text);
 
     let client = reqwest::Client::new();
 
@@ -97,7 +105,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
             "max_tokens": 2000,
             "api_key_masked": masked_key,
             "has_image": false,
-            "prompt_len": prompt.len(),
+            "prompt": prompt,
             "records_count": records.len(),
         })
     );
@@ -146,6 +154,10 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
+    let summary = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("No content in response")?;
+
     tracing::info!(
         "{}",
         serde_json::json!({
@@ -156,14 +168,9 @@ pub async fn generate_daily_summary() -> Result<String, String> {
             "usage": response_json.get("usage"),
             "model": response_json.get("model"),
             "response_id": response_json.get("id"),
-            "content_len": response_json["choices"][0]["message"]["content"]
-                .as_str().map(|s| s.len()),
+            "content": summary,
         })
     );
-
-    let summary = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
 
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
     let filename = format!("{}.md", today);

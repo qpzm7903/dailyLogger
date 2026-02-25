@@ -1,11 +1,105 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::command;
 
 use crate::memory_storage;
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
+
+/// Thumbnail fingerprint size: 64x64 grayscale = 4096 bytes
+const THUMB_SIZE: u32 = 64;
+
+/// Default: screen change < 3% is considered unchanged
+const DEFAULT_CHANGE_THRESHOLD: f64 = 3.0;
+
+/// Default: force capture after 30 minutes of no change
+const DEFAULT_MAX_SILENT_MINUTES: u64 = 30;
+
+/// Stores the last thumbnail fingerprint and the timestamp of the last actual capture.
+struct ScreenState {
+    last_fingerprint: Option<Vec<u8>>,
+    last_capture_time: Instant,
+}
+
+static SCREEN_STATE: Lazy<Mutex<ScreenState>> = Lazy::new(|| {
+    Mutex::new(ScreenState {
+        last_fingerprint: None,
+        last_capture_time: Instant::now(),
+    })
+});
+
+use once_cell::sync::Lazy;
+
+/// Compute a 64x64 grayscale thumbnail fingerprint from a base64-encoded PNG.
+fn compute_fingerprint(image_base64: &str) -> Result<Vec<u8>, String> {
+    let image_data =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)
+            .map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+    let img =
+        image::load_from_memory(&image_data).map_err(|e| format!("Failed to load image: {}", e))?;
+
+    let thumb = img
+        .resize_exact(THUMB_SIZE, THUMB_SIZE, image::imageops::FilterType::Nearest)
+        .to_luma8();
+
+    Ok(thumb.into_raw())
+}
+
+/// Calculate the percentage of pixels that differ between two fingerprints.
+/// Returns a value in 0.0..100.0.
+fn calc_change_rate(a: &[u8], b: &[u8]) -> f64 {
+    if a.len() != b.len() {
+        return 100.0;
+    }
+    // A pixel is "changed" if the grayscale difference exceeds a small noise threshold.
+    const NOISE_TOLERANCE: u8 = 10;
+    let changed = a
+        .iter()
+        .zip(b.iter())
+        .filter(|(pa, pb)| pa.abs_diff(**pb) > NOISE_TOLERANCE)
+        .count();
+    (changed as f64 / a.len() as f64) * 100.0
+}
+
+/// Determine whether the screen has changed enough to warrant a new capture.
+/// Returns `true` if we should proceed with the full capture+analysis pipeline.
+fn should_capture(fingerprint: &[u8], change_threshold: f64, max_silent_minutes: u64) -> bool {
+    let mut state = SCREEN_STATE.lock().unwrap();
+
+    let silent_exceeded =
+        state.last_capture_time.elapsed() >= Duration::from_secs(max_silent_minutes * 60);
+
+    let changed = match &state.last_fingerprint {
+        None => true, // First capture — always proceed
+        Some(prev) => {
+            let rate = calc_change_rate(prev, fingerprint);
+            tracing::debug!(
+                "Screen change rate: {:.2}% (threshold: {:.1}%)",
+                rate,
+                change_threshold
+            );
+            rate >= change_threshold
+        }
+    };
+
+    if changed || silent_exceeded {
+        if silent_exceeded && !changed {
+            tracing::info!(
+                "Screen unchanged but max silent time ({} min) exceeded, forcing capture",
+                max_silent_minutes
+            );
+        }
+        state.last_fingerprint = Some(fingerprint.to_vec());
+        state.last_capture_time = Instant::now();
+        true
+    } else {
+        tracing::debug!("Screen unchanged, skipping capture");
+        false
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreenAnalysis {
@@ -20,6 +114,9 @@ pub struct CaptureSettings {
     pub api_key: String,
     pub model_name: String,
     pub screenshot_interval: u64,
+    pub analysis_prompt: Option<String>,
+    pub change_threshold: f64,
+    pub max_silent_minutes: u64,
 }
 
 impl Default for CaptureSettings {
@@ -29,6 +126,9 @@ impl Default for CaptureSettings {
             api_key: String::new(),
             model_name: "gpt-4o".to_string(),
             screenshot_interval: 5,
+            analysis_prompt: None,
+            change_threshold: DEFAULT_CHANGE_THRESHOLD,
+            max_silent_minutes: DEFAULT_MAX_SILENT_MINUTES,
         }
     }
 }
@@ -182,19 +282,25 @@ fn save_screenshot(image_base64: &str) -> Option<String> {
     Some(screenshot_path.to_string_lossy().to_string())
 }
 
-async fn analyze_screen(
-    settings: &CaptureSettings,
-    image_base64: &str,
-) -> Result<ScreenAnalysis, String> {
-    let client = reqwest::Client::new();
-
-    let prompt = r#"Analyze this screenshot and return a JSON object with:
+const DEFAULT_ANALYSIS_PROMPT: &str = r#"Analyze this screenshot and return a JSON object with:
 - current_focus: What is the user currently working on? (1-2 sentences in Chinese)
 - active_software: What software is being used? (in Chinese)
 - context_keywords: What are the key topics/technologies? (array of strings, in Chinese)
 
 Return ONLY valid JSON, no other text. Example format:
 {"current_focus": "编写 Rust 后端代码", "active_software": "VS Code", "context_keywords": ["Rust", "Tauri", "异步编程"]}"#;
+
+async fn analyze_screen(
+    settings: &CaptureSettings,
+    image_base64: &str,
+) -> Result<ScreenAnalysis, String> {
+    let client = reqwest::Client::new();
+
+    let prompt = settings
+        .analysis_prompt
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_ANALYSIS_PROMPT);
 
     let request_body = serde_json::json!({
         "model": settings.model_name,
@@ -223,6 +329,7 @@ Return ONLY valid JSON, no other text. Example format:
             "api_key_masked": masked_key,
             "has_image": true,
             "image_base64_len": image_base64.len(),
+            "prompt": prompt,
         })
     );
 
@@ -276,6 +383,10 @@ Return ONLY valid JSON, no other text. Example format:
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
+    let content = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("No content in response")?;
+
     tracing::info!(
         "{}",
         serde_json::json!({
@@ -286,12 +397,9 @@ Return ONLY valid JSON, no other text. Example format:
             "usage": response_json.get("usage"),
             "model": response_json.get("model"),
             "response_id": response_json.get("id"),
+            "content": content,
         })
     );
-
-    let content = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
 
     // Some models wrap JSON in markdown code fences (```json ... ```) despite
     // being instructed otherwise. Strip those before parsing.
@@ -311,22 +419,40 @@ Return ONLY valid JSON, no other text. Example format:
     Ok(analysis)
 }
 
-async fn capture_and_store() -> Result<(), String> {
-    let settings = match memory_storage::get_settings_sync() {
+fn load_capture_settings() -> CaptureSettings {
+    match memory_storage::get_settings_sync() {
         Ok(s) => CaptureSettings {
             api_base_url: s.api_base_url.unwrap_or_default(),
             api_key: s.api_key.unwrap_or_default(),
             model_name: s.model_name.unwrap_or_else(|| "gpt-4o".to_string()),
             screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
+            analysis_prompt: s.analysis_prompt,
+            change_threshold: s.change_threshold.unwrap_or(3) as f64,
+            max_silent_minutes: s.max_silent_minutes.unwrap_or(30) as u64,
         },
         Err(_) => CaptureSettings::default(),
-    };
+    }
+}
+
+async fn capture_and_store() -> Result<(), String> {
+    let settings = load_capture_settings();
 
     if settings.api_key.is_empty() {
         return Err("API 密钥未配置，请在设置中配置".to_string());
     }
 
     let image_base64 = capture_screen()?;
+
+    // Check if screen has changed enough to warrant a full capture
+    let fingerprint = compute_fingerprint(&image_base64)?;
+    if !should_capture(
+        &fingerprint,
+        settings.change_threshold,
+        settings.max_silent_minutes,
+    ) {
+        return Ok(());
+    }
+
     let screenshot_path = save_screenshot(&image_base64);
 
     let analysis = analyze_screen(&settings, &image_base64).await?;
@@ -351,15 +477,7 @@ pub async fn start_auto_capture() -> Result<(), String> {
         return Ok(());
     }
 
-    let settings = match memory_storage::get_settings_sync() {
-        Ok(s) => CaptureSettings {
-            api_base_url: s.api_base_url.unwrap_or_default(),
-            api_key: s.api_key.unwrap_or_default(),
-            model_name: s.model_name.unwrap_or_else(|| "gpt-4o".to_string()),
-            screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
-        },
-        Err(_) => CaptureSettings::default(),
-    };
+    let settings = load_capture_settings();
 
     if settings.api_key.is_empty() {
         return Err("API 密钥未配置，请在设置中配置".to_string());
@@ -490,5 +608,83 @@ mod tests {
     fn strip_code_fence_leaves_bare_json_unchanged() {
         let bare = "{\"a\":1}";
         assert_eq!(strip_code_fence(bare), bare);
+    }
+
+    // ── Screen change detection tests ──
+
+    fn make_test_fingerprint(value: u8) -> Vec<u8> {
+        vec![value; (THUMB_SIZE * THUMB_SIZE) as usize]
+    }
+
+    #[test]
+    fn calc_change_rate_identical_images_returns_zero() {
+        let a = make_test_fingerprint(128);
+        let b = make_test_fingerprint(128);
+        assert_eq!(calc_change_rate(&a, &b), 0.0);
+    }
+
+    #[test]
+    fn calc_change_rate_completely_different_returns_100() {
+        let a = make_test_fingerprint(0);
+        let b = make_test_fingerprint(255);
+        assert_eq!(calc_change_rate(&a, &b), 100.0);
+    }
+
+    #[test]
+    fn calc_change_rate_within_noise_tolerance_returns_zero() {
+        let a = make_test_fingerprint(100);
+        // Difference of 10 is exactly at the noise tolerance boundary — not counted
+        let b = make_test_fingerprint(110);
+        assert_eq!(calc_change_rate(&a, &b), 0.0);
+    }
+
+    #[test]
+    fn calc_change_rate_just_above_noise_tolerance() {
+        let a = make_test_fingerprint(100);
+        // Difference of 11 exceeds noise tolerance — all pixels counted
+        let b = make_test_fingerprint(111);
+        assert_eq!(calc_change_rate(&a, &b), 100.0);
+    }
+
+    #[test]
+    fn calc_change_rate_partial_change() {
+        let total = (THUMB_SIZE * THUMB_SIZE) as usize;
+        let mut a = vec![100u8; total];
+        let mut b = vec![100u8; total];
+        // Change 25% of pixels beyond noise tolerance
+        let quarter = total / 4;
+        for i in 0..quarter {
+            a[i] = 0;
+            b[i] = 200;
+        }
+        let rate = calc_change_rate(&a, &b);
+        assert!((rate - 25.0).abs() < 0.1, "Expected ~25%, got {:.2}%", rate);
+    }
+
+    #[test]
+    fn calc_change_rate_mismatched_lengths_returns_100() {
+        let a = vec![0u8; 10];
+        let b = vec![0u8; 20];
+        assert_eq!(calc_change_rate(&a, &b), 100.0);
+    }
+
+    #[test]
+    fn compute_fingerprint_produces_correct_size() {
+        let b64 = make_minimal_png_base64();
+        let fp = compute_fingerprint(&b64).unwrap();
+        assert_eq!(
+            fp.len(),
+            (THUMB_SIZE * THUMB_SIZE) as usize,
+            "Fingerprint should be {}x{} = {} bytes",
+            THUMB_SIZE,
+            THUMB_SIZE,
+            THUMB_SIZE * THUMB_SIZE
+        );
+    }
+
+    #[test]
+    fn compute_fingerprint_rejects_invalid_base64() {
+        let result = compute_fingerprint("not-valid!!!");
+        assert!(result.is_err());
     }
 }
