@@ -85,18 +85,59 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         "max_tokens": 2000
     });
 
+    let masked_key = crate::mask_api_key(&api_key);
+    let endpoint = format!("{}/chat/completions", api_base_url);
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_request",
+            "caller": "generate_daily_summary",
+            "endpoint": endpoint,
+            "model": model_name,
+            "max_tokens": 2000,
+            "api_key_masked": masked_key,
+            "has_image": false,
+            "prompt_len": prompt.len(),
+            "records_count": records.len(),
+        })
+    );
+
+    let start = std::time::Instant::now();
     let response = client
-        .post(format!("{}/chat/completions", api_base_url))
+        .post(&endpoint)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format!("API request failed: {}", e))?;
+        .map_err(|e| {
+            let elapsed_ms = start.elapsed().as_millis();
+            tracing::error!(
+                "{}",
+                serde_json::json!({
+                    "event": "llm_error",
+                    "caller": "generate_daily_summary",
+                    "error": format!("API request failed: {}", e),
+                    "elapsed_ms": elapsed_ms,
+                })
+            );
+            format!("API request failed: {}", e)
+        })?;
+    let elapsed_ms = start.elapsed().as_millis();
 
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_daily_summary",
+                "status": status.as_u16(),
+                "response_body": body,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
         return Err(format!("API error ({}): {}", status, body));
     }
 
@@ -104,6 +145,21 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .json()
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_response",
+            "caller": "generate_daily_summary",
+            "status": 200,
+            "elapsed_ms": elapsed_ms,
+            "usage": response_json.get("usage"),
+            "model": response_json.get("model"),
+            "response_id": response_json.get("id"),
+            "content_len": response_json["choices"][0]["message"]["content"]
+                .as_str().map(|s| s.len()),
+        })
+    );
 
     let summary = response_json["choices"][0]["message"]["content"]
         .as_str()

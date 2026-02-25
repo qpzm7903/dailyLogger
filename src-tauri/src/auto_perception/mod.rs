@@ -210,18 +210,58 @@ Return ONLY valid JSON, no other text. Example format:
         "max_tokens": 500
     });
 
+    let masked_key = crate::mask_api_key(&settings.api_key);
+    let endpoint = format!("{}/chat/completions", settings.api_base_url);
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_request",
+            "caller": "analyze_screen",
+            "endpoint": endpoint,
+            "model": settings.model_name,
+            "max_tokens": 500,
+            "api_key_masked": masked_key,
+            "has_image": true,
+            "image_base64_len": image_base64.len(),
+        })
+    );
+
+    let start = std::time::Instant::now();
     let response = client
-        .post(format!("{}/chat/completions", settings.api_base_url))
+        .post(&endpoint)
         .header("Authorization", format!("Bearer {}", settings.api_key))
         .header("Content-Type", "application/json")
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format!("API request failed: {}", e))?;
+        .map_err(|e| {
+            let elapsed_ms = start.elapsed().as_millis();
+            tracing::error!(
+                "{}",
+                serde_json::json!({
+                    "event": "llm_error",
+                    "caller": "analyze_screen",
+                    "error": format!("API request failed: {}", e),
+                    "elapsed_ms": elapsed_ms,
+                })
+            );
+            format!("API request failed: {}", e)
+        })?;
+    let elapsed_ms = start.elapsed().as_millis();
 
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "analyze_screen",
+                "status": status.as_u16(),
+                "response_body": body,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
         // Give a clear, actionable message for vision-unsupported endpoints.
         if body.contains("image_url") && body.contains("unknown variant") {
             return Err("当前模型不支持图像分析（Vision）。\
@@ -235,6 +275,19 @@ Return ONLY valid JSON, no other text. Example format:
         .json()
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_response",
+            "caller": "analyze_screen",
+            "status": 200,
+            "elapsed_ms": elapsed_ms,
+            "usage": response_json.get("usage"),
+            "model": response_json.get("model"),
+            "response_id": response_json.get("id"),
+        })
+    );
 
     let content = response_json["choices"][0]["message"]["content"]
         .as_str()
