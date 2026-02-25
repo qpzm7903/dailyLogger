@@ -104,11 +104,39 @@
             </div>
             <div>
               <label class="text-xs text-gray-500 block mb-1">每日总结时间</label>
-              <input 
+              <input
                 v-model="settings.summary_time"
-                type="time" 
+                type="time"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">智能去重</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">变化阈值 (%)</label>
+              <input
+                v-model.number="settings.change_threshold"
+                type="number"
+                min="1"
+                max="20"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">屏幕变化低于此比例时跳过截图，避免重复记录</span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">最大静默时间 (分钟)</label>
+              <input
+                v-model.number="settings.max_silent_minutes"
+                type="number"
+                min="5"
+                max="120"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-600 mt-1 block">即使屏幕无变化，超过此时间也会强制记录一次</span>
             </div>
           </div>
         </div>
@@ -178,7 +206,9 @@ const settings = ref({
   obsidian_path: '',
   summary_model_name: '',
   analysis_prompt: '',
-  summary_prompt: ''
+  summary_prompt: '',
+  change_threshold: 3,
+  max_silent_minutes: 30
 })
 
 const loadSettings = async () => {

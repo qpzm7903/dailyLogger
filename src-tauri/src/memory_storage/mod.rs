@@ -69,6 +69,14 @@ pub fn init_database() -> Result<(), String> {
     );
     let _ = conn.execute("ALTER TABLE settings ADD COLUMN analysis_prompt TEXT", []);
     let _ = conn.execute("ALTER TABLE settings ADD COLUMN summary_prompt TEXT", []);
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN change_threshold INTEGER DEFAULT 3",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN max_silent_minutes INTEGER DEFAULT 30",
+        [],
+    );
 
     let mut db = DB_CONNECTION
         .lock()
@@ -101,6 +109,8 @@ pub struct Settings {
     pub summary_model_name: Option<String>,
     pub analysis_prompt: Option<String>,
     pub summary_prompt: Option<String>,
+    pub change_threshold: Option<i32>,
+    pub max_silent_minutes: Option<i32>,
 }
 
 pub fn add_record(
@@ -176,7 +186,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
         .prepare(
             "SELECT api_base_url, api_key, model_name, screenshot_interval,
                 summary_time, obsidian_path, auto_capture_enabled, last_summary_path,
-                summary_model_name, analysis_prompt, summary_prompt
+                summary_model_name, analysis_prompt, summary_prompt,
+                change_threshold, max_silent_minutes
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -195,6 +206,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 summary_model_name: row.get(8)?,
                 analysis_prompt: row.get(9)?,
                 summary_prompt: row.get(10)?,
+                change_threshold: row.get(11)?,
+                max_silent_minutes: row.get(12)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -220,7 +233,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             last_summary_path = ?8,
             summary_model_name = ?9,
             analysis_prompt = ?10,
-            summary_prompt = ?11
+            summary_prompt = ?11,
+            change_threshold = ?12,
+            max_silent_minutes = ?13
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -233,7 +248,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.last_summary_path,
             settings.summary_model_name,
             settings.analysis_prompt,
-            settings.summary_prompt
+            settings.summary_prompt,
+            settings.change_threshold,
+            settings.max_silent_minutes
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
