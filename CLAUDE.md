@@ -143,3 +143,23 @@ Focus testing effort on code with **high bug probability** — not on what's eas
 - **Screenshot path**: Stored relative to the app data dir; use `app.path().app_data_dir()` to resolve
 - **OpenAI calls**: Screenshots are Base64-encoded before being sent to the Vision API
 - **Timezone**: Never use `.and_utc()` on a `NaiveDateTime` derived from `Local::now()`. Use `.and_local_timezone(chrono::Local).unwrap().with_timezone(&chrono::Utc)` to correctly convert local time to UTC. The `records` table stores timestamps in UTC RFC3339 format.
+
+## BMAD 开发工作流
+
+本项目使用 BMAD 方法进行开发管理。所有功能开发任务须遵循以下工作流：
+
+### 快速开发工作流（标准任务）
+使用 `/bmad-bmm-quick-dev` 技能：
+1. **澄清与路由**：理解任务意图，确定范围（是否为 Quick Spec 级别？）
+2. **精细规划**：制定具体、可测试的实施计划，写入 AGENT_PLAN.md
+3. **自主实施**：按计划执行，遵循 TDD 规范
+4. **对抗评审**：严格审查自己的实现，寻找边界条件和潜在问题
+5. **结果呈现**：更新 plan.md 状态，输出 review_result.json
+
+### 任务就绪标准（开始实施前必须满足）
+- 每个任务必须有对应的 spec 文件（`specs/<task-id>.md`）
+- Spec 文件需包含：功能需求、接口定义、验收条件（Given/When/Then 格式）
+- 无占位符、无 TBD、具体可操作
+
+### BMAD Spec 文件模板
+参考 `specs/add.md` 格式，在 specs/ 目录下为每个任务创建规格文件。
