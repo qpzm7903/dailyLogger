@@ -21,6 +21,11 @@ pub fn mask_api_key(key: &str) -> String {
     format!("****{}", &key[key.len() - 4..])
 }
 
+/// Add two i32 values and return their sum.
+pub fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
 pub fn init_app() -> tauri::Result<()> {
     memory_storage::init_database().map_err(|e| tauri::Error::Anyhow(anyhow::anyhow!("{}", e)))?;
     tracing::info!("DailyLogger initialized successfully");
@@ -50,5 +55,20 @@ mod tests {
     #[test]
     fn mask_api_key_exactly_five_chars() {
         assert_eq!(mask_api_key("12345"), "****2345");
+    }
+
+    #[test]
+    fn add_positive_numbers() {
+        assert_eq!(add(2, 3), 5);
+    }
+
+    #[test]
+    fn add_negative_and_positive() {
+        assert_eq!(add(-1, 1), 0);
+    }
+
+    #[test]
+    fn add_zeros() {
+        assert_eq!(add(0, 0), 0);
     }
 }
