@@ -1,0 +1,372 @@
+# Sprint Status
+# DailyLogger Implementation Tracking
+
+currentSprint: 1
+sprintStartDate: "2026-03-13"
+sprintEndDate: "2026-03-26"
+
+# Stories with implementation details
+stories:
+  # Sprint 1 Stories
+  - id: CORE-001
+    title: 设置界面优化
+    epic: 核心功能完善
+    priority: High
+    points: 3
+    status: backlog
+    specPath: "specs/CORE-001.md"
+    description: 优化设置界面的交互体验，改进表单布局和验证提示
+    acceptanceCriteria:
+      - 所有设置字段有清晰的 label 和 placeholder
+      - 保存时有成功/失败提示
+      - API Key 输入支持显示/隐藏切换
+
+  - id: CORE-002
+    title: 截图画廊增强
+    epic: 核心功能完善
+    priority: High
+    points: 5
+    status: backlog
+    specPath: "specs/CORE-002.md"
+    description: 改进截图画廊的浏览体验，支持分页和快速预览
+    acceptanceCriteria:
+      - 支持网格/列表视图切换
+      - 支持按时间范围筛选
+      - 点击缩略图可快速预览大图
+
+  - id: CORE-003
+    title: 日报生成模板优化
+    epic: 核心功能完善
+    priority: High
+    points: 3
+    status: backlog
+    specPath: "specs/CORE-003.md"
+    description: 优化 AI 生成的日报模板，增加可定制性
+    acceptanceCriteria:
+      - 支持自定义日报标题格式
+      - 支持选择包含/排除手动记录
+      - 生成的 Markdown 格式符合 Obsidian 规范
+
+  - id: CORE-004
+    title: 错误处理与用户提示
+    epic: 核心功能完善
+    priority: Medium
+    points: 3
+    status: backlog
+    specPath: "specs/CORE-004.md"
+    description: 完善错误处理机制，提供友好的用户提示
+    acceptanceCriteria:
+      - API 调用失败有明确错误信息
+      - 网络错误支持重试
+      - 错误日志可导出
+
+  - id: CORE-005
+    title: 系统托盘菜单完善
+    epic: 核心功能完善
+    priority: Medium
+    points: 2
+    status: backlog
+    specPath: "specs/CORE-005.md"
+    description: 完善系统托盘菜单功能
+    acceptanceCriteria:
+      - 托盘菜单显示启动/停止自动捕获状态
+      - 支持快速记录 (无需打开主窗口)
+      - 支持直接打开 Obsidian 文件夹
+
+  # Sprint 2 Stories
+  - id: SMART-001
+    title: 应用窗口识别
+    epic: 智能捕获优化
+    priority: High
+    points: 5
+    status: backlog
+    specPath: "specs/SMART-001.md"
+    description: 识别当前活动应用窗口，记录窗口标题和进程名
+    acceptanceCriteria:
+      - 记录中包含当前活动窗口信息
+      - 支持窗口白名单/黑名单
+      - 可配置仅捕获特定应用
+
+  - id: SMART-002
+    title: 静默时段智能调整
+    epic: 智能捕获优化
+    priority: Medium
+    points: 3
+    status: backlog
+    specPath: "specs/SMART-002.md"
+    description: 根据用户习惯自动调整静默阈值
+    acceptanceCriteria:
+      - 学习用户工作模式
+      - 自动调整 max_silent_minutes
+      - 提供手动覆盖选项
+
+  - id: AI-002
+    title: 自定义分析 Prompt
+    epic: AI 能力提升
+    priority: High
+    points: 2
+    status: backlog
+    specPath: "specs/AI-002.md"
+    description: 允许用户自定义截图分析 Prompt
+    acceptanceCriteria:
+      - 设置界面支持编辑 analysis_prompt
+      - 提供默认 Prompt 模板
+      - 支持重置为默认值
+
+  # Sprint 3 Stories
+  - id: AI-001
+    title: 多模型支持配置
+    epic: AI 能力提升
+    priority: High
+    points: 3
+    status: backlog
+    specPath: "specs/AI-001.md"
+    description: 支持为分析和总结配置不同模型
+    acceptanceCriteria:
+      - 分析模型和总结模型可分别配置
+      - 支持测试连接验证
+      - 显示模型支持的上下文窗口
+
+  - id: AI-003
+    title: 自定义日报模板
+    epic: AI 能力提升
+    priority: Medium
+    points: 3
+    status: backlog
+    specPath: "specs/AI-003.md"
+    description: 允许用户自定义日报生成模板
+    acceptanceCriteria:
+      - 支持编辑 summary_prompt
+      - 提供多种模板选择
+      - 支持导入/导出模板
+
+  - id: DATA-001
+    title: 历史记录浏览
+    epic: 数据管理与检索
+    priority: High
+    points: 3
+    status: backlog
+    specPath: "specs/DATA-001.md"
+    description: 查看和搜索历史记录
+    acceptanceCriteria:
+      - 支持按日期范围浏览
+      - 支持按来源类型筛选
+      - 支持删除单条记录
+
+  - id: DATA-002
+    title: 全文搜索功能
+    epic: 数据管理与检索
+    priority: High
+    points: 5
+    status: backlog
+    specPath: "specs/DATA-002.md"
+    description: 全文搜索历史记录和截图分析内容
+    acceptanceCriteria:
+      - 支持关键词搜索
+      - 搜索结果高亮显示
+      - 支持按相关性排序
+
+  # Future Sprints (Backlog)
+  - id: SMART-003
+    title: 工作时间自动识别
+    epic: 智能捕获优化
+    priority: Medium
+    points: 3
+    status: backlog
+    specPath: "specs/SMART-003.md"
+    description: 自动识别用户工作时间，非工作时间暂停捕获
+    acceptanceCriteria:
+      - 学习用户工作时段
+      - 自动启停捕获
+      - 支持手动设置工作时间
+
+  - id: SMART-004
+    title: 多显示器支持优化
+    epic: 智能捕获优化
+    priority: Low
+    points: 2
+    status: backlog
+    specPath: "specs/SMART-004.md"
+    description: 优化多显示器环境下的截图体验
+    acceptanceCriteria:
+      - 支持选择捕获特定显示器
+      - 支持拼接多显示器截图
+      - 记录显示器配置信息
+
+  - id: AI-004
+    title: 工作分类标签生成
+    epic: AI 能力提升
+    priority: Medium
+    points: 5
+    status: backlog
+    specPath: "specs/AI-004.md"
+    description: AI 自动生成工作分类标签
+    acceptanceCriteria:
+      - 每条记录自动分类
+      - 支持自定义标签体系
+      - 可按标签筛选记录
+
+  - id: AI-005
+    title: 本地模型支持 (Ollama)
+    epic: AI 能力提升
+    priority: Low
+    points: 8
+    status: backlog
+    specPath: "specs/AI-005.md"
+    description: 支持本地部署的 Ollama 模型
+    acceptanceCriteria:
+      - 支持配置 Ollama API 端点
+      - 支持本地模型列表选择
+      - 离线模式可用
+
+  - id: DATA-003
+    title: 标签系统
+    epic: 数据管理与检索
+    priority: Medium
+    points: 5
+    status: backlog
+    specPath: "specs/DATA-003.md"
+    description: 手动给记录打标签便于检索
+    acceptanceCriteria:
+      - 支持添加/编辑标签
+      - 支持标签云浏览
+      - 支持多标签组合筛选
+
+  - id: DATA-004
+    title: 数据导出 (JSON/MD)
+    epic: 数据管理与检索
+    priority: Medium
+    points: 3
+    status: backlog
+    specPath: "specs/DATA-004.md"
+    description: 导出数据用于备份或分析
+    acceptanceCriteria:
+      - 支持导出为 JSON
+      - 支持导出为 Markdown
+      - 可选择日期范围导出
+
+  - id: DATA-005
+    title: 数据备份与恢复
+    epic: 数据管理与检索
+    priority: Low
+    points: 3
+    status: backlog
+    specPath: "specs/DATA-005.md"
+    description: 一键备份和恢复数据
+    acceptanceCriteria:
+      - 支持备份到指定位置
+      - 支持从备份恢复
+      - 恢复前自动备份当前数据
+
+  - id: REPORT-001
+    title: 周报生成
+    epic: 周报月报功能
+    priority: High
+    points: 5
+    status: backlog
+    specPath: "specs/REPORT-001.md"
+    description: 生成周工作总结报告
+    acceptanceCriteria:
+      - 自动汇总本周记录
+      - 生成结构化周报
+      - 支持自定义周报模板
+
+  - id: REPORT-002
+    title: 月报生成
+    epic: 周报月报功能
+    priority: Medium
+    points: 5
+    status: backlog
+    specPath: "specs/REPORT-002.md"
+    description: 生成月度工作总结报告
+    acceptanceCriteria:
+      - 自动汇总本月记录
+      - 生成结构化月报
+      - 支持月度趋势分析
+
+  - id: REPORT-003
+    title: 自定义报告周期
+    epic: 周报月报功能
+    priority: Low
+    points: 3
+    status: backlog
+    specPath: "specs/REPORT-003.md"
+    description: 支持自定义报告周期
+    acceptanceCriteria:
+      - 支持双周报
+      - 支持季度报
+      - 支持自定义起止日期
+
+  - id: REPORT-004
+    title: 报告对比分析
+    epic: 周报月报功能
+    priority: Low
+    points: 5
+    status: backlog
+    specPath: "specs/REPORT-004.md"
+    description: 对比不同周期的工作报告
+    acceptanceCriteria:
+      - 支持选择两个周期对比
+      - 显示工作量变化趋势
+      - 显示工作焦点变化
+
+  - id: INT-001
+    title: Notion 导出支持
+    epic: 集成与扩展
+    priority: Medium
+    points: 5
+    status: backlog
+    specPath: "specs/INT-001.md"
+    description: 支持导出到 Notion
+    acceptanceCriteria:
+      - 支持配置 Notion API
+      - 支持选择目标数据库
+      - 自动创建页面
+
+  - id: INT-002
+    title: Logseq 导出支持
+    epic: 集成与扩展
+    priority: Low
+    points: 3
+    status: backlog
+    specPath: "specs/INT-002.md"
+    description: 支持导出到 Logseq
+    acceptanceCriteria:
+      - 支持 Logseq 页面格式
+      - 自动创建每日页面
+      - 支持块引用
+
+  - id: INT-003
+    title: GitHub 工时统计
+    epic: 集成与扩展
+    priority: Low
+    points: 8
+    status: backlog
+    specPath: "specs/INT-003.md"
+    description: 集成 GitHub 数据统计工时
+    acceptanceCriteria:
+      - 支持配置 GitHub Token
+      - 自动获取 commit/PR/Issue 数据
+      - 在日报中显示 GitHub 活动
+
+  - id: INT-004
+    title: Slack/钉钉通知
+    epic: 集成与扩展
+    priority: Low
+    points: 5
+    status: backlog
+    specPath: "specs/INT-004.md"
+    description: 发送日报到团队协作工具
+    acceptanceCriteria:
+      - 支持 Slack Webhook
+      - 支持钉钉机器人
+      - 可配置发送时间
+
+# Velocity tracking
+velocityHistory: []
+
+# Metrics
+metrics:
+  totalPoints: 87
+  sprint1Planned: 16
+  backlogPoints: 71
