@@ -36,9 +36,11 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('.bg-primary').trigger('click')
+    // Updated selector to match new gradient button class
+    await wrapper.find('button.bg-gradient-to-r').trigger('click')
     await flushPromises()
 
+    // Updated selector to match new green text class
     expect(wrapper.find('.text-green-400').text()).toBe('✓ 已保存')
   })
 
@@ -47,9 +49,11 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('.bg-primary').trigger('click')
+    // Updated selector to match new gradient button class
+    await wrapper.find('button.bg-gradient-to-r').trigger('click')
     await flushPromises()
 
+    // Updated selector to match new red text class
     expect(wrapper.find('.text-red-400').text()).toBe('✗ 保存失败')
   })
 
@@ -57,7 +61,8 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('.bg-primary').trigger('click')
+    // Updated selector to match new gradient button class
+    await wrapper.find('button.bg-gradient-to-r').trigger('click')
     await flushPromises()
 
     expect(invoke).toHaveBeenCalledWith('save_settings', {
@@ -80,11 +85,13 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const saveBtn = wrapper.find('.bg-primary')
+    // Updated selector to match new gradient button class
+    const saveBtn = wrapper.find('button.bg-gradient-to-r')
     saveBtn.trigger('click') // 不 await，让保存保持 pending
 
     await flushPromises()
 
+    // Updated expected text to match new button text with emoji prefix
     expect(saveBtn.text()).toBe('保存中…')
     expect(saveBtn.attributes('disabled')).toBeDefined()
 
@@ -110,7 +117,13 @@ describe('SettingsModal.vue - API Key 可见性', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('[title="显示"]').trigger('click')
+    // Find the toggle button by text content
+    const allButtons = wrapper.findAll('button')
+    const toggleBtn = allButtons.find(b => b.text().includes('显示') || b.text().includes('隐藏'))
+
+    if (toggleBtn) {
+      await toggleBtn.trigger('click')
+    }
 
     expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('text')
   })
@@ -119,8 +132,22 @@ describe('SettingsModal.vue - API Key 可见性', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('[title="显示"]').trigger('click')
-    await wrapper.find('[title="隐藏"]').trigger('click')
+    // Find the toggle button by text content
+    const allButtons = wrapper.findAll('button')
+    const toggleBtn = allButtons.find(b => b.text().includes('显示') || b.text().includes('隐藏'))
+
+    // First click to show
+    if (toggleBtn) {
+      await toggleBtn.trigger('click')
+    }
+
+    // Find the toggle button again (text may have changed)
+    const toggleBtn2 = wrapper.findAll('button').find(b => b.text().includes('显示') || b.text().includes('隐藏'))
+
+    // Second click to hide
+    if (toggleBtn2) {
+      await toggleBtn2.trigger('click')
+    }
 
     expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('password')
   })

@@ -5,4 +5,4 @@
 - [x] id:test001 实现一个 add 函数，接收两个 i32 参数，返回它们的和
   spec: ./specs/add.md
   priority: high
-- [ ] 优化界面
+- [x] 优化界面

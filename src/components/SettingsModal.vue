@@ -1,185 +1,229 @@
 <template>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-y-auto border border-gray-700">
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">设置</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" @click.self="$emit('close')">
+    <div class="bg-dark rounded-2xl w-[650px] max-h-[85vh] overflow-hidden border border-gray-700 shadow-2xl shadow-black/50 flex flex-col">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between bg-darker/50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 bg-gradient-to-br from-primary/20 to-blue-500/20 rounded-lg flex items-center justify-center">
+            <span class="text-lg">⚡</span>
+          </div>
+          <h2 class="text-lg font-semibold">设置</h2>
+        </div>
+        <button @click="$emit('close')" class="text-gray-400 hover:text-white hover:bg-gray-700/50 p-1.5 rounded-lg transition-all">✕</button>
       </div>
-      
-      <div class="p-6 space-y-6">
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">API 配置</h3>
-          <div class="space-y-3">
+
+      <!-- Content -->
+      <div class="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+        <!-- API 配置 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-1 h-4 bg-primary rounded-full"></div>
+            <h3 class="text-sm font-medium text-gray-200">API 配置</h3>
+          </div>
+          <div class="bg-darker/50 rounded-xl p-4 border border-gray-700/50 space-y-3">
             <div>
-              <label class="text-xs text-gray-500 block mb-1">Base URL</label>
+              <label class="text-xs text-gray-500 block mb-1.5 flex items-center gap-1">
+                <span>Base URL</span>
+              </label>
               <input
                 v-model="settings.api_base_url"
                 type="text"
                 placeholder="https://api.openai.com/v1"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
             </div>
             <div>
-              <label class="text-xs text-gray-500 block mb-1">API Key</label>
+              <label class="text-xs text-gray-500 block mb-1.5">API Key</label>
               <div class="relative">
                 <input
                   v-model="settings.api_key"
                   :type="showApiKey ? 'text' : 'password'"
                   placeholder="sk-..."
-                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                  class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 pr-20 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                 />
                 <button
                   @click="showApiKey = !showApiKey"
                   type="button"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors text-xs px-1"
-                  :title="showApiKey ? '隐藏' : '显示'"
-                >{{ showApiKey ? '隐藏' : '显示' }}</button>
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors text-xs px-2 py-1 rounded hover:bg-gray-700"
+                >{{ showApiKey ? '🙈 隐藏' : '👁️ 显示' }}</button>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">截图分析 (Vision)</h3>
-          <div class="space-y-3">
+        <!-- 截图分析 (Vision) -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-1 h-4 bg-purple-500 rounded-full"></div>
+            <h3 class="text-sm font-medium text-gray-200">截图分析 (Vision)</h3>
+          </div>
+          <div class="bg-darker/50 rounded-xl p-4 border border-gray-700/50 space-y-3">
             <div>
-              <label class="text-xs text-gray-500 block mb-1">分析模型</label>
+              <label class="text-xs text-gray-500 block mb-1.5">分析模型</label>
               <input
                 v-model="settings.model_name"
                 type="text"
                 placeholder="gpt-4o"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
-              <span class="text-xs text-gray-600 mt-1 block">需要支持 Vision 能力的模型</span>
+              <span class="text-xs text-gray-600 mt-1.5 block flex items-center gap-1">
+                <span>💡</span> 需要支持 Vision 能力的模型
+              </span>
             </div>
             <div>
-              <label class="text-xs text-gray-500 block mb-1">分析 Prompt</label>
+              <label class="text-xs text-gray-500 block mb-1.5">分析 Prompt</label>
               <textarea
                 v-model="settings.analysis_prompt"
-                rows="4"
+                rows="3"
                 placeholder="留空使用默认 Prompt"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none resize-y"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all resize-y"
               />
             </div>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">日报生成</h3>
-          <div class="space-y-3">
+        <!-- 日报生成 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-1 h-4 bg-green-500 rounded-full"></div>
+            <h3 class="text-sm font-medium text-gray-200">日报生成</h3>
+          </div>
+          <div class="bg-darker/50 rounded-xl p-4 border border-gray-700/50 space-y-3">
             <div>
-              <label class="text-xs text-gray-500 block mb-1">日报模型</label>
+              <label class="text-xs text-gray-500 block mb-1.5">日报模型</label>
               <input
                 v-model="settings.summary_model_name"
                 type="text"
                 placeholder="留空则使用分析模型"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
-              <span class="text-xs text-gray-600 mt-1 block">纯文本模型即可，不需要 Vision</span>
+              <span class="text-xs text-gray-600 mt-1.5 block flex items-center gap-1">
+                <span>💡</span> 纯文本模型即可，不需要 Vision
+              </span>
             </div>
             <div>
-              <label class="text-xs text-gray-500 block mb-1">日报 Prompt</label>
+              <label class="text-xs text-gray-500 block mb-1.5">日报 Prompt</label>
               <textarea
                 v-model="settings.summary_prompt"
-                rows="4"
+                rows="3"
                 placeholder="留空使用默认 Prompt。用 {records} 表示今日记录的插入位置"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none resize-y"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all resize-y"
               />
             </div>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">时间策略</h3>
-          <div class="space-y-3">
+        <!-- 时间策略 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-1 h-4 bg-amber-500 rounded-full"></div>
+            <h3 class="text-sm font-medium text-gray-200">时间策略</h3>
+          </div>
+          <div class="bg-darker/50 rounded-xl p-4 border border-gray-700/50 grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs text-gray-500 block mb-1">截图间隔 (分钟)</label>
-              <input 
+              <label class="text-xs text-gray-500 block mb-1.5">截图间隔 (分钟)</label>
+              <input
                 v-model.number="settings.screenshot_interval"
-                type="number" 
+                type="number"
                 min="1"
                 max="60"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
             </div>
             <div>
-              <label class="text-xs text-gray-500 block mb-1">每日总结时间</label>
+              <label class="text-xs text-gray-500 block mb-1.5">每日总结时间</label>
               <input
                 v-model="settings.summary_time"
                 type="time"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
             </div>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">智能去重</h3>
-          <div class="space-y-3">
+        <!-- 智能去重 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-1 h-4 bg-rose-500 rounded-full"></div>
+            <h3 class="text-sm font-medium text-gray-200">智能去重</h3>
+          </div>
+          <div class="bg-darker/50 rounded-xl p-4 border border-gray-700/50 grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs text-gray-500 block mb-1">变化阈值 (%)</label>
+              <label class="text-xs text-gray-500 block mb-1.5">变化阈值 (%)</label>
               <input
                 v-model.number="settings.change_threshold"
                 type="number"
                 min="1"
                 max="20"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
-              <span class="text-xs text-gray-600 mt-1 block">屏幕变化低于此比例时跳过截图，避免重复记录</span>
+              <span class="text-xs text-gray-600 mt-1.5 block">屏幕变化低于此比例时跳过</span>
             </div>
             <div>
-              <label class="text-xs text-gray-500 block mb-1">最大静默时间 (分钟)</label>
+              <label class="text-xs text-gray-500 block mb-1.5">最大静默时间 (分钟)</label>
               <input
                 v-model.number="settings.max_silent_minutes"
                 type="number"
                 min="5"
                 max="120"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
-              <span class="text-xs text-gray-600 mt-1 block">即使屏幕无变化，超过此时间也会强制记录一次</span>
+              <span class="text-xs text-gray-600 mt-1.5 block">超时强制记录一次</span>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">输出配置</h3>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Obsidian Vault 路径</label>
+        <!-- 输出配置 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-1 h-4 bg-pink-500 rounded-full"></div>
+            <h3 class="text-sm font-medium text-gray-200">输出配置</h3>
+          </div>
+          <div class="bg-darker/50 rounded-xl p-4 border border-gray-700/50">
+            <label class="text-xs text-gray-500 block mb-1.5">Obsidian Vault 路径</label>
             <input
               v-model="settings.obsidian_path"
               type="text"
               placeholder="/Users/你的名字/Documents/Obsidian Vault"
-              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              class="w-full bg-dark border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
             />
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">快捷键</h3>
-          <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
-            闪念胶囊: Alt + Space
+        <!-- 快捷键 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-1 h-4 bg-cyan-500 rounded-full"></div>
+            <h3 class="text-sm font-medium text-gray-200">快捷键</h3>
           </div>
-        </div>
+          <div class="bg-darker/50 rounded-xl p-4 border border-gray-700/50">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-400">闪念胶囊</span>
+              <kbd class="px-3 py-1.5 bg-dark rounded-lg border border-gray-600 text-xs font-mono text-gray-300 shadow-sm">Alt + Space</kbd>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between gap-3">
-        <span v-if="saveStatus" :class="saveStatus === 'ok' ? 'text-green-400' : 'text-red-400'" class="text-xs">
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between gap-3 bg-darker/50 shrink-0">
+        <span v-if="saveStatus" :class="saveStatus === 'ok' ? 'text-green-400' : 'text-red-400'" class="text-xs font-medium">
           {{ saveStatus === 'ok' ? '✓ 已保存' : '✗ 保存失败' }}
         </span>
         <span v-else class="text-xs text-transparent">placeholder</span>
-        <div class="flex gap-3">
+        <div class="flex gap-2.5">
           <button
             @click="$emit('close')"
-            class="px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors"
+            class="px-4 py-2 rounded-lg text-sm hover:bg-gray-700/50 transition-all border border-gray-600"
           >
             取消
           </button>
           <button
             @click="saveSettings"
             :disabled="isSaving"
-            class="px-4 py-2 bg-primary rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            class="px-5 py-2 bg-gradient-to-r from-primary/90 to-blue-600 hover:from-primary hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg"
           >
-            {{ isSaving ? '保存中…' : '保存' }}
+            {{ isSaving ? '保存中…' : '💾 保存' }}
           </button>
         </div>
       </div>
@@ -239,3 +283,20 @@ onMounted(() => {
   loadSettings()
 })
 </script>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.8);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
+}
+</style>
