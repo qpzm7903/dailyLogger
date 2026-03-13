@@ -3,7 +3,7 @@
     <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden border border-gray-700 flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">📷 截图画廊</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-gray-400 hover:text-white active:scale-95 transition-transform">✕</button>
       </div>
       
       <div class="flex-1 overflow-auto p-6">
@@ -11,11 +11,11 @@
           暂无截图记录
         </div>
         <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div 
-            v-for="screenshot in screenshots" 
+          <div
+            v-for="screenshot in screenshots"
             :key="screenshot.id"
             @click="openScreenshot(screenshot)"
-            class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary transition-colors"
+            class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary active:scale-95 transition-all"
           >
             <div class="aspect-video relative bg-gray-800">
               <img 

@@ -4,13 +4,13 @@
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">📝 日报预览</h2>
         <div class="flex items-center gap-2">
-          <button 
+          <button
             @click="openInObsidian"
-            class="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+            class="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 active:scale-95 rounded transition-all"
           >
             在 Finder 中显示
           </button>
-          <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+          <button @click="$emit('close')" class="text-gray-400 hover:text-white active:scale-95 transition-transform">✕</button>
         </div>
       </div>
       

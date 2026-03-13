@@ -103,7 +103,7 @@ describe('SettingsModal.vue - API Key 可见性', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('password')
+    expect(wrapper.find('input[placeholder="sk-proj-..."]').attributes('type')).toBe('password')
   })
 
   it('点击"显示"按钮后切换为 text 类型', async () => {
@@ -112,7 +112,7 @@ describe('SettingsModal.vue - API Key 可见性', () => {
 
     await wrapper.find('[title="显示"]').trigger('click')
 
-    expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('text')
+    expect(wrapper.find('input[placeholder="sk-proj-..."]').attributes('type')).toBe('text')
   })
 
   it('再次点击"隐藏"按钮恢复为 password 类型', async () => {
@@ -122,6 +122,6 @@ describe('SettingsModal.vue - API Key 可见性', () => {
     await wrapper.find('[title="显示"]').trigger('click')
     await wrapper.find('[title="隐藏"]').trigger('click')
 
-    expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('password')
+    expect(wrapper.find('input[placeholder="sk-proj-..."]').attributes('type')).toBe('password')
   })
 })

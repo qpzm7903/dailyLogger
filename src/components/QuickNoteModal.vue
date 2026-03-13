@@ -23,16 +23,16 @@
       <div class="px-6 py-4 border-t border-gray-700 flex justify-between items-center">
         <span class="text-xs text-gray-500">{{ currentTime }}</span>
         <div class="flex gap-3">
-          <button 
+          <button
             @click="$emit('close')"
-            class="px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors"
+            class="px-4 py-2 rounded-lg text-sm hover:bg-gray-700 active:scale-95 transition-all"
           >
             取消
           </button>
-          <button 
+          <button
             @click="save"
             :disabled="!content.trim()"
-            class="px-4 py-2 bg-primary rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="px-4 py-2 bg-primary rounded-lg text-sm font-medium hover:bg-blue-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-all"
           >
             保存
           </button>

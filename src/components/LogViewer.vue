@@ -16,15 +16,15 @@
               :key="level.key"
               @click="toggleLevel(level.key)"
               :class="[
-                'px-2 py-1 rounded transition-colors',
-                activelevels.has(level.key) ? level.activeClass : 'bg-gray-800 text-gray-500'
+                'px-2 py-1 rounded transition-all',
+                activelevels.has(level.key) ? level.activeClass : 'bg-gray-800 text-gray-500 hover:bg-gray-700 active:scale-95'
               ]"
             >{{ level.label }}</button>
           </div>
           <button
             @click="loadLogs"
             :disabled="loading"
-            class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+            class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 active:scale-95 rounded-lg transition-all disabled:opacity-50 disabled:active:scale-100"
           >
             {{ loading ? '加载中...' : '刷新' }}
           </button>
@@ -32,7 +32,7 @@
             <input type="checkbox" v-model="autoRefresh" class="accent-primary" />
             自动刷新
           </label>
-          <button @click="$emit('close')" class="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
+          <button @click="$emit('close')" class="p-1.5 hover:bg-gray-700 active:scale-95 rounded-lg transition-all text-gray-400 hover:text-white">
             ✕
           </button>
         </div>

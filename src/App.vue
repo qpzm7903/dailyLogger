@@ -9,10 +9,10 @@
       </div>
       <div class="flex items-center gap-4">
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
-        <button @click="showLogViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="showLogViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 active:scale-95 rounded-lg transition-all">
           🗒️ 日志
         </button>
-        <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="showSettings = true" class="p-2 hover:bg-gray-700 active:scale-95 rounded-lg transition-all">
           ⚙️
         </button>
       </div>
@@ -36,7 +36,7 @@
                 <button
                   @click="takeScreenshot"
                   :disabled="isCapturing"
-                  class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-colors"
+                  class="px-3 py-1.5 text-xs bg-gray-500 hover:bg-gray-400 active:scale-95 disabled:opacity-50 disabled:active:scale-100 rounded-lg transition-all"
                   title="截图查看，不做 AI 分析"
                 >
                   {{ isCapturing ? '截图中…' : '📸 截图' }}
@@ -44,15 +44,15 @@
                 <button
                   @click="triggerCapture"
                   :disabled="isCapturing"
-                  class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-colors"
+                  class="px-3 py-1.5 text-xs bg-gray-500 hover:bg-gray-400 active:scale-95 disabled:opacity-50 disabled:active:scale-100 rounded-lg transition-all"
                   title="截图并进行 AI 分析，保存到记录"
                 >
                   🤖 分析
                 </button>
                 <button
                   @click="toggleAutoCapture"
-                  :class="autoCaptureEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
-                  class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  :class="autoCaptureEnabled ? 'bg-red-500 hover:bg-red-600 active:scale-95' : 'bg-green-500 hover:bg-green-600 active:scale-95'"
+                  class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
                 >
                   {{ autoCaptureEnabled ? '停止' : '启动' }}
                 </button>
@@ -60,7 +60,7 @@
             </div>
             <div v-if="captureError" class="mt-2 bg-red-900/30 border border-red-700 rounded-lg px-3 py-2 flex items-start justify-between gap-2">
               <p class="text-xs text-red-400">{{ captureError }}</p>
-              <button @click="captureError = ''" class="text-red-500 hover:text-red-300 text-xs flex-shrink-0">✕</button>
+              <button @click="captureError = ''" class="text-red-500 hover:text-red-300 active:scale-95 text-xs flex-shrink-0 transition-transform">✕</button>
             </div>
           </div>
 
@@ -72,9 +72,9 @@
             <p class="text-sm text-gray-400 mb-4">快捷键: Alt + Space</p>
             <div class="flex items-center justify-between">
               <span class="text-xs text-gray-500">今日记录: {{ quickNotesCount }} 条</span>
-              <button 
+              <button
                 @click="openQuickNote"
-                class="bg-primary hover:bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                class="bg-primary hover:bg-blue-600 active:scale-95 px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
               >
                 记录
               </button>
@@ -87,18 +87,18 @@
             <div class="flex items-center gap-2">
               <span class="text-2xl">📊</span>
               <h2 class="font-medium">今日工作流</h2>
-              <button 
+              <button
                 v-if="screenshotCount > 0"
                 @click="showScreenshotGallery = true"
-                class="ml-2 text-xs text-primary hover:underline"
+                class="ml-2 text-xs text-primary hover:underline active:scale-95 transition-transform"
               >
                 (📷 {{ screenshotCount }} 张截图)
               </button>
             </div>
-            <button 
+            <button
               @click="generateSummary"
               :disabled="isGenerating"
-              class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              class="bg-primary hover:bg-blue-600 active:scale-95 disabled:opacity-50 disabled:active:scale-100 px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
             >
               {{ isGenerating ? '生成中...' : '生成日报' }}
             </button>

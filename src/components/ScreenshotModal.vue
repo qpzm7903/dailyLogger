@@ -3,7 +3,7 @@
     <div class="bg-dark rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden border border-gray-700">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">截图详情</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-gray-400 hover:text-white active:scale-95 transition-transform">✕</button>
       </div>
       
       <div class="p-6 overflow-auto max-h-[70vh]">
