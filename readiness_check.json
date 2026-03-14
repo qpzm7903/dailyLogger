@@ -72,6 +72,16 @@
         {"nfr": "7.3 兼容性要求", "coverage": "CORE-008 跨平台兼容性测试", "status": "covered"},
         {"nfr": "7.4 可用性要求", "coverage": "CORE-004 网络重连 + CORE-007 离线模式", "status": "covered"}
       ]
+    },
+    "sprint1_story_files": {
+      "status": "pass",
+      "details": [
+        {"story": "CORE-001", "file": "specs/CORE-001.md", "status": "exists"},
+        {"story": "CORE-002", "file": "specs/CORE-002.md", "status": "exists"},
+        {"story": "CORE-003", "file": "specs/CORE-003.md", "status": "exists"},
+        {"story": "CORE-005", "file": "specs/CORE-005.md", "status": "exists"},
+        {"story": "CORE-006", "file": "specs/CORE-006.md", "status": "exists"}
+      ]
     }
   },
   "summary": {
@@ -83,7 +93,7 @@
     "total_suggestions": 4,
     "ready_for_implementation": true
   },
-  "checked_at": "2026-03-14T00:00:00Z",
+  "checked_at": "2026-03-14T12:00:00Z",
   "checked_files": [
     "_bmad-output/planning-artifacts/PRD.md",
     "_bmad-output/planning-artifacts/architecture.md",
