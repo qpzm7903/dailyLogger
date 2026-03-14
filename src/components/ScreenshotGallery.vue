@@ -65,63 +65,75 @@
           暂无截图记录
         </div>
 
-        <!-- Grid View -->
-        <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
-            v-for="screenshot in screenshots"
-            :key="screenshot.id"
-            @click="openScreenshot(screenshot)"
-            class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary transition-colors"
-          >
-            <div class="aspect-video relative bg-gray-800">
-              <img
-                v-if="screenshot.thumbnail"
-                :src="screenshot.thumbnail"
-                :alt="screenshot.id"
-                class="w-full h-full object-cover"
-              />
-              <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
-                加载中...
+        <template v-else>
+          <!-- Grid View -->
+          <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              v-for="screenshot in paginatedScreenshots"
+              :key="screenshot.id"
+              @click="openScreenshot(screenshot)"
+              class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary transition-colors"
+            >
+              <div class="aspect-video relative bg-gray-800">
+                <img
+                  v-if="screenshot.thumbnail"
+                  :src="screenshot.thumbnail"
+                  :alt="screenshot.id"
+                  class="w-full h-full object-cover"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
+                  加载中...
+                </div>
+              </div>
+              <div class="p-2">
+                <p class="text-xs text-gray-500">{{ formatTime(screenshot.timestamp) }}</p>
+                <p class="text-xs text-gray-400 truncate">{{ parseContent(screenshot.content) }}</p>
               </div>
             </div>
-            <div class="p-2">
-              <p class="text-xs text-gray-500">{{ formatTime(screenshot.timestamp) }}</p>
-              <p class="text-xs text-gray-400 truncate">{{ parseContent(screenshot.content) }}</p>
-            </div>
           </div>
-        </div>
 
-        <!-- List View -->
-        <div v-else class="flex flex-col divide-y divide-gray-700">
-          <div
-            v-for="screenshot in screenshots"
-            :key="screenshot.id"
-            @click="openScreenshot(screenshot)"
-            class="flex items-center py-3 px-4 bg-darker rounded-lg mb-2 cursor-pointer hover:bg-gray-800 transition-colors"
-          >
-            <!-- Thumbnail -->
-            <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4">
-              <img
-                v-if="screenshot.thumbnail"
-                :src="screenshot.thumbnail"
-                :alt="screenshot.id"
-                class="w-full h-full object-cover"
-              />
-            </div>
-            <!-- Time -->
-            <div class="w-20 flex-shrink-0">
-              <span class="text-sm text-gray-400">{{ formatTimeShort(screenshot.timestamp) }}</span>
-            </div>
-            <!-- AI Summary -->
-            <div class="flex-1 min-w-0">
-              <p class="text-sm text-gray-300 truncate">{{ parseContent(screenshot.content) }}</p>
-            </div>
-            <!-- Action -->
-            <div class="flex-shrink-0 ml-4">
-              <span class="text-xs text-primary hover:underline">查看</span>
+          <!-- List View -->
+          <div v-else class="flex flex-col divide-y divide-gray-700">
+            <div
+              v-for="screenshot in paginatedScreenshots"
+              :key="screenshot.id"
+              @click="openScreenshot(screenshot)"
+              class="flex items-center py-3 px-4 bg-darker rounded-lg mb-2 cursor-pointer hover:bg-gray-800 transition-colors"
+            >
+              <!-- Thumbnail -->
+              <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4">
+                <img
+                  v-if="screenshot.thumbnail"
+                  :src="screenshot.thumbnail"
+                  :alt="screenshot.id"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <!-- Time -->
+              <div class="w-20 flex-shrink-0">
+                <span class="text-sm text-gray-400">{{ formatTimeShort(screenshot.timestamp) }}</span>
+              </div>
+              <!-- AI Summary -->
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-300 truncate">{{ parseContent(screenshot.content) }}</p>
+              </div>
+              <!-- Action -->
+              <div class="flex-shrink-0 ml-4">
+                <span class="text-xs text-primary hover:underline">查看</span>
+              </div>
             </div>
           </div>
-        </div>
+
+          <!-- Load More Button for AC4 -->
+          <div v-if="hasMorePages" class="text-center mt-6">
+            <button
+              @click="loadMore"
+              class="px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              加载更多 ({{ screenshots.length - currentPage * pageSize }} 条剩余)
+            </button>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -131,7 +143,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import ScreenshotModal from './ScreenshotModal.vue'
 
@@ -143,6 +155,19 @@ const selectedScreenshot = ref(null)
 const viewMode = ref('grid') // 'grid' or 'list'
 const startDate = ref('')
 const endDate = ref('')
+const currentPage = ref(1)
+const pageSize = 20
+
+// Computed: paginated screenshots for AC4
+const paginatedScreenshots = computed(() => {
+  const end = currentPage.value * pageSize
+  return screenshots.value.slice(0, end)
+})
+
+// Computed: has more pages to load
+const hasMorePages = computed(() => {
+  return currentPage.value * pageSize < screenshots.value.length
+})
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
@@ -160,9 +185,10 @@ const formatTimeShort = (timestamp) => {
 const parseContent = (content) => {
   try {
     const parsed = JSON.parse(content)
-    return parsed.current_focus || parsed.active_software || '未知'
+    const text = parsed.current_focus || parsed.active_software || '未知'
+    return text.length > 50 ? text.substring(0, 50) : text
   } catch {
-    return content.substring(0, 30)
+    return content.length > 50 ? content.substring(0, 50) : content
   }
 }
 
@@ -187,6 +213,7 @@ const loadScreenshots = async () => {
     await loadThumbnails(autoRecords)
 
     screenshots.value = autoRecords
+    currentPage.value = 1 // Reset pagination
   } catch (err) {
     console.error('Failed to load screenshots:', err)
   }
@@ -209,6 +236,7 @@ const applyFilter = async () => {
     await loadThumbnails(autoRecords)
 
     screenshots.value = autoRecords
+    currentPage.value = 1 // Reset pagination
   } catch (err) {
     console.error('Failed to filter screenshots:', err)
   }
@@ -218,6 +246,12 @@ const resetFilter = async () => {
   startDate.value = ''
   endDate.value = ''
   await loadScreenshots()
+}
+
+const loadMore = () => {
+  if (hasMorePages.value) {
+    currentPage.value++
+  }
 }
 
 const openScreenshot = (screenshot) => {

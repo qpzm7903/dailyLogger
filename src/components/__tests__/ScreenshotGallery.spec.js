@@ -351,4 +351,177 @@ describe('ScreenshotGallery', () => {
       expect(selected.content).toContain('current_focus')
     })
   })
+
+  describe('AC4 - Pagination', () => {
+    // Generate 25 mock screenshots for pagination testing
+    const generateMockScreenshots = (count) => {
+      return Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        timestamp: `2026-03-14T09:${String(i % 60).padStart(2, '0')}:00Z`,
+        source_type: 'auto',
+        screenshot_path: `/path/screenshot${i + 1}.png`,
+        content: JSON.stringify({ current_focus: `Task ${i + 1}`, active_software: 'App' }),
+        thumbnail: `data:image/png;base64,test${i + 1}`
+      }))
+    }
+
+    const mountGalleryWithManyRecords = async (recordCount = 25) => {
+      const manyMockScreenshots = generateMockScreenshots(recordCount)
+
+      invoke.mockImplementation(async (cmd) => {
+        if (cmd === 'get_today_records') {
+          return manyMockScreenshots.map(s => ({
+            id: s.id,
+            timestamp: s.timestamp,
+            source_type: s.source_type,
+            screenshot_path: s.screenshot_path,
+            content: s.content
+          }))
+        }
+        if (cmd === 'get_screenshot') {
+          return 'data:image/png;base64,testthumbnail'
+        }
+        return null
+      })
+
+      const wrapper = mount(ScreenshotGallery, {
+        global: {
+          stubs: {
+            ScreenshotModal: true
+          }
+        }
+      })
+
+      await waitFor(() => wrapper.vm.screenshots.length > 0)
+      await nextTick()
+      await nextTick()
+
+      return wrapper
+    }
+
+    it('shows load more button when records exceed page size', async () => {
+      const wrapper = await mountGalleryWithManyRecords(25)
+
+      // 25 records with pageSize 20 should show load more button
+      expect(wrapper.vm.hasMorePages).toBe(true)
+      expect(wrapper.html()).toContain('加载更多')
+    })
+
+    it('hides load more button when all records are shown', async () => {
+      const wrapper = await mountGalleryWithManyRecords(15)
+
+      // 15 records with pageSize 20 should NOT show load more button
+      expect(wrapper.vm.hasMorePages).toBe(false)
+      expect(wrapper.html()).not.toContain('加载更多')
+    })
+
+    it('initially shows only first page of records', async () => {
+      const wrapper = await mountGalleryWithManyRecords(25)
+
+      // Should show only 20 items initially (first page)
+      expect(wrapper.vm.paginatedScreenshots.length).toBe(20)
+    })
+
+    it('loads next page when clicking load more button', async () => {
+      const wrapper = await mountGalleryWithManyRecords(25)
+
+      // Initial state
+      expect(wrapper.vm.currentPage).toBe(1)
+      expect(wrapper.vm.paginatedScreenshots.length).toBe(20)
+
+      // Click load more
+      const loadMoreBtn = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
+      await loadMoreBtn.trigger('click')
+      await nextTick()
+
+      // Should now show all 25 items
+      expect(wrapper.vm.currentPage).toBe(2)
+      expect(wrapper.vm.paginatedScreenshots.length).toBe(25)
+    })
+
+    it('resets pagination when filter is applied', async () => {
+      const wrapper = await mountGalleryWithManyRecords(25)
+
+      // Load more to advance page
+      const loadMoreBtn = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
+      await loadMoreBtn.trigger('click')
+      await nextTick()
+      expect(wrapper.vm.currentPage).toBe(2)
+
+      // Clear previous invoke calls and set up new mock for date range filter
+      invoke.mockClear()
+      invoke.mockImplementation(async (cmd) => {
+        if (cmd === 'get_records_by_date_range') {
+          return generateMockScreenshots(5)
+        }
+        if (cmd === 'get_screenshot') {
+          return 'data:image/png;base64,test'
+        }
+        return null
+      })
+
+      const dateInputs = wrapper.findAll('input[type="date"]')
+      await dateInputs[0].setValue('2026-03-10')
+      await dateInputs[1].setValue('2026-03-11')
+
+      const filterButton = wrapper.findAll('button').find(btn => btn.text().includes('筛选'))
+      await filterButton.trigger('click')
+
+      // Wait for the async applyFilter to complete
+      await waitFor(() => wrapper.vm.currentPage === 1)
+
+      expect(wrapper.vm.currentPage).toBe(1)
+    })
+
+    it('shows remaining count in load more button', async () => {
+      const wrapper = await mountGalleryWithManyRecords(25)
+
+      const loadMoreBtn = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
+      expect(loadMoreBtn.text()).toContain('5') // 25 - 20 = 5 remaining
+    })
+  })
+
+  describe('AC5 - Meta Info Display', () => {
+    it('truncates AI summary to 50 characters', async () => {
+      const longContent = JSON.stringify({
+        current_focus: 'This is a very long focus text that should be truncated to 50 characters maximum',
+        active_software: 'Test App'
+      })
+
+      invoke.mockImplementation(async (cmd) => {
+        if (cmd === 'get_today_records') {
+          return [{
+            id: 1,
+            timestamp: '2026-03-14T09:00:00Z',
+            source_type: 'auto',
+            screenshot_path: '/path/screenshot.png',
+            content: longContent
+          }]
+        }
+        if (cmd === 'get_screenshot') {
+          return 'data:image/png;base64,test'
+        }
+        return null
+      })
+
+      const wrapper = mount(ScreenshotGallery, {
+        global: { stubs: { ScreenshotModal: true } }
+      })
+
+      await waitFor(() => wrapper.vm.screenshots.length > 0)
+      await nextTick()
+      await nextTick()
+
+      const truncated = wrapper.vm.parseContent(longContent)
+      expect(truncated.length).toBeLessThanOrEqual(50)
+    })
+
+    it('shows timestamp on each screenshot card', async () => {
+      const wrapper = await mountGallery()
+
+      // Each card should show a timestamp
+      const html = wrapper.html()
+      expect(html).toMatch(/\d{2}:\d{2}:\d{2}/) // HH:MM:SS format
+    })
+  })
 })
