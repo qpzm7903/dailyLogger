@@ -300,7 +300,7 @@ stories:
     epic: 周报月报功能
     priority: Low
     points: 3
-    status: ready-for-dev
+    status: in-progress
     specPath: "specs/REPORT-003.md"
     storyPath: "_bmad-output/implementation-artifacts/REPORT-003.md"
     description: 支持自定义报告周期
