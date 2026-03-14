@@ -244,8 +244,9 @@ stories:
     epic: 数据管理与检索
     priority: Medium
     points: 3
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/DATA-004.md"
+    storyPath: "_bmad-output/implementation-artifacts/DATA-004.md"
     description: 导出数据用于备份或分析
     acceptanceCriteria:
       - 支持导出为 JSON
