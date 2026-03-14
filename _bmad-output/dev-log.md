@@ -213,3 +213,25 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 - **命令测试模式**：async 命令抽取同步核心，分别测试核心逻辑和命令包装
 - **菜单项新增流程**：1) 添加 MenuItem 2) 注册 on_menu_event 处理 3) 条件编译处理 feature 差异
+
+---
+
+## CORE-005 Task 3 - 2026-03-14
+
+### 技术决策
+
+1. **跨平台文件打开**：使用 `#[cfg(target_os)]` 条件编译，Windows 用 `explorer`，macOS 用 `open`，Linux 用 `xdg-open`。理由：桌面应用标准做法，系统默认文件管理器体验一致。
+
+2. **路径校验链**：依次检查 None → 空字符串 → 纯空白 → 路径不存在。理由：提供具体错误信息，引导用户正确配置。
+
+3. **Sync/Async 分离**：`open_obsidian_folder_sync()` 核心逻辑 + async 命令包装。理由：便于单元测试，延续项目既有模式。
+
+### 遇到问题
+
+无重大问题。TDD 先写 6 个测试用例覆盖边界条件，实现后全部通过。
+
+### 后续约定
+
+- **跨平台命令模式**：`#[cfg(target_os)]` 分平台实现，spawn() 启动子进程
+- **路径校验**：`.filter(|p| !p.trim().is_empty())` 同时处理空字符串和纯空白
+- **错误消息**：中文提示，明确问题原因（"请先在设置中配置" vs "路径不存在"）
