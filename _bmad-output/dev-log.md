@@ -176,3 +176,23 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **托盘菜单项 ID**：`capture_toggle`、`show`、`quit`
 - **菜单分组**：用 `PredefinedMenuItem::separator()` 分隔操作组
 - **AtomicBool 读写**：统一使用 `Ordering::SeqCst` 保证顺序一致性
+
+---
+
+## CORE-005 Task 2 - 2026-03-14
+
+### 技术决策
+
+1. **多窗口入口**：使用 Vite 多页面应用模式，创建独立的 `quick-note.html` 入口和 `quick-note.js` 启动脚本。理由：快速记录窗口是独立的小窗口，无需加载主应用的全部状态。
+
+2. **窗口配置**：快速记录窗口设置为 400x280 像素、不可调整大小、始终置顶。理由：小窗口需要始终可见，方便用户快速输入，不干扰其他工作。
+
+3. **保存机制**：使用 `tray_quick_note` 命令直接保存记录到数据库，保存成功后调用 `window.close()` 关闭窗口。理由：简化交互流程，保存即关闭符合"快速"的设计目标。
+
+4. **快捷键支持**：Enter 保存、Esc 关闭。理由：提供键盘操作友好性，符合桌面应用习惯。
+
+### 后续约定
+
+- **快速记录窗口 ID**：`quick-note`
+- **窗口 URL**：`quick-note.html`
+- **菜单项 ID**：`quick_note`

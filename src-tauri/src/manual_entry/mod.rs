@@ -1,6 +1,27 @@
 use crate::memory_storage;
 use tauri::command;
 
+/// Save a quick note from the tray menu (synchronous version for tests)
+pub fn add_quick_note_sync(content: &str) -> Result<i64, String> {
+    if content.trim().is_empty() {
+        return Err("内容不能为空".to_string());
+    }
+
+    memory_storage::add_record("manual", content, None).map_err(|e| format!("保存记录失败: {}", e))
+}
+
+/// Save a quick note from the tray menu.
+/// This is called from the tray quick note window.
+#[command]
+pub async fn tray_quick_note(content: String) -> Result<(), String> {
+    add_quick_note_sync(&content)?;
+    tracing::info!(
+        "Tray quick note added: {}...",
+        &content[..content.len().min(50)]
+    );
+    Ok(())
+}
+
 #[command]
 pub async fn add_quick_note(content: String) -> Result<(), String> {
     if content.trim().is_empty() {
@@ -91,6 +112,25 @@ pub async fn get_log_file_path() -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rusqlite::Connection;
+
+    /// Initializes an in-memory database for testing.
+    fn setup_test_db() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                screenshot_path TEXT
+            )",
+            [],
+        )
+        .unwrap();
+        let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+        *db = Some(conn);
+    }
 
     #[test]
     fn test_get_logs_for_export_no_file() {
@@ -128,5 +168,68 @@ mod tests {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(get_recent_logs(Some(10)));
         assert!(result.is_ok());
+    }
+
+    // ── tray_quick_note and add_quick_note_sync tests ──
+
+    #[test]
+    fn test_add_quick_note_sync_saves_record() {
+        setup_test_db();
+
+        let result = add_quick_note_sync("测试快速记录");
+        assert!(result.is_ok(), "add_quick_note_sync should succeed");
+        let id = result.unwrap();
+        assert!(id > 0, "Record ID should be positive");
+    }
+
+    #[test]
+    fn test_add_quick_note_sync_rejects_empty_content() {
+        let result = add_quick_note_sync("");
+        assert!(result.is_err(), "Empty content should be rejected");
+        assert!(
+            result.unwrap_err().contains("内容不能为空"),
+            "Error message should indicate empty content"
+        );
+    }
+
+    #[test]
+    fn test_add_quick_note_sync_rejects_whitespace_only() {
+        let result = add_quick_note_sync("   \n\t  ");
+        assert!(
+            result.is_err(),
+            "Whitespace-only content should be rejected"
+        );
+    }
+
+    #[test]
+    fn test_tray_quick_note_saves_record() {
+        setup_test_db();
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(tray_quick_note("托盘快速记录测试".to_string()));
+        assert!(result.is_ok(), "tray_quick_note should succeed");
+    }
+
+    #[test]
+    fn test_tray_quick_note_rejects_empty_content() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(tray_quick_note("".to_string()));
+        assert!(result.is_err(), "Empty content should be rejected");
+    }
+
+    #[test]
+    fn test_add_quick_note_saves_record() {
+        setup_test_db();
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(add_quick_note("快速记录测试".to_string()));
+        assert!(result.is_ok(), "add_quick_note should succeed");
+    }
+
+    #[test]
+    fn test_add_quick_note_rejects_empty_content() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(add_quick_note("".to_string()));
+        assert!(result.is_err(), "Empty content should be rejected");
     }
 }

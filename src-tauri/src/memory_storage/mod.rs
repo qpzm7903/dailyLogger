@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::command;
 
-static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
+pub static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 
 fn get_app_data_dir() -> PathBuf {
     dirs::data_dir()

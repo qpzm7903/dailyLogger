@@ -5,7 +5,7 @@
 
 use daily_logger_lib::init_app;
 use std::path::PathBuf;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -58,6 +58,7 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             daily_logger_lib::manual_entry::add_quick_note,
+            daily_logger_lib::manual_entry::tray_quick_note,
             daily_logger_lib::manual_entry::get_screenshot,
             daily_logger_lib::manual_entry::read_file,
             daily_logger_lib::manual_entry::get_recent_logs,
@@ -111,19 +112,23 @@ fn main() {
                         true,
                         None::<&str>,
                     )?;
+                    let quick_note =
+                        MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
                     let generate_summary =
                         MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
                     let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator1 = PredefinedMenuItem::separator(app)?;
-                    let separator2 = PredefinedMenuItem::separator(app)?;
+                    let _separator2 = PredefinedMenuItem::separator(app)?;
+                    let _separator3 = PredefinedMenuItem::separator(app)?;
 
                     Menu::with_items(
                         app,
                         &[
                             &capture_toggle,
                             &separator1,
+                            &quick_note,
                             &generate_summary,
                             &settings,
                             &separator2,
@@ -138,15 +143,25 @@ fn main() {
                 fn build_tray_menu(
                     app: &tauri::AppHandle,
                 ) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
+                    let quick_note =
+                        MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
                     let generate_summary =
                         MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
                     let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator = PredefinedMenuItem::separator(app)?;
+
                     Menu::with_items(
                         app,
-                        &[&generate_summary, &settings, &separator, &show, &quit],
+                        &[
+                            &quick_note,
+                            &generate_summary,
+                            &settings,
+                            &separator,
+                            &show,
+                            &quit,
+                        ],
                     )
                     .map_err(Into::into)
                 }
@@ -164,6 +179,28 @@ fn main() {
                             if let Some(window) = app.get_webview_window("main") {
                                 window.show().ok();
                                 window.set_focus().ok();
+                            }
+                        }
+                        "quick_note" => {
+                            tracing::info!("Quick note requested from tray");
+                            // Check if quick-note window already exists
+                            if let Some(window) = app.get_webview_window("quick-note") {
+                                window.show().ok();
+                                window.set_focus().ok();
+                            } else {
+                                // Create new quick-note window
+                                use tauri::WebviewUrl;
+                                let _window = tauri::WebviewWindowBuilder::new(
+                                    app,
+                                    "quick-note",
+                                    WebviewUrl::App("quick-note.html".into()),
+                                )
+                                .title("快速记录")
+                                .inner_size(400.0, 280.0)
+                                .resizable(false)
+                                .decorations(true)
+                                .always_on_top(true)
+                                .build();
                             }
                         }
                         "capture_toggle" => {
