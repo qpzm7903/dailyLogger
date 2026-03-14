@@ -1,37 +1,38 @@
 {
   "task_id": "CORE-005",
   "title": "系统托盘菜单完善",
-  "verdict": "pass",
-  "score": 72,
-  "summary": "After fixes, Task 1 (AC1) is now properly implemented with all required menu items. The capture_toggle handler now correctly calls start/stop_auto_capture using tauri::async_runtime::spawn. Remaining issues: AC3 (图标状态) and AC4 (工具提示) are not implemented but these are separate tasks. The core menu functionality is complete.",
+  "verdict": "fail",
+  "score": 75,
+  "summary": "Implementation covers most acceptance criteria but AC4 (tooltip with status and record count) is completely missing. The code quality is good with proper tests, but the spec requirement for tooltip is not implemented.",
   "issues": [
     {
-      "severity": "medium",
-      "category": "correctness",
-      "location": "N/A",
-      "description": "AC3 (图标状态) is not implemented - spec requires icon to show activity status, but implementation shows indicator only in menu text, not on the tray icon itself. This may be a separate task."
+      "severity": "high",
+      "type": "missing_requirement",
+      "location": "src-tauri/src/main.rs:171-281",
+      "description": "AC4 not implemented: Spec requires tooltip showing '当前状态（捕获中/已暂停）、今日记录数' but no tooltip is set on TrayIconBuilder. The spec explicitly states: 'When 鼠标悬停在托盘图标上, Then 显示工具提示：当前状态（捕获中/已暂停）、今日记录数'.",
+      "recommendation": "Add .tooltip() to TrayIconBuilder with dynamic status and record count. Use get_today_records_sync() to get count."
     },
     {
       "severity": "medium",
-      "category": "correctness",
-      "location": "N/A",
-      "description": "AC4 (工具提示) is not implemented - spec requires tooltip showing '当前状态（捕获中/已暂停）、今日记录数'. This may be a separate task."
+      "type": "incomplete_feature",
+      "location": "src-tauri/src/main.rs:106",
+      "description": "AC3 (icon status indicator) uses text indicator (●/○) in menu rather than actual icon change. While this is a reasonable interpretation, the spec says '图标显示活动状态（如绿色圆点或变化）' which could imply actual icon modification.",
+      "recommendation": "Consider if text indicator in menu meets the requirement, or if icon change is needed. Document the design decision."
     },
     {
-      "severity": "info",
-      "category": "completeness",
-      "location": "specs/CORE-005.md",
-      "description": "Task breakdown could be clearer. The spec shows Task 1 implements AC1, but AC2 (状态切换) is actually partially implemented by Task 1's capture_toggle handler."
+      "severity": "low",
+      "type": "code_quality",
+      "location": "src-tauri/src/main.rs:123-124",
+      "description": "Unused separator variables _separator2, _separator3 created but not used in menu. These appear to be placeholders.",
+      "recommendation": "Remove unused separator variables or use them appropriately in the menu layout."
     }
   ],
   "strengths": [
-    "Good test coverage for is_auto_capture_running() and get_auto_capture_status() functions",
-    "Menu rebuild on right-click correctly implemented to show updated status",
-    "Status indicator (●/○) in menu text provides clear visual feedback",
-    "Conditional compilation with #[cfg(feature = \"screenshot\")] handled properly",
-    "capture_toggle now correctly uses tauri::async_runtime::spawn for async operations",
-    "Event emissions added for frontend integration (tray-menu-update, tray-generate-summary, tray-open-settings)",
-    "All required menu items now present: 启动/停止捕获, 生成日报, 设置, 显示窗口, 退出"
+    "Comprehensive test coverage for both Rust (is_auto_capture_running, get_auto_capture_status, tray_quick_note, add_quick_note_sync) and Vue (QuickNoteWindow.spec.js with 12 tests)",
+    "Clean implementation of dynamic menu rebuild on right-click to refresh status",
+    "Proper use of AtomicBool for thread-safe state management",
+    "Quick note window feature is well-implemented with proper keyboard shortcuts (Enter/Esc)",
+    "Multi-page Vite configuration for quick-note.html is correctly set up"
   ],
-  "recommendation": "approve"
+  "recommendation": "request_changes"
 }

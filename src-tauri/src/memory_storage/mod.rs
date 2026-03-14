@@ -189,6 +189,33 @@ pub fn get_all_today_records_for_summary() -> Result<Vec<Record>, String> {
     get_today_records_sync()
 }
 
+/// Get the count of today's records (more efficient than fetching all records).
+pub fn get_today_record_count_sync() -> Result<usize, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let today_start = chrono::Local::now()
+        .date_naive()
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM records WHERE timestamp >= ?1",
+            params![today_start],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Failed to count records: {}", e))?;
+
+    Ok(count as usize)
+}
+
 pub fn get_records_by_date_range_sync(
     start_date: String,
     end_date: String,
@@ -802,6 +829,55 @@ mod tests {
         assert!(
             pos_late.unwrap() < pos_early.unwrap(),
             "Records should be in descending timestamp order"
+        );
+    }
+
+    // ── Tests for get_today_record_count_sync ──
+
+    #[test]
+    fn get_today_record_count_sync_returns_zero_for_empty_db() {
+        setup_test_db();
+
+        let count = get_today_record_count_sync().unwrap();
+        assert_eq!(count, 0, "Empty database should have 0 records");
+    }
+
+    #[test]
+    fn get_today_record_count_sync_counts_today_records() {
+        setup_test_db();
+
+        // Insert 3 records for today
+        let today = chrono::Local::now().date_naive();
+        let ts1 = local_to_utc_rfc3339(today.and_hms_opt(9, 0, 0).unwrap());
+        let ts2 = local_to_utc_rfc3339(today.and_hms_opt(12, 0, 0).unwrap());
+        let ts3 = local_to_utc_rfc3339(today.and_hms_opt(15, 0, 0).unwrap());
+
+        insert_record_with_ts(&ts1, "record 1");
+        insert_record_with_ts(&ts2, "record 2");
+        insert_record_with_ts(&ts3, "record 3");
+
+        let count = get_today_record_count_sync().unwrap();
+        assert_eq!(count, 3, "Should count 3 records for today");
+    }
+
+    #[test]
+    fn get_today_record_count_sync_excludes_yesterday_records() {
+        setup_test_db();
+
+        // Insert 2 records for today
+        let today = chrono::Local::now().date_naive();
+        let ts1 = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts1, "today record");
+
+        // Insert 2 records for yesterday
+        let yesterday = today - chrono::Duration::days(1);
+        let ts2 = local_to_utc_rfc3339(yesterday.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts2, "yesterday record");
+
+        let count = get_today_record_count_sync().unwrap();
+        assert_eq!(
+            count, 1,
+            "Should only count today's records, not yesterday's"
         );
     }
 }

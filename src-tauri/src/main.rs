@@ -10,6 +10,34 @@ use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
+/// Build tooltip text for tray icon showing status and today's record count.
+#[cfg(feature = "screenshot")]
+fn build_tray_tooltip() -> String {
+    use daily_logger_lib::auto_perception::is_auto_capture_running;
+    use daily_logger_lib::memory_storage::get_today_record_count_sync;
+
+    let status = if is_auto_capture_running() {
+        "捕获中"
+    } else {
+        "已暂停"
+    };
+
+    let record_count = get_today_record_count_sync().unwrap_or(0);
+
+    format!(
+        "DailyLogger\n状态: {}\n今日记录: {} 条",
+        status, record_count
+    )
+}
+
+#[cfg(not(feature = "screenshot"))]
+fn build_tray_tooltip() -> String {
+    use daily_logger_lib::memory_storage::get_today_record_count_sync;
+
+    let record_count = get_today_record_count_sync().unwrap_or(0);
+    format!("DailyLogger\n今日记录: {} 条", record_count)
+}
+
 fn setup_logging() -> WorkerGuard {
     let log_dir = get_app_data_dir().join("logs");
     std::fs::create_dir_all(&log_dir).ok();
@@ -120,8 +148,7 @@ fn main() {
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator1 = PredefinedMenuItem::separator(app)?;
-                    let _separator2 = PredefinedMenuItem::separator(app)?;
-                    let _separator3 = PredefinedMenuItem::separator(app)?;
+                    let separator2 = PredefinedMenuItem::separator(app)?;
 
                     Menu::with_items(
                         app,
@@ -167,9 +194,11 @@ fn main() {
                 }
 
                 let menu = build_tray_menu(app.handle())?;
+                let tooltip = build_tray_tooltip();
 
                 let _tray = TrayIconBuilder::new()
                     .menu(&menu)
+                    .tooltip(&tooltip)
                     .on_menu_event(|app, event| match event.id.as_ref() {
                         "quit" => {
                             tracing::info!("Quit requested from tray");
@@ -275,6 +304,11 @@ fn main() {
                                 if let Err(e) = tray.set_menu(Some(new_menu)) {
                                     tracing::error!("Failed to update tray menu: {}", e);
                                 }
+                            }
+                            // Update tooltip with current status and record count
+                            let new_tooltip = build_tray_tooltip();
+                            if let Err(e) = tray.set_tooltip(Some(&new_tooltip)) {
+                                tracing::error!("Failed to update tray tooltip: {}", e);
                             }
                         }
                     })
