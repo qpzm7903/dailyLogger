@@ -258,7 +258,7 @@ stories:
     epic: 数据管理与检索
     priority: Low
     points: 3
-    status: ready-for-dev
+    status: in-progress
     specPath: "specs/DATA-005.md"
     storyPath: "_bmad-output/implementation-artifacts/DATA-005.md"
     description: 一键备份和恢复数据
