@@ -3,6 +3,12 @@
   "issues": [],
   "fixed_issues": [
     {
+      "severity": "high",
+      "category": "missing_specs",
+      "description": "Sprint 1 stories missing spec files: CORE-001, CORE-003, CORE-005, CORE-006",
+      "fix": "Created specs/CORE-001.md, specs/CORE-003.md, specs/CORE-005.md, specs/CORE-006.md with Given/When/Then acceptance criteria"
+    },
+    {
       "severity": "medium",
       "type": "missing_feature",
       "description": "PRD 未来规划中的 '多 Obsidian Vault 支持 P2' 未在 epics.md 中有对应 story",
@@ -33,12 +39,19 @@
       "security": "CORE-006 (API Key 加密存储)",
       "compatibility": "CORE-008 (跨平台兼容性测试)",
       "availability": "CORE-004 (错误处理+网络重连), CORE-007 (离线模式)"
-    }
+    },
+    "spec_files_status": "complete - all Sprint 1 stories have specs"
   },
   "check_date": "2026-03-14",
   "checked_files": [
     "_bmad-output/planning-artifacts/PRD.md",
     "_bmad-output/planning-artifacts/architecture.md",
     "_bmad-output/planning-artifacts/epics.md"
+  ],
+  "spec_files_created": [
+    "specs/CORE-001.md - 设置界面优化",
+    "specs/CORE-003.md - 日报生成模板优化",
+    "specs/CORE-005.md - 系统托盘菜单完善",
+    "specs/CORE-006.md - API Key 加密存储"
   ]
 }
