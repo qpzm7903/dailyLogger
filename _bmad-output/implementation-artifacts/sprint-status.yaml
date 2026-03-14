@@ -26,7 +26,7 @@ stories:
     epic: 核心功能完善
     priority: High
     points: 5
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/CORE-002.md"
     description: 改进截图画廊的浏览体验，支持分页和快速预览
     acceptanceCriteria:
