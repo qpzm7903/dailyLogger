@@ -196,3 +196,20 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **快速记录窗口 ID**：`quick-note`
 - **窗口 URL**：`quick-note.html`
 - **菜单项 ID**：`quick_note`
+- **同步命令模式**：为 async Tauri 命令创建 `*_sync` 版本便于测试
+- **测试 DB 访问**：`DB_CONNECTION` 需 `pub` 以便测试模块访问
+
+---
+
+## CORE-005 Task 2 补充 - 2026-03-14
+
+### 遇到问题
+
+1. **测试隔离**：`DB_CONNECTION` 是私有静态变量，测试模块无法访问。解决：改为 `pub static`，并在测试中用 `setup_test_db()` 初始化内存数据库。
+
+2. **同步/异步分离**：`tray_quick_note` 是 async 命令，但测试需要同步验证。解决：抽取 `add_quick_note_sync()` 同步核心逻辑，async 命令调用它。
+
+### 后续约定
+
+- **命令测试模式**：async 命令抽取同步核心，分别测试核心逻辑和命令包装
+- **菜单项新增流程**：1) 添加 MenuItem 2) 注册 on_menu_event 处理 3) 条件编译处理 feature 差异
