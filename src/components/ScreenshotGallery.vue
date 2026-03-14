@@ -86,7 +86,7 @@
                 </div>
               </div>
               <div class="p-2">
-                <p class="text-xs text-gray-500">{{ formatTime(screenshot.timestamp) }}</p>
+                <p class="text-xs text-gray-500">{{ formatTimeShort(screenshot.timestamp) }}</p>
                 <p class="text-xs text-gray-400 truncate">{{ parseContent(screenshot.content) }}</p>
               </div>
             </div>
@@ -180,11 +180,6 @@ const remainingCount = computed(() => {
   return Math.max(0, screenshots.value.length - currentPage.value * pageSize)
 })
 
-const formatTime = (timestamp) => {
-  const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN')
-}
-
 const formatTimeShort = (timestamp) => {
   const date = new Date(timestamp)
   const hours = String(date.getHours()).padStart(2, '0')
@@ -197,9 +192,9 @@ const parseContent = (content) => {
   try {
     const parsed = JSON.parse(content)
     const text = parsed.current_focus || parsed.active_software || '未知'
-    return text.length > 50 ? text.substring(0, 50) : text
+    return text.length > 50 ? text.substring(0, 50) + '...' : text
   } catch {
-    return content.length > 50 ? content.substring(0, 50) : content
+    return content.length > 50 ? content.substring(0, 50) + '...' : content
   }
 }
 

@@ -134,3 +134,21 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **滚动阈值**：100px 为触发加载的标准阈值
 - **加载延迟**：150ms 用于提供视觉反馈
 - **分页测试等待**：`await new Promise(resolve => setTimeout(resolve, 200))` 等待 loadMore 完成
+
+---
+
+## Task 5 元信息显示 - 2026-03-14
+
+### 技术决策
+
+1. **时间戳格式统一**：网格视图和列表视图均使用 `formatTimeShort` 函数，返回 HH:mm:ss 格式。理由：AC5 要求时间戳格式统一，网格视图原有 `formatTime` 返回完整日期时间字符串过长，不适合缩略图卡片。
+
+2. **省略号截断策略**：当内容超过 50 字符时，截断前 50 字符并添加 "..." 省略号。理由：用户需要明确知道内容被截断，提升 UX 可读性。
+
+3. **移除冗余代码**：删除未使用的 `formatTime` 函数。理由：保持代码整洁，避免死代码。
+
+### 后续约定
+
+- **时间戳格式**：缩略图卡片统一使用 `formatTimeShort` 返回 HH:mm:ss 格式
+- **文本截断**：超过限制长度时添加 "..." 省略号
+- **测试断言**：截断测试验证长度和省略号同时存在

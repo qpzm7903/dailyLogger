@@ -514,9 +514,11 @@ describe('ScreenshotGallery', () => {
   })
 
   describe('AC5 - Meta Info Display', () => {
-    it('truncates AI summary to 50 characters', async () => {
+    it('truncates AI summary to 50 characters with ellipsis when over limit', async () => {
+      // Create content longer than 50 chars
+      const longText = 'This is a very long focus text that definitely exceeds fifty characters and should be truncated'
       const longContent = JSON.stringify({
-        current_focus: 'This is a very long focus text that should be truncated to 50 characters maximum',
+        current_focus: longText,
         active_software: 'Test App'
       })
 
@@ -545,15 +547,73 @@ describe('ScreenshotGallery', () => {
       await nextTick()
 
       const truncated = wrapper.vm.parseContent(longContent)
-      expect(truncated.length).toBeLessThanOrEqual(50)
+      // Should be exactly 50 chars + "..." = 53 total
+      expect(truncated.length).toBe(53)
+      expect(truncated.endsWith('...')).toBe(true)
     })
 
-    it('shows timestamp on each screenshot card', async () => {
+    it('does not add ellipsis when AI summary is within 50 characters', async () => {
+      const shortText = 'Short text'
+      const shortContent = JSON.stringify({
+        current_focus: shortText,
+        active_software: 'Test App'
+      })
+
+      invoke.mockImplementation(async (cmd) => {
+        if (cmd === 'get_today_records') {
+          return [{
+            id: 1,
+            timestamp: '2026-03-14T09:00:00Z',
+            source_type: 'auto',
+            screenshot_path: '/path/screenshot.png',
+            content: shortContent
+          }]
+        }
+        if (cmd === 'get_screenshot') {
+          return 'data:image/png;base64,test'
+        }
+        return null
+      })
+
+      const wrapper = mount(ScreenshotGallery, {
+        global: { stubs: { ScreenshotModal: true } }
+      })
+
+      await waitFor(() => wrapper.vm.screenshots.length > 0)
+      await nextTick()
+      await nextTick()
+
+      const result = wrapper.vm.parseContent(shortContent)
+      expect(result).toBe(shortText)
+      expect(result.endsWith('...')).toBe(false)
+    })
+
+    it('shows timestamp in HH:mm:ss format on each screenshot card in grid view', async () => {
       const wrapper = await mountGallery()
 
-      // Each card should show a timestamp
-      const html = wrapper.html()
-      expect(html).toMatch(/\d{2}:\d{2}:\d{2}/) // HH:MM:SS format
+      // Grid view should have timestamps in HH:mm:ss format
+      const gridContainer = wrapper.find('.grid')
+      const html = gridContainer.html()
+
+      // Should show exact HH:mm:ss format (e.g., 09:00:00)
+      // Check that it matches exactly the formatTimeShort output
+      expect(html).toMatch(/09:00:00|09:05:00|09:10:00/)
+    })
+
+    it('shows timestamp in HH:mm:ss format in list view', async () => {
+      const wrapper = await mountGallery()
+
+      // Switch to list view
+      const buttons = wrapper.findAll('button')
+      const listButton = buttons.find(btn => btn.text().includes('列表'))
+      await listButton.trigger('click')
+      await nextTick()
+
+      const listContainer = wrapper.find('.divide-y')
+      const html = listContainer.html()
+
+      // List view should have timestamps in HH:mm:ss format
+      expect(html).toMatch(/09:00:00|09:05:00|09:10:00/)
     })
   })
 })

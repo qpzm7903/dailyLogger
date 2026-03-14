@@ -1,6 +1,6 @@
 # Story 1.2: 截图画廊增强
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -60,9 +60,9 @@ Status: ready-for-dev
   - [x] 实现滚动到底部自动加载
   - [x] 显示加载进度指示器
 
-- [-] Task 5: 显示截图元信息 (AC: 5)
-  - [ ] 缩略图下方显示时间戳（格式化：HH:mm:ss）
-  - [ ] 显示 AI 分析摘要（截断至 50 字，带省略号）
+- [x] Task 5: 显示截图元信息 (AC: 5)
+  - [x] 缩略图下方显示时间戳（格式化：HH:mm:ss）
+  - [x] 显示 AI 分析摘要（截断至 50 字，带省略号）
 
 ## Dev Notes
 
@@ -223,6 +223,12 @@ Claude Opus 4.6
 - 添加加载指示器：`animate-pulse` 动画显示 "加载中..."
 - 筛选时自动重置分页状态
 
+**Task 5: 显示截图元信息 (AC: 5)** - 完成
+- 网格视图时间戳改为 `formatTimeShort` 函数，显示 HH:mm:ss 格式
+- 列表视图时间戳保持 `formatTimeShort` 函数，显示 HH:mm:ss 格式
+- 更新 `parseContent` 函数，截断至 50 字符时添加 "..." 省略号
+- 移除未使用的 `formatTime` 函数，保持代码整洁
+
 ### Tests Added
 
 **Task 1 测试** (10 个):
@@ -265,6 +271,12 @@ Claude Opus 4.6
 - `calculates correct remaining count`
 - `does not load more when already at last page`
 
+**Task 5 测试** (4 个):
+- `truncates AI summary to 50 characters with ellipsis when over limit`
+- `does not add ellipsis when AI summary is within 50 characters`
+- `shows timestamp in HH:mm:ss format on each screenshot card in grid view`
+- `shows timestamp in HH:mm:ss format in list view`
+
 ### File List
 
 - `src-tauri/src/memory_storage/mod.rs` - 添加 `get_records_by_date_range_sync` 和 Tauri 命令
@@ -281,3 +293,5 @@ Claude Opus 4.6
 - Task 2 完成 (Date: 2026-03-14)
 - Task 3 完成 (Date: 2026-03-14) - 添加 AC3 快速预览测试用例
 - Task 4 完成 (Date: 2026-03-14) - 添加 AC4 分页加载功能，支持滚动自动加载和加载指示器
+- Task 5 完成 (Date: 2026-03-14) - 添加 AC5 元信息显示，时间戳 HH:mm:ss 格式，AI 摘要截断带省略号
+- 状态更新为 review (Date: 2026-03-14) - 所有任务完成
