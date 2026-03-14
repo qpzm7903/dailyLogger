@@ -27,7 +27,6 @@ pub struct ActiveWindow {
 /// - **Linux**: Uses xdotool command-line tool
 #[cfg(target_os = "windows")]
 pub fn get_active_window() -> ActiveWindow {
-    use std::mem::size_of;
     use windows::Win32::Foundation::HWND;
     use windows::Win32::System::ProcessStatus::GetModuleFileNameExW;
     use windows::Win32::System::Threading::OpenProcess;
@@ -74,8 +73,9 @@ pub fn get_active_window() -> ActiveWindow {
                     &mut module_name,
                 )
             };
+            // Safely close the handle - ignoring errors since we're done with it
             unsafe {
-                let _ = windows::Win32::Foundation::CloseHandle(handle.0);
+                let _ = windows::Win32::Foundation::CloseHandle(handle);
             }
 
             if len > 0 {
