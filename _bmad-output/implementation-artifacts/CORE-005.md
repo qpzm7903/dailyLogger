@@ -1,6 +1,6 @@
 # Story 1.5: 系统托盘菜单完善
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -59,11 +59,11 @@ Status: ready-for-dev
   - [x] 组织菜单项顺序：状态 → 分隔线 → 快速记录 → 打开文件夹 → 分隔线 → 显示窗口 → 退出
   - [x] 实现菜单事件处理逻辑
 
-- [-] Task 5: 编写测试 (All ACs)
-  - [ ] Rust 单元测试：get_auto_capture_status 命令
-  - [ ] Rust 单元测试：tray_quick_note 命令
-  - [ ] Rust 单元测试：open_obsidian_folder 命令
-  - [ ] 边界测试：路径不存在、路径为空
+- [x] Task 5: 编写测试 (All ACs)
+  - [x] Rust 单元测试：get_auto_capture_status 命令
+  - [x] Rust 单元测试：tray_quick_note 命令
+  - [x] Rust 单元测试：open_obsidian_folder 命令
+  - [x] 边界测试：路径不存在、路径为空
 
 ## Dev Notes
 
