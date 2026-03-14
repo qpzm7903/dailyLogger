@@ -286,8 +286,9 @@ stories:
     epic: 周报月报功能
     priority: Medium
     points: 5
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/REPORT-002.md"
+    storyPath: "_bmad-output/implementation-artifacts/REPORT-002.md"
     description: 生成月度工作总结报告
     acceptanceCriteria:
       - 自动汇总本月记录
