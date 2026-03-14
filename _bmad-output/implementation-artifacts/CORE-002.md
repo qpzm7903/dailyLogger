@@ -39,11 +39,11 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [-] Task 1: 实现视图切换功能 (AC: 1)
-  - [ ] 添加视图状态管理（grid/list）
-  - [ ] 创建视图切换按钮组件
-  - [ ] 实现网格视图布局（3 列，响应式）
-  - [ ] 实现列表视图布局（带详细信息）
+- [x] Task 1: 实现视图切换功能 (AC: 1)
+  - [x] 添加视图状态管理（grid/list）
+  - [x] 创建视图切换按钮组件
+  - [x] 实现网格视图布局（3 列，响应式）
+  - [x] 实现列表视图布局（带详细信息）
 
 - [-] Task 2: 实现日期筛选功能 (AC: 2)
   - [ ] 添加日期选择器组件
@@ -193,21 +193,30 @@ colors: {
 
 ### Agent Model Used
 
-BMAD create-story Workflow
+Claude Opus 4.6
 
 ### Implementation Summary
 
-待 dev-story 执行后填写
+Task 1: 实现视图切换功能 (AC: 1) 已完成：
+- 添加了 `viewMode` 响应式状态管理，默认值为 'grid'
+- 创建了视图切换按钮组，使用 `bg-primary` 高亮当前活动视图
+- 网格视图使用 `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3` 响应式三列布局
+- 列表视图使用 `divide-y divide-gray-700` 实现行分隔，包含缩略图、时间、AI摘要和查看按钮
+- 添加了 `formatTimeShort` 函数用于列表视图的时间格式化 (HH:MM:SS)
 
 ### Tests Added
 
-待 dev-story 执行后填写
+- `src/components/__tests__/ScreenshotGallery.spec.js`: 10 个测试用例
+  - AC1 - View Toggle: 7 个测试（按钮渲染、默认视图、切换功能、布局验证、高亮状态）
+  - Screenshot rendering: 3 个测试（缩略图显示、时间戳、模态框打开）
 
 ### File List
 
-待 dev-story 执行后填写
+- `src/components/ScreenshotGallery.vue` - 添加视图切换功能
+- `src/components/__tests__/ScreenshotGallery.spec.js` - 新增测试文件
 
 ### Change Log
 
 - Story 创建完成 (Date: 2026-03-14)
 - 状态：ready-for-dev
+- Task 1 完成 (Date: 2026-03-14)
