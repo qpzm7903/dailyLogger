@@ -48,7 +48,7 @@ Status: ready-for-dev
   - [x] 支持 Enter 快捷键保存
   - [x] 保存后自动关闭窗口
 
-- [ ] Task 3: 实现打开 Obsidian 文件夹功能 (AC: 3)
+- [-] Task 3: 实现打开 Obsidian 文件夹功能 (AC: 3)
   - [ ] 添加 Rust 后端 `open_obsidian_folder` 命令
   - [ ] 从 settings 读取 obsidian_path
   - [ ] 使用系统默认文件管理器打开目录
