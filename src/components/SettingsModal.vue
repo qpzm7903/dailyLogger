@@ -60,6 +60,22 @@
                 placeholder="留空使用默认 Prompt"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
               />
+              <div class="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  @click="showDefaultPrompt"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  查看默认
+                </button>
+                <button
+                  type="button"
+                  @click="resetPrompt"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  重置为默认
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -198,6 +214,27 @@
         </div>
       </div>
 
+      <!-- Default Prompt Modal -->
+      <div v-if="showDefaultPromptModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showDefaultPromptModal = false">
+        <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-hidden border border-gray-700">
+          <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">默认分析 Prompt</h3>
+            <button @click="showDefaultPromptModal = false" class="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div class="p-6 overflow-y-auto max-h-[60vh]">
+            <pre class="text-sm text-gray-300 whitespace-pre-wrap bg-darker p-4 rounded-lg">{{ defaultPromptContent }}</pre>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end">
+            <button
+              @click="showDefaultPromptModal = false"
+              class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 transition-colors"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between gap-3">
         <div class="flex flex-col">
           <span v-if="saveStatus === 'ok'" class="text-green-400 text-xs flex items-center gap-1">
@@ -246,6 +283,8 @@ const saveStatus = ref('')
 const saveError = ref('')
 const isExportingLogs = ref(false)
 const exportError = ref('')
+const showDefaultPromptModal = ref(false)
+const defaultPromptContent = ref('')
 
 const settings = ref({
   api_base_url: '',
@@ -361,6 +400,21 @@ const exportLogs = async () => {
   } finally {
     isExportingLogs.value = false
   }
+}
+
+const showDefaultPrompt = async () => {
+  try {
+    defaultPromptContent.value = await invoke('get_default_analysis_prompt')
+    showDefaultPromptModal.value = true
+  } catch (err) {
+    console.error('Failed to get default prompt:', err)
+    showError(err)
+  }
+}
+
+const resetPrompt = () => {
+  settings.value.analysis_prompt = ''
+  showSuccess('已重置为默认 Prompt，保存后生效')
 }
 
 onMounted(() => {

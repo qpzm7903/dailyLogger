@@ -75,6 +75,8 @@ fn main() {
             daily_logger_lib::auto_perception::trigger_capture,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::take_screenshot,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::get_default_analysis_prompt,
         ])
         .setup(|app| {
             tracing::info!("Application setup complete");

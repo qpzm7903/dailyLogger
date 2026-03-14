@@ -70,8 +70,7 @@ pub async fn get_logs_for_export() -> Result<String, String> {
         return Err("Log file does not exist".to_string());
     }
 
-    std::fs::read_to_string(&log_path)
-        .map_err(|e| format!("Failed to read log file: {}", e))
+    std::fs::read_to_string(&log_path).map_err(|e| format!("Failed to read log file: {}", e))
 }
 
 /// Get the log file path for export
@@ -83,7 +82,8 @@ pub async fn get_log_file_path() -> Result<String, String> {
         .join("logs")
         .join("daily-logger.log");
 
-    log_path.to_str()
+    log_path
+        .to_str()
         .map(|s| s.to_string())
         .ok_or_else(|| "Invalid log file path".to_string())
 }

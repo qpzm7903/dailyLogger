@@ -270,7 +270,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.change_threshold,
             settings.max_silent_minutes,
             settings.summary_title_format,
-            settings.include_manual_records.map(|v| if v { 1 } else { 0 }),
+            settings
+                .include_manual_records
+                .map(|v| if v { 1 } else { 0 }),
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

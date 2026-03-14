@@ -534,6 +534,12 @@ pub async fn trigger_capture() -> Result<(), String> {
     Ok(())
 }
 
+/// Returns the default analysis prompt template used for screenshot analysis.
+#[command]
+pub fn get_default_analysis_prompt() -> String {
+    DEFAULT_ANALYSIS_PROMPT.to_string()
+}
+
 /// 只截图并保存到磁盘，不调用 AI 分析，不写数据库记录。
 /// 返回截图文件的绝对路径，供前端直接预览。
 #[command]
@@ -686,5 +692,31 @@ mod tests {
     fn compute_fingerprint_rejects_invalid_base64() {
         let result = compute_fingerprint("not-valid!!!");
         assert!(result.is_err());
+    }
+
+    // ── get_default_analysis_prompt tests ──
+
+    #[test]
+    fn get_default_analysis_prompt_returns_expected_content() {
+        let prompt = get_default_analysis_prompt();
+        assert!(
+            prompt.contains("current_focus"),
+            "should contain current_focus"
+        );
+        assert!(
+            prompt.contains("active_software"),
+            "should contain active_software"
+        );
+        assert!(
+            prompt.contains("context_keywords"),
+            "should contain context_keywords"
+        );
+        assert!(prompt.contains("JSON"), "should mention JSON format");
+    }
+
+    #[test]
+    fn get_default_analysis_prompt_returns_non_empty() {
+        let prompt = get_default_analysis_prompt();
+        assert!(!prompt.is_empty(), "default prompt should not be empty");
     }
 }
