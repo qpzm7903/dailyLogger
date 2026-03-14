@@ -44,3 +44,28 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **常量暴露模式**：需向前端暴露只读常量时，创建无参数 Tauri command 返回静态值
 - **重置模式**：字段重置优先清空而非填默认值，依赖后端 fallback 逻辑
 - **命令注册**：新增 Tauri command 必须在 `main.rs` 的 `generate_handler![]` 中注册
+
+---
+
+## CORE-002 - 2026-03-14
+
+### 技术决策
+
+1. **视图状态管理**：使用简单 `ref('grid')` 管理视图状态，默认网格视图。理由：无需复杂状态管理，单一组件内状态足够。
+
+2. **响应式网格布局**：采用 `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` 实现三列响应式。理由：在不同屏幕尺寸下自适应，符合 Tailwind 最佳实践。
+
+3. **按钮高亮模式**：活动按钮 `bg-primary text-white`，非活动 `bg-darker text-gray-400 hover:text-white`。理由：提供清晰的视觉反馈，保持与现有主题一致。
+
+4. **列表视图时间格式**：新增 `formatTimeShort` 函数返回 HH:MM:SS 格式。理由：列表视图空间有限，短格式更紧凑。
+
+### 遇到问题
+
+开发过程顺利，无重大问题。TDD 流程先写 10 个测试用例覆盖视图切换和截图渲染，后实现功能，全部测试通过。
+
+### 后续约定
+
+- **切换按钮组模式**：活动按钮 `bg-primary text-white`，非活动 `bg-darker text-gray-400 hover:text-white`
+- **响应式三列**：`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+- **列表分隔线**：使用 `divide-y divide-gray-700` 实现行分隔
+- **测试分组**：按 AC 分组测试用例（如 `AC1 - View Toggle`）提高可读性
