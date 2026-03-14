@@ -58,6 +58,11 @@
       "target": "Architecture Document",
       "suggestion": "架构文档已包含 API Key 加密的详细实现方案，建议同步到 CORE-006 的 story 文件作为技术规格参考",
       "priority": "low"
+    },
+    {
+      "target": "Test Automation",
+      "suggestion": "CORE-008 性能基准验收条件可考虑添加自动化测试脚本实现持续性能监控",
+      "priority": "medium"
     }
   ],
   "validation_results": {
@@ -90,8 +95,8 @@
       ]
     },
     "story_granularity": {
-      "status": "pass_with_notes",
-      "details": "32个 story 估算为 2-5 points，粒度合理",
+      "status": "pass",
+      "details": "32个 story 估算为 2-5 points，粒度合理，均≤1天工作量",
       "story_count": 32,
       "max_points": 5,
       "min_points": 2,
@@ -117,11 +122,12 @@
     "medium_issues": 3,
     "low_issues": 1,
     "fixed_issues": 4,
-    "total_suggestions": 2,
+    "total_suggestions": 3,
     "ready_for_implementation": true
   },
   "checked_at": "2026-03-14T12:30:00Z",
   "fixed_at": "2026-03-14T12:35:00Z",
+  "revalidated_at": "2026-03-14T00:00:00Z",
   "checked_files": [
     "_bmad-output/planning-artifacts/PRD.md",
     "_bmad-output/planning-artifacts/architecture.md",
