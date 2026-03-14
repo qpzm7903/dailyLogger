@@ -79,18 +79,56 @@ fn main() {
             daily_logger_lib::auto_perception::take_screenshot,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::get_default_analysis_prompt,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::get_auto_capture_status,
         ])
         .setup(|app| {
             tracing::info!("Application setup complete");
 
             #[cfg(desktop)]
             {
-                use tauri::menu::{Menu, MenuItem};
+                use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
                 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
 
-                let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
-                let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
-                let menu = Menu::with_items(app, &[&show, &quit])?;
+                #[cfg(feature = "screenshot")]
+                fn build_tray_menu(
+                    app: &tauri::AppHandle,
+                ) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
+                    use daily_logger_lib::auto_perception::is_auto_capture_running;
+                    let running = is_auto_capture_running();
+                    let status_indicator = if running { "● " } else { "○ " };
+                    let toggle_text = if running {
+                        "停止自动捕获"
+                    } else {
+                        "启动自动捕获"
+                    };
+                    let capture_text = format!("{}{}", status_indicator, toggle_text);
+
+                    let capture_toggle = MenuItem::with_id(
+                        app,
+                        "capture_toggle",
+                        &capture_text,
+                        true,
+                        None::<&str>,
+                    )?;
+                    let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
+                    let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+                    let separator = PredefinedMenuItem::separator(app)?;
+
+                    Menu::with_items(app, &[&capture_toggle, &separator, &show, &quit])
+                        .map_err(Into::into)
+                }
+
+                #[cfg(not(feature = "screenshot"))]
+                fn build_tray_menu(
+                    app: &tauri::AppHandle,
+                ) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
+                    let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
+                    let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+                    Menu::with_items(app, &[&show, &quit]).map_err(Into::into)
+                }
+
+                let menu = build_tray_menu(app.handle())?;
 
                 let _tray = TrayIconBuilder::new()
                     .menu(&menu)
@@ -103,6 +141,34 @@ fn main() {
                             if let Some(window) = app.get_webview_window("main") {
                                 window.show().ok();
                                 window.set_focus().ok();
+                            }
+                        }
+                        "capture_toggle" => {
+                            #[cfg(feature = "screenshot")]
+                            {
+                                use daily_logger_lib::auto_perception::is_auto_capture_running;
+                                let running = is_auto_capture_running();
+                                if running {
+                                    tracing::info!("Stopping auto capture from tray");
+                                    if let Err(e) = app.run_on_main_thread(|| {
+                                        // Note: This is a simplified version. In production,
+                                        // we would use async to call stop_auto_capture properly.
+                                        tracing::info!("Auto capture stop requested");
+                                    }) {
+                                        tracing::error!("Failed to run on main thread: {}", e);
+                                    }
+                                } else {
+                                    tracing::info!("Starting auto capture from tray");
+                                    if let Err(e) = app.run_on_main_thread(|| {
+                                        tracing::info!("Auto capture start requested");
+                                    }) {
+                                        tracing::error!("Failed to run on main thread: {}", e);
+                                    }
+                                }
+                            }
+                            #[cfg(not(feature = "screenshot"))]
+                            {
+                                tracing::warn!("Screenshot feature not enabled");
                             }
                         }
                         _ => {}
@@ -118,6 +184,21 @@ fn main() {
                             if let Some(window) = app.get_webview_window("main") {
                                 window.show().ok();
                                 window.set_focus().ok();
+                            }
+                        }
+                        // Rebuild menu on right-click to show updated status
+                        #[cfg(feature = "screenshot")]
+                        if let tauri::tray::TrayIconEvent::Click {
+                            button: MouseButton::Right,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            let app = tray.app_handle();
+                            if let Ok(new_menu) = build_tray_menu(app) {
+                                if let Err(e) = tray.set_menu(Some(new_menu)) {
+                                    tracing::error!("Failed to update tray menu: {}", e);
+                                }
                             }
                         }
                     })

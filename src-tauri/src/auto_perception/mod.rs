@@ -524,6 +524,18 @@ pub async fn stop_auto_capture() -> Result<(), String> {
     Ok(())
 }
 
+/// Returns whether auto capture is currently running.
+pub fn is_auto_capture_running() -> bool {
+    AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst)
+}
+
+/// Tauri command to get auto capture status.
+/// Returns the current state of auto capture (running or not).
+#[command]
+pub fn get_auto_capture_status() -> bool {
+    is_auto_capture_running()
+}
+
 #[command]
 pub async fn trigger_capture() -> Result<(), String> {
     capture_and_store().await.map_err(|e| {
@@ -692,6 +704,51 @@ mod tests {
     fn compute_fingerprint_rejects_invalid_base64() {
         let result = compute_fingerprint("not-valid!!!");
         assert!(result.is_err());
+    }
+
+    // ── is_auto_capture_running tests ──
+
+    #[test]
+    fn is_auto_capture_running_returns_false_by_default() {
+        // Reset to known state
+        AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
+        assert!(!is_auto_capture_running());
+    }
+
+    #[test]
+    fn is_auto_capture_running_returns_true_after_start() {
+        AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
+        assert!(is_auto_capture_running());
+        // Reset for other tests
+        AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
+    }
+
+    #[test]
+    fn is_auto_capture_running_reflects_state_changes() {
+        AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
+        assert!(!is_auto_capture_running());
+
+        AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
+        assert!(is_auto_capture_running());
+
+        AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
+        assert!(!is_auto_capture_running());
+    }
+
+    // ── get_auto_capture_status command tests ──
+
+    #[test]
+    fn get_auto_capture_status_returns_false_by_default() {
+        AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
+        assert!(!get_auto_capture_status());
+    }
+
+    #[test]
+    fn get_auto_capture_status_returns_true_when_running() {
+        AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
+        assert!(get_auto_capture_status());
+        // Reset for other tests
+        AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
     }
 
     // ── get_default_analysis_prompt tests ──
