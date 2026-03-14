@@ -60,7 +60,7 @@
         </span>
       </div>
 
-      <div class="flex-1 overflow-auto p-6">
+      <div class="flex-1 overflow-auto p-6" ref="scrollContainer" @scroll="handleScroll">
         <div v-if="screenshots.length === 0" class="text-center py-8 text-gray-500">
           暂无截图记录
         </div>
@@ -124,13 +124,17 @@
             </div>
           </div>
 
-          <!-- Load More Button for AC4 -->
-          <div v-if="hasMorePages" class="text-center mt-6">
+          <!-- Load More Button / Loading Indicator for AC4 -->
+          <div v-if="hasMorePages || isLoadingMore" class="text-center mt-6">
+            <div v-if="isLoadingMore" class="text-gray-400 text-sm py-2">
+              <span class="animate-pulse">加载中...</span>
+            </div>
             <button
+              v-else
               @click="loadMore"
               class="px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
             >
-              加载更多 ({{ screenshots.length - currentPage * pageSize }} 条剩余)
+              加载更多 ({{ remainingCount }} 条剩余)
             </button>
           </div>
         </template>
@@ -143,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import ScreenshotModal from './ScreenshotModal.vue'
 
@@ -157,6 +161,8 @@ const startDate = ref('')
 const endDate = ref('')
 const currentPage = ref(1)
 const pageSize = 20
+const isLoadingMore = ref(false)
+const scrollContainer = ref(null)
 
 // Computed: paginated screenshots for AC4
 const paginatedScreenshots = computed(() => {
@@ -167,6 +173,11 @@ const paginatedScreenshots = computed(() => {
 // Computed: has more pages to load
 const hasMorePages = computed(() => {
   return currentPage.value * pageSize < screenshots.value.length
+})
+
+// Computed: remaining count for display
+const remainingCount = computed(() => {
+  return Math.max(0, screenshots.value.length - currentPage.value * pageSize)
 })
 
 const formatTime = (timestamp) => {
@@ -249,8 +260,23 @@ const resetFilter = async () => {
 }
 
 const loadMore = () => {
-  if (hasMorePages.value) {
-    currentPage.value++
+  if (hasMorePages.value && !isLoadingMore.value) {
+    isLoadingMore.value = true
+    // Simulate a small delay for UX feedback
+    setTimeout(() => {
+      currentPage.value++
+      isLoadingMore.value = false
+    }, 150)
+  }
+}
+
+const handleScroll = (event) => {
+  const target = event.target
+  const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight
+
+  // Load more when user scrolls to bottom (within 100px threshold)
+  if (scrollBottom < 100 && hasMorePages.value && !isLoadingMore.value) {
+    loadMore()
   }
 }
 

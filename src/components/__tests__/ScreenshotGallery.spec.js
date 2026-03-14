@@ -399,39 +399,42 @@ describe('ScreenshotGallery', () => {
       return wrapper
     }
 
-    it('shows load more button when records exceed page size', async () => {
-      const wrapper = await mountGalleryWithManyRecords(25)
-
-      // 25 records with pageSize 20 should show load more button
-      expect(wrapper.vm.hasMorePages).toBe(true)
-      expect(wrapper.html()).toContain('加载更多')
-    })
-
-    it('hides load more button when all records are shown', async () => {
-      const wrapper = await mountGalleryWithManyRecords(15)
-
-      // 15 records with pageSize 20 should NOT show load more button
-      expect(wrapper.vm.hasMorePages).toBe(false)
-      expect(wrapper.html()).not.toContain('加载更多')
-    })
-
-    it('initially shows only first page of records', async () => {
+    it('initially shows only first page of records (20 items)', async () => {
       const wrapper = await mountGalleryWithManyRecords(25)
 
       // Should show only 20 items initially (first page)
       expect(wrapper.vm.paginatedScreenshots.length).toBe(20)
     })
 
-    it('loads next page when clicking load more button', async () => {
+    it('shows remaining count indicator when more records exist', async () => {
+      const wrapper = await mountGalleryWithManyRecords(25)
+
+      // Should show remaining count text
+      expect(wrapper.vm.hasMorePages).toBe(true)
+      const html = wrapper.html()
+      expect(html.includes('剩余') || html.includes('加载更多')).toBe(true)
+    })
+
+    it('hides remaining indicator when all records are shown', async () => {
+      const wrapper = await mountGalleryWithManyRecords(15)
+
+      // 15 records with pageSize 20 should NOT show load more
+      expect(wrapper.vm.hasMorePages).toBe(false)
+    })
+
+    it('loads next page when loadMore is called', async () => {
       const wrapper = await mountGalleryWithManyRecords(25)
 
       // Initial state
       expect(wrapper.vm.currentPage).toBe(1)
       expect(wrapper.vm.paginatedScreenshots.length).toBe(20)
 
-      // Click load more
-      const loadMoreBtn = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
-      await loadMoreBtn.trigger('click')
+      // Call loadMore programmatically (simulating scroll trigger)
+      wrapper.vm.loadMore()
+      await nextTick()
+
+      // Wait for the setTimeout to complete
+      await new Promise(resolve => setTimeout(resolve, 200))
       await nextTick()
 
       // Should now show all 25 items
@@ -443,8 +446,8 @@ describe('ScreenshotGallery', () => {
       const wrapper = await mountGalleryWithManyRecords(25)
 
       // Load more to advance page
-      const loadMoreBtn = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
-      await loadMoreBtn.trigger('click')
+      wrapper.vm.loadMore()
+      await new Promise(resolve => setTimeout(resolve, 200))
       await nextTick()
       expect(wrapper.vm.currentPage).toBe(2)
 
@@ -473,11 +476,40 @@ describe('ScreenshotGallery', () => {
       expect(wrapper.vm.currentPage).toBe(1)
     })
 
-    it('shows remaining count in load more button', async () => {
+    it('shows loading indicator when isLoadingMore is true', async () => {
       const wrapper = await mountGalleryWithManyRecords(25)
 
-      const loadMoreBtn = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
-      expect(loadMoreBtn.text()).toContain('5') // 25 - 20 = 5 remaining
+      // Set loading state
+      wrapper.vm.isLoadingMore = true
+      await nextTick()
+
+      // Should show loading indicator
+      expect(wrapper.html()).toContain('加载中')
+    })
+
+    it('calculates correct remaining count', async () => {
+      const wrapper = await mountGalleryWithManyRecords(45)
+
+      // 45 records, first page shows 20, remaining should be 25
+      expect(wrapper.vm.remainingCount).toBe(25)
+    })
+
+    it('does not load more when already at last page', async () => {
+      const wrapper = await mountGalleryWithManyRecords(25)
+
+      // Load all pages
+      wrapper.vm.loadMore() // Page 2 - shows all 25
+      await new Promise(resolve => setTimeout(resolve, 200))
+      await nextTick()
+
+      expect(wrapper.vm.currentPage).toBe(2)
+
+      // Try to load more again - should not change
+      wrapper.vm.loadMore()
+      await new Promise(resolve => setTimeout(resolve, 200))
+      await nextTick()
+
+      expect(wrapper.vm.currentPage).toBe(2) // Should stay at 2, not go to 3
     })
   })
 

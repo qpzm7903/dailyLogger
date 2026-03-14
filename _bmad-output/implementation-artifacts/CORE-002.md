@@ -55,10 +55,10 @@ Status: ready-for-dev
   - [x] 确保点击缩略图传递正确的截图路径
   - [x] 显示大图和完整 AI 分析内容
 
-- [-] Task 4: 实现分页加载 (AC: 4)
-  - [ ] 添加分页状态管理（currentPage, pageSize=20）
-  - [ ] 实现滚动到底部自动加载
-  - [ ] 显示加载进度指示器
+- [x] Task 4: 实现分页加载 (AC: 4)
+  - [x] 添加分页状态管理（currentPage, pageSize=20）
+  - [x] 实现滚动到底部自动加载
+  - [x] 显示加载进度指示器
 
 - [ ] Task 5: 显示截图元信息 (AC: 5)
   - [ ] 缩略图下方显示时间戳（格式化：HH:mm:ss）
@@ -215,6 +215,14 @@ Claude Opus 4.6
 - 模态框接收完整的 record 对象，包含 screenshot_path 和 content 字段
 - 支持在网格视图和列表视图中点击打开预览
 
+**Task 4: 实现分页加载 (AC: 4)** - 完成
+- 添加 `currentPage`, `pageSize=20`, `isLoadingMore` 响应式状态管理
+- 实现 `paginatedScreenshots` 和 `remainingCount` computed 属性
+- 添加 `handleScroll` 函数检测滚动到底部（100px 阈值）
+- 实现 `loadMore` 函数，支持滚动自动加载和按钮点击加载
+- 添加加载指示器：`animate-pulse` 动画显示 "加载中..."
+- 筛选时自动重置分页状态
+
 ### Tests Added
 
 **Task 1 测试** (10 个):
@@ -247,6 +255,16 @@ Claude Opus 4.6
 - `closing modal resets showDetail state`
 - `modal record includes content for AI analysis display`
 
+**Task 4 测试** (8 个):
+- `initially shows only first page of records (20 items)`
+- `shows remaining count indicator when more records exist`
+- `hides remaining indicator when all records are shown`
+- `loads next page when loadMore is called`
+- `resets pagination when filter is applied`
+- `shows loading indicator when isLoadingMore is true`
+- `calculates correct remaining count`
+- `does not load more when already at last page`
+
 ### File List
 
 - `src-tauri/src/memory_storage/mod.rs` - 添加 `get_records_by_date_range_sync` 和 Tauri 命令
@@ -262,3 +280,4 @@ Claude Opus 4.6
 - Task 1 完成 (Date: 2026-03-14)
 - Task 2 完成 (Date: 2026-03-14)
 - Task 3 完成 (Date: 2026-03-14) - 添加 AC3 快速预览测试用例
+- Task 4 完成 (Date: 2026-03-14) - 添加 AC4 分页加载功能，支持滚动自动加载和加载指示器

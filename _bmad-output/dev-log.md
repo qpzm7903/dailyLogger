@@ -108,3 +108,29 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 - **异步测试模式**：`waitFor(() => condition, timeout)` 替代多次 nextTick
 - **Modal 测试清单**：1) 验证组件存在 2) 验证 props 传递 3) 验证事件触发 4) 验证状态重置
+
+---
+
+## Task 4 分页加载 - 2026-03-14
+
+### 技术决策
+
+1. **分页状态管理**：使用 `currentPage`, `pageSize=20`, `isLoadingMore` ref 状态。`paginatedScreenshots` 和 `remainingCount` 作为 computed 属性。理由：响应式计算，无需手动同步。
+
+2. **滚动检测策略**：在滚动容器上监听 `@scroll` 事件，计算 `scrollHeight - scrollTop - clientHeight`，当小于 100px 时触发加载。理由：提前加载，用户体验更好，避免滚动到底部才加载的突兀感。
+
+3. **加载指示器**：使用 `animate-pulse` Tailwind 类实现加载动画，显示 "加载中..." 文字。理由：简洁的视觉反馈，与现有 UI 风格一致。
+
+4. **双重触发机制**：同时支持滚动自动加载和 "加载更多" 按钮点击。理由：兼容不同用户习惯，按钮作为备用触发方式。
+
+5. **防重复加载**：`isLoadingMore` 状态锁防止加载过程中重复触发。理由：避免竞态条件导致页面跳跃。
+
+### 遇到问题
+
+测试中使用 `setTimeout` 模拟加载延迟，需要等待异步操作完成。解决：测试中使用 `await new Promise(resolve => setTimeout(resolve, 200))` 等待延迟完成。
+
+### 后续约定
+
+- **滚动阈值**：100px 为触发加载的标准阈值
+- **加载延迟**：150ms 用于提供视觉反馈
+- **分页测试等待**：`await new Promise(resolve => setTimeout(resolve, 200))` 等待 loadMore 完成
