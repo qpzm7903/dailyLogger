@@ -3,6 +3,7 @@ pub mod auto_perception;
 pub mod manual_entry;
 pub mod memory_storage;
 pub mod synthesis;
+pub mod window_info;
 
 use once_cell::sync::Lazy;
 use std::sync::Mutex;

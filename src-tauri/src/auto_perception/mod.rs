@@ -108,6 +108,9 @@ pub struct ScreenAnalysis {
     pub context_keywords: Vec<String>,
 }
 
+// Re-export ActiveWindow from window_info module for convenience
+pub use crate::window_info::{get_active_window, ActiveWindow};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaptureSettings {
     pub api_base_url: String,

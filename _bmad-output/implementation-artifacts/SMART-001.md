@@ -42,13 +42,13 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [-] Task 1: 实现跨平台窗口信息获取 (AC: 1)
-  - [ ] 添加 `active-win` 相关依赖或实现跨平台窗口获取
-  - [ ] Windows: 使用 Win32 API 获取前台窗口标题和进程名
-  - [ ] macOS: 使用 NSWorkspace/Accessibility API
-  - [ ] Linux: 使用 xdotool 或 x11 相关库
-  - [ ] 创建 `get_active_window()` 函数返回 `ActiveWindow` 结构体
-  - [ ] 编写单元测试（mock 各平台返回）
+- [x] Task 1: 实现跨平台窗口信息获取 (AC: 1)
+  - [x] 添加 `active-win` 相关依赖或实现跨平台窗口获取
+  - [x] Windows: 使用 Win32 API 获取前台窗口标题和进程名
+  - [x] macOS: 使用 NSWorkspace/Accessibility API
+  - [x] Linux: 使用 xdotool 或 x11 相关库
+  - [x] 创建 `get_active_window()` 函数返回 `ActiveWindow` 结构体
+  - [x] 编写单元测试（mock 各平台返回）
 
 - [ ] Task 2: 扩展数据库 Schema (AC: 1, 2, 3)
   - [ ] 在 settings 表添加 `window_whitelist` 字段（JSON 数组）
