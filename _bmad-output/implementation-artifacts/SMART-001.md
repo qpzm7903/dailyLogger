@@ -42,7 +42,7 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 实现跨平台窗口信息获取 (AC: 1)
+- [-] Task 1: 实现跨平台窗口信息获取 (AC: 1)
   - [ ] 添加 `active-win` 相关依赖或实现跨平台窗口获取
   - [ ] Windows: 使用 Win32 API 获取前台窗口标题和进程名
   - [ ] macOS: 使用 NSWorkspace/Accessibility API
