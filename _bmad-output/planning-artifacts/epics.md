@@ -24,16 +24,13 @@
 | ID | 故事 | 优先级 | 估算 |
 |----|------|--------|------|
 | CORE-001 | 设置界面优化 | High | 3pts |
-| CORE-002A | 截图画廊 - 视图切换与分页 | High | 3pts |
-| CORE-002B | 截图画廊 - 日期筛选与预览 | High | 2pts |
+| CORE-002 | 截图画廊增强 | High | 5pts |
 | CORE-003 | 日报生成模板优化 | High | 3pts |
-| CORE-004 | 错误处理与用户提示 | Medium | 3pts |
+| CORE-004 | 错误处理与用户提示 (含网络重连) | Medium | 3pts |
 | CORE-005 | 系统托盘菜单完善 | Medium | 2pts |
 | CORE-006 | API Key 加密存储 | High | 3pts |
-| CORE-007 | 离线模式支持（含自动重连、错误恢复） | Medium | 5pts |
-| CORE-008 | 跨平台兼容性测试 | Medium | 3pts |
-| CORE-009 | 多 Obsidian Vault 支持 | Medium | 3pts |
-| CORE-010 | 性能基准验证 | Medium | 2pts |
+| CORE-007 | 离线模式支持 | Medium | 5pts |
+| CORE-008 | 跨平台兼容性测试 (含性能基准) | Medium | 3pts |
 
 ---
 
@@ -48,8 +45,7 @@
 
 | ID | 故事 | 优先级 | 估算 |
 |----|------|--------|------|
-| SMART-001A | 窗口标题获取 | High | 2pts |
-| SMART-001B | 应用识别逻辑 | High | 3pts |
+| SMART-001 | 应用窗口识别 | High | 5pts |
 | SMART-002 | 静默时段智能调整 | Medium | 3pts |
 | SMART-003 | 工作时间自动识别 | Medium | 3pts |
 | SMART-004 | 多显示器支持优化 | Low | 2pts |
@@ -70,8 +66,7 @@
 | AI-001 | 多模型支持配置 | High | 3pts |
 | AI-002 | 自定义分析 Prompt | High | 2pts |
 | AI-003 | 自定义日报模板 | Medium | 3pts |
-| AI-004A | 工作分类标签 - 数据结构 | Medium | 2pts |
-| AI-004B | 工作分类标签 - AI 生成 | Medium | 3pts |
+| AI-004 | 工作分类标签生成 | Medium | 5pts |
 | AI-005A | Ollama API 集成 | Low | 5pts |
 | AI-005B | 本地模型配置界面 | Low | 3pts |
 
@@ -89,12 +84,11 @@
 | ID | 故事 | 优先级 | 估算 |
 |----|------|--------|------|
 | DATA-001 | 历史记录浏览 | High | 3pts |
-| DATA-002A | 全文搜索 - 索引构建 | High | 2pts |
-| DATA-002B | 全文搜索 - 查询界面 | High | 3pts |
-| DATA-003A | 标签系统 - 数据结构 | Medium | 2pts |
-| DATA-003B | 标签系统 - 标签管理 UI | Medium | 3pts |
+| DATA-002 | 全文搜索功能 | High | 5pts |
+| DATA-003 | 标签系统 | Medium | 5pts |
 | DATA-004 | 数据导出 (JSON/MD) | Medium | 3pts |
 | DATA-005 | 数据备份与恢复 | Low | 3pts |
+| DATA-006 | 多 Obsidian Vault 支持 | Low | 3pts |
 
 ---
 
@@ -109,10 +103,8 @@
 
 | ID | 故事 | 优先级 | 估算 |
 |----|------|--------|------|
-| REPORT-001A | 周报生成 - 数据汇总 | High | 2pts |
-| REPORT-001B | 周报生成 - AI 总结 | High | 3pts |
-| REPORT-002A | 月报生成 - 数据汇总 | Medium | 2pts |
-| REPORT-002B | 月报生成 - AI 总结 | Medium | 3pts |
+| REPORT-001 | 周报生成 | High | 5pts |
+| REPORT-002 | 月报生成 | Medium | 5pts |
 | REPORT-003 | 自定义报告周期 | Low | 3pts |
 | REPORT-004 | 报告对比分析 | Low | 5pts |
 
@@ -131,8 +123,7 @@
 
 | ID | 故事 | 优先级 | 估算 |
 |----|------|--------|------|
-| INT-001A | Notion 导出 - API 集成 | Medium | 2pts |
-| INT-001B | Notion 导出 - 数据格式转换 | Medium | 3pts |
+| INT-001 | Notion 导出支持 | Medium | 5pts |
 | INT-002 | Logseq 导出支持 | Low | 3pts |
 | INT-003A | GitHub API 集成 | Low | 5pts |
 | INT-003B | 工时统计计算与展示 | Low | 3pts |
@@ -148,12 +139,14 @@
 
 **Stories**:
 - [ ] CORE-001: 设置界面优化
-- [ ] CORE-002A: 截图画廊 - 视图切换与分页
-- [ ] CORE-002B: 截图画廊 - 日期筛选与预览
+- [ ] CORE-002: 截图画廊增强
 - [ ] CORE-003: 日报生成模板优化
 - [ ] CORE-005: 系统托盘菜单完善
-- [ ] CORE-006: API Key 加密存储 (NFR 安全)
-- [ ] CORE-010: 性能基准验证 (NFR 性能)
+- [ ] CORE-006: API Key 加密存储 (NFR 7.2 安全)
+
+**NFR 覆盖说明**:
+- CORE-004 已包含网络重连逻辑 (NFR 7.4 可用性)
+- CORE-008 已包含性能基准测试 (NFR 7.1 性能)
 
 ---
 
@@ -163,10 +156,9 @@
 
 **Stories**:
 - [ ] CORE-004: 错误处理与用户提示
-- [ ] CORE-007: 离线模式支持（含自动重连、错误恢复）(NFR 可用性)
-- [ ] CORE-009: 多 Obsidian Vault 支持
-- [ ] SMART-001A: 窗口标题获取
-- [ ] SMART-001B: 应用识别逻辑
+- [ ] CORE-007: 离线模式支持 (NFR 可用性)
+- [ ] SMART-001: 应用窗口识别
+- [ ] SMART-002: 静默时段智能调整
 - [ ] AI-002: 自定义分析 Prompt
 
 ---
@@ -179,8 +171,7 @@
 - [ ] AI-001: 多模型支持配置
 - [ ] AI-003: 自定义日报模板
 - [ ] DATA-001: 历史记录浏览
-- [ ] DATA-002A: 全文搜索 - 索引构建
-- [ ] DATA-002B: 全文搜索 - 查询界面
+- [ ] DATA-002: 全文搜索功能
 - [ ] CORE-008: 跨平台兼容性测试 (NFR 兼容性)
 
 ---
