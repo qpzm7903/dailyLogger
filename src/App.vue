@@ -192,6 +192,7 @@ const screenshotCount = computed(() => {
 })
 
 let timeInterval = null
+let unlistenTrayOpenSettings = null
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
@@ -316,15 +317,21 @@ const loadSettings = async () => {
 onMounted(async () => {
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
-  
+
   // Auto-refresh records every 30 seconds
   setInterval(loadTodayRecords, 30000)
-  
+
+  // Listen for tray-open-settings event
+  unlistenTrayOpenSettings = await listen('tray-open-settings', () => {
+    showSettings.value = true
+  })
+
   await loadSettings()
   await loadTodayRecords()
 })
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
+  if (unlistenTrayOpenSettings) unlistenTrayOpenSettings()
 })
 </script>

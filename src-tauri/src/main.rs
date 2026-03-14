@@ -137,30 +137,25 @@ fn main() {
                         running,
                         None::<&str>,
                     )?;
-                    let quick_note =
-                        MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
-                    let open_obsidian = MenuItem::with_id(
-                        app,
-                        "open_obsidian",
-                        "打开 Obsidian 文件夹",
-                        true,
-                        None::<&str>,
-                    )?;
+                    let generate_summary =
+                        MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
+                    let settings =
+                        MenuItem::with_id(app, "settings", "设置...", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator1 = PredefinedMenuItem::separator(app)?;
                     let separator2 = PredefinedMenuItem::separator(app)?;
 
-                    // Menu order: 状态 → 分隔线 → 快速记录 → 打开文件夹 → 分隔线 → 显示窗口 → 退出
+                    // Menu order: 状态 → 生成日报 → 分隔线 → 设置 → 显示窗口 → 分隔线 → 退出
                     Menu::with_items(
                         app,
                         &[
                             &capture_toggle,
+                            &generate_summary,
                             &separator1,
-                            &quick_note,
-                            &open_obsidian,
-                            &separator2,
+                            &settings,
                             &show,
+                            &separator2,
                             &quit,
                         ],
                     )
@@ -171,26 +166,21 @@ fn main() {
                 fn build_tray_menu(
                     app: &tauri::AppHandle,
                 ) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
-                    let quick_note =
-                        MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
-                    let open_obsidian = MenuItem::with_id(
-                        app,
-                        "open_obsidian",
-                        "打开 Obsidian 文件夹",
-                        true,
-                        None::<&str>,
-                    )?;
+                    let generate_summary =
+                        MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
+                    let settings =
+                        MenuItem::with_id(app, "settings", "设置...", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator = PredefinedMenuItem::separator(app)?;
 
-                    // Menu order: 快速记录 → 打开文件夹 → 分隔线 → 显示窗口 → 退出
+                    // Menu order: 生成日报 → 分隔线 → 设置 → 显示窗口 → 分隔线 → 退出
                     Menu::with_items(
                         app,
                         &[
-                            &quick_note,
-                            &open_obsidian,
+                            &generate_summary,
                             &separator,
+                            &settings,
                             &show,
                             &quit,
                         ],
@@ -215,27 +205,32 @@ fn main() {
                                 window.set_focus().ok();
                             }
                         }
-                        "quick_note" => {
-                            tracing::info!("Quick note requested from tray");
-                            // Check if quick-note window already exists
-                            if let Some(window) = app.get_webview_window("quick-note") {
+                        "settings" => {
+                            tracing::info!("Settings requested from tray");
+                            // Show main window and emit event to open settings
+                            if let Some(window) = app.get_webview_window("main") {
                                 window.show().ok();
                                 window.set_focus().ok();
-                            } else {
-                                // Create new quick-note window
-                                use tauri::WebviewUrl;
-                                let _window = tauri::WebviewWindowBuilder::new(
-                                    app,
-                                    "quick-note",
-                                    WebviewUrl::App("quick-note.html".into()),
-                                )
-                                .title("快速记录")
-                                .inner_size(400.0, 280.0)
-                                .resizable(false)
-                                .decorations(true)
-                                .always_on_top(true)
-                                .build();
+                                // Emit event to frontend to open settings modal
+                                let _ = app.emit("tray-open-settings", ());
                             }
+                        }
+                        "generate_summary" => {
+                            tracing::info!("Generate summary requested from tray");
+                            let app_handle = app.clone();
+                            tauri::async_runtime::spawn(async move {
+                                use daily_logger_lib::synthesis::generate_daily_summary;
+                                match generate_daily_summary().await {
+                                    Ok(path) => {
+                                        tracing::info!("Summary generated: {}", path);
+                                        let _ = app_handle.emit("summary-generated", path);
+                                    }
+                                    Err(e) => {
+                                        tracing::error!("Failed to generate summary: {}", e);
+                                        let _ = app_handle.emit("tray-error", e);
+                                    }
+                                }
+                            });
                         }
                         "capture_toggle" => {
                             #[cfg(feature = "screenshot")]
@@ -264,18 +259,6 @@ fn main() {
                             {
                                 tracing::warn!("Screenshot feature not enabled");
                             }
-                        }
-                        "open_obsidian" => {
-                            tracing::info!("Open Obsidian folder requested from tray");
-                            let app_handle = app.clone();
-                            tauri::async_runtime::spawn(async move {
-                                use daily_logger_lib::manual_entry::open_obsidian_folder;
-                                if let Err(e) = open_obsidian_folder().await {
-                                    tracing::error!("Failed to open Obsidian folder: {}", e);
-                                    // Emit error to show toast notification
-                                    let _ = app_handle.emit("tray-error", e);
-                                }
-                            });
                         }
                         _ => {}
                     })

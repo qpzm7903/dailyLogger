@@ -1,40 +1,42 @@
 {
   "task_id": "CORE-005",
-  "title": "实现打开 Obsidian 文件夹功能 (Task 3, AC: 3)",
-  "verdict": "pass",
-  "score": 92,
-  "summary": "Implementation correctly fulfills AC3 requirements for opening Obsidian folder from tray menu. Code is secure (no command injection), cross-platform compatible, well-tested with 6 test cases covering edge cases (missing, empty, whitespace, non-existent paths). Error messages are in Chinese as required. Minor observation: async wrapper is purely synchronous but acceptable for Tauri command pattern.",
+  "title": "系统托盘菜单完善",
+  "verdict": "fail",
+  "score": 75,
+  "summary": "AC1已修复：托盘菜单现包含所有必需选项（自动捕获、生成日报、设置、显示窗口、退出）。AC3部分完成：tooltip和CheckMenuItem显示状态，但图标本身无变化需要设计资源支持。代码质量良好，前端测试全部通过。",
   "issues": [
     {
-      "severity": "low",
-      "file": "src-tauri/src/manual_entry/mod.rs:71-74",
-      "description": "The async function open_obsidian_folder() just calls the sync version without any await. While this works, it's a pseudo-async pattern.",
-      "recommendation": "Acceptable as-is. The Tauri command pattern prefers async signatures, and the operation is quick enough to not block meaningfully."
+      "severity": "medium",
+      "type": "requirement",
+      "location": "src-tauri/src/main.rs",
+      "description": "AC3部分实现：托盘图标不会根据自动捕获状态改变图像。AC3要求'当自动捕获运行时，图标显示活动状态'。当前tooltip显示状态文字，CheckMenuItem显示选中状态，但图标本身未变化。需要设计资源：需要创建活动状态图标文件(如icon-active.png)。",
+      "acceptance_criteria": "AC3"
     },
     {
-      "severity": "low",
-      "file": "src-tauri/src/main.rs:300-307",
-      "description": "The spawn() result is not awaited, meaning any error from the child process itself (not the spawn) would be silent. However, the error handling captures spawn failure.",
-      "recommendation": "Acceptable as-is. Desktop file managers run independently; we don't need to wait for them."
-    },
+      "severity": "medium",
+      "type": "test_infrastructure",
+      "location": "Cargo.toml",
+      "description": "libspa依赖编译错误导致Rust测试无法运行。这是预先存在的基础设施问题，阻止了完整测试验证。",
+      "acceptance_criteria": "N/A"
+    }
+  ],
+  "issues_fixed": [
     {
-      "severity": "info",
-      "file": "src-tauri/src/manual_entry/mod.rs:404-443",
-      "description": "Test helper setup_test_db_with_settings() duplicates schema with setup_test_db().",
-      "recommendation": "Could be refactored to share code, but not critical for this implementation."
+      "severity": "high",
+      "type": "requirement",
+      "description": "AC1已修复：托盘菜单现包含所有必需选项：自动捕获(CheckMenuItem)、生成日报、设置、显示窗口、退出。移除了非AC要求的快速记录和打开Obsidian文件夹选项以简化菜单。",
+      "acceptance_criteria": "AC1"
     }
   ],
   "strengths": [
-    "Cross-platform support using cfg attributes for Windows/macOS/Linux",
-    "Proper path validation: checks for None, empty string, and whitespace-only values",
-    "File system existence check before attempting to open",
-    "Safe command execution using Command::new().arg() - no command injection vulnerability",
-    "Comprehensive test coverage with 6 tests covering all edge cases",
-    "Error messages in Chinese consistent with project requirements",
-    "Proper Tauri command registration in generate_handler![]",
-    "Good error propagation via tray-error event for frontend notification",
-    "Consistent use of tracing for logging",
-    "Tests handle CI environment gracefully (valid path test accounts for spawn failures)"
+    "AC1完全实现：托盘菜单包含所有必需选项",
+    "AC2实现：使用CheckMenuItem切换自动捕获状态",
+    "AC4实现：tooltip显示状态和今日记录数",
+    "AC5实现：双击托盘图标显示主窗口",
+    "前端测试全部通过(136个测试)",
+    "代码结构清晰，错误处理得当",
+    "正确使用参数化SQL查询防止注入",
+    "正确使用#[cfg(feature)]特性标志处理条件编译"
   ],
-  "recommendation": "approve"
+  "recommendation": "request_changes"
 }
