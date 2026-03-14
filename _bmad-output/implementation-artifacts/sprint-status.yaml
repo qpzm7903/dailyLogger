@@ -92,7 +92,7 @@ stories:
     epic: 智能捕获优化
     priority: Medium
     points: 3
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/SMART-002.md"
     description: 根据用户习惯自动调整静默阈值
     acceptanceCriteria:
