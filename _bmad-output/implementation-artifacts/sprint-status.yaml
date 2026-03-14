@@ -230,7 +230,7 @@ stories:
     epic: 数据管理与检索
     priority: Medium
     points: 5
-    status: in-progress
+    status: ready-for-dev
     specPath: "specs/DATA-003.md"
     storyPath: "_bmad-output/implementation-artifacts/DATA-003.md"
     description: 手动给记录打标签便于检索
