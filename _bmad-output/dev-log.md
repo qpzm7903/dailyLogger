@@ -152,3 +152,27 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **时间戳格式**：缩略图卡片统一使用 `formatTimeShort` 返回 HH:mm:ss 格式
 - **文本截断**：超过限制长度时添加 "..." 省略号
 - **测试断言**：截断测试验证长度和省略号同时存在
+
+---
+
+## CORE-005 - 2026-03-14
+
+### 技术决策
+
+1. **AtomicBool 状态查询**：新增 `is_auto_capture_running()` 读取 `AUTO_CAPTURE_RUNNING` 的 `Ordering::SeqCst`。理由：线程安全访问跨线程共享状态。
+
+2. **动态托盘菜单**：右键点击时重建菜单显示当前状态（● 运行中 / ○ 已停止）。理由：Tauri 托盘菜单不支持响应式更新，需手动重建。
+
+3. **Feature 条件编译**：托盘菜单构建函数分 `#[cfg(feature = "screenshot")]` 和 `#[cfg(not(feature = "screenshot"))` 两版。理由：截图功能可选，菜单项需相应变化。
+
+4. **状态指示器**：使用 Unicode 字符 ●/○ 表示运行状态。理由：简洁直观，无需图标资源。
+
+### 遇到问题
+
+`stop_auto_capture` 为 async 函数，无法在同步的 `on_menu_event` 回调中直接调用。当前方案用 `run_on_main_thread` 占位，后续需实现完整的异步启动/停止。
+
+### 后续约定
+
+- **托盘菜单项 ID**：`capture_toggle`、`show`、`quit`
+- **菜单分组**：用 `PredefinedMenuItem::separator()` 分隔操作组
+- **AtomicBool 读写**：统一使用 `Ordering::SeqCst` 保证顺序一致性
