@@ -39,7 +39,7 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 实现视图切换功能 (AC: 1)
+- [-] Task 1: 实现视图切换功能 (AC: 1)
   - [ ] 添加视图状态管理（grid/list）
   - [ ] 创建视图切换按钮组件
   - [ ] 实现网格视图布局（3 列，响应式）
