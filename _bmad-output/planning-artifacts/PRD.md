@@ -307,13 +307,26 @@ CREATE TABLE records (
     screenshot_path TEXT          -- 可为空
 );
 
+-- 索引优化
+CREATE INDEX idx_timestamp ON records(timestamp DESC);
+CREATE INDEX idx_source_type ON records(source_type);
+
 -- 设置表 (单行)
 CREATE TABLE settings (
     id INTEGER PRIMARY KEY CHECK (id = 1),
+    -- AI 配置
     api_base_url TEXT,
     api_key TEXT,
     model_name TEXT,
+    -- 捕获配置
     screenshot_interval INTEGER DEFAULT 5,
+    change_threshold INTEGER DEFAULT 3,      -- 变化率阈值 (%)
+    max_silent_minutes INTEGER DEFAULT 30,   -- 强制捕获时间
+    -- 分析配置 (扩展)
+    analysis_prompt TEXT,
+    summary_model_name TEXT,
+    summary_prompt TEXT,
+    -- 输出配置
     summary_time TEXT DEFAULT '18:00',
     obsidian_path TEXT,
     auto_capture_enabled INTEGER DEFAULT 0,

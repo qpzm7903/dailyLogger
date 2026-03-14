@@ -1,0 +1,49 @@
+{
+  "ready": true,
+  "check_date": "2026-03-14",
+  "issues_fixed": [
+    {
+      "severity": "critical",
+      "category": "prd_epic_coverage",
+      "description": "PRD P0 核心功能缺少基础实现故事",
+      "fix": "在 Epic 1 添加 MVP 功能实现状态表，明确标注 P0 功能已实现"
+    },
+    {
+      "severity": "high",
+      "category": "non_functional_requirements",
+      "description": "非功能需求 (PRD Section 7) 无对应 stories",
+      "fix": "添加 CORE-006 (API Key 加密), CORE-007 (离线模式), CORE-008 (跨平台测试) stories"
+    },
+    {
+      "severity": "medium",
+      "category": "story_granularity",
+      "description": "部分 story 粒度超过 1 天工作量",
+      "fix": "AI-005 拆分为 AI-005A/AI-005B，INT-003 拆分为 INT-003A/INT-003B"
+    },
+    {
+      "severity": "medium",
+      "category": "architecture_prd_mismatch",
+      "description": "架构文档与 PRD 数据库 Schema 不一致",
+      "fix": "更新 PRD Section 12.1 添加扩展字段 (change_threshold, max_silent_minutes, analysis_prompt, summary_prompt, summary_model_name)"
+    },
+    {
+      "severity": "low",
+      "category": "scope_mismatch",
+      "description": "Epics 包含 PRD 标记为'未来规划'的功能",
+      "fix": "在 Epic 6 添加注释说明为未来规划"
+    }
+  ],
+  "validation_results": {
+    "prd_epic_coverage": "PASS - P0 功能已实现，stories 覆盖增强需求",
+    "nfr_coverage": "PASS - 添加 3 个 NFR stories 覆盖安全、可用性、兼容性",
+    "story_granularity": "PASS - 所有 stories ≤5pts (约1天工作量)",
+    "architecture_consistency": "PASS - PRD schema 与 architecture 一致",
+    "scope_alignment": "PASS - Epic 6 标注为未来规划"
+  },
+  "summary": {
+    "total_issues_found": 5,
+    "issues_fixed": 5,
+    "remaining_issues": 0,
+    "ready": true
+  }
+}
