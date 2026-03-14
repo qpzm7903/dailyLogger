@@ -38,7 +38,7 @@ thiserror = "2"
 once_cell = "1"
 anyhow = "1"
 
-[target.'cfg(all(not(target_os = "windows"), feature = "screenshot"))'.dependencies]
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 xcap = "0.8"
 
 [target.'cfg(target_os = "windows")'.dependencies]
