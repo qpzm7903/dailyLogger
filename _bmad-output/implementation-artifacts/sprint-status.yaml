@@ -119,7 +119,7 @@ stories:
     epic: AI 能力提升
     priority: High
     points: 3
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/AI-001.md"
     description: 支持为分析和总结配置不同模型
     acceptanceCriteria:
