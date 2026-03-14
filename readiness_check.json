@@ -13,6 +13,18 @@
       "description": "CORE-004 已补充自动重连验收条件，明确指数退避策略",
       "file": "epics.md",
       "resolved": true
+    },
+    {
+      "type": "granularity",
+      "description": "CORE-002 (5pts) 可考虑拆分为: a) 图片加载优化, b) 滚动分页, c) 缩放/拖拽交互",
+      "story": "CORE-002",
+      "priority": "low"
+    },
+    {
+      "type": "granularity",
+      "description": "CORE-007 (5pts) 可考虑拆分为: a) 离线数据队列, b) 网络状态检测, c) 同步恢复逻辑",
+      "story": "CORE-007",
+      "priority": "low"
     }
   ],
   "check_summary": {
@@ -21,7 +33,31 @@
     "story_granularity": "PASS - 所有 Story 估算 ≤5pts (约1天工作量)",
     "nfr_coverage": "PASS - 所有非功能需求均有 Story 覆盖",
     "total_stories": 31,
-    "total_epics": 6
+    "total_epics": 6,
+    "checks_detail": {
+      "prd_section_6_coverage": {
+        "6.1_auto_perception": "MVP + SMART-001~004",
+        "6.2_quick_note": "MVP 完成",
+        "6.3_ai_summary": "MVP + CORE-003 + AI-001~003",
+        "6.4_screenshot_gallery": "MVP + CORE-002",
+        "6.5_system_tray": "MVP + CORE-005",
+        "6.6_settings": "MVP + CORE-001"
+      },
+      "prd_section_11_future_coverage": {
+        "周报月报": "Epic 5 (REPORT-001~004)",
+        "多Vault支持": "DATA-006",
+        "标签系统": "DATA-003",
+        "全文搜索": "DATA-002",
+        "数据导出": "DATA-004",
+        "时间线可视化": "P3 deferred (待后期评估)"
+      },
+      "nfr_coverage": {
+        "7.1_performance": "CORE-008 验收条件",
+        "7.2_security": "CORE-006 API Key 加密",
+        "7.3_compatibility": "CORE-008 跨平台测试",
+        "7.4_availability": "CORE-004 + CORE-007"
+      }
+    }
   },
   "summary": {
     "total_issues": 0,
@@ -32,7 +68,7 @@
     "total_suggestions": 4,
     "ready_for_implementation": true
   },
-  "checked_at": "2026-03-14T15:30:00Z",
+  "checked_at": "2026-03-14T15:35:00Z",
   "checked_files": [
     "_bmad-output/planning-artifacts/PRD.md",
     "_bmad-output/planning-artifacts/architecture.md",
