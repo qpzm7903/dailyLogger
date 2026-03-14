@@ -50,12 +50,12 @@ Status: ready-for-dev
   - [x] 创建 `get_active_window()` 函数返回 `ActiveWindow` 结构体
   - [x] 编写单元测试（mock 各平台返回）
 
-- [-] Task 2: 扩展数据库 Schema (AC: 1, 2, 3)
-  - [ ] 在 settings 表添加 `window_whitelist` 字段（JSON 数组）
-  - [ ] 在 settings 表添加 `window_blacklist` 字段（JSON 数组）
-  - [ ] 在 settings 表添加 `use_whitelist_only` 字段（布尔值）
-  - [ ] 更新 `Settings` 结构体添加新字段
-  - [ ] 编写数据库迁移测试
+- [x] Task 2: 扩展数据库 Schema (AC: 1, 2, 3)
+  - [x] 在 settings 表添加 `window_whitelist` 字段（JSON 数组）
+  - [x] 在 settings 表添加 `window_blacklist` 字段（JSON 数组）
+  - [x] 在 settings 表添加 `use_whitelist_only` 字段（布尔值）
+  - [x] 更新 `Settings` 结构体添加新字段
+  - [x] 编写数据库迁移测试
 
 - [ ] Task 3: 实现窗口过滤逻辑 (AC: 2, 3)
   - [ ] 创建 `should_capture_by_window()` 函数

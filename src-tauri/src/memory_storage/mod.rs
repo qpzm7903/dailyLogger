@@ -86,6 +86,19 @@ pub fn init_database() -> Result<(), String> {
         "ALTER TABLE settings ADD COLUMN include_manual_records INTEGER DEFAULT 1",
         [],
     );
+    // SMART-001: 窗口白名单/黑名单配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN window_whitelist TEXT DEFAULT '[]'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN window_blacklist TEXT DEFAULT '[]'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN use_whitelist_only INTEGER DEFAULT 0",
+        [],
+    );
 
     let mut db = DB_CONNECTION
         .lock()
@@ -124,6 +137,10 @@ pub struct Settings {
     pub summary_title_format: Option<String>,
     // 新增字段：是否包含手动记录
     pub include_manual_records: Option<bool>,
+    // SMART-001: 窗口过滤配置
+    pub window_whitelist: Option<String>,
+    pub window_blacklist: Option<String>,
+    pub use_whitelist_only: Option<bool>,
 }
 
 pub fn add_record(
@@ -286,7 +303,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 summary_time, obsidian_path, auto_capture_enabled, last_summary_path,
                 summary_model_name, analysis_prompt, summary_prompt,
                 change_threshold, max_silent_minutes, summary_title_format,
-                include_manual_records
+                include_manual_records, window_whitelist, window_blacklist, use_whitelist_only
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -309,6 +326,9 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 max_silent_minutes: row.get(12)?,
                 summary_title_format: row.get(13)?,
                 include_manual_records: row.get::<_, Option<i32>>(14)?.map(|v| v != 0),
+                window_whitelist: row.get(15)?,
+                window_blacklist: row.get(16)?,
+                use_whitelist_only: row.get::<_, Option<i32>>(17)?.map(|v| v != 0),
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -338,7 +358,10 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             change_threshold = ?12,
             max_silent_minutes = ?13,
             summary_title_format = ?14,
-            include_manual_records = ?15
+            include_manual_records = ?15,
+            window_whitelist = ?16,
+            window_blacklist = ?17,
+            use_whitelist_only = ?18
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -358,6 +381,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings
                 .include_manual_records
                 .map(|v| if v { 1 } else { 0 }),
+            settings.window_whitelist,
+            settings.window_blacklist,
+            settings.use_whitelist_only.map(|v| if v { 1 } else { 0 }),
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -442,7 +468,10 @@ mod tests {
                 change_threshold INTEGER DEFAULT 3,
                 max_silent_minutes INTEGER DEFAULT 30,
                 summary_title_format TEXT DEFAULT '工作日报 - {date}',
-                include_manual_records INTEGER DEFAULT 1
+                include_manual_records INTEGER DEFAULT 1,
+                window_whitelist TEXT DEFAULT '[]',
+                window_blacklist TEXT DEFAULT '[]',
+                use_whitelist_only INTEGER DEFAULT 0
             )",
             [],
         )
@@ -679,6 +708,147 @@ mod tests {
             reloaded.include_manual_records,
             Some(true),
             "Saved include_manual_records=true should be persisted"
+        );
+    }
+
+    // ── Tests for window whitelist/blacklist settings (SMART-001 Task 2) ──
+
+    #[test]
+    fn get_settings_returns_default_window_whitelist() {
+        setup_test_db_with_settings();
+
+        let settings = get_settings_sync().unwrap();
+        assert_eq!(
+            settings.window_whitelist,
+            Some("[]".to_string()),
+            "Default window_whitelist should be empty JSON array '[]'"
+        );
+    }
+
+    #[test]
+    fn get_settings_returns_default_window_blacklist() {
+        setup_test_db_with_settings();
+
+        let settings = get_settings_sync().unwrap();
+        assert_eq!(
+            settings.window_blacklist,
+            Some("[]".to_string()),
+            "Default window_blacklist should be empty JSON array '[]'"
+        );
+    }
+
+    #[test]
+    fn get_settings_returns_default_use_whitelist_only() {
+        setup_test_db_with_settings();
+
+        let settings = get_settings_sync().unwrap();
+        assert_eq!(
+            settings.use_whitelist_only,
+            Some(false),
+            "Default use_whitelist_only should be false"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_window_whitelist() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.window_whitelist = Some(r#"["VS Code", "IntelliJ IDEA"]"#.to_string());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.window_whitelist,
+            Some(r#"["VS Code", "IntelliJ IDEA"]"#.to_string()),
+            "Saved window_whitelist should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_window_blacklist() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.window_blacklist = Some(r#"["浏览器", "Slack"]"#.to_string());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.window_blacklist,
+            Some(r#"["浏览器", "Slack"]"#.to_string()),
+            "Saved window_blacklist should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_use_whitelist_only_true() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.use_whitelist_only = Some(true);
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.use_whitelist_only,
+            Some(true),
+            "Saved use_whitelist_only=true should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_use_whitelist_only_false() {
+        setup_test_db_with_settings();
+
+        // First set to true, then to false
+        let mut settings = get_settings_sync().unwrap();
+        settings.use_whitelist_only = Some(true);
+        save_settings_sync(&settings).unwrap();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.use_whitelist_only = Some(false);
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.use_whitelist_only,
+            Some(false),
+            "Saved use_whitelist_only=false should be persisted"
+        );
+    }
+
+    #[test]
+    fn window_whitelist_accepts_complex_json() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        // Test with special characters and unicode
+        settings.window_whitelist =
+            Some(r#"["VS Code", "微信", "企业微信", "Chrome - 工作"]"#.to_string());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.window_whitelist,
+            Some(r#"["VS Code", "微信", "企业微信", "Chrome - 工作"]"#.to_string()),
+            "window_whitelist should handle unicode and special characters"
+        );
+    }
+
+    #[test]
+    fn window_blacklist_accepts_empty_array() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.window_blacklist = Some("[]".to_string());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.window_blacklist,
+            Some("[]".to_string()),
+            "window_blacklist should accept empty array"
         );
     }
 

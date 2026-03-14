@@ -274,6 +274,9 @@ mod tests {
             summary_prompt: None,
             change_threshold: None,
             max_silent_minutes: None,
+            window_whitelist: None,
+            window_blacklist: None,
+            use_whitelist_only: None,
         }
     }
 

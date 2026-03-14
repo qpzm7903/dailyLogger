@@ -433,7 +433,10 @@ mod tests {
                 change_threshold INTEGER DEFAULT 3,
                 max_silent_minutes INTEGER DEFAULT 30,
                 summary_title_format TEXT DEFAULT '工作日报 - {date}',
-                include_manual_records INTEGER DEFAULT 1
+                include_manual_records INTEGER DEFAULT 1,
+                window_whitelist TEXT DEFAULT '[]',
+                window_blacklist TEXT DEFAULT '[]',
+                use_whitelist_only INTEGER DEFAULT 0
             )",
             [],
         )
