@@ -3,75 +3,46 @@
   "issues": [],
   "suggestions": [
     {
-      "type": "improvement",
-      "description": "Architecture 已补充 TailwindCSS 技术栈约束说明",
-      "file": "architecture.md",
-      "resolved": true
-    },
-    {
-      "type": "improvement",
-      "description": "CORE-004 已补充自动重连验收条件，明确指数退避策略",
-      "file": "epics.md",
-      "resolved": true
-    },
-    {
       "type": "granularity",
-      "description": "CORE-002 (5pts) 可考虑拆分为: a) 图片加载优化, b) 滚动分页, c) 缩放/拖拽交互",
-      "story": "CORE-002",
-      "priority": "low"
+      "description": "以下 Stories 估算为 5pts（约 1 天工作量），建议考虑拆分以便更好地跟踪进度：CORE-007 离线模式支持、SMART-001 应用窗口识别、AI-004 工作分类标签生成、DATA-002 全文搜索功能、DATA-003 标签系统、REPORT-001 周报生成、REPORT-002 月报生成、REPORT-004 报告对比分析、INT-001 Notion 导出支持、INT-003A GitHub API 集成、INT-004 Slack/钉钉通知"
     },
     {
-      "type": "granularity",
-      "description": "CORE-007 (5pts) 可考虑拆分为: a) 离线数据队列, b) 网络状态检测, c) 同步恢复逻辑",
-      "story": "CORE-007",
-      "priority": "low"
+      "type": "clarity",
+      "description": "PRD Section 11 '未来规划' 标题可能引起歧义，部分功能（如周报月报、标签系统、全文搜索）已在 epics.md 中有对应 story。建议在 PRD 中明确区分 '当前 Sprint 不包含' 与 '产品长期规划'"
     }
   ],
-  "check_summary": {
-    "prd_to_epics_mapping": "PASS - 所有 PRD 功能需求均有对应 Epic/Story",
-    "architecture_alignment": "PASS - 技术选型与 PRD 约束一致",
-    "story_granularity": "PASS - 所有 Story 估算 ≤5pts (约1天工作量)",
-    "nfr_coverage": "PASS - 所有非功能需求均有 Story 覆盖",
-    "total_stories": 31,
-    "total_epics": 6,
-    "checks_detail": {
-      "prd_section_6_coverage": {
-        "6.1_auto_perception": "MVP + SMART-001~004",
-        "6.2_quick_note": "MVP 完成",
-        "6.3_ai_summary": "MVP + CORE-003 + AI-001~003",
-        "6.4_screenshot_gallery": "MVP + CORE-002",
-        "6.5_system_tray": "MVP + CORE-005",
-        "6.6_settings": "MVP + CORE-001"
-      },
-      "prd_section_11_future_coverage": {
-        "周报月报": "Epic 5 (REPORT-001~004)",
-        "多Vault支持": "DATA-006",
-        "标签系统": "DATA-003",
-        "全文搜索": "DATA-002",
-        "数据导出": "DATA-004",
-        "时间线可视化": "P3 deferred (待后期评估)"
-      },
-      "nfr_coverage": {
-        "7.1_performance": "CORE-008 验收条件",
-        "7.2_security": "CORE-006 API Key 加密",
-        "7.3_compatibility": "CORE-008 跨平台测试",
-        "7.4_availability": "CORE-004 + CORE-007"
+  "checks": {
+    "prd_to_epics_coverage": {
+      "status": "PASS",
+      "details": "PRD Section 6 所有核心功能已在 epics.md 中有对应 story 或标注为已实现。PRD Section 11 未来规划功能均有对应 Epic（Epic 4-6）"
+    },
+    "nfr_coverage": {
+      "status": "PASS",
+      "details": {
+        "performance_7.1": "CORE-008 覆盖性能基准测试",
+        "security_7.2": "CORE-006 覆盖 API Key 加密存储",
+        "compatibility_7.3": "CORE-008 覆盖跨平台兼容性测试",
+        "availability_7.4": "CORE-004 覆盖网络重连和错误恢复，CORE-007 覆盖离线模式"
       }
+    },
+    "architecture_prd_alignment": {
+      "status": "PASS",
+      "details": "Architecture 文档技术选型与 PRD Section 8 完全一致：Tauri v2、Rust 后端、SQLite、Vue 3、TailwindCSS、OpenAI API 兼容"
+    },
+    "story_granularity": {
+      "status": "PASS_WITH_SUGGESTIONS",
+      "details": "所有 story 估算 ≤5pts（约 1 天工作量），符合要求。建议对 5pt stories 进行拆分以提高跟踪粒度"
     }
   },
-  "summary": {
-    "total_issues": 0,
-    "critical_issues": 0,
-    "medium_issues": 0,
-    "low_issues": 0,
-    "fixed_issues": 0,
-    "total_suggestions": 4,
-    "ready_for_implementation": true
-  },
-  "checked_at": "2026-03-14T15:35:00Z",
-  "checked_files": [
-    "_bmad-output/planning-artifacts/PRD.md",
-    "_bmad-output/planning-artifacts/architecture.md",
-    "_bmad-output/planning-artifacts/epics.md"
-  ]
+  "epics_summary": {
+    "total_epics": 6,
+    "total_stories": 33,
+    "stories_by_priority": {
+      "High": 12,
+      "Medium": 12,
+      "Low": 9
+    },
+    "current_sprint": "Sprint 1",
+    "sprint1_stories": ["CORE-001", "CORE-002", "CORE-003", "CORE-005", "CORE-006"]
+  }
 }
