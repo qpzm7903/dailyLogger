@@ -50,7 +50,7 @@ Status: ready-for-dev
   - [x] 创建 `get_active_window()` 函数返回 `ActiveWindow` 结构体
   - [x] 编写单元测试（mock 各平台返回）
 
-- [ ] Task 2: 扩展数据库 Schema (AC: 1, 2, 3)
+- [-] Task 2: 扩展数据库 Schema (AC: 1, 2, 3)
   - [ ] 在 settings 表添加 `window_whitelist` 字段（JSON 数组）
   - [ ] 在 settings 表添加 `window_blacklist` 字段（JSON 数组）
   - [ ] 在 settings 表添加 `use_whitelist_only` 字段（布尔值）
