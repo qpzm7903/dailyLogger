@@ -105,7 +105,7 @@ stories:
     epic: AI 能力提升
     priority: High
     points: 2
-    status: in-progress
+    status: ready-for-dev
     specPath: "specs/AI-002.md"
     description: 允许用户自定义截图分析 Prompt
     acceptanceCriteria:
