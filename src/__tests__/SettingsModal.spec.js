@@ -179,7 +179,8 @@ describe('SettingsModal.vue - AC1 颜色一致性', () => {
 
     // 检查 placeholder 的样式（Tailwind 的 placeholder: 变体不会添加到 class 列表中）
     // 我们通过检查元素是否有正确的类来间接验证
-    const inputs = wrapper.findAll('input:not([type="time"]), textarea')
+    // 排除 checkbox，因为 checkbox 没有文本颜色设置
+    const inputs = wrapper.findAll('input:not([type="time"]):not([type="checkbox"]), textarea')
     inputs.forEach(input => {
       // 检查是否有 placeholder 相关的样式
       const classList = input.classes()
@@ -269,7 +270,8 @@ describe('SettingsModal.vue - AC3 表单可用性', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const inputs = wrapper.findAll('input, textarea')
+    // 排除 checkbox，因为 checkbox 有不同的边框样式
+    const inputs = wrapper.findAll('input:not([type="checkbox"]), textarea')
     inputs.forEach(input => {
       expect(input.classes()).toContain('border-gray-700')
     })

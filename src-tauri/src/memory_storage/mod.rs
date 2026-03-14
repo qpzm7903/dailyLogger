@@ -77,6 +77,15 @@ pub fn init_database() -> Result<(), String> {
         "ALTER TABLE settings ADD COLUMN max_silent_minutes INTEGER DEFAULT 30",
         [],
     );
+    // 新增字段：日报标题格式和是否包含手动记录
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN summary_title_format TEXT DEFAULT '工作日报 - {date}'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN include_manual_records INTEGER DEFAULT 1",
+        [],
+    );
 
     let mut db = DB_CONNECTION
         .lock()
@@ -111,6 +120,10 @@ pub struct Settings {
     pub summary_prompt: Option<String>,
     pub change_threshold: Option<i32>,
     pub max_silent_minutes: Option<i32>,
+    // 新增字段：日报标题格式
+    pub summary_title_format: Option<String>,
+    // 新增字段：是否包含手动记录
+    pub include_manual_records: Option<bool>,
 }
 
 pub fn add_record(
@@ -187,7 +200,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
             "SELECT api_base_url, api_key, model_name, screenshot_interval,
                 summary_time, obsidian_path, auto_capture_enabled, last_summary_path,
                 summary_model_name, analysis_prompt, summary_prompt,
-                change_threshold, max_silent_minutes
+                change_threshold, max_silent_minutes, summary_title_format,
+                include_manual_records
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -208,6 +222,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 summary_prompt: row.get(10)?,
                 change_threshold: row.get(11)?,
                 max_silent_minutes: row.get(12)?,
+                summary_title_format: row.get(13)?,
+                include_manual_records: row.get::<_, Option<i32>>(14)?.map(|v| v != 0),
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -235,7 +251,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             analysis_prompt = ?10,
             summary_prompt = ?11,
             change_threshold = ?12,
-            max_silent_minutes = ?13
+            max_silent_minutes = ?13,
+            summary_title_format = ?14,
+            include_manual_records = ?15
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -250,7 +268,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.analysis_prompt,
             settings.summary_prompt,
             settings.change_threshold,
-            settings.max_silent_minutes
+            settings.max_silent_minutes,
+            settings.summary_title_format,
+            settings.include_manual_records.map(|v| if v { 1 } else { 0 }),
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -292,6 +312,48 @@ mod tests {
             [],
         )
         .unwrap();
+        let mut db = DB_CONNECTION.lock().unwrap();
+        *db = Some(conn);
+    }
+
+    /// Initializes an in-memory database with settings table for testing settings operations.
+    fn setup_test_db_with_settings() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                screenshot_path TEXT
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "CREATE TABLE settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                api_base_url TEXT,
+                api_key TEXT,
+                model_name TEXT,
+                screenshot_interval INTEGER DEFAULT 5,
+                summary_time TEXT DEFAULT '18:00',
+                obsidian_path TEXT,
+                auto_capture_enabled INTEGER DEFAULT 0,
+                last_summary_path TEXT,
+                summary_model_name TEXT,
+                analysis_prompt TEXT,
+                summary_prompt TEXT,
+                change_threshold INTEGER DEFAULT 3,
+                max_silent_minutes INTEGER DEFAULT 30,
+                summary_title_format TEXT DEFAULT '工作日报 - {date}',
+                include_manual_records INTEGER DEFAULT 1
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
+            .unwrap();
         let mut db = DB_CONNECTION.lock().unwrap();
         *db = Some(conn);
     }
@@ -443,6 +505,85 @@ mod tests {
         assert!(
             pos_afternoon.unwrap() < pos_morning.unwrap(),
             "afternoon (15:00) should appear before morning (09:00) in DESC order"
+        );
+    }
+
+    // ── Tests for new settings fields: summary_title_format and include_manual_records ──
+
+    #[test]
+    fn get_settings_returns_default_title_format() {
+        setup_test_db_with_settings();
+
+        let settings = get_settings_sync().unwrap();
+        assert_eq!(
+            settings.summary_title_format,
+            Some("工作日报 - {date}".to_string()),
+            "Default summary_title_format should be '工作日报 - {{date}}'"
+        );
+    }
+
+    #[test]
+    fn get_settings_returns_default_include_manual_records() {
+        setup_test_db_with_settings();
+
+        let settings = get_settings_sync().unwrap();
+        assert_eq!(
+            settings.include_manual_records,
+            Some(true),
+            "Default include_manual_records should be true"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_title_format() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.summary_title_format = Some("Daily Report - {date}".to_string());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.summary_title_format,
+            Some("Daily Report - {date}".to_string()),
+            "Saved title format should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_include_manual_records_false() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.include_manual_records = Some(false);
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.include_manual_records,
+            Some(false),
+            "Saved include_manual_records=false should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_include_manual_records_true() {
+        setup_test_db_with_settings();
+
+        // First set to false, then to true
+        let mut settings = get_settings_sync().unwrap();
+        settings.include_manual_records = Some(false);
+        save_settings_sync(&settings).unwrap();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.include_manual_records = Some(true);
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.include_manual_records,
+            Some(true),
+            "Saved include_manual_records=true should be persisted"
         );
     }
 }

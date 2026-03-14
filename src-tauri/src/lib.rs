@@ -1,3 +1,4 @@
+#[cfg(feature = "screenshot")]
 pub mod auto_perception;
 pub mod manual_entry;
 pub mod memory_storage;

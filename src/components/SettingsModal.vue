@@ -68,6 +68,16 @@
           <h3 class="text-sm font-medium text-gray-300 mb-3">日报生成</h3>
           <div class="space-y-3">
             <div>
+              <label class="text-xs text-gray-300 block mb-1">日报标题格式</label>
+              <input
+                v-model="settings.summary_title_format"
+                type="text"
+                placeholder="工作日报 - {date}"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              />
+              <span class="text-xs text-gray-500 mt-1 block">使用 {date} 作为日期占位符，留空使用默认格式</span>
+            </div>
+            <div>
               <label class="text-xs text-gray-300 block mb-1">日报模型</label>
               <input
                 v-model="settings.summary_model_name"
@@ -85,6 +95,18 @@
                 placeholder="留空使用默认 Prompt。用 {records} 表示今日记录的插入位置"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
               />
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <input
+                v-model="settings.include_manual_records"
+                type="checkbox"
+                id="include_manual_records"
+                class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+              />
+              <label for="include_manual_records" class="text-xs text-gray-300 cursor-pointer">
+                包含闪念胶囊记录
+              </label>
+              <span class="text-xs text-gray-500">（取消勾选则仅使用自动截图分析）</span>
             </div>
           </div>
         </div>
@@ -213,7 +235,9 @@ const settings = ref({
   analysis_prompt: '',
   summary_prompt: '',
   change_threshold: 3,
-  max_silent_minutes: 30
+  max_silent_minutes: 30,
+  summary_title_format: '',
+  include_manual_records: true
 })
 
 const loadSettings = async () => {

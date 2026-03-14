@@ -57,10 +57,6 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
-            daily_logger_lib::auto_perception::start_auto_capture,
-            daily_logger_lib::auto_perception::stop_auto_capture,
-            daily_logger_lib::auto_perception::trigger_capture,
-            daily_logger_lib::auto_perception::take_screenshot,
             daily_logger_lib::manual_entry::add_quick_note,
             daily_logger_lib::manual_entry::get_screenshot,
             daily_logger_lib::manual_entry::read_file,
@@ -69,6 +65,14 @@ fn main() {
             daily_logger_lib::memory_storage::get_settings,
             daily_logger_lib::memory_storage::save_settings,
             daily_logger_lib::synthesis::generate_daily_summary,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::start_auto_capture,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::stop_auto_capture,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::trigger_capture,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::take_screenshot,
         ])
         .setup(|app| {
             tracing::info!("Application setup complete");

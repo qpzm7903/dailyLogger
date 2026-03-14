@@ -39,7 +39,7 @@ stories:
     epic: 核心功能完善
     priority: High
     points: 3
-    status: in-progress
+    status: review
     specPath: "specs/CORE-003.md"
     description: 优化 AI 生成的日报模板，增加可定制性
     acceptanceCriteria:
