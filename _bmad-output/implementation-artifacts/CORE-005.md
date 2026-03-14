@@ -48,11 +48,11 @@ Status: ready-for-dev
   - [x] 支持 Enter 快捷键保存
   - [x] 保存后自动关闭窗口
 
-- [-] Task 3: 实现打开 Obsidian 文件夹功能 (AC: 3)
-  - [ ] 添加 Rust 后端 `open_obsidian_folder` 命令
-  - [ ] 从 settings 读取 obsidian_path
-  - [ ] 使用系统默认文件管理器打开目录
-  - [ ] 处理路径未配置的情况
+- [x] Task 3: 实现打开 Obsidian 文件夹功能 (AC: 3)
+  - [x] 添加 Rust 后端 `open_obsidian_folder` 命令
+  - [x] 从 settings 读取 obsidian_path
+  - [x] 使用系统默认文件管理器打开目录
+  - [x] 处理路径未配置的情况
 
 - [ ] Task 4: 重构托盘菜单结构 (AC: 1, 2, 3)
   - [ ] 使用 CheckMenuItem 实现状态切换

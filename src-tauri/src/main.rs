@@ -92,6 +92,7 @@ fn main() {
             daily_logger_lib::manual_entry::get_recent_logs,
             daily_logger_lib::manual_entry::get_logs_for_export,
             daily_logger_lib::manual_entry::get_log_file_path,
+            daily_logger_lib::manual_entry::open_obsidian_folder,
             daily_logger_lib::memory_storage::get_today_records,
             daily_logger_lib::memory_storage::get_records_by_date_range,
             daily_logger_lib::memory_storage::get_settings,
@@ -142,6 +143,13 @@ fn main() {
                     )?;
                     let quick_note =
                         MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
+                    let open_obsidian = MenuItem::with_id(
+                        app,
+                        "open_obsidian",
+                        "打开 Obsidian 文件夹",
+                        true,
+                        None::<&str>,
+                    )?;
                     let generate_summary =
                         MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
                     let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
@@ -149,6 +157,7 @@ fn main() {
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator1 = PredefinedMenuItem::separator(app)?;
                     let separator2 = PredefinedMenuItem::separator(app)?;
+                    let separator3 = PredefinedMenuItem::separator(app)?;
 
                     Menu::with_items(
                         app,
@@ -156,6 +165,7 @@ fn main() {
                             &capture_toggle,
                             &separator1,
                             &quick_note,
+                            &open_obsidian,
                             &generate_summary,
                             &settings,
                             &separator2,
@@ -172,6 +182,13 @@ fn main() {
                 ) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
                     let quick_note =
                         MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
+                    let open_obsidian = MenuItem::with_id(
+                        app,
+                        "open_obsidian",
+                        "打开 Obsidian 文件夹",
+                        true,
+                        None::<&str>,
+                    )?;
                     let generate_summary =
                         MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
                     let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
@@ -183,6 +200,7 @@ fn main() {
                         app,
                         &[
                             &quick_note,
+                            &open_obsidian,
                             &generate_summary,
                             &settings,
                             &separator,
@@ -275,6 +293,18 @@ fn main() {
                             if let Err(e) = app.emit("tray-open-settings", ()) {
                                 tracing::error!("Failed to emit open settings event: {}", e);
                             }
+                        }
+                        "open_obsidian" => {
+                            tracing::info!("Open Obsidian folder requested from tray");
+                            let app_handle = app.clone();
+                            tauri::async_runtime::spawn(async move {
+                                use daily_logger_lib::manual_entry::open_obsidian_folder;
+                                if let Err(e) = open_obsidian_folder().await {
+                                    tracing::error!("Failed to open Obsidian folder: {}", e);
+                                    // Emit error to show toast notification
+                                    let _ = app_handle.emit("tray-error", e);
+                                }
+                            });
                         }
                         _ => {}
                     })
