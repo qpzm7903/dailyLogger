@@ -14,6 +14,13 @@
       "description": "CORE-008 故事标题 '跨平台兼容性测试' 未体现性能基准测试，但括号内有注明",
       "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
       "severity": "low"
+    },
+    {
+      "type": "minor",
+      "category": "Story Granularity",
+      "description": "12个 Story 估算为 5pts，接近 1 天工作量上限。建议在 Sprint Planning 时评估是否需要拆分：CORE-002, CORE-007, SMART-001, AI-004, AI-005A, DATA-002, DATA-003, REPORT-001, REPORT-002, INT-001, INT-003A, INT-004",
+      "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
+      "severity": "low"
     }
   ],
   "suggestions": [
@@ -30,6 +37,11 @@
     {
       "target": "Architecture Document",
       "suggestion": "架构文档已包含 API Key 加密的详细实现方案，建议同步到 CORE-006 的 story 文件作为技术规格参考",
+      "priority": "low"
+    },
+    {
+      "target": "Story Granularity",
+      "suggestion": "12个 5pt Story 建议在 Sprint Planning 时评估是否拆分为 2-3 个更小 Story (每个 2-3pts)，便于迭代和进度跟踪",
       "priority": "low"
     }
   ],
@@ -62,11 +74,16 @@
       ]
     },
     "story_granularity": {
-      "status": "pass",
-      "details": "所有 story 估算为 2-5 points，符合 ≤1 天工作量标准",
+      "status": "pass_with_notes",
+      "details": "32个 story 估算为 2-5 points，其中 12 个为 5pts 接近 1 天工作量上限，建议在 Sprint Planning 时评估",
       "story_count": 32,
       "max_points": 5,
-      "min_points": 2
+      "min_points": 2,
+      "five_point_stories": [
+        "CORE-002", "CORE-007", "SMART-001", "AI-004", "AI-005A",
+        "DATA-002", "DATA-003", "REPORT-001", "REPORT-002",
+        "INT-001", "INT-003A", "INT-004"
+      ]
     },
     "nfr_coverage": {
       "status": "pass_with_suggestions",
@@ -79,10 +96,10 @@
     }
   },
   "summary": {
-    "total_issues": 2,
+    "total_issues": 3,
     "critical_issues": 0,
-    "minor_issues": 2,
-    "total_suggestions": 3,
+    "minor_issues": 3,
+    "total_suggestions": 4,
     "ready_for_implementation": true
   },
   "checked_at": "2026-03-14T00:00:00Z"
