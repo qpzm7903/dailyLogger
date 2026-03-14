@@ -111,21 +111,44 @@ fn main() {
                         true,
                         None::<&str>,
                     )?;
+                    let generate_summary =
+                        MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
+                    let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
-                    let separator = PredefinedMenuItem::separator(app)?;
+                    let separator1 = PredefinedMenuItem::separator(app)?;
+                    let separator2 = PredefinedMenuItem::separator(app)?;
 
-                    Menu::with_items(app, &[&capture_toggle, &separator, &show, &quit])
-                        .map_err(Into::into)
+                    Menu::with_items(
+                        app,
+                        &[
+                            &capture_toggle,
+                            &separator1,
+                            &generate_summary,
+                            &settings,
+                            &separator2,
+                            &show,
+                            &quit,
+                        ],
+                    )
+                    .map_err(Into::into)
                 }
 
                 #[cfg(not(feature = "screenshot"))]
                 fn build_tray_menu(
                     app: &tauri::AppHandle,
                 ) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
+                    let generate_summary =
+                        MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
+                    let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
-                    Menu::with_items(app, &[&show, &quit]).map_err(Into::into)
+                    let separator = PredefinedMenuItem::separator(app)?;
+                    Menu::with_items(
+                        app,
+                        &[&generate_summary, &settings, &separator, &show, &quit],
+                    )
+                    .map_err(Into::into)
                 }
 
                 let menu = build_tray_menu(app.handle())?;
@@ -146,29 +169,45 @@ fn main() {
                         "capture_toggle" => {
                             #[cfg(feature = "screenshot")]
                             {
-                                use daily_logger_lib::auto_perception::is_auto_capture_running;
+                                use daily_logger_lib::auto_perception::{
+                                    is_auto_capture_running, start_auto_capture, stop_auto_capture,
+                                };
                                 let running = is_auto_capture_running();
-                                if running {
-                                    tracing::info!("Stopping auto capture from tray");
-                                    if let Err(e) = app.run_on_main_thread(|| {
-                                        // Note: This is a simplified version. In production,
-                                        // we would use async to call stop_auto_capture properly.
-                                        tracing::info!("Auto capture stop requested");
-                                    }) {
-                                        tracing::error!("Failed to run on main thread: {}", e);
+                                let app_handle = app.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    let result = if running {
+                                        tracing::info!("Stopping auto capture from tray");
+                                        stop_auto_capture().await
+                                    } else {
+                                        tracing::info!("Starting auto capture from tray");
+                                        start_auto_capture().await
+                                    };
+                                    if let Err(e) = result {
+                                        tracing::error!("Failed to toggle auto capture: {}", e);
                                     }
-                                } else {
-                                    tracing::info!("Starting auto capture from tray");
-                                    if let Err(e) = app.run_on_main_thread(|| {
-                                        tracing::info!("Auto capture start requested");
-                                    }) {
-                                        tracing::error!("Failed to run on main thread: {}", e);
-                                    }
-                                }
+                                    // Emit event to frontend to update UI
+                                    let _ = app_handle.emit("tray-menu-update", ());
+                                });
                             }
                             #[cfg(not(feature = "screenshot"))]
                             {
                                 tracing::warn!("Screenshot feature not enabled");
+                            }
+                        }
+                        "generate_summary" => {
+                            tracing::info!("Generate summary requested from tray");
+                            if let Err(e) = app.emit("tray-generate-summary", ()) {
+                                tracing::error!("Failed to emit generate summary event: {}", e);
+                            }
+                        }
+                        "settings" => {
+                            tracing::info!("Settings requested from tray");
+                            if let Some(window) = app.get_webview_window("main") {
+                                window.show().ok();
+                                window.set_focus().ok();
+                            }
+                            if let Err(e) = app.emit("tray-open-settings", ()) {
+                                tracing::error!("Failed to emit open settings event: {}", e);
                             }
                         }
                         _ => {}
