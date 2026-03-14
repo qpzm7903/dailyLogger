@@ -125,20 +125,16 @@ fn main() {
                     app: &tauri::AppHandle,
                 ) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
                     use daily_logger_lib::auto_perception::is_auto_capture_running;
-                    let running = is_auto_capture_running();
-                    let status_indicator = if running { "● " } else { "○ " };
-                    let toggle_text = if running {
-                        "停止自动捕获"
-                    } else {
-                        "启动自动捕获"
-                    };
-                    let capture_text = format!("{}{}", status_indicator, toggle_text);
+                    use tauri::menu::CheckMenuItem;
 
-                    let capture_toggle = MenuItem::with_id(
+                    let running = is_auto_capture_running();
+
+                    let capture_toggle = CheckMenuItem::with_id(
                         app,
                         "capture_toggle",
-                        &capture_text,
+                        "自动捕获",
                         true,
+                        running,
                         None::<&str>,
                     )?;
                     let quick_note =
@@ -150,15 +146,12 @@ fn main() {
                         true,
                         None::<&str>,
                     )?;
-                    let generate_summary =
-                        MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
-                    let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator1 = PredefinedMenuItem::separator(app)?;
                     let separator2 = PredefinedMenuItem::separator(app)?;
-                    let separator3 = PredefinedMenuItem::separator(app)?;
 
+                    // Menu order: 状态 → 分隔线 → 快速记录 → 打开文件夹 → 分隔线 → 显示窗口 → 退出
                     Menu::with_items(
                         app,
                         &[
@@ -166,8 +159,6 @@ fn main() {
                             &separator1,
                             &quick_note,
                             &open_obsidian,
-                            &generate_summary,
-                            &settings,
                             &separator2,
                             &show,
                             &quit,
@@ -189,20 +180,16 @@ fn main() {
                         true,
                         None::<&str>,
                     )?;
-                    let generate_summary =
-                        MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
-                    let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator = PredefinedMenuItem::separator(app)?;
 
+                    // Menu order: 快速记录 → 打开文件夹 → 分隔线 → 显示窗口 → 退出
                     Menu::with_items(
                         app,
                         &[
                             &quick_note,
                             &open_obsidian,
-                            &generate_summary,
-                            &settings,
                             &separator,
                             &show,
                             &quit,
@@ -276,22 +263,6 @@ fn main() {
                             #[cfg(not(feature = "screenshot"))]
                             {
                                 tracing::warn!("Screenshot feature not enabled");
-                            }
-                        }
-                        "generate_summary" => {
-                            tracing::info!("Generate summary requested from tray");
-                            if let Err(e) = app.emit("tray-generate-summary", ()) {
-                                tracing::error!("Failed to emit generate summary event: {}", e);
-                            }
-                        }
-                        "settings" => {
-                            tracing::info!("Settings requested from tray");
-                            if let Some(window) = app.get_webview_window("main") {
-                                window.show().ok();
-                                window.set_focus().ok();
-                            }
-                            if let Err(e) = app.emit("tray-open-settings", ()) {
-                                tracing::error!("Failed to emit open settings event: {}", e);
                             }
                         }
                         "open_obsidian" => {

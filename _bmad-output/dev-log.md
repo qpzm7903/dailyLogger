@@ -235,3 +235,25 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **跨平台命令模式**：`#[cfg(target_os)]` 分平台实现，spawn() 启动子进程
 - **路径校验**：`.filter(|p| !p.trim().is_empty())` 同时处理空字符串和纯空白
 - **错误消息**：中文提示，明确问题原因（"请先在设置中配置" vs "路径不存在"）
+
+---
+
+## CORE-005 Task 4 - 2026-03-14
+
+### 技术决策
+
+1. **CheckMenuItem 替代 MenuItem**：使用 `CheckMenuItem::with_id()` 创建可勾选菜单项，通过 `checked` 参数显示勾选状态。理由：比 Unicode 字符 ●/○ 更符合原生桌面应用 UI 习惯，提供更好的视觉反馈。
+
+2. **菜单结构简化**：移除 `generate_summary` 和 `settings` 菜单项，保留核心操作。理由：托盘菜单应保持简洁，常用操作优先；生成日报和设置功能可通过主窗口访问。
+
+3. **菜单顺序重新组织**：状态 → 分隔线 → 快速记录 → 打开文件夹 → 分隔线 → 显示窗口 → 退出。理由：按功能分组，状态独立一组，操作一组，窗口控制一组。
+
+### 遇到问题
+
+无重大问题。编译通过，所有 63 个 Rust 测试和 136 个前端测试均通过。
+
+### 后续约定
+
+- **CheckMenuItem 用法**：`CheckMenuItem::with_id(app, id, text, enabled, checked, accelerator)`
+- **菜单分组**：用 `PredefinedMenuItem::separator()` 分隔不同功能组
+- **非截图模式菜单**：不包含 capture_toggle，只有快速记录、打开文件夹、显示窗口、退出
