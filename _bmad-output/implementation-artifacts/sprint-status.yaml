@@ -300,8 +300,9 @@ stories:
     epic: 周报月报功能
     priority: Low
     points: 3
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/REPORT-003.md"
+    storyPath: "_bmad-output/implementation-artifacts/REPORT-003.md"
     description: 支持自定义报告周期
     acceptanceCriteria:
       - 支持双周报
