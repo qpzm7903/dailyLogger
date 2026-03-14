@@ -257,3 +257,22 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **CheckMenuItem 用法**：`CheckMenuItem::with_id(app, id, text, enabled, checked, accelerator)`
 - **菜单分组**：用 `PredefinedMenuItem::separator()` 分隔不同功能组
 - **非截图模式菜单**：不包含 capture_toggle，只有快速记录、打开文件夹、显示窗口、退出
+
+---
+
+## CORE-005 Task 5 - 2026-03-14
+
+### 技术决策
+
+1. **测试验证策略**：运行 `cargo test --no-default-features` 跳过截图 feature 测试。理由：CI 环境缺少 libspa 依赖，截图相关测试无法编译。
+
+2. **测试位置**：get_auto_capture_status 测试在 auto_perception/mod.rs；tray_quick_note 和 open_obsidian_folder 测试在 manual_entry/mod.rs。理由：跟随命令定义位置，便于维护。
+
+### 遇到问题
+
+CI 环境无法编译 screenshot feature 测试（libspa 依赖缺失）。解决：使用 `--no-default-features` 标志运行测试，跳过截图相关测试。
+
+### 后续约定
+
+- **CI 测试命令**：`cargo test --no-default-features` 适用于无 GUI 的 CI 环境
+- **测试组织**：命令测试跟随命令定义模块，边界测试覆盖 None、空字符串、纯空白、路径不存在
