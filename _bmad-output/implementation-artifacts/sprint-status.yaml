@@ -145,8 +145,9 @@ stories:
     epic: 数据管理与检索
     priority: High
     points: 3
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/DATA-001.md"
+    storyPath: "_bmad-output/implementation-artifacts/DATA-001.md"
     description: 查看和搜索历史记录
     acceptanceCriteria:
       - 支持按日期范围浏览
