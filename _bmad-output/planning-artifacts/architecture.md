@@ -56,6 +56,11 @@ DailyLogger 采用 Tauri v2 桌面应用架构，前端 Vue 3 与后端 Rust 通
 | `DailySummaryViewer.vue` | 日报查看 | Markdown 预览、文件打开 |
 | `LogViewer.vue` | 日志查看 | 应用日志浏览、错误诊断 |
 
+**前端技术栈约束** (符合 PRD Section 8):
+- Vue 3 Composition API + `<script setup>` 语法
+- **TailwindCSS**: 唯一样式方案，无独立 CSS 文件
+- 自定义主题色: `bg-dark`, `bg-darker`, `text-primary` (定义在 `tailwind.config.js`)
+
 #### 2.2 后端模块 (src-tauri/src/)
 
 **lib.rs** - 核心库入口

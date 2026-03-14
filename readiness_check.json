@@ -3,86 +3,25 @@
   "issues": [],
   "suggestions": [
     {
-      "target": "Story Granularity",
-      "suggestion": "12个 5pt Story (CORE-002, CORE-007, SMART-001, AI-004, AI-005A, DATA-002, DATA-003, REPORT-001, REPORT-002, INT-001, INT-003A, INT-004) 建议在实施过程中评估是否需要拆分",
-      "priority": "low"
+      "type": "improvement",
+      "description": "Architecture 已补充 TailwindCSS 技术栈约束说明",
+      "file": "architecture.md",
+      "resolved": true
     },
     {
-      "target": "Architecture Document",
-      "suggestion": "架构文档已包含 API Key 加密的详细实现方案，建议同步到 CORE-006 的 story 文件作为技术规格参考",
-      "priority": "low"
-    },
-    {
-      "target": "Test Automation",
-      "suggestion": "CORE-008 性能基准验收条件可考虑添加自动化测试脚本实现持续性能监控",
-      "priority": "medium"
-    },
-    {
-      "target": "Future Planning",
-      "suggestion": "时间线可视化 (P3) 目前无对应 story，建议在 Epic 6 实施阶段评估是否添加",
-      "priority": "low"
+      "type": "improvement",
+      "description": "CORE-004 已补充自动重连验收条件，明确指数退避策略",
+      "file": "epics.md",
+      "resolved": true
     }
   ],
-  "validation_results": {
-    "prd_to_epics": {
-      "status": "pass",
-      "details": [
-        {"prd_section": "6.1 自动感知 (P0)", "coverage": "已实现 (MVP) + Epic 2 SMART-001~004 优化", "status": "covered"},
-        {"prd_section": "6.2 闪念胶囊 (P0)", "coverage": "已实现 (MVP)", "status": "covered"},
-        {"prd_section": "6.3 AI日报生成 (P0)", "coverage": "已实现 (MVP) + CORE-003 模板优化 + AI-003 自定义模板", "status": "covered"},
-        {"prd_section": "6.4 截图回顾 (P1)", "coverage": "已实现 (MVP) + CORE-002 增强", "status": "covered"},
-        {"prd_section": "6.5 系统托盘 (P1)", "coverage": "已实现 (MVP) + CORE-005 完善", "status": "covered"},
-        {"prd_section": "6.6 设置管理 (P0)", "coverage": "已实现 (MVP) + CORE-001 优化", "status": "covered"},
-        {"prd_section": "11 周报/月报 (P2)", "coverage": "Epic 5 REPORT-001~004", "status": "covered"},
-        {"prd_section": "11 标签系统 (P2)", "coverage": "DATA-003 标签系统", "status": "covered"},
-        {"prd_section": "11 全文搜索 (P2)", "coverage": "DATA-002 全文搜索功能", "status": "covered"},
-        {"prd_section": "11 数据导出 (P3)", "coverage": "DATA-004 (Low)", "status": "covered"},
-        {"prd_section": "11 多Vault支持 (P2)", "coverage": "DATA-006 多Obsidian Vault支持", "status": "covered"},
-        {"prd_section": "11 时间线可视化 (P3)", "coverage": "P3暂不规划，epics.md已说明", "status": "deferred"}
-      ]
-    },
-    "architecture_to_prd": {
-      "status": "pass",
-      "details": [
-        {"constraint": "Tauri v2 框架", "status": "aligned"},
-        {"constraint": "Rust 后端", "status": "aligned"},
-        {"constraint": "SQLite 数据库", "status": "aligned"},
-        {"constraint": "Vue 3 前端", "status": "aligned"},
-        {"constraint": "TailwindCSS", "status": "aligned"},
-        {"constraint": "API Key 加密 (AES-256-GCM)", "status": "aligned"}
-      ]
-    },
-    "story_granularity": {
-      "status": "pass",
-      "details": "34个 story 估算为 2-5 points，粒度合理，均≤1天工作量",
-      "story_count": 34,
-      "max_points": 5,
-      "min_points": 2,
-      "five_point_stories": [
-        "CORE-002", "CORE-007", "SMART-001", "AI-004", "AI-005A",
-        "DATA-002", "DATA-003", "REPORT-001", "REPORT-002",
-        "INT-001", "INT-003A", "INT-004"
-      ]
-    },
-    "nfr_coverage": {
-      "status": "pass",
-      "details": [
-        {"nfr": "7.1 性能要求", "coverage": "CORE-008 (含具体性能指标验收条件)", "status": "covered"},
-        {"nfr": "7.2 安全要求", "coverage": "CORE-006 API Key加密存储", "status": "covered"},
-        {"nfr": "7.3 兼容性要求", "coverage": "CORE-008 跨平台兼容性测试", "status": "covered"},
-        {"nfr": "7.4 可用性要求", "coverage": "CORE-004 网络重连 + CORE-007 离线模式", "status": "covered"}
-      ]
-    },
-    "sprint1_story_files": {
-      "status": "pass",
-      "details": [
-        {"story": "CORE-001", "file": "specs/CORE-001.md", "status": "exists"},
-        {"story": "CORE-002", "file": "specs/CORE-002.md", "status": "exists"},
-        {"story": "CORE-003", "file": "specs/CORE-003.md", "status": "exists"},
-        {"story": "CORE-005", "file": "specs/CORE-005.md", "status": "exists"},
-        {"story": "CORE-006", "file": "specs/CORE-006.md", "status": "exists"}
-      ]
-    }
+  "check_summary": {
+    "prd_to_epics_mapping": "PASS - 所有 PRD 功能需求均有对应 Epic/Story",
+    "architecture_alignment": "PASS - 技术选型与 PRD 约束一致",
+    "story_granularity": "PASS - 所有 Story 估算 ≤5pts (约1天工作量)",
+    "nfr_coverage": "PASS - 所有非功能需求均有 Story 覆盖",
+    "total_stories": 31,
+    "total_epics": 6
   },
   "summary": {
     "total_issues": 0,
