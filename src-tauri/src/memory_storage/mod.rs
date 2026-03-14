@@ -189,6 +189,64 @@ pub fn get_all_today_records_for_summary() -> Result<Vec<Record>, String> {
     get_today_records_sync()
 }
 
+pub fn get_records_by_date_range_sync(
+    start_date: String,
+    end_date: String,
+) -> Result<Vec<Record>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
+    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
+
+    // Parse end_date (YYYY-MM-DD) to local midnight of next day (exclusive upper bound)
+    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(23, 59, 59)
+        .unwrap();
+
+    // Convert to UTC RFC3339
+    let start_utc = start_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let end_utc = end_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, timestamp, source_type, content, screenshot_path FROM records
+         WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let records = stmt
+        .query_map(params![start_utc, end_utc], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(2)?,
+                content: row.get(3)?,
+                screenshot_path: row.get(4)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect records: {}", e))?;
+
+    Ok(records)
+}
+
 pub fn get_settings_sync() -> Result<Settings, String> {
     let db = DB_CONNECTION
         .lock()
@@ -284,6 +342,14 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
 #[command]
 pub async fn get_today_records() -> Result<Vec<Record>, String> {
     get_today_records_sync()
+}
+
+#[command]
+pub async fn get_records_by_date_range(
+    start_date: String,
+    end_date: String,
+) -> Result<Vec<Record>, String> {
+    get_records_by_date_range_sync(start_date, end_date)
 }
 
 #[command]
@@ -586,6 +652,156 @@ mod tests {
             reloaded.include_manual_records,
             Some(true),
             "Saved include_manual_records=true should be persisted"
+        );
+    }
+
+    // ── Tests for get_records_by_date_range ──
+
+    #[test]
+    fn get_records_by_date_range_finds_records_in_range() {
+        setup_test_db();
+
+        // Insert records at specific dates
+        let day1 = chrono::NaiveDate::from_ymd_opt(2026, 3, 10).unwrap();
+        let day2 = chrono::NaiveDate::from_ymd_opt(2026, 3, 12).unwrap();
+        let day3 = chrono::NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+
+        let ts_day1 = local_to_utc_rfc3339(day1.and_hms_opt(10, 0, 0).unwrap());
+        let ts_day2 = local_to_utc_rfc3339(day2.and_hms_opt(10, 0, 0).unwrap());
+        let ts_day3 = local_to_utc_rfc3339(day3.and_hms_opt(10, 0, 0).unwrap());
+
+        insert_record_with_ts(&ts_day1, "day 1 record");
+        insert_record_with_ts(&ts_day2, "day 2 record");
+        insert_record_with_ts(&ts_day3, "day 3 record");
+
+        // Query range: 2026-03-10 to 2026-03-12 (inclusive)
+        let start_date = "2026-03-10".to_string();
+        let end_date = "2026-03-12".to_string();
+
+        let records = get_records_by_date_range_sync(start_date, end_date).unwrap();
+
+        assert!(
+            records.iter().any(|r| r.content == "day 1 record"),
+            "Day 1 record should be in range"
+        );
+        assert!(
+            records.iter().any(|r| r.content == "day 2 record"),
+            "Day 2 record should be in range"
+        );
+        assert!(
+            !records.iter().any(|r| r.content == "day 3 record"),
+            "Day 3 record should NOT be in range"
+        );
+    }
+
+    #[test]
+    fn get_records_by_date_range_includes_end_date_boundary() {
+        setup_test_db();
+
+        // Insert record at end of end_date (23:59:59)
+        let end_day = chrono::NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+        let ts_end = local_to_utc_rfc3339(end_day.and_hms_opt(23, 59, 59).unwrap());
+        insert_record_with_ts(&ts_end, "end of end day");
+
+        let records =
+            get_records_by_date_range_sync("2026-03-15".to_string(), "2026-03-15".to_string())
+                .unwrap();
+
+        assert!(
+            records.iter().any(|r| r.content == "end of end day"),
+            "Record at 23:59:59 on end date should be included"
+        );
+    }
+
+    #[test]
+    fn get_records_by_date_range_includes_start_date_boundary() {
+        setup_test_db();
+
+        // Insert record at start of start_date (00:00:00)
+        let start_day = chrono::NaiveDate::from_ymd_opt(2026, 3, 10).unwrap();
+        let ts_start = local_to_utc_rfc3339(start_day.and_hms_opt(0, 0, 0).unwrap());
+        insert_record_with_ts(&ts_start, "start of start day");
+
+        let records =
+            get_records_by_date_range_sync("2026-03-10".to_string(), "2026-03-10".to_string())
+                .unwrap();
+
+        assert!(
+            records.iter().any(|r| r.content == "start of start day"),
+            "Record at 00:00:00 on start date should be included"
+        );
+    }
+
+    #[test]
+    fn get_records_by_date_range_excludes_outside_range() {
+        setup_test_db();
+
+        let day_before = chrono::NaiveDate::from_ymd_opt(2026, 3, 9).unwrap();
+        let day_after = chrono::NaiveDate::from_ymd_opt(2026, 3, 16).unwrap();
+
+        let ts_before = local_to_utc_rfc3339(day_before.and_hms_opt(23, 59, 59).unwrap());
+        let ts_after = local_to_utc_rfc3339(day_after.and_hms_opt(0, 0, 0).unwrap());
+
+        insert_record_with_ts(&ts_before, "day before range");
+        insert_record_with_ts(&ts_after, "day after range");
+
+        let records =
+            get_records_by_date_range_sync("2026-03-10".to_string(), "2026-03-15".to_string())
+                .unwrap();
+
+        assert!(
+            !records.iter().any(|r| r.content == "day before range"),
+            "Record before range should NOT be included"
+        );
+        assert!(
+            !records.iter().any(|r| r.content == "day after range"),
+            "Record after range should NOT be included"
+        );
+    }
+
+    #[test]
+    fn get_records_by_date_range_returns_empty_for_no_matches() {
+        setup_test_db();
+
+        // Insert record outside the range
+        let day = chrono::NaiveDate::from_ymd_opt(2026, 3, 1).unwrap();
+        let ts = local_to_utc_rfc3339(day.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "outside record");
+
+        let records =
+            get_records_by_date_range_sync("2026-03-10".to_string(), "2026-03-15".to_string())
+                .unwrap();
+
+        // Only check that our specific record is not there (other tests may have records)
+        assert!(
+            !records.iter().any(|r| r.content == "outside record"),
+            "No records should match the range"
+        );
+    }
+
+    #[test]
+    fn get_records_by_date_range_orders_descending() {
+        setup_test_db();
+
+        let day1 = chrono::NaiveDate::from_ymd_opt(2026, 3, 10).unwrap();
+        let day2 = chrono::NaiveDate::from_ymd_opt(2026, 3, 11).unwrap();
+
+        let ts_early = local_to_utc_rfc3339(day1.and_hms_opt(9, 0, 0).unwrap());
+        let ts_late = local_to_utc_rfc3339(day2.and_hms_opt(15, 0, 0).unwrap());
+
+        insert_record_with_ts(&ts_early, "early record");
+        insert_record_with_ts(&ts_late, "late record");
+
+        let records =
+            get_records_by_date_range_sync("2026-03-10".to_string(), "2026-03-11".to_string())
+                .unwrap();
+
+        let pos_early = records.iter().position(|r| r.content == "early record");
+        let pos_late = records.iter().position(|r| r.content == "late record");
+
+        assert!(
+            pos_late.unwrap() < pos_early.unwrap(),
+            "Records should be in descending timestamp order"
         );
     }
 }

@@ -45,10 +45,10 @@ Status: ready-for-dev
   - [x] 实现网格视图布局（3 列，响应式）
   - [x] 实现列表视图布局（带详细信息）
 
-- [-] Task 2: 实现日期筛选功能 (AC: 2)
-  - [ ] 添加日期选择器组件
-  - [ ] 实现日期范围筛选逻辑
-  - [ ] 添加筛选结果计数显示
+- [x] Task 2: 实现日期筛选功能 (AC: 2)
+  - [x] 添加日期选择器组件
+  - [x] 实现日期范围筛选逻辑
+  - [x] 添加筛选结果计数显示
 
 - [ ] Task 3: 实现快速预览弹窗 (AC: 3)
   - [ ] 复用 ScreenshotModal.vue 组件
@@ -197,26 +197,54 @@ Claude Opus 4.6
 
 ### Implementation Summary
 
-Task 1: 实现视图切换功能 (AC: 1) 已完成：
+**Task 1: 实现视图切换功能 (AC: 1)** - 完成
 - 添加了 `viewMode` 响应式状态管理，默认值为 'grid'
 - 创建了视图切换按钮组，使用 `bg-primary` 高亮当前活动视图
 - 网格视图使用 `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3` 响应式三列布局
 - 列表视图使用 `divide-y divide-gray-700` 实现行分隔，包含缩略图、时间、AI摘要和查看按钮
 - 添加了 `formatTimeShort` 函数用于列表视图的时间格式化 (HH:MM:SS)
 
+**Task 2: 实现日期筛选功能 (AC: 2)** - 完成
+- 后端新增 API: 添加 `get_records_by_date_range` Tauri 命令，支持按日期范围查询记录
+- 前端日期筛选: 在 ScreenshotGallery.vue 中添加日期选择器、筛选/重置按钮
+- 筛选结果计数: 显示筛选后的记录数量
+
 ### Tests Added
 
-- `src/components/__tests__/ScreenshotGallery.spec.js`: 10 个测试用例
+**Task 1 测试** (10 个):
+- `src/components/__tests__/ScreenshotGallery.spec.js`
   - AC1 - View Toggle: 7 个测试（按钮渲染、默认视图、切换功能、布局验证、高亮状态）
   - Screenshot rendering: 3 个测试（缩略图显示、时间戳、模态框打开）
 
+**Task 2 后端测试** (6 个):
+- `get_records_by_date_range_finds_records_in_range`
+- `get_records_by_date_range_includes_end_date_boundary`
+- `get_records_by_date_range_includes_start_date_boundary`
+- `get_records_by_date_range_excludes_outside_range`
+- `get_records_by_date_range_returns_empty_for_no_matches`
+- `get_records_by_date_range_orders_descending`
+
+**Task 2 前端测试** (7 个):
+- `renders date filter inputs`
+- `renders filter and reset buttons`
+- `calls get_records_by_date_range when filter is clicked`
+- `displays filtered result count`
+- `resets to today records when reset is clicked`
+- `shows empty state when no records match filter`
+- `clears date inputs on reset`
+
 ### File List
 
-- `src/components/ScreenshotGallery.vue` - 添加视图切换功能
-- `src/components/__tests__/ScreenshotGallery.spec.js` - 新增测试文件
+- `src-tauri/src/memory_storage/mod.rs` - 添加 `get_records_by_date_range_sync` 和 Tauri 命令
+- `src-tauri/src/main.rs` - 注册新命令
+- `src-tauri/Cargo.toml` - 修复 xcap 依赖配置
+- `src/components/ScreenshotGallery.vue` - 添加视图切换和日期筛选功能
+- `src/components/__tests__/ScreenshotGallery.spec.js` - 视图切换测试
+- `src/components/__tests__/ScreenshotGallery.test.js` - 日期筛选测试
 
 ### Change Log
 
 - Story 创建完成 (Date: 2026-03-14)
 - 状态：ready-for-dev
 - Task 1 完成 (Date: 2026-03-14)
+- Task 2 完成 (Date: 2026-03-14)

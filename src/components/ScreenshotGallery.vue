@@ -25,6 +25,41 @@
         </div>
       </div>
 
+      <!-- Date Filter Section -->
+      <div class="px-6 py-3 border-b border-gray-700 flex items-center gap-4 flex-wrap">
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-gray-400">开始日期:</label>
+          <input
+            type="date"
+            v-model="startDate"
+            class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-gray-400">结束日期:</label>
+          <input
+            type="date"
+            v-model="endDate"
+            class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
+          />
+        </div>
+        <button
+          @click="applyFilter"
+          class="px-4 py-1 bg-primary text-white rounded text-sm hover:bg-primary/80 transition-colors"
+        >
+          筛选
+        </button>
+        <button
+          @click="resetFilter"
+          class="px-4 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+        >
+          重置
+        </button>
+        <span v-if="screenshots.length > 0" class="text-sm text-gray-400 ml-auto">
+          共 {{ screenshots.length }} 条
+        </span>
+      </div>
+
       <div class="flex-1 overflow-auto p-6">
         <div v-if="screenshots.length === 0" class="text-center py-8 text-gray-500">
           暂无截图记录
@@ -106,6 +141,8 @@ const screenshots = ref([])
 const showDetail = ref(false)
 const selectedScreenshot = ref(null)
 const viewMode = ref('grid') // 'grid' or 'list'
+const startDate = ref('')
+const endDate = ref('')
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
@@ -129,6 +166,17 @@ const parseContent = (content) => {
   }
 }
 
+const loadThumbnails = async (records) => {
+  for (const record of records) {
+    try {
+      const thumbnail = await invoke('get_screenshot', { path: record.screenshot_path })
+      record.thumbnail = thumbnail
+    } catch (err) {
+      console.error('Failed to load thumbnail:', err)
+    }
+  }
+}
+
 const loadScreenshots = async () => {
   try {
     const records = await invoke('get_today_records')
@@ -136,19 +184,40 @@ const loadScreenshots = async () => {
     const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path)
 
     // Load thumbnails
-    for (const record of autoRecords) {
-      try {
-        const thumbnail = await invoke('get_screenshot', { path: record.screenshot_path })
-        record.thumbnail = thumbnail
-      } catch (err) {
-        console.error('Failed to load thumbnail:', err)
-      }
-    }
+    await loadThumbnails(autoRecords)
 
     screenshots.value = autoRecords
   } catch (err) {
     console.error('Failed to load screenshots:', err)
   }
+}
+
+const applyFilter = async () => {
+  if (!startDate.value || !endDate.value) {
+    return
+  }
+
+  try {
+    const records = await invoke('get_records_by_date_range', {
+      startDate: startDate.value,
+      endDate: endDate.value
+    })
+    // Filter only auto records with screenshots
+    const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path)
+
+    // Load thumbnails
+    await loadThumbnails(autoRecords)
+
+    screenshots.value = autoRecords
+  } catch (err) {
+    console.error('Failed to filter screenshots:', err)
+  }
+}
+
+const resetFilter = async () => {
+  startDate.value = ''
+  endDate.value = ''
+  await loadScreenshots()
 }
 
 const openScreenshot = (screenshot) => {
