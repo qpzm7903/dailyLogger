@@ -59,9 +59,15 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 4. **列表视图时间格式**：新增 `formatTimeShort` 函数返回 HH:MM:SS 格式。理由：列表视图空间有限，短格式更紧凑。
 
+5. **日期范围边界处理**：start_date 取 00:00:00，end_date 取 23:59:59，确保同一天记录全包含。理由：用户期望日期筛选包含边界值，符合直觉。
+
+6. **xcap 依赖重构**：将 xcap 从条件依赖改为 optional 依赖，在 feature 中显式声明。理由：修复 `screenshot` feature 编译问题，依赖声明更清晰。
+
+7. **缩略图加载复用**：抽取 `loadThumbnails` 函数供筛选和默认加载共用。理由：避免代码重复，统一缩略图加载逻辑。
+
 ### 遇到问题
 
-开发过程顺利，无重大问题。TDD 流程先写 10 个测试用例覆盖视图切换和截图渲染，后实现功能，全部测试通过。
+**依赖配置问题**：xcap 在 `screenshot` feature 下编译失败，原配置 `[target.'cfg(all(not(target_os = "windows"), feature = "screenshot"))'.dependencies]` 无法正确解析 feature 条件。解决：改为 optional 依赖 + feature 显式引用。
 
 ### 后续约定
 
@@ -69,3 +75,6 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **响应式三列**：`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
 - **列表分隔线**：使用 `divide-y divide-gray-700` 实现行分隔
 - **测试分组**：按 AC 分组测试用例（如 `AC1 - View Toggle`）提高可读性
+- **日期 API 格式**：前端传 `YYYY-MM-DD` 字符串，后端解析为本地时间边界再转 UTC
+- **日期筛选测试**：覆盖边界值（00:00:00, 23:59:59）和跨日场景
+- **测试隔离**：用 `.iter().any()` 定位记录，不依赖记录顺序或全局数量
