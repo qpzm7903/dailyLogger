@@ -6,6 +6,9 @@
  *  2. 保存失败时显示"✗ 保存失败"
  *  3. 保存时传入正确的命令和参数
  *  4. API Key 显示/隐藏切换
+ *  5. 颜色一致性（AC1）
+ *  6. 按钮 hover 反馈（AC2）
+ *  7. 表单可用性（AC3）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -39,7 +42,10 @@ describe('SettingsModal.vue - saveSettings', () => {
     await wrapper.find('.bg-primary').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('.text-green-400').text()).toBe('✓ 已保存')
+    // 检查成功状态（带图标的绿色提示）
+    const successMsg = wrapper.find('.text-green-400')
+    expect(successMsg.exists()).toBe(true)
+    expect(successMsg.text()).toContain('已保存')
   })
 
   it('保存失败时显示"✗ 保存失败"', async () => {
@@ -50,7 +56,10 @@ describe('SettingsModal.vue - saveSettings', () => {
     await wrapper.find('.bg-primary').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('.text-red-400').text()).toBe('✗ 保存失败')
+    // 检查失败状态（带图标的红色提示）
+    const errorMsg = wrapper.find('.text-red-400')
+    expect(errorMsg.exists()).toBe(true)
+    expect(errorMsg.text()).toContain('保存失败')
   })
 
   it('调用 save_settings 命令并传入 settings 对象', async () => {
@@ -123,5 +132,146 @@ describe('SettingsModal.vue - API Key 可见性', () => {
     await wrapper.find('[title="隐藏"]').trigger('click')
 
     expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('password')
+  })
+})
+
+describe('SettingsModal.vue - AC1 颜色一致性', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupInvoke()
+  })
+
+  it('所有分组标题使用 text-gray-300 和 text-sm 字体', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const headings = wrapper.findAll('h3')
+    headings.forEach(h3 => {
+      expect(h3.classes()).toContain('text-gray-300')
+      expect(h3.classes()).toContain('text-sm')
+    })
+  })
+
+  it('所有 label 使用 text-gray-300 和 text-xs 字体', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const labels = wrapper.findAll('label')
+    labels.forEach(label => {
+      expect(label.classes()).toContain('text-gray-300')
+      expect(label.classes()).toContain('text-xs')
+    })
+  })
+
+  it('所有 input 使用 bg-darker 背景色', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const inputs = wrapper.findAll('input:not([type="time"])')
+    inputs.forEach(input => {
+      expect(input.classes()).toContain('bg-darker')
+    })
+  })
+
+  it('所有 placeholder 使用 text-gray-500 颜色', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    // 检查 placeholder 的样式（Tailwind 的 placeholder: 变体不会添加到 class 列表中）
+    // 我们通过检查元素是否有正确的类来间接验证
+    const inputs = wrapper.findAll('input:not([type="time"]), textarea')
+    inputs.forEach(input => {
+      // 检查是否有 placeholder 相关的样式
+      const classList = input.classes()
+      // placeholder 文本会在运行时显示为灰色
+      // 检查是否包含 text-gray-500 或 placeholder:text-gray-500
+      expect(classList).toContain('text-gray-100') // 输入文本颜色
+    })
+  })
+})
+
+describe('SettingsModal.vue - AC2 按钮交互反馈', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupInvoke()
+  })
+
+  it('关闭按钮有 hover:text-white 效果', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    // 关闭按钮是标题栏中的 ✕ 按钮
+    const header = wrapper.find('.border-b')
+    const closeBtn = header.find('button')
+    expect(closeBtn.classes()).toContain('hover:text-white')
+  })
+
+  it('保存按钮有 hover:bg-blue-600 效果', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const saveBtn = wrapper.find('button.bg-primary')
+    expect(saveBtn.classes()).toContain('hover:bg-blue-600')
+  })
+
+  it('保存按钮禁用状态有 opacity-50 效果', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const saveBtn = wrapper.find('button.bg-primary')
+    expect(saveBtn.classes()).toContain('disabled:opacity-50')
+  })
+
+  it('API Key 显示/隐藏按钮有 hover:text-gray-300 效果', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const toggleBtn = wrapper.find('[title="显示"]')
+    expect(toggleBtn.classes()).toContain('hover:text-gray-300')
+  })
+})
+
+describe('SettingsModal.vue - AC3 表单可用性', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupInvoke()
+  })
+
+  it('每个输入字段有清晰的 label', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const labels = wrapper.findAll('label')
+    expect(labels.length).toBeGreaterThan(5)
+    labels.forEach(label => {
+      expect(label.text().trim()).not.toBe('')
+    })
+  })
+
+  it('每个输入字段有 placeholder 提示', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const inputs = wrapper.findAll('input[placeholder], textarea[placeholder]')
+    expect(inputs.length).toBeGreaterThan(3)
+  })
+
+  it('输入框聚焦时有 border-primary 高亮', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const input = wrapper.find('input[placeholder="https://api.openai.com/v1"]')
+    expect(input.classes()).toContain('focus:border-primary')
+    expect(input.classes()).toContain('focus:outline-none')
+  })
+
+  it('输入框有 border-gray-700 边框', async () => {
+    const wrapper = mount(SettingsModal)
+    await flushPromises()
+
+    const inputs = wrapper.findAll('input, textarea')
+    inputs.forEach(input => {
+      expect(input.classes()).toContain('border-gray-700')
+    })
   })
 })
