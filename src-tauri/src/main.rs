@@ -177,13 +177,7 @@ fn main() {
                     // Menu order: 生成日报 → 分隔线 → 设置 → 显示窗口 → 分隔线 → 退出
                     Menu::with_items(
                         app,
-                        &[
-                            &generate_summary,
-                            &separator,
-                            &settings,
-                            &show,
-                            &quit,
-                        ],
+                        &[&generate_summary, &separator, &settings, &show, &quit],
                     )
                     .map_err(Into::into)
                 }

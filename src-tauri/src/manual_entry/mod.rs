@@ -397,7 +397,9 @@ mod tests {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(open_obsidian_folder());
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("请先在设置中配置 Obsidian 路径"));
+        assert!(result
+            .unwrap_err()
+            .contains("请先在设置中配置 Obsidian 路径"));
     }
 
     // Helper function to set up test database with settings table
