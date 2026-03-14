@@ -79,7 +79,7 @@ stories:
     epic: 智能捕获优化
     priority: High
     points: 5
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/SMART-001.md"
     description: 识别当前活动应用窗口，记录窗口标题和进程名
     acceptanceCriteria:
