@@ -1,6 +1,25 @@
 {
   "ready": true,
-  "issues": [],
+  "issues": [
+    {
+      "severity": "minor",
+      "type": "consistency",
+      "source": "epics.md Sprint 1",
+      "description": "Sprint 1 的 NFR 覆盖说明提到 CORE-008 已包含性能基准测试，但 CORE-008 实际安排在 Sprint 3。建议将 Sprint 1 的 NFR 说明移到 Sprint 3 或调整说明位置"
+    },
+    {
+      "severity": "minor",
+      "type": "missing_feature",
+      "source": "PRD Section 11",
+      "description": "PRD 未来规划中的 '时间线可视化 (P3)' 在 epics 中没有对应 story。P3 功能可合理推迟，但建议在文档中注明"
+    },
+    {
+      "severity": "minor",
+      "type": "inconsistency",
+      "source": "architecture.md Section 11",
+      "description": "architecture.md 安全设计部分仅提到 'SQLite 本地存储，mask 后 logging'，缺少 CORE-006 要求的 API Key 加密实现说明 (aes-gcm/ring crate)"
+    }
+  ],
   "fixed_issues": [
     {
       "severity": "high",
@@ -30,10 +49,24 @@
       "fix": "已更新 CORE-008 描述，明确包含性能基准测试"
     }
   ],
+  "suggestions": [
+    {
+      "target": "epics.md",
+      "action": "将 Sprint 1 的 NFR 覆盖说明中关于 CORE-008 的部分移到 Sprint 3，或调整说明为 'CORE-008 将在 Sprint 3 覆盖性能基准测试'"
+    },
+    {
+      "target": "architecture.md",
+      "action": "在 Section 11 安全设计部分添加: 'API Key 加密存储 (CORE-006): 使用 aes-gcm 或 ring crate 进行 AES-256 加密，密钥基于机器特征生成'"
+    },
+    {
+      "target": "epics.md",
+      "action": "在 Epic 4 或 Epic 5 中添加可选的 'REPORT-005: 时间线可视化' story (P3)，或在文档中明确标注 P3 功能暂不规划"
+    }
+  ],
   "validation_summary": {
     "prd_to_epic_coverage": "complete",
     "architecture_alignment": "aligned",
-    "story_granularity": "acceptable (2-5pts per story, ≤1 day work)",
+    "story_granularity": "acceptable (2-5pts per story, ≤1-2 days work)",
     "nfr_coverage": {
       "performance": "CORE-008 (性能基准测试)",
       "security": "CORE-006 (API Key 加密存储)",
@@ -42,16 +75,33 @@
     },
     "spec_files_status": "complete - all Sprint 1 stories have specs"
   },
+  "coverage_analysis": {
+    "prd_features": {
+      "p0_core": {
+        "auto_perception": { "status": "implemented", "enhancement_stories": ["SMART-001", "SMART-002", "SMART-003", "SMART-004"] },
+        "quick_note": { "status": "implemented" },
+        "daily_summary": { "status": "implemented", "enhancement_stories": ["CORE-003", "AI-003"] },
+        "settings": { "status": "implemented", "enhancement_stories": ["CORE-001"] }
+      },
+      "p1_important": {
+        "screenshot_gallery": { "status": "planned", "story": "CORE-002" },
+        "system_tray": { "status": "planned", "story": "CORE-005" }
+      }
+    },
+    "future_roadmap": {
+      "weekly_monthly_report": { "stories": ["REPORT-001", "REPORT-002", "REPORT-003", "REPORT-004"] },
+      "multi_vault": { "stories": ["DATA-006"] },
+      "timeline_visualization": { "stories": [], "note": "P3 feature, deferred" },
+      "tag_system": { "stories": ["DATA-003"] },
+      "fulltext_search": { "stories": ["DATA-002"] },
+      "data_export": { "stories": ["DATA-004", "DATA-005"] }
+    }
+  },
   "check_date": "2026-03-14",
+  "check_version": "2.0",
   "checked_files": [
     "_bmad-output/planning-artifacts/PRD.md",
     "_bmad-output/planning-artifacts/architecture.md",
     "_bmad-output/planning-artifacts/epics.md"
-  ],
-  "spec_files_created": [
-    "specs/CORE-001.md - 设置界面优化",
-    "specs/CORE-003.md - 日报生成模板优化",
-    "specs/CORE-005.md - 系统托盘菜单完善",
-    "specs/CORE-006.md - API Key 加密存储"
   ]
 }
