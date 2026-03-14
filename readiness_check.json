@@ -2,46 +2,61 @@
   "ready": true,
   "issues": [
     {
-      "type": "minor",
+      "id": "ISSUE-001",
+      "type": "coverage_gap",
+      "category": "PRD Coverage",
+      "description": "PRD 6.4 截图回顾 (P1) 在 epics 中只有 CORE-002 截图画廊增强，但 MVP 功能实现状态表未列出截图回顾功能",
+      "prd_reference": "Section 6.4",
+      "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
+      "severity": "medium",
+      "status": "fixed",
+      "fix": "在 MVP 功能实现状态表中添加截图回顾功能状态：✅ 已实现，CORE-002 为增强版"
+    },
+    {
+      "id": "ISSUE-002",
+      "type": "coverage_gap",
+      "category": "PRD Coverage",
+      "description": "PRD 6.5 系统托盘 (P1) 在 epics 中只有 CORE-005 系统托盘菜单完善，但 MVP 功能实现状态表未列出系统托盘功能",
+      "prd_reference": "Section 6.5",
+      "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
+      "severity": "medium",
+      "status": "fixed",
+      "fix": "在 MVP 功能实现状态表中添加系统托盘功能状态：✅ 已实现，CORE-005 为菜单完善"
+    },
+    {
+      "id": "ISSUE-003",
+      "type": "priority_mismatch",
+      "category": "Priority Alignment",
+      "description": "PRD Section 11 数据导出标记为 P3，但 epics 中 DATA-004 标记为 Medium 优先级",
+      "prd_reference": "Section 11 (数据导出 P3)",
+      "epic_reference": "DATA-004 (Medium)",
+      "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
+      "severity": "low",
+      "status": "fixed",
+      "fix": "将 DATA-004 优先级从 Medium 调整为 Low 以匹配 PRD P3 定义"
+    },
+    {
+      "id": "ISSUE-004",
+      "type": "nfr_coverage_gap",
       "category": "NFR Coverage",
-      "description": "PRD 7.1 性能要求的具体指标 (启动时间<3s, 内存<200MB 等) 未在 CORE-008 验收条件中明确",
+      "description": "NFR 7.1 性能要求的具体指标在 CORE-008 验收条件中未明确列出",
+      "prd_reference": "Section 7.1",
+      "epic_reference": "CORE-008",
       "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
-      "severity": "low"
-    },
-    {
-      "type": "minor",
-      "category": "Story Definition",
-      "description": "CORE-008 故事标题 '跨平台兼容性测试' 未体现性能基准测试，但括号内有注明",
-      "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
-      "severity": "low"
-    },
-    {
-      "type": "minor",
-      "category": "Story Granularity",
-      "description": "12个 Story 估算为 5pts，接近 1 天工作量上限。建议在 Sprint Planning 时评估是否需要拆分：CORE-002, CORE-007, SMART-001, AI-004, AI-005A, DATA-002, DATA-003, REPORT-001, REPORT-002, INT-001, INT-003A, INT-004",
-      "affected_files": ["_bmad-output/planning-artifacts/epics.md"],
-      "severity": "low"
+      "severity": "medium",
+      "status": "fixed",
+      "fix": "为 CORE-008 添加详细验收条件：启动时间<3s、截图处理<2s、AI分析<10s、日报生成<30s、内存<200MB"
     }
   ],
   "suggestions": [
     {
-      "target": "CORE-008",
-      "suggestion": "建议在 story 验收条件中添加 PRD 7.1 的具体性能指标验证：启动时间<3s、截图处理<2s、AI分析<10s、日报生成<30s(100条记录)、内存占用<200MB(空闲)",
-      "priority": "medium"
-    },
-    {
-      "target": "Sprint Plan",
-      "suggestion": "建议在 Sprint 3 执行 CORE-008 时，创建性能基准测试 checklist 作为 DoD 的一部分",
+      "target": "Sprint Planning",
+      "suggestion": "12个 5pt Story (CORE-002, CORE-007, SMART-001, AI-004, AI-005A, DATA-002, DATA-003, REPORT-001, REPORT-002, INT-001, INT-003A, INT-004) 建议评估是否拆分为更小粒度",
       "priority": "low"
     },
     {
       "target": "Architecture Document",
       "suggestion": "架构文档已包含 API Key 加密的详细实现方案，建议同步到 CORE-006 的 story 文件作为技术规格参考",
-      "priority": "low"
-    },
-    {
-      "target": "Story Granularity",
-      "suggestion": "12个 5pt Story 建议在 Sprint Planning 时评估是否拆分为 2-3 个更小 Story (每个 2-3pts)，便于迭代和进度跟踪",
       "priority": "low"
     }
   ],
@@ -49,18 +64,18 @@
     "prd_to_epics": {
       "status": "pass",
       "details": [
-        {"prd_section": "6.1 自动感知", "coverage": "Epic 2 SMART-001~004", "status": "covered"},
-        {"prd_section": "6.2 闪念胶囊", "coverage": "已实现 (MVP)", "status": "covered"},
-        {"prd_section": "6.3 AI日报生成", "coverage": "已实现 + AI-003 自定义模板", "status": "covered"},
-        {"prd_section": "6.4 截图回顾", "coverage": "CORE-002 截图画廊增强", "status": "covered"},
-        {"prd_section": "6.5 系统托盘", "coverage": "CORE-005 系统托盘菜单完善", "status": "covered"},
-        {"prd_section": "6.6 设置管理", "coverage": "CORE-001 设置界面优化", "status": "covered"},
-        {"prd_section": "11 周报/月报", "coverage": "Epic 5 REPORT-001~004", "status": "covered"},
-        {"prd_section": "11 标签系统", "coverage": "DATA-003 标签系统", "status": "covered"},
-        {"prd_section": "11 全文搜索", "coverage": "DATA-002 全文搜索功能", "status": "covered"},
-        {"prd_section": "11 数据导出", "coverage": "DATA-004 数据导出", "status": "covered"},
-        {"prd_section": "11 多Vault支持", "coverage": "DATA-006 多Obsidian Vault支持", "status": "covered"},
-        {"prd_section": "11 时间线可视化", "coverage": "P3暂不规划，epics.md已说明", "status": "deferred"}
+        {"prd_section": "6.1 自动感知 (P0)", "coverage": "Epic 2 SMART-001~004", "status": "covered"},
+        {"prd_section": "6.2 闪念胶囊 (P0)", "coverage": "已实现 (MVP)", "status": "covered"},
+        {"prd_section": "6.3 AI日报生成 (P0)", "coverage": "已实现 + AI-003 自定义模板", "status": "covered"},
+        {"prd_section": "6.4 截图回顾 (P1)", "coverage": "已实现 (MVP) + CORE-002 增强", "status": "covered"},
+        {"prd_section": "6.5 系统托盘 (P1)", "coverage": "已实现 (MVP) + CORE-005 完善", "status": "covered"},
+        {"prd_section": "6.6 设置管理 (P0)", "coverage": "已实现 (MVP) + CORE-001 优化", "status": "covered"},
+        {"prd_section": "11 周报/月报 (P2)", "coverage": "Epic 5 REPORT-001~004", "status": "covered"},
+        {"prd_section": "11 标签系统 (P2)", "coverage": "DATA-003 标签系统", "status": "covered"},
+        {"prd_section": "11 全文搜索 (P2)", "coverage": "DATA-002 全文搜索功能", "status": "covered"},
+        {"prd_section": "11 数据导出 (P3)", "coverage": "DATA-004 (Low)", "status": "covered"},
+        {"prd_section": "11 多Vault支持 (P2)", "coverage": "DATA-006 多Obsidian Vault支持", "status": "covered"},
+        {"prd_section": "11 时间线可视化 (P3)", "coverage": "P3暂不规划，epics.md已说明", "status": "deferred"}
       ]
     },
     "architecture_to_prd": {
@@ -70,12 +85,13 @@
         {"constraint": "Rust 后端", "status": "aligned"},
         {"constraint": "SQLite 数据库", "status": "aligned"},
         {"constraint": "Vue 3 前端", "status": "aligned"},
-        {"constraint": "TailwindCSS", "status": "aligned"}
+        {"constraint": "TailwindCSS", "status": "aligned"},
+        {"constraint": "API Key 加密 (AES-256-GCM)", "status": "aligned"}
       ]
     },
     "story_granularity": {
       "status": "pass_with_notes",
-      "details": "32个 story 估算为 2-5 points，其中 12 个为 5pts 接近 1 天工作量上限，建议在 Sprint Planning 时评估",
+      "details": "32个 story 估算为 2-5 points，粒度合理",
       "story_count": 32,
       "max_points": 5,
       "min_points": 2,
@@ -86,9 +102,9 @@
       ]
     },
     "nfr_coverage": {
-      "status": "pass_with_suggestions",
+      "status": "pass",
       "details": [
-        {"nfr": "7.1 性能要求", "coverage": "CORE-008 (含性能基准)", "status": "partial"},
+        {"nfr": "7.1 性能要求", "coverage": "CORE-008 (含具体性能指标验收条件)", "status": "covered"},
         {"nfr": "7.2 安全要求", "coverage": "CORE-006 API Key加密存储", "status": "covered"},
         {"nfr": "7.3 兼容性要求", "coverage": "CORE-008 跨平台兼容性测试", "status": "covered"},
         {"nfr": "7.4 可用性要求", "coverage": "CORE-004 网络重连 + CORE-007 离线模式", "status": "covered"}
@@ -96,11 +112,19 @@
     }
   },
   "summary": {
-    "total_issues": 3,
+    "total_issues": 4,
     "critical_issues": 0,
-    "minor_issues": 3,
-    "total_suggestions": 4,
+    "medium_issues": 3,
+    "low_issues": 1,
+    "fixed_issues": 4,
+    "total_suggestions": 2,
     "ready_for_implementation": true
   },
-  "checked_at": "2026-03-14T00:00:00Z"
+  "checked_at": "2026-03-14T12:30:00Z",
+  "fixed_at": "2026-03-14T12:35:00Z",
+  "checked_files": [
+    "_bmad-output/planning-artifacts/PRD.md",
+    "_bmad-output/planning-artifacts/architecture.md",
+    "_bmad-output/planning-artifacts/epics.md"
+  ]
 }

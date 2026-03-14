@@ -17,6 +17,8 @@
 | 自动感知 | 6.1 | ✅ 已实现 | 基础截图+AI分析功能已完成 |
 | 闪念胶囊 | 6.2 | ✅ 已实现 | QuickNoteModal 已实现 |
 | AI 日报生成 | 6.3 | ✅ 已实现 | synthesis 模块已完成 |
+| 截图回顾 | 6.4 | ✅ 已实现 | ScreenshotGallery 基础功能已完成，CORE-002 为增强版 |
+| 系统托盘 | 6.5 | ✅ 已实现 | 基础托盘功能已完成，CORE-005 为菜单完善 |
 | 设置管理 | 6.6 | ✅ 已实现 | 基础设置界面已完成 |
 
 #### Stories
@@ -31,6 +33,14 @@
 | CORE-006 | API Key 加密存储 | High | 3pts |
 | CORE-007 | 离线模式支持 | Medium | 5pts |
 | CORE-008 | 跨平台兼容性测试 (含性能基准) | Medium | 3pts |
+
+**CORE-008 验收条件 (NFR 7.1 性能基准)**:
+- [ ] 应用启动时间 < 3 秒
+- [ ] 截图处理延迟 < 2 秒
+- [ ] AI 分析延迟 < 10 秒
+- [ ] 日报生成时间 < 30 秒 (100 条记录以内)
+- [ ] 内存占用 < 200MB (空闲状态)
+- [ ] Windows/macOS/Linux 三平台截图功能验证
 
 ---
 
@@ -86,7 +96,7 @@
 | DATA-001 | 历史记录浏览 | High | 3pts |
 | DATA-002 | 全文搜索功能 | High | 5pts |
 | DATA-003 | 标签系统 | Medium | 5pts |
-| DATA-004 | 数据导出 (JSON/MD) | Medium | 3pts |
+| DATA-004 | 数据导出 (JSON/MD) | Low | 3pts |
 | DATA-005 | 数据备份与恢复 | Low | 3pts |
 | DATA-006 | 多 Obsidian Vault 支持 | Low | 3pts |
 
