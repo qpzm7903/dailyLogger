@@ -91,3 +91,20 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 - **异步测试等待**：使用 `waitFor(() => wrapper.vm.xxx)` 等待状态更新
 - **预览模态框测试**：验证 record 传递、路径正确性、内容完整性
+
+### Task 3 测试实现 - 2026-03-14
+
+### 技术决策
+
+1. **waitFor 辅助函数**：封装异步等待逻辑，条件检查 + 超时机制。理由：替代固定 nextTick 次数，测试更稳定可靠。
+
+2. **Modal 测试策略**：通过 `findComponent({ name: 'ScreenshotModal' })` 定位子组件，验证 props 和事件。理由：直接访问组件实例，断言更精确。
+
+### 遇到问题
+
+原测试使用多个 nextTick 等待异步操作，在 CI 环境偶尔超时。解决：引入 waitFor 辅助函数，基于条件轮询而非固定次数。
+
+### 后续约定
+
+- **异步测试模式**：`waitFor(() => condition, timeout)` 替代多次 nextTick
+- **Modal 测试清单**：1) 验证组件存在 2) 验证 props 传递 3) 验证事件触发 4) 验证状态重置
