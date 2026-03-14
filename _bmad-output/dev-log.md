@@ -78,3 +78,16 @@ Key technical decisions, problems encountered, and conventions from story implem
 - **日期 API 格式**：前端传 `YYYY-MM-DD` 字符串，后端解析为本地时间边界再转 UTC
 - **日期筛选测试**：覆盖边界值（00:00:00, 23:59:59）和跨日场景
 - **测试隔离**：用 `.iter().any()` 定位记录，不依赖记录顺序或全局数量
+
+### Task 3 技术决策
+
+1. **快速预览复用模式**：直接复用现有 ScreenshotModal.vue 组件，通过 props 传递完整的 record 对象。理由：避免重复代码，保持组件职责单一。
+
+2. **异步测试等待策略**：使用 `waitFor` 辅助函数等待 VM 状态更新而非固定次数的 nextTick。理由：测试更稳定，不依赖具体的异步操作数量。
+
+3. **测试分组策略**：按 AC 分组测试用例（AC1 - View Toggle, AC3 - Quick Preview Modal）。理由：提高测试可读性，便于定位问题。
+
+### Task 3 后续约定
+
+- **异步测试等待**：使用 `waitFor(() => wrapper.vm.xxx)` 等待状态更新
+- **预览模态框测试**：验证 record 传递、路径正确性、内容完整性

@@ -50,10 +50,10 @@ Status: ready-for-dev
   - [x] 实现日期范围筛选逻辑
   - [x] 添加筛选结果计数显示
 
-- [-] Task 3: 实现快速预览弹窗 (AC: 3)
-  - [ ] 复用 ScreenshotModal.vue 组件
-  - [ ] 确保点击缩略图传递正确的截图路径
-  - [ ] 显示大图和完整 AI 分析内容
+- [x] Task 3: 实现快速预览弹窗 (AC: 3)
+  - [x] 复用 ScreenshotModal.vue 组件
+  - [x] 确保点击缩略图传递正确的截图路径
+  - [x] 显示大图和完整 AI 分析内容
 
 - [ ] Task 4: 实现分页加载 (AC: 4)
   - [ ] 添加分页状态管理（currentPage, pageSize=20）
@@ -209,6 +209,12 @@ Claude Opus 4.6
 - 前端日期筛选: 在 ScreenshotGallery.vue 中添加日期选择器、筛选/重置按钮
 - 筛选结果计数: 显示筛选后的记录数量
 
+**Task 3: 实现快速预览弹窗 (AC: 3)** - 完成
+- 复用现有 `ScreenshotModal.vue` 组件展示大图和完整 AI 分析
+- 点击缩略图时通过 `openScreenshot()` 函数传递正确的截图记录
+- 模态框接收完整的 record 对象，包含 screenshot_path 和 content 字段
+- 支持在网格视图和列表视图中点击打开预览
+
 ### Tests Added
 
 **Task 1 测试** (10 个):
@@ -233,14 +239,21 @@ Claude Opus 4.6
 - `shows empty state when no records match filter`
 - `clears date inputs on reset`
 
+**Task 3 测试** (6 个):
+- `clicking thumbnail opens ScreenshotModal with correct record`
+- `passes correct screenshot_path to modal`
+- `clicking in list view also opens modal`
+- `ScreenshotModal component is rendered when showDetail is true`
+- `closing modal resets showDetail state`
+- `modal record includes content for AI analysis display`
+
 ### File List
 
 - `src-tauri/src/memory_storage/mod.rs` - 添加 `get_records_by_date_range_sync` 和 Tauri 命令
 - `src-tauri/src/main.rs` - 注册新命令
 - `src-tauri/Cargo.toml` - 修复 xcap 依赖配置
 - `src/components/ScreenshotGallery.vue` - 添加视图切换和日期筛选功能
-- `src/components/__tests__/ScreenshotGallery.spec.js` - 视图切换测试
-- `src/components/__tests__/ScreenshotGallery.test.js` - 日期筛选测试
+- `src/components/__tests__/ScreenshotGallery.spec.js` - 视图切换、截图渲染、快速预览测试
 
 ### Change Log
 
@@ -248,3 +261,4 @@ Claude Opus 4.6
 - 状态：ready-for-dev
 - Task 1 完成 (Date: 2026-03-14)
 - Task 2 完成 (Date: 2026-03-14)
+- Task 3 完成 (Date: 2026-03-14) - 添加 AC3 快速预览测试用例

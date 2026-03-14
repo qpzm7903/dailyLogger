@@ -51,6 +51,18 @@ describe('ScreenshotGallery', () => {
     }
   ]
 
+  // Helper to wait for condition
+  const waitFor = async (condition, timeout = 3000) => {
+    const start = Date.now()
+    while (!condition() && Date.now() - start < timeout) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+      await nextTick()
+    }
+    if (!condition()) {
+      throw new Error('waitFor timeout')
+    }
+  }
+
   // Helper to mount component with default settings
   const mountGallery = async () => {
     // Mock get_today_records to return screenshot records
@@ -78,9 +90,10 @@ describe('ScreenshotGallery', () => {
       }
     })
 
-    // Wait for onMounted to complete (multiple ticks for async operations)
-    await nextTick()
-    await nextTick()
+    // Wait for screenshots to load by checking vm.screenshots.length
+    await waitFor(() => wrapper.vm.screenshots.length > 0)
+
+    // Extra ticks for reactivity
     await nextTick()
     await nextTick()
 
@@ -227,6 +240,115 @@ describe('ScreenshotGallery', () => {
         // Modal should be visible
         expect(wrapper.vm.showDetail).toBe(true)
       }
+    })
+  })
+
+  describe('AC3 - Quick Preview Modal', () => {
+    it('clicking thumbnail opens ScreenshotModal with correct record', async () => {
+      const wrapper = await mountGallery()
+
+      // Find and click the first screenshot card in grid view
+      const gridContainer = wrapper.find('.grid')
+      const cards = gridContainer.findAll('[class*="cursor-pointer"]')
+
+      expect(cards.length).toBeGreaterThan(0)
+
+      // Click first card
+      await cards[0].trigger('click')
+      await nextTick()
+
+      // Verify modal state
+      expect(wrapper.vm.showDetail).toBe(true)
+      expect(wrapper.vm.selectedScreenshot).toBeTruthy()
+      expect(wrapper.vm.selectedScreenshot.id).toBe(1)
+    })
+
+    it('passes correct screenshot_path to modal', async () => {
+      const wrapper = await mountGallery()
+
+      const gridContainer = wrapper.find('.grid')
+      const cards = gridContainer.findAll('[class*="cursor-pointer"]')
+
+      await cards[0].trigger('click')
+      await nextTick()
+
+      // Verify the selected screenshot has correct path
+      expect(wrapper.vm.selectedScreenshot.screenshot_path).toBe('/path/screenshot1.png')
+    })
+
+    it('clicking in list view also opens modal', async () => {
+      const wrapper = await mountGallery()
+
+      // Switch to list view
+      const buttons = wrapper.findAll('button')
+      const listButton = buttons.find(btn => btn.text().includes('列表'))
+      await listButton.trigger('click')
+      await nextTick()
+
+      // Find and click a list item
+      const listContainer = wrapper.find('.divide-y')
+      const listItems = listContainer.findAll('[class*="cursor-pointer"]')
+
+      expect(listItems.length).toBeGreaterThan(0)
+
+      await listItems[1].trigger('click')
+      await nextTick()
+
+      // Verify modal opened with correct record
+      expect(wrapper.vm.showDetail).toBe(true)
+      expect(wrapper.vm.selectedScreenshot.id).toBe(2)
+    })
+
+    it('ScreenshotModal component is rendered when showDetail is true', async () => {
+      const wrapper = await mountGallery()
+
+      // Initially modal should not be visible
+      expect(wrapper.findComponent({ name: 'ScreenshotModal' }).exists()).toBe(false)
+
+      // Click to open modal
+      const gridContainer = wrapper.find('.grid')
+      const cards = gridContainer.findAll('[class*="cursor-pointer"]')
+      await cards[0].trigger('click')
+      await nextTick()
+
+      // Now modal should be rendered
+      const modal = wrapper.findComponent({ name: 'ScreenshotModal' })
+      expect(modal.exists()).toBe(true)
+      expect(modal.props('record')).toEqual(wrapper.vm.selectedScreenshot)
+    })
+
+    it('closing modal resets showDetail state', async () => {
+      const wrapper = await mountGallery()
+
+      // Open modal
+      const gridContainer = wrapper.find('.grid')
+      const cards = gridContainer.findAll('[class*="cursor-pointer"]')
+      await cards[0].trigger('click')
+      await nextTick()
+
+      expect(wrapper.vm.showDetail).toBe(true)
+
+      // Find modal and emit close event
+      const modal = wrapper.findComponent({ name: 'ScreenshotModal' })
+      await modal.vm.$emit('close')
+      await nextTick()
+
+      // Modal should be hidden
+      expect(wrapper.vm.showDetail).toBe(false)
+    })
+
+    it('modal record includes content for AI analysis display', async () => {
+      const wrapper = await mountGallery()
+
+      const gridContainer = wrapper.find('.grid')
+      const cards = gridContainer.findAll('[class*="cursor-pointer"]')
+      await cards[0].trigger('click')
+      await nextTick()
+
+      // Verify the record passed to modal has content
+      const selected = wrapper.vm.selectedScreenshot
+      expect(selected.content).toBeTruthy()
+      expect(selected.content).toContain('current_focus')
     })
   })
 })
