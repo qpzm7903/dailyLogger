@@ -174,8 +174,9 @@ stories:
     epic: 智能捕获优化
     priority: Medium
     points: 3
-    status: backlog
+    status: ready-for-dev
     specPath: "specs/SMART-003.md"
+    storyPath: "_bmad-output/implementation-artifacts/SMART-003.md"
     description: 自动识别用户工作时间，非工作时间暂停捕获
     acceptanceCriteria:
       - 学习用户工作时段
