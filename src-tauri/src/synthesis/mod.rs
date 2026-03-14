@@ -438,4 +438,27 @@ mod tests {
         let formatted = format_records_for_summary(&records);
         assert!(formatted.is_empty());
     }
+
+    // ── Tests for get_default_summary_prompt ──
+
+    #[test]
+    fn get_default_summary_prompt_returns_expected_content() {
+        let prompt = get_default_summary_prompt();
+        assert!(prompt.contains("{records}"));
+        assert!(prompt.contains("Markdown"));
+        assert!(prompt.contains("工作日志助手"));
+    }
+
+    #[test]
+    fn get_default_summary_prompt_is_not_empty() {
+        let prompt = get_default_summary_prompt();
+        assert!(!prompt.is_empty());
+    }
+}
+
+/// Returns the default summary prompt template.
+/// This is used when the user has not configured a custom prompt.
+#[command]
+pub fn get_default_summary_prompt() -> String {
+    DEFAULT_SUMMARY_PROMPT.to_string()
 }

@@ -132,7 +132,7 @@ stories:
     epic: AI 能力提升
     priority: Medium
     points: 3
-    status: in-progress
+    status: review
     specPath: "specs/AI-003.md"
     description: 允许用户自定义日报生成模板
     acceptanceCriteria:

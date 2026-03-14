@@ -67,6 +67,7 @@ fn main() {
             daily_logger_lib::memory_storage::get_settings,
             daily_logger_lib::memory_storage::save_settings,
             daily_logger_lib::synthesis::generate_daily_summary,
+            daily_logger_lib::synthesis::get_default_summary_prompt,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::start_auto_capture,
             #[cfg(feature = "screenshot")]

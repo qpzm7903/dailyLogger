@@ -111,6 +111,43 @@
                 placeholder="留空使用默认 Prompt。用 {records} 表示今日记录的插入位置"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
               />
+              <div class="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  @click="showDefaultSummaryPrompt"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  查看默认
+                </button>
+                <button
+                  type="button"
+                  @click="resetSummaryPrompt"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  重置为默认
+                </button>
+                <button
+                  type="button"
+                  @click="showTemplateLibrary"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  模板库
+                </button>
+                <button
+                  type="button"
+                  @click="exportTemplate"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  导出模板
+                </button>
+                <button
+                  type="button"
+                  @click="importTemplate"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  导入模板
+                </button>
+              </div>
             </div>
             <div class="flex items-center gap-2 pt-1">
               <input
@@ -235,6 +272,66 @@
         </div>
       </div>
 
+      <!-- Default Summary Prompt Modal -->
+      <div v-if="showDefaultSummaryPromptModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showDefaultSummaryPromptModal = false">
+        <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-hidden border border-gray-700">
+          <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">默认日报 Prompt</h3>
+            <button @click="showDefaultSummaryPromptModal = false" class="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div class="p-6 overflow-y-auto max-h-[60vh]">
+            <pre class="text-sm text-gray-300 whitespace-pre-wrap bg-darker p-4 rounded-lg">{{ defaultSummaryPromptContent }}</pre>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end">
+            <button
+              @click="showDefaultSummaryPromptModal = false"
+              class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 transition-colors"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Template Library Modal -->
+      <div v-if="showTemplateLibraryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showTemplateLibraryModal = false">
+        <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-hidden border border-gray-700">
+          <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">模板库</h3>
+            <button @click="showTemplateLibraryModal = false" class="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div class="p-6 overflow-y-auto max-h-[60vh] space-y-4">
+            <div
+              v-for="template in presetTemplates"
+              :key="template.id"
+              class="bg-darker rounded-lg p-4 border border-gray-700 hover:border-primary transition-colors cursor-pointer"
+              @click="applyTemplate(template)"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-sm font-medium text-gray-200">{{ template.name }}</h4>
+                  <p class="text-xs text-gray-400 mt-1">{{ template.description }}</p>
+                </div>
+                <button
+                  class="px-3 py-1 bg-primary/20 text-primary text-xs rounded hover:bg-primary hover:text-white transition-colors"
+                  @click.stop="applyTemplate(template)"
+                >
+                  应用
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end">
+            <button
+              @click="showTemplateLibraryModal = false"
+              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-200 transition-colors"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between gap-3">
         <div class="flex flex-col">
           <span v-if="saveStatus === 'ok'" class="text-green-400 text-xs flex items-center gap-1">
@@ -271,8 +368,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { save } from '@tauri-apps/plugin-dialog'
-import { writeFile, writeTextFile } from '@tauri-apps/plugin-fs'
+import { save, open } from '@tauri-apps/plugin-dialog'
+import { writeFile, writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { showError, showSuccess } from '../stores/toast.js'
 
 const emit = defineEmits(['close'])
@@ -285,6 +382,64 @@ const isExportingLogs = ref(false)
 const exportError = ref('')
 const showDefaultPromptModal = ref(false)
 const defaultPromptContent = ref('')
+const showDefaultSummaryPromptModal = ref(false)
+const defaultSummaryPromptContent = ref('')
+const showTemplateLibraryModal = ref(false)
+
+// Preset templates for summary prompt
+const presetTemplates = [
+  {
+    id: 'default',
+    name: '默认模板',
+    description: '结构化日报，包含时间线、关键成果和问题',
+    content: null // Will be loaded from backend
+  },
+  {
+    id: 'concise',
+    name: '简洁模板',
+    description: '简洁摘要，仅列出主要工作项',
+    content: `请根据以下今日工作记录，生成简洁的工作摘要。
+
+今日记录：
+{records}
+
+要求：
+1. 仅列出 3-5 条主要工作项
+2. 每项不超过 20 字
+3. 格式：• 工作项
+
+请生成摘要：`
+  },
+  {
+    id: 'detailed',
+    name: '详细模板',
+    description: '详细日报，包含时间分析和工作建议',
+    content: `请根据以下今日工作记录，生成详细的工作日报。
+
+今日记录：
+{records}
+
+请按以下格式生成日报：
+
+## 📋 今日概览
+- 工作时长估算
+- 主要工作领域
+
+## ✅ 完成事项
+按优先级列出已完成的工作
+
+## 🔄 进行中
+正在处理的事项
+
+## 💡 改进建议
+基于今日工作的改进建议
+
+## 📌 明日计划
+建议的后续事项
+
+请生成日报：`
+  }
+]
 
 const settings = ref({
   api_base_url: '',
@@ -415,6 +570,120 @@ const showDefaultPrompt = async () => {
 const resetPrompt = () => {
   settings.value.analysis_prompt = ''
   showSuccess('已重置为默认 Prompt，保存后生效')
+}
+
+// Summary Prompt functions
+const showDefaultSummaryPrompt = async () => {
+  try {
+    defaultSummaryPromptContent.value = await invoke('get_default_summary_prompt')
+    showDefaultSummaryPromptModal.value = true
+  } catch (err) {
+    console.error('Failed to get default summary prompt:', err)
+    showError(err)
+  }
+}
+
+const resetSummaryPrompt = () => {
+  settings.value.summary_prompt = ''
+  showSuccess('已重置为默认 Prompt，保存后生效')
+}
+
+// Template Library functions
+const showTemplateLibrary = async () => {
+  // Load default template content from backend
+  try {
+    const defaultPrompt = await invoke('get_default_summary_prompt')
+    presetTemplates[0].content = defaultPrompt
+  } catch (err) {
+    console.error('Failed to get default summary prompt:', err)
+  }
+  showTemplateLibraryModal.value = true
+}
+
+const applyTemplate = (template) => {
+  if (template.content) {
+    settings.value.summary_prompt = template.content
+    showTemplateLibraryModal.value = false
+    showSuccess(`已应用模板: ${template.name}`)
+  } else {
+    showError('模板内容为空')
+  }
+}
+
+// Import/Export functions
+const exportTemplate = async () => {
+  const currentPrompt = settings.value.summary_prompt || ''
+  if (!currentPrompt.trim()) {
+    showError('当前 Prompt 为空，无法导出')
+    return
+  }
+
+  try {
+    const templateData = {
+      version: '1.0',
+      name: '我的日报模板',
+      description: '自定义日报模板',
+      content: currentPrompt,
+      createdAt: new Date().toISOString()
+    }
+
+    const filePath = await save({
+      defaultPath: `summary-template-${new Date().toISOString().slice(0, 10)}.json`,
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (filePath) {
+      await writeTextFile(filePath, JSON.stringify(templateData, null, 2))
+      showSuccess('模板导出成功')
+    }
+  } catch (err) {
+    console.error('Failed to export template:', err)
+    showError(`导出失败: ${err}`)
+  }
+}
+
+const importTemplate = async () => {
+  try {
+    const filePath = await open({
+      multiple: false,
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (!filePath) {
+      return
+    }
+
+    const content = await readTextFile(filePath)
+    const templateData = JSON.parse(content)
+
+    // Validate template format
+    if (!templateData.content || typeof templateData.content !== 'string') {
+      showError('无效的模板文件：缺少 content 字段')
+      return
+    }
+
+    // Check for {records} placeholder
+    if (!templateData.content.includes('{records}')) {
+      showError('模板缺少 {records} 占位符，请确保模板包含此占位符')
+      return
+    }
+
+    settings.value.summary_prompt = templateData.content
+    showSuccess(`导入成功: ${templateData.name || '未命名模板'}`)
+  } catch (err) {
+    console.error('Failed to import template:', err)
+    if (err instanceof SyntaxError) {
+      showError('导入失败: JSON 格式无效')
+    } else {
+      showError(`导入失败: ${err}`)
+    }
+  }
 }
 
 onMounted(() => {
