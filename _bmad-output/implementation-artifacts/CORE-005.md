@@ -35,7 +35,7 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 实现动态托盘菜单更新 (AC: 1)
+- [-] Task 1: 实现动态托盘菜单更新 (AC: 1)
   - [ ] 添加 Rust 后端 `get_auto_capture_status` 命令
   - [ ] 创建托盘菜单状态管理结构
   - [ ] 实现菜单项动态文本更新（启动/停止）
