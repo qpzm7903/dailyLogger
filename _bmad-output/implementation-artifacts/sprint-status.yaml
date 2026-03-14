@@ -13,7 +13,7 @@ stories:
     epic: 核心功能完善
     priority: High
     points: 3
-    status: ready-for-dev
+    status: in-progress
     specPath: "specs/CORE-001.md"
     description: 优化设置界面的交互体验，改进表单布局和验证提示
     acceptanceCriteria:
