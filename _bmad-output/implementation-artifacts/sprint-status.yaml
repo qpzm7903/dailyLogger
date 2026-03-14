@@ -52,7 +52,7 @@ stories:
     epic: 核心功能完善
     priority: Medium
     points: 3
-    status: in-progress
+    status: review
     specPath: "specs/CORE-004.md"
     description: 完善错误处理机制，提供友好的用户提示
     acceptanceCriteria:

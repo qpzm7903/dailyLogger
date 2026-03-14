@@ -61,6 +61,8 @@ fn main() {
             daily_logger_lib::manual_entry::get_screenshot,
             daily_logger_lib::manual_entry::read_file,
             daily_logger_lib::manual_entry::get_recent_logs,
+            daily_logger_lib::manual_entry::get_logs_for_export,
+            daily_logger_lib::manual_entry::get_log_file_path,
             daily_logger_lib::memory_storage::get_today_records,
             daily_logger_lib::memory_storage::get_settings,
             daily_logger_lib::memory_storage::save_settings,

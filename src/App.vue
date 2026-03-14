@@ -58,10 +58,6 @@
                 </button>
               </div>
             </div>
-            <div v-if="captureError" class="mt-2 bg-red-900/30 border border-red-700 rounded-lg px-3 py-2 flex items-start justify-between gap-2">
-              <p class="text-xs text-red-400">{{ captureError }}</p>
-              <button @click="captureError = ''" class="text-red-500 hover:text-red-300 text-xs flex-shrink-0">✕</button>
-            </div>
           </div>
 
           <div class="bg-dark rounded-xl p-5 border border-gray-700">
@@ -138,16 +134,13 @@
             <span class="text-2xl">📁</span>
             <h2 class="font-medium">输出文件</h2>
           </div>
-          <div v-if="summaryError" class="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-2">
-            <p class="text-sm text-red-400">生成失败: {{ summaryError }}</p>
-          </div>
           <div v-if="summaryPath" class="bg-darker rounded-lg p-3 border border-gray-700">
             <p
               @click="showSummaryViewer = true"
               class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
             >{{ summaryPath }}</p>
           </div>
-          <div v-else-if="!summaryError" class="text-center py-4 text-gray-500 text-sm">
+          <div v-else class="text-center py-4 text-gray-500 text-sm">
             尚未生成日报
           </div>
         </div>
@@ -160,6 +153,7 @@
     <ScreenshotGallery v-if="showScreenshotGallery" @close="showScreenshotGallery = false" />
     <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
+    <Toast />
   </div>
 </template>
 
@@ -173,6 +167,9 @@ import ScreenshotModal from './components/ScreenshotModal.vue'
 import ScreenshotGallery from './components/ScreenshotGallery.vue'
 import DailySummaryViewer from './components/DailySummaryViewer.vue'
 import LogViewer from './components/LogViewer.vue'
+import Toast from './components/Toast.vue'
+import { showError, showSuccess } from './stores/toast.js'
+import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
 
 const currentTime = ref('')
 const autoCaptureEnabled = ref(false)
@@ -181,8 +178,6 @@ const todayRecords = ref([])
 const isGenerating = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
-const summaryError = ref('')
-const captureError = ref('')
 const showSettings = ref(false)
 const showQuickNote = ref(false)
 const showScreenshot = ref(false)
@@ -233,7 +228,6 @@ const toggleAutoCapture = async () => {
 const takeScreenshot = async () => {
   if (isCapturing.value) return
   isCapturing.value = true
-  captureError.value = ''
   try {
     const path = await invoke('take_screenshot')
     selectedScreenshot.value = {
@@ -244,7 +238,7 @@ const takeScreenshot = async () => {
     showScreenshot.value = true
   } catch (err) {
     console.error('Failed to take screenshot:', err)
-    captureError.value = `截图失败: ${err}`
+    showError(err, takeScreenshot)
   } finally {
     isCapturing.value = false
   }
@@ -253,13 +247,13 @@ const takeScreenshot = async () => {
 const triggerCapture = async () => {
   if (isCapturing.value) return
   isCapturing.value = true
-  captureError.value = ''
   try {
     await invoke('trigger_capture')
     await loadTodayRecords()
+    showSuccess('截图分析完成')
   } catch (err) {
     console.error('Failed to trigger capture:', err)
-    captureError.value = `分析失败: ${err}`
+    showError(err, triggerCapture)
   } finally {
     isCapturing.value = false
   }
@@ -287,13 +281,13 @@ const handleQuickNote = async (content) => {
 const generateSummary = async () => {
   if (isGenerating.value) return
   isGenerating.value = true
-  summaryError.value = ''
   try {
     const result = await invoke('generate_daily_summary')
     summaryPath.value = result
+    showSuccess('日报生成成功')
   } catch (err) {
     console.error('Failed to generate summary:', err)
-    summaryError.value = String(err)
+    showError(err, generateSummary)
   } finally {
     isGenerating.value = false
   }
