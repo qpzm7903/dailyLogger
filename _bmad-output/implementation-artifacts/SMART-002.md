@@ -42,7 +42,7 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 实现用户行为模式数据收集 (AC: 1)
+- [-] Task 1: 实现用户行为模式数据收集 (AC: 1)
   - [ ] 创建 `SilentPatternTracker` 结构体跟踪捕获行为
   - [ ] 记录每次捕获的时间、原因（屏幕变化/静默超时）
   - [ ] 存储最近 7 天的行为模式数据
