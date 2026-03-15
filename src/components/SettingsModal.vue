@@ -297,6 +297,100 @@
           </div>
         </div>
 
+        <!-- SMART-003: 工作时间自动识别 -->
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">工作时间自动识别</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <input
+                v-model="settings.auto_detect_work_time"
+                type="checkbox"
+                id="auto_detect_work_time"
+                class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+              />
+              <label for="auto_detect_work_time" class="text-xs text-gray-300 cursor-pointer">
+                自动识别工作时间
+              </label>
+            </div>
+            <span class="text-xs text-gray-500 block">
+              根据截图活动模式自动学习工作时间，非工作时间自动暂停捕获
+            </span>
+
+            <!-- Custom work time toggle -->
+            <div class="flex items-center gap-2 pt-2" v-if="settings.auto_detect_work_time">
+              <input
+                v-model="settings.use_custom_work_time"
+                type="checkbox"
+                id="use_custom_work_time"
+                class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+              />
+              <label for="use_custom_work_time" class="text-xs text-gray-300 cursor-pointer">
+                使用自定义工作时间
+              </label>
+            </div>
+
+            <!-- Custom work time inputs -->
+            <div v-if="settings.auto_detect_work_time && settings.use_custom_work_time" class="grid grid-cols-2 gap-3 pt-2">
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">开始时间</label>
+                <input
+                  v-model="settings.custom_work_time_start"
+                  type="time"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">结束时间</label>
+                <input
+                  v-model="settings.custom_work_time_end"
+                  type="time"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Work time status display -->
+            <div v-if="settings.auto_detect_work_time && !settings.use_custom_work_time" class="bg-darker rounded-lg p-3 border border-gray-700">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-400">学习状态</span>
+                <span v-if="workTimeStatus" class="text-xs" :class="workTimeStatus.is_work_time ? 'text-green-400' : 'text-yellow-400'">
+                  {{ workTimeStatus.is_work_time ? '工作中' : '非工作时间' }}
+                </span>
+              </div>
+              <div v-if="workTimeStatus" class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-gray-400">已学习天数</span>
+                  <span class="text-xs text-primary">{{ workTimeStatus.learning_progress.days_learned }} / {{ workTimeStatus.learning_progress.min_days_required }} 天</span>
+                </div>
+                <div v-if="workTimeStatus.learning_progress.days_learned >= workTimeStatus.learning_progress.min_days_required" class="flex items-center justify-between">
+                  <span class="text-xs text-gray-400">识别的工作时间</span>
+                  <span class="text-xs text-gray-300">{{ formatWorkTimePeriods(workTimeStatus.detected_periods) }}</span>
+                </div>
+                <div v-else class="mt-2">
+                  <div class="w-full bg-gray-700 rounded-full h-1.5">
+                    <div
+                      class="bg-primary h-1.5 rounded-full transition-all"
+                      :style="{ width: `${Math.min(100, (workTimeStatus.learning_progress.days_learned / workTimeStatus.learning_progress.min_days_required) * 100)}%` }"
+                    ></div>
+                  </div>
+                  <span class="text-xs text-gray-500 mt-1 block">继续使用以学习您的工作模式</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Disabled info -->
+            <div v-if="!settings.auto_detect_work_time" class="bg-darker rounded-lg p-3 border border-gray-700">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-400">工作时间检测</span>
+                <span class="text-xs text-gray-500">已关闭</span>
+              </div>
+              <span class="text-xs text-gray-500">
+                关闭后，系统将在全天候进行截图捕获
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">窗口过滤</h3>
           <div class="space-y-3">
@@ -624,8 +718,17 @@ const settings = ref({
   use_whitelist_only: false,
   // SMART-002: Auto-adjust silent threshold
   auto_adjust_silent: true,
-  silent_adjustment_paused_until: null
+  silent_adjustment_paused_until: null,
+  // SMART-003: Work time auto-detection
+  auto_detect_work_time: true,
+  use_custom_work_time: false,
+  custom_work_time_start: '09:00',
+  custom_work_time_end: '18:00',
+  learned_work_time: null
 })
+
+// SMART-003: Work time status for learning progress display
+const workTimeStatus = ref(null)
 
 const loadSettings = async () => {
   try {
@@ -642,9 +745,33 @@ const loadSettings = async () => {
     } catch {
       blacklistTags.value = []
     }
+    // SMART-003: Load work time status
+    await loadWorkTimeStatus()
   } catch (err) {
     console.error('Failed to load settings:', err)
   }
+}
+
+// SMART-003: Load work time status for learning progress display
+const loadWorkTimeStatus = async () => {
+  try {
+    workTimeStatus.value = await invoke('get_work_time_status')
+  } catch (err) {
+    console.error('Failed to load work time status:', err)
+    // Don't show error to user - this is optional info
+  }
+}
+
+// SMART-003: Format work time periods for display
+const formatWorkTimePeriods = (periods) => {
+  if (!periods || periods.length === 0) {
+    return '未检测到'
+  }
+  return periods.map(p => {
+    const startHour = String(p.start).padStart(2, '0')
+    const endHour = String(p.end).padStart(2, '0')
+    return `${startHour}:00-${endHour}:00`
+  }).join(', ')
 }
 
 // Tag management methods
