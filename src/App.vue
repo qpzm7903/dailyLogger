@@ -15,6 +15,9 @@
         <button @click="showHistoryViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           📚 历史
         </button>
+        <button @click="showSearch = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+          🔍 搜索
+        </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
@@ -167,6 +170,7 @@
     <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
     <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
+    <SearchPanel v-if="showSearch" @close="showSearch = false" />
     <Toast />
   </div>
 </template>
@@ -182,6 +186,7 @@ import ScreenshotGallery from './components/ScreenshotGallery.vue'
 import DailySummaryViewer from './components/DailySummaryViewer.vue'
 import LogViewer from './components/LogViewer.vue'
 import HistoryViewer from './components/HistoryViewer.vue'
+import SearchPanel from './components/SearchPanel.vue'
 import Toast from './components/Toast.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
@@ -200,6 +205,7 @@ const showScreenshotGallery = ref(false)
 const showSummaryViewer = ref(false)
 const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
+const showSearch = ref(false)
 const selectedScreenshot = ref(null)
 
 // Computed

@@ -175,7 +175,7 @@ stories:
     epic: 数据管理与检索
     priority: High
     points: 5
-    status: in-progress
+    status: done
     specPath: "specs/DATA-002.md"
     storyPath: "_bmad-output/implementation-artifacts/DATA-002.md"
     description: 全文搜索历史记录和截图分析内容

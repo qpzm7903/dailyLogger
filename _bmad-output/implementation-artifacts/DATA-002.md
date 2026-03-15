@@ -1,6 +1,6 @@
 # Story 4.2: 全文搜索功能
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -38,16 +38,16 @@ so that 我可以快速定位特定的工作记录，无需逐条浏览.
   - [x] 1.3 在 `main.rs` 注册 `search_records` Tauri 命令
   - [x] 1.4 添加单元测试覆盖搜索边界条件
 
-- [ ] Task 2: 前端搜索组件 (AC: 1, 2)
-  - [ ] 2.1 创建 `SearchPanel.vue` 组件
-  - [ ] 2.2 实现搜索输入框与清空按钮
-  - [ ] 2.3 实现搜索结果列表与高亮显示
-  - [ ] 2.4 实现排序切换 (相关性/时间)
+- [x] Task 2: 前端搜索组件 (AC: 1, 2)
+  - [x] 2.1 创建 `SearchPanel.vue` 组件
+  - [x] 2.2 实现搜索输入框与清空按钮
+  - [x] 2.3 实现搜索结果列表与高亮显示
+  - [x] 2.4 实现排序切换 (相关性/时间)
 
-- [ ] Task 3: 集成与入口 (AC: 全部)
-  - [ ] 3.1 在 `App.vue` 添加搜索入口按钮
-  - [ ] 3.2 集成 SearchPanel 到主界面
-  - [ ] 3.3 添加组件测试
+- [x] Task 3: 集成与入口 (AC: 全部)
+  - [x] 3.1 在 `App.vue` 添加搜索入口按钮
+  - [x] 3.2 集成 SearchPanel 到主界面
+  - [x] 3.3 添加组件测试
 
 ## Dev Notes
 
@@ -241,7 +241,20 @@ Claude Opus 4.6 (claude-opus-4-6)
   - 添加 7 个单元测试，覆盖中文搜索、英文搜索、排序、高亮等场景
   - 所有 170 个测试通过
 
+- **2026-03-15 Task 2 完成**: 前端搜索组件已实现
+  - 创建 SearchPanel.vue 组件
+  - 实现搜索输入框与清空按钮
+  - 实现搜索结果列表，使用 v-html 渲染高亮片段
+  - 实现排序切换 (相关性/时间)，切换时自动重新搜索
+
+- **2026-03-15 Task 3 完成**: 集成与入口已实现
+  - 在 App.vue header 添加搜索按钮
+  - 导入并集成 SearchPanel 组件
+  - 所有 159 个前端测试通过
+
 ### File List
 
 - `src-tauri/src/memory_storage/mod.rs` - FTS 表创建、search_records_sync()、SearchResult 结构体
 - `src-tauri/src/main.rs` - 注册 search_records 命令
+- `src/components/SearchPanel.vue` - 搜索面板组件
+- `src/App.vue` - 集成搜索入口
