@@ -1,23 +1,40 @@
 {
   "task_id": "SMART-001",
-  "title": "Task 5: 前端设置界面支持 (AC: 2, 3)",
+  "title": "Task 6: 前端记录显示支持 (AC: 1)",
   "verdict": "pass",
-  "score": 92,
-  "summary": "Implementation correctly adds window whitelist/blacklist UI with tag input, '仅捕获白名单应用' toggle, and proper persistence to backend settings. All 16 frontend tests pass. Backend integration verified with 9 passing tests. Code follows Vue 3 patterns and project conventions.",
+  "score": 82,
+  "summary": "Implementation correctly fulfills the acceptance criteria for Task 6. Window info (title and process name) is displayed in both the record list (App.vue) and record details modal (ScreenshotModal.vue) with appropriate icons. Tests pass (159 total) and cover the main scenarios. However, there are code quality issues: the getWindowIcon() function is duplicated between two components, and the template inefficiently calls getWindowInfo() multiple times per record.",
   "issues": [
     {
+      "severity": "medium",
+      "type": "maintainability",
+      "file": "src/App.vue, src/components/ScreenshotModal.vue",
+      "description": "getWindowIcon() function is duplicated in App.vue (lines 229-256) and ScreenshotModal.vue (lines 93-120). Changes to icon mappings require updating two files.",
+      "suggestion": "Extract getWindowIcon() to a shared utility file (e.g., src/utils/windowIcons.js) and import it in both components."
+    },
+    {
       "severity": "low",
-      "type": "test_isolation",
-      "description": "Unrelated test 'get_today_record_count_sync_excludes_yesterday_records' fails due to parallel test interference with shared DB connection. This is a pre-existing issue not introduced by this task."
+      "type": "performance",
+      "file": "src/App.vue",
+      "description": "getWindowInfo(record) is called 5 times per record in the template (lines 128-134): 3 times in v-if condition and 2 times in the content. This is inefficient.",
+      "suggestion": "Use a method that caches results or compute window info during record loading. Consider using a Map or adding a computed property for the window info display."
+    },
+    {
+      "severity": "low",
+      "type": "style",
+      "file": "src/__tests__/App.test.js, src/components/__tests__/ScreenshotModal.test.js",
+      "description": "Test files don't end with a newline character.",
+      "suggestion": "Add trailing newline for POSIX compliance."
     }
   ],
   "strengths": [
-    "Tag input UX is clean: Enter to add, ✕ to remove, duplicates prevented",
-    "JSON parsing in loadSettings() has try/catch fallback to empty array",
-    "Settings save correctly serializes tag arrays to JSON strings",
-    "Test coverage includes add/remove tags, toggle state, and persistence",
-    "UI styling consistent with existing settings sections",
-    "Backend field names match frontend (window_whitelist, window_blacklist, use_whitelist_only)"
+    "All 159 tests pass, including 5 new tests for App.vue and 8 new tests for ScreenshotModal.vue",
+    "JSON parsing uses try/catch for graceful degradation when content is malformed or missing active_window",
+    "Conditional rendering prevents empty window info sections from appearing",
+    "Tests cover edge cases: missing active_window, empty window info, manual records, malformed JSON",
+    "Icon mapping covers common applications with sensible defaults",
+    "Clear comments linking code to SMART-001 Task 6",
+    "UI design is consistent with existing Tailwind patterns"
   ],
   "recommendation": "approve"
 }
