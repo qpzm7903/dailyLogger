@@ -1,4 +1,4 @@
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 use std::path::PathBuf;
 use tauri::command;
 
@@ -1102,6 +1102,277 @@ pub async fn generate_monthly_report() -> Result<String, String> {
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
     tracing::info!("Monthly report generated: {}", path_str);
+
+    Ok(path_str)
+}
+
+// REPORT-003: 自定义报告周期生成
+
+const DEFAULT_CUSTOM_REPORT_PROMPT: &str = r#"你是一个工作日志助手。请根据以下指定时间段的工作记录，生成一份结构化的 Markdown 格式报告。
+
+要求：
+1. 按日期分组展示工作内容
+2. 提取该时间段的关键成果和技术亮点
+3. 总结遇到的问题和解决方案
+4. 列出后续待跟进事项
+5. 输出纯 Markdown 格式，不要有其他说明文字
+
+时间段：{start_date} 至 {end_date}
+记录：
+{records}
+
+请生成报告："#;
+
+pub fn get_default_custom_report_prompt() -> String {
+    DEFAULT_CUSTOM_REPORT_PROMPT.to_string()
+}
+
+/// Calculate biweekly range (last 14 days)
+pub fn get_biweekly_range() -> (NaiveDate, NaiveDate) {
+    let today = chrono::Local::now().date_naive();
+    let end = today;
+    let start = today - chrono::Duration::days(13);
+    (start, end)
+}
+
+/// Calculate current quarter range
+pub fn get_quarter_range() -> (NaiveDate, NaiveDate) {
+    let today = chrono::Local::now().date_naive();
+    let month = today.month();
+    let quarter = (month - 1) / 3; // 0, 1, 2, 3
+    let start_month = quarter * 3 + 1;
+
+    let start = NaiveDate::from_ymd_opt(today.year(), start_month, 1).unwrap();
+    let end = if quarter == 3 {
+        NaiveDate::from_ymd_opt(today.year() + 1, 1, 1).unwrap() - chrono::Duration::days(1)
+    } else {
+        NaiveDate::from_ymd_opt(today.year(), start_month + 3, 1).unwrap()
+            - chrono::Duration::days(1)
+    };
+    (start, end)
+}
+
+/// Generate custom report filename
+pub fn generate_custom_report_filename(
+    report_name: &str,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> String {
+    format!(
+        "{}-{}-to-{}.md",
+        report_name,
+        start_date.format("%Y-%m-%d"),
+        end_date.format("%Y-%m-%d")
+    )
+}
+
+/// Get records by custom date range - convert NaiveDate to String and call memory_storage
+pub fn get_records_by_custom_range_sync(
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> Result<Vec<Record>, String> {
+    let start_str = start_date.format("%Y-%m-%d").to_string();
+    let end_str = end_date.format("%Y-%m-%d").to_string();
+    memory_storage::get_records_by_date_range_sync(start_str, end_str)
+}
+
+/// Generate custom report - REPORT-003
+#[command]
+pub async fn generate_custom_report(
+    start_date: String,
+    end_date: String,
+    report_name: Option<String>,
+) -> Result<String, String> {
+    let settings = memory_storage::get_settings_sync()
+        .map_err(|e| format!("Failed to get settings: {}", e))?;
+
+    let obsidian_path = settings
+        .obsidian_path
+        .clone()
+        .ok_or("Obsidian path not configured")?;
+
+    if obsidian_path.is_empty() {
+        return Err("Obsidian path is empty".to_string());
+    }
+
+    let api_base_url = settings
+        .api_base_url
+        .clone()
+        .ok_or("API Base URL not configured")?;
+    let api_key = settings.api_key.clone().unwrap_or_default();
+
+    // Use summary_model_name, fallback to model_name
+    let model_name = settings
+        .summary_model_name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .or_else(|| settings.model_name.clone())
+        .unwrap_or_else(|| "gpt-4o".to_string());
+
+    // Check if this is an Ollama endpoint
+    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
+
+    if !is_ollama && api_key.is_empty() {
+        return Err("API Key is required for non-Ollama endpoints".to_string());
+    }
+
+    // Parse date strings
+    let date_start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid start date format: {}", e))?;
+    let date_end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid end date format: {}", e))?;
+
+    if date_end < date_start {
+        return Err("End date cannot be earlier than start date".to_string());
+    }
+
+    // Get records in the date range
+    let all_records = get_records_by_custom_range_sync(date_start, date_end)
+        .map_err(|e| format!("Failed to get records: {}", e))?;
+
+    // Filter records based on include_manual_records setting
+    let records = filter_records_by_settings(all_records, &settings);
+
+    if records.is_empty() {
+        return Err("所选时间范围内无记录".to_string());
+    }
+
+    // Format records for summary
+    let records_text = format_records_for_summary(&records);
+
+    let prompt_template = settings
+        .custom_report_templates
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .map(|_| {
+            // If custom_report_templates is set, extract prompt from it
+            // For now, use default prompt (can be enhanced to parse custom templates)
+            DEFAULT_CUSTOM_REPORT_PROMPT
+        })
+        .unwrap_or(DEFAULT_CUSTOM_REPORT_PROMPT);
+
+    let mut prompt = prompt_template.to_string();
+    prompt = prompt.replace("{start_date}", &start_date);
+    prompt = prompt.replace("{end_date}", &end_date);
+    prompt = prompt.replace("{records}", &records_text);
+
+    let client = reqwest::Client::new();
+
+    let request_body = serde_json::json!({
+        "model": model_name,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 4000
+    });
+
+    let masked_key = crate::mask_api_key(&api_key);
+    let endpoint = format!("{}/chat/completions", api_base_url);
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_request",
+            "caller": "generate_custom_report",
+            "endpoint": endpoint,
+            "model": model_name,
+            "max_tokens": 4000,
+            "api_key_masked": masked_key,
+            "has_image": false,
+            "prompt": prompt,
+            "records_count": records.len(),
+            "date_range": format!("{} to {}", start_date, end_date),
+        })
+    );
+
+    let start = std::time::Instant::now();
+    let mut request = client
+        .post(&endpoint)
+        .header("Content-Type", "application/json")
+        .json(&request_body);
+
+    if !api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {}", api_key));
+    }
+
+    let response = request.send().await.map_err(|e| {
+        let elapsed_ms = start.elapsed().as_millis();
+        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_custom_report",
+                "error": error_msg,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        error_msg
+    })?;
+    let elapsed_ms = start.elapsed().as_millis();
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_custom_report",
+                "status": status.as_u16(),
+                "response_body": body,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        return Err(format!("API error ({}): {}", status, body));
+    }
+
+    let response_json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let summary = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("No content in response")?;
+
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_response",
+            "caller": "generate_custom_report",
+            "status": 200,
+            "elapsed_ms": elapsed_ms,
+            "usage": response_json.get("usage"),
+            "model": response_json.get("model"),
+            "response_id": response_json.get("id"),
+            "content": summary,
+        })
+    );
+
+    // Generate filename
+    let name = report_name.unwrap_or_else(|| "自定义报告".to_string());
+    let filename = generate_custom_report_filename(&name, date_start, date_end);
+
+    let output_dir = PathBuf::from(&obsidian_path);
+    std::fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    let output_path = output_dir.join(&filename);
+    std::fs::write(&output_path, summary)
+        .map_err(|e| format!("Failed to write custom report: {}", e))?;
+
+    let path_str = output_path.to_string_lossy().to_string();
+
+    // Save last custom report path to settings
+    let mut updated_settings = settings.clone();
+    updated_settings.last_summary_path = Some(path_str.clone());
+    memory_storage::save_settings_sync(&updated_settings)
+        .map_err(|e| format!("Failed to update settings: {}", e))?;
+
+    tracing::info!("Custom report generated: {}", path_str);
 
     Ok(path_str)
 }

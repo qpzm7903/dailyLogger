@@ -125,6 +125,12 @@
               >
                 {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
               </button>
+              <button
+                @click="showCustomReportModal = true"
+                class="bg-orange-600 hover:bg-orange-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                自定义报告
+              </button>
             </div>
           </div>
           <!-- AI-004: Tag filter -->
@@ -246,6 +252,12 @@
     <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
     <DailySummaryViewer v-if="showWeeklyReportViewer" :summaryPath="weeklyReportPath" @close="showWeeklyReportViewer = false" />
     <DailySummaryViewer v-if="showMonthlyReportViewer" :summaryPath="monthlyReportPath" @close="showMonthlyReportViewer = false" />
+    <CustomReportModal
+      v-if="showCustomReportModal"
+      :show="showCustomReportModal"
+      @close="showCustomReportModal = false"
+      @generate="(data) => generateCustomReport(data.startDate, data.endDate, data.reportName)"
+    />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
     <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
@@ -269,6 +281,7 @@ import HistoryViewer from './components/HistoryViewer.vue'
 import SearchPanel from './components/SearchPanel.vue'
 import TagCloud from './components/TagCloud.vue'
 import ExportModal from './components/ExportModal.vue'
+import CustomReportModal from './components/CustomReportModal.vue'
 import Toast from './components/Toast.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
@@ -280,10 +293,13 @@ const todayRecords = ref([])
 const isGenerating = ref(false)
 const isGeneratingWeekly = ref(false)
 const isGeneratingMonthly = ref(false)
+const isGeneratingCustom = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
 const weeklyReportPath = ref('')
 const monthlyReportPath = ref('')
+const customReportPath = ref('')
+const showCustomReportModal = ref(false)
 const showSettings = ref(false)
 const showQuickNote = ref(false)
 const showScreenshot = ref(false)
@@ -558,6 +574,27 @@ const generateMonthlyReport = async () => {
     showError(err, generateMonthlyReport)
   } finally {
     isGeneratingMonthly.value = false
+  }
+}
+
+// REPORT-003: 自定义报告生成
+const generateCustomReport = async (startDate, endDate, reportName) => {
+  if (isGeneratingCustom.value) return
+  isGeneratingCustom.value = true
+  try {
+    const result = await invoke('generate_custom_report', {
+      startDate,
+      endDate,
+      reportName: reportName || undefined
+    })
+    customReportPath.value = result
+    showCustomReportModal.value = false
+    showSuccess('自定义报告生成成功')
+  } catch (err) {
+    console.error('Failed to generate custom report:', err)
+    showError(err, () => generateCustomReport(startDate, endDate, reportName))
+  } finally {
+    isGeneratingCustom.value = false
   }
 }
 
