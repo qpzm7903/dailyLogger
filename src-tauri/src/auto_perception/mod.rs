@@ -1498,6 +1498,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn load_work_time_settings_loads_custom_time() {
         use crate::memory_storage::get_settings_sync;
         setup_test_db_with_work_time();
@@ -1508,6 +1509,13 @@ mod tests {
         settings.custom_work_time_start = Some("08:00".to_string());
         settings.custom_work_time_end = Some("17:00".to_string());
         crate::memory_storage::save_settings_sync(&settings).unwrap();
+
+        // Reload directly from database to ensure save worked
+        let reloaded = get_settings_sync().unwrap();
+        assert!(
+            reloaded.use_custom_work_time.unwrap_or(false),
+            "Saved use_custom_work_time should be true in DB"
+        );
 
         let loaded = load_work_time_settings();
         assert!(
