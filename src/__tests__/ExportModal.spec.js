@@ -170,7 +170,7 @@ describe('ExportModal', () => {
     await exportBtn.trigger('click')
 
     await vi.waitFor(() => {
-      expect(wrapper.text()).toContain('打开目录')
+      expect(wrapper.text()).toContain('打开所在目录')
     })
   })
 
@@ -190,10 +190,10 @@ describe('ExportModal', () => {
     await exportBtn.trigger('click')
 
     await vi.waitFor(() => {
-      expect(wrapper.text()).toContain('打开目录')
+      expect(wrapper.text()).toContain('打开所在目录')
     })
 
-    const openDirBtn = wrapper.findAll('button').find(b => b.text().includes('打开目录'))
+    const openDirBtn = wrapper.findAll('button').find(b => b.text().includes('打开所在目录'))
     await openDirBtn.trigger('click')
 
     await vi.waitFor(() => {
