@@ -1,31 +1,23 @@
 {
   "task_id": "SMART-001",
-  "title": "Task 4: 集成到捕获流程 (AC: 1, 2, 3)",
+  "title": "Task 5: 前端设置界面支持 (AC: 2, 3)",
   "verdict": "pass",
   "score": 92,
-  "summary": "The implementation correctly integrates window filtering into the capture flow, satisfying all three acceptance criteria (AC1, AC2, AC3). The code is well-structured with good test coverage for the new functionality. The window filtering is applied before expensive operations (screenshot, AI analysis), which is an efficient design. The use of skip_serializing_if for backward compatibility and the graceful degradation in parse_window_patterns show attention to robustness.",
+  "summary": "Implementation correctly adds window whitelist/blacklist UI with tag input, '仅捕获白名单应用' toggle, and proper persistence to backend settings. All 16 frontend tests pass. Backend integration verified with 9 passing tests. Code follows Vue 3 patterns and project conventions.",
   "issues": [
     {
-      "severity": "medium",
-      "description": "auto_perception module tests are gated behind 'screenshot' feature, not run in CI",
-      "location": "src-tauri/src/lib.rs:1-2",
-      "recommendation": "Consider adding a CI job that runs tests with screenshot feature on a platform that supports it, or move parse_window_patterns and CaptureSettings tests to a module that's always compiled"
-    },
-    {
       "severity": "low",
-      "description": "Pre-existing test failure in memory_storage::tests::finds_record_saved_near_local_midnight unrelated to SMART-001",
-      "location": "src-tauri/src/memory_storage/mod.rs:518",
-      "recommendation": "Fix timezone test separately as part of technical debt cleanup"
+      "type": "test_isolation",
+      "description": "Unrelated test 'get_today_record_count_sync_excludes_yesterday_records' fails due to parallel test interference with shared DB connection. This is a pre-existing issue not introduced by this task."
     }
   ],
   "strengths": [
-    "Correct implementation of all three ACs with clear code-to-requirement traceability",
-    "Efficient design: window filtering applied before screenshot/AI analysis",
-    "Good test coverage: 12 new tests for parse_window_patterns, ScreenAnalysis, and CaptureSettings",
-    "Backward compatibility via skip_serializing_if on active_window field",
-    "Graceful degradation in parse_window_patterns (returns empty Vec on parse failure)",
-    "Clear code comments linking implementation to specific ACs",
-    "Follows project conventions: snake_case, Chinese error messages, params![] for SQL"
+    "Tag input UX is clean: Enter to add, ✕ to remove, duplicates prevented",
+    "JSON parsing in loadSettings() has try/catch fallback to empty array",
+    "Settings save correctly serializes tag arrays to JSON strings",
+    "Test coverage includes add/remove tags, toggle state, and persistence",
+    "UI styling consistent with existing settings sections",
+    "Backend field names match frontend (window_whitelist, window_blacklist, use_whitelist_only)"
   ],
   "recommendation": "approve"
 }
