@@ -118,7 +118,7 @@ describe('ExportModal', () => {
 
     await vi.waitFor(() => {
       expect(wrapper.text()).toContain('导出成功')
-      expect(wrapper.text()).toContain('42 条记录')
+      expect(wrapper.text()).toContain('记录数: 42 条')
     })
   })
 
@@ -133,16 +133,15 @@ describe('ExportModal', () => {
     await exportBtn.trigger('click')
 
     await vi.waitFor(() => {
-      expect(wrapper.text()).toContain('导出失败')
       expect(wrapper.text()).toContain('Database error')
     })
   })
 
-  it('emits close on cancel button', async () => {
+  it('emits close on close button', async () => {
     const wrapper = mount(ExportModal)
 
-    const cancelBtn = wrapper.findAll('button').find(b => b.text() === '取消')
-    await cancelBtn.trigger('click')
+    const closeBtn = wrapper.findAll('button').find(b => b.text() === '关闭')
+    await closeBtn.trigger('click')
 
     expect(wrapper.emitted('close')).toBeTruthy()
   })

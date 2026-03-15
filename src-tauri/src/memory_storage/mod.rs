@@ -518,6 +518,62 @@ pub fn get_records_by_date_range_sync(
     Ok(records)
 }
 
+/// Get records within a date range for export (chronological ASC order).
+/// - start_date/end_date: YYYY-MM-DD format (local timezone)
+pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Record>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let start_naive = chrono::NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
+
+    let end_naive = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(23, 59, 59)
+        .unwrap();
+
+    let start_utc = start_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let end_utc = end_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+         WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp ASC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let records = stmt
+        .query_map(params![start_utc, end_utc], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(2)?,
+                content: row.get(3)?,
+                screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
+                tags: row.get(6)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect records: {}", e))?;
+
+    Ok(records)
+}
+
 /// Delete a record by ID
 pub fn delete_record_sync(id: i64) -> Result<(), String> {
     let db = DB_CONNECTION

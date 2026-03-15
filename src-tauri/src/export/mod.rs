@@ -7,8 +7,8 @@ use crate::memory_storage::{self, Record};
 /// Export request parameters
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExportRequest {
-    pub start_date: String, // YYYY-MM-DD
-    pub end_date: String,   // YYYY-MM-DD
+    pub start_date: String, // YYYY-MM-DD (local timezone)
+    pub end_date: String,   // YYYY-MM-DD (local timezone)
     pub format: String,     // "json" | "markdown"
 }
 
@@ -20,23 +20,23 @@ pub struct ExportResult {
     pub file_size: u64,
 }
 
-/// Get the default export directory
-fn get_export_dir() -> PathBuf {
+/// Get the export directory path
+pub fn get_export_dir() -> PathBuf {
     dirs::data_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join("DailyLogger")
         .join("exports")
 }
 
-/// Export records to JSON format string
-pub fn export_records_to_json(
+/// Export records as JSON string
+pub fn export_to_json(
     records: &[Record],
     start_date: &str,
     end_date: &str,
 ) -> Result<String, String> {
-    let export_time = chrono::Utc::now().to_rfc3339();
+    let exported_at = chrono::Utc::now().to_rfc3339();
 
-    let records_json: Vec<serde_json::Value> = records
+    let json_records: Vec<serde_json::Value> = records
         .iter()
         .map(|r| {
             serde_json::json!({
@@ -50,61 +50,55 @@ pub fn export_records_to_json(
         .collect();
 
     let output = serde_json::json!({
-        "exported_at": export_time,
+        "exported_at": exported_at,
         "date_range": {
             "start": start_date,
             "end": end_date,
         },
         "total_records": records.len(),
-        "records": records_json,
+        "records": json_records,
     });
 
     serde_json::to_string_pretty(&output).map_err(|e| format!("Failed to serialize JSON: {}", e))
 }
 
-/// Export records to Markdown format string
-pub fn export_records_to_markdown(
+/// Export records as Markdown string
+pub fn export_to_markdown(
     records: &[Record],
     start_date: &str,
     end_date: &str,
 ) -> Result<String, String> {
-    let export_time = chrono::Local::now().format("%Y-%m-%d %H:%M").to_string();
-
+    let exported_at = chrono::Local::now().format("%Y-%m-%d %H:%M").to_string();
     let mut md = String::new();
+
     md.push_str("# DailyLogger 数据导出\n\n");
-    md.push_str(&format!("导出时间: {}\n", export_time));
+    md.push_str(&format!("导出时间: {}\n", exported_at));
     md.push_str(&format!("日期范围: {} 至 {}\n", start_date, end_date));
     md.push_str(&format!("总记录数: {}\n", records.len()));
-    md.push_str("\n---\n");
 
     if records.is_empty() {
-        md.push_str("\n*该日期范围内无记录*\n");
+        md.push_str("\n> 无记录\n");
         return Ok(md);
     }
 
-    // Group records by local date (ascending)
+    // Group records by local date
     let mut grouped: std::collections::BTreeMap<String, Vec<&Record>> =
         std::collections::BTreeMap::new();
-
     for record in records {
-        let date_str = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
+        let date_key = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
             .map(|dt| {
                 dt.with_timezone(&chrono::Local)
                     .format("%Y-%m-%d")
                     .to_string()
             })
             .unwrap_or_else(|_| "unknown".to_string());
-        grouped.entry(date_str).or_default().push(record);
+        grouped.entry(date_key).or_default().push(record);
     }
 
-    for (date, day_records) in &grouped {
-        md.push_str(&format!("\n## {}\n\n### 时间线\n\n", date));
-
-        // Sort records within each day by timestamp ascending
-        let mut sorted_records: Vec<&&Record> = day_records.iter().collect();
-        sorted_records.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
-
-        for record in sorted_records {
+    // Output in reverse chronological order (most recent date first)
+    for (date, day_records) in grouped.iter().rev() {
+        md.push_str(&format!("\n---\n\n## {}\n\n### 时间线\n\n", date));
+        for record in day_records {
             let time = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
                 .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
                 .unwrap_or_else(|_| "unknown".to_string());
@@ -116,66 +110,41 @@ pub fn export_records_to_markdown(
             };
 
             md.push_str(&format!("- **{}** {}\n", time, source_icon));
-            md.push_str(&format!("  {}\n\n", record.content));
+            // Indent content lines
+            for line in record.content.lines() {
+                md.push_str(&format!("  {}\n", line));
+            }
+            md.push('\n');
         }
-
-        md.push_str("---\n");
     }
 
     Ok(md)
 }
 
-/// Tauri command: export records in specified format
+/// Tauri command: export records to JSON or Markdown file
 #[command]
 pub async fn export_records(request: ExportRequest) -> Result<ExportResult, String> {
-    // Validate format
-    if request.format != "json" && request.format != "markdown" {
-        return Err(format!(
-            "Unsupported export format: '{}'. Use 'json' or 'markdown'.",
-            request.format
-        ));
-    }
+    let records = memory_storage::get_records_for_export(&request.start_date, &request.end_date)?;
 
-    // Validate date range
-    let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
-    let end = chrono::NaiveDate::parse_from_str(&request.end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
-
-    if start > end {
-        return Err("Start date cannot be after end date".to_string());
-    }
-
-    // Get records for the date range
-    let records = memory_storage::get_records_by_date_range_sync(
-        request.start_date.clone(),
-        request.end_date.clone(),
-    )?;
-
-    // Generate output content
-    let (content, extension) = match request.format.as_str() {
-        "json" => (
-            export_records_to_json(&records, &request.start_date, &request.end_date)?,
-            "json",
-        ),
-        "markdown" => (
-            export_records_to_markdown(&records, &request.start_date, &request.end_date)?,
-            "md",
-        ),
-        _ => unreachable!(),
+    let content = match request.format.as_str() {
+        "json" => export_to_json(&records, &request.start_date, &request.end_date)?,
+        "markdown" => export_to_markdown(&records, &request.start_date, &request.end_date)?,
+        _ => return Err(format!("Unsupported export format: {}", request.format)),
     };
 
-    // Create export directory
     let export_dir = get_export_dir();
     std::fs::create_dir_all(&export_dir)
         .map_err(|e| format!("Failed to create export directory: {}", e))?;
 
-    // Generate filename
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let extension = if request.format == "json" {
+        "json"
+    } else {
+        "md"
+    };
     let filename = format!("dailylogger-export-{}.{}", today, extension);
     let output_path = export_dir.join(&filename);
 
-    // Write file
     std::fs::write(&output_path, &content)
         .map_err(|e| format!("Failed to write export file: {}", e))?;
 
@@ -185,10 +154,10 @@ pub async fn export_records(request: ExportRequest) -> Result<ExportResult, Stri
 
     let path_str = output_path.to_string_lossy().to_string();
     tracing::info!(
-        "Exported {} records to {} ({})",
+        "Exported {} records to {} ({} bytes)",
         records.len(),
         path_str,
-        request.format
+        file_size
     );
 
     Ok(ExportResult {
@@ -202,7 +171,7 @@ pub async fn export_records(request: ExportRequest) -> Result<ExportResult, Stri
 mod tests {
     use super::*;
 
-    fn create_test_record(id: i64, timestamp: &str, source_type: &str, content: &str) -> Record {
+    fn make_test_record(id: i64, timestamp: &str, source_type: &str, content: &str) -> Record {
         Record {
             id,
             timestamp: timestamp.to_string(),
@@ -214,52 +183,32 @@ mod tests {
         }
     }
 
-    // ── Tests for export_records_to_json ──
+    // ===== JSON Export Tests =====
 
     #[test]
-    fn json_export_contains_required_fields() {
-        let records = vec![create_test_record(
-            1,
-            "2026-03-14T02:30:00+00:00",
-            "auto",
-            "Working on Rust code",
-        )];
+    fn test_export_to_json_basic() {
+        let records = vec![
+            make_test_record(1, "2026-03-14T02:30:00+00:00", "auto", "编写 Rust 代码"),
+            make_test_record(2, "2026-03-14T03:15:00+00:00", "manual", "记录想法"),
+        ];
 
-        let result = export_records_to_json(&records, "2026-03-07", "2026-03-14").unwrap();
+        let result = export_to_json(&records, "2026-03-14", "2026-03-14").unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
 
-        assert!(parsed["exported_at"].is_string());
-        assert_eq!(parsed["date_range"]["start"], "2026-03-07");
+        assert_eq!(parsed["total_records"], 2);
+        assert_eq!(parsed["date_range"]["start"], "2026-03-14");
         assert_eq!(parsed["date_range"]["end"], "2026-03-14");
-        assert_eq!(parsed["total_records"], 1);
-        assert!(parsed["records"].is_array());
+        assert_eq!(parsed["records"].as_array().unwrap().len(), 2);
+        assert_eq!(parsed["records"][0]["id"], 1);
+        assert_eq!(parsed["records"][0]["source_type"], "auto");
+        assert_eq!(parsed["records"][0]["content"], "编写 Rust 代码");
+        assert!(parsed["exported_at"].as_str().is_some());
     }
 
     #[test]
-    fn json_export_record_structure() {
-        let records = vec![create_test_record(
-            42,
-            "2026-03-14T02:30:00+00:00",
-            "auto",
-            "Writing tests",
-        )];
-
-        let result = export_records_to_json(&records, "2026-03-14", "2026-03-14").unwrap();
-        let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
-
-        let record = &parsed["records"][0];
-        assert_eq!(record["id"], 42);
-        assert_eq!(record["timestamp"], "2026-03-14T02:30:00+00:00");
-        assert_eq!(record["source_type"], "auto");
-        assert_eq!(record["content"], "Writing tests");
-        assert!(record["screenshot_path"].is_null());
-    }
-
-    #[test]
-    fn json_export_empty_records() {
+    fn test_export_to_json_empty_records() {
         let records: Vec<Record> = vec![];
-
-        let result = export_records_to_json(&records, "2026-03-07", "2026-03-14").unwrap();
+        let result = export_to_json(&records, "2026-03-14", "2026-03-14").unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
 
         assert_eq!(parsed["total_records"], 0);
@@ -267,143 +216,106 @@ mod tests {
     }
 
     #[test]
-    fn json_export_special_characters() {
-        let records = vec![create_test_record(
+    fn test_export_to_json_special_characters() {
+        let records = vec![make_test_record(
             1,
             "2026-03-14T02:30:00+00:00",
             "manual",
-            "Contains \"quotes\" and <html> & special chars",
+            "包含特殊字符: \"引号\" & <标签> \n换行",
         )];
 
-        let result = export_records_to_json(&records, "2026-03-14", "2026-03-14").unwrap();
+        let result = export_to_json(&records, "2026-03-14", "2026-03-14").unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
 
+        // JSON should properly escape special characters
         assert_eq!(
             parsed["records"][0]["content"],
-            "Contains \"quotes\" and <html> & special chars"
+            "包含特殊字符: \"引号\" & <标签> \n换行"
         );
     }
 
     #[test]
-    fn json_export_multiple_records() {
-        let records = vec![
-            create_test_record(1, "2026-03-14T02:30:00+00:00", "auto", "Record 1"),
-            create_test_record(2, "2026-03-14T05:00:00+00:00", "manual", "Record 2"),
-            create_test_record(3, "2026-03-15T01:00:00+00:00", "auto", "Record 3"),
-        ];
+    fn test_export_to_json_with_screenshot_path() {
+        let mut record = make_test_record(1, "2026-03-14T02:30:00+00:00", "auto", "截图分析");
+        record.screenshot_path = Some("screenshots/screenshot_20260314_103000.png".to_string());
 
-        let result = export_records_to_json(&records, "2026-03-14", "2026-03-15").unwrap();
+        let result = export_to_json(&[record], "2026-03-14", "2026-03-14").unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
 
-        assert_eq!(parsed["total_records"], 3);
-        assert_eq!(parsed["records"].as_array().unwrap().len(), 3);
+        assert_eq!(
+            parsed["records"][0]["screenshot_path"],
+            "screenshots/screenshot_20260314_103000.png"
+        );
     }
 
-    // ── Tests for export_records_to_markdown ──
+    // ===== Markdown Export Tests =====
 
     #[test]
-    fn markdown_export_contains_header() {
-        let records: Vec<Record> = vec![];
-
-        let result = export_records_to_markdown(&records, "2026-03-07", "2026-03-14").unwrap();
-
-        assert!(result.contains("# DailyLogger 数据导出"));
-        assert!(result.contains("导出时间:"));
-        assert!(result.contains("日期范围: 2026-03-07 至 2026-03-14"));
-        assert!(result.contains("总记录数: 0"));
-    }
-
-    #[test]
-    fn markdown_export_empty_records_message() {
-        let records: Vec<Record> = vec![];
-
-        let result = export_records_to_markdown(&records, "2026-03-07", "2026-03-14").unwrap();
-
-        assert!(result.contains("*该日期范围内无记录*"));
-    }
-
-    #[test]
-    fn markdown_export_groups_by_date() {
+    fn test_export_to_markdown_basic() {
         let records = vec![
-            create_test_record(1, "2026-03-14T02:30:00+00:00", "auto", "Day 1 record"),
-            create_test_record(2, "2026-03-15T05:00:00+00:00", "manual", "Day 2 record"),
+            make_test_record(1, "2026-03-14T02:30:00+00:00", "auto", "编写 Rust 代码"),
+            make_test_record(2, "2026-03-14T03:15:00+00:00", "manual", "记录想法"),
         ];
 
-        let result = export_records_to_markdown(&records, "2026-03-14", "2026-03-15").unwrap();
+        let result = export_to_markdown(&records, "2026-03-14", "2026-03-14").unwrap();
 
-        // Should have date headers (the exact local date depends on timezone,
-        // but the structure should have ## date headers)
-        assert!(result.contains("## 20"));
-        assert!(result.contains("### 时间线"));
-    }
-
-    #[test]
-    fn markdown_export_auto_source_icon() {
-        let records = vec![create_test_record(
-            1,
-            "2026-03-14T02:30:00+00:00",
-            "auto",
-            "Auto content",
-        )];
-
-        let result = export_records_to_markdown(&records, "2026-03-14", "2026-03-14").unwrap();
-
+        assert!(result.contains("# DailyLogger 数据导出"));
+        assert!(result.contains("日期范围: 2026-03-14 至 2026-03-14"));
+        assert!(result.contains("总记录数: 2"));
         assert!(result.contains("🖥️ 自动感知"));
-        assert!(result.contains("Auto content"));
+        assert!(result.contains("⚡ 闪念"));
+        assert!(result.contains("编写 Rust 代码"));
+        assert!(result.contains("记录想法"));
     }
 
     #[test]
-    fn markdown_export_manual_source_icon() {
-        let records = vec![create_test_record(
+    fn test_export_to_markdown_empty_records() {
+        let records: Vec<Record> = vec![];
+        let result = export_to_markdown(&records, "2026-03-14", "2026-03-14").unwrap();
+
+        assert!(result.contains("# DailyLogger 数据导出"));
+        assert!(result.contains("总记录数: 0"));
+        assert!(result.contains("> 无记录"));
+    }
+
+    #[test]
+    fn test_export_to_markdown_multi_day() {
+        let records = vec![
+            make_test_record(1, "2026-03-13T02:30:00+00:00", "auto", "第一天工作"),
+            make_test_record(2, "2026-03-14T03:15:00+00:00", "manual", "第二天工作"),
+        ];
+
+        let result = export_to_markdown(&records, "2026-03-13", "2026-03-14").unwrap();
+
+        // Should contain both dates as headings
+        assert!(result.contains("## 2026-03-1"));
+        assert!(result.contains("第一天工作"));
+        assert!(result.contains("第二天工作"));
+    }
+
+    #[test]
+    fn test_export_to_markdown_multiline_content() {
+        let records = vec![make_test_record(
             1,
             "2026-03-14T02:30:00+00:00",
             "manual",
-            "Manual note",
+            "第一行\n第二行\n第三行",
         )];
 
-        let result = export_records_to_markdown(&records, "2026-03-14", "2026-03-14").unwrap();
+        let result = export_to_markdown(&records, "2026-03-14", "2026-03-14").unwrap();
 
-        assert!(result.contains("⚡ 闪念"));
-        assert!(result.contains("Manual note"));
+        // Each line should be indented
+        assert!(result.contains("  第一行\n"));
+        assert!(result.contains("  第二行\n"));
+        assert!(result.contains("  第三行\n"));
     }
 
-    #[test]
-    fn markdown_export_total_records_count() {
-        let records = vec![
-            create_test_record(1, "2026-03-14T02:30:00+00:00", "auto", "R1"),
-            create_test_record(2, "2026-03-14T05:00:00+00:00", "manual", "R2"),
-        ];
-
-        let result = export_records_to_markdown(&records, "2026-03-14", "2026-03-14").unwrap();
-
-        assert!(result.contains("总记录数: 2"));
-    }
-
-    // ── Tests for ExportRequest validation ──
+    // ===== Export Directory Tests =====
 
     #[test]
-    fn export_request_deserializes_correctly() {
-        let json = r#"{"start_date":"2026-03-07","end_date":"2026-03-14","format":"json"}"#;
-        let req: ExportRequest = serde_json::from_str(json).unwrap();
-
-        assert_eq!(req.start_date, "2026-03-07");
-        assert_eq!(req.end_date, "2026-03-14");
-        assert_eq!(req.format, "json");
-    }
-
-    #[test]
-    fn export_result_serializes_correctly() {
-        let result = ExportResult {
-            path: "/tmp/export.json".to_string(),
-            record_count: 42,
-            file_size: 1024,
-        };
-
-        let json = serde_json::to_string(&result).unwrap();
-        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(parsed["path"], "/tmp/export.json");
-        assert_eq!(parsed["record_count"], 42);
-        assert_eq!(parsed["file_size"], 1024);
+    fn test_get_export_dir_returns_valid_path() {
+        let dir = get_export_dir();
+        assert!(dir.to_string_lossy().contains("DailyLogger"));
+        assert!(dir.to_string_lossy().contains("exports"));
     }
 }

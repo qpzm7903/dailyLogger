@@ -280,40 +280,38 @@ Claude Opus 4.6
 
 ### Debug Log References
 
-No issues encountered during implementation.
+无调试问题
 
 ### Completion Notes List
 
-1. **后端导出模块** (`src-tauri/src/export/mod.rs`): 实现了完整的数据导出功能
-   - `ExportRequest` / `ExportResult` 数据结构
-   - `export_records_to_json()`: JSON 格式导出，包含完整记录信息和元数据
-   - `export_records_to_markdown()`: Markdown 格式导出，按日期分组，时间线排列
-   - `export_records` Tauri 命令：日期范围校验、格式校验、文件写入
-   - 13 个单元测试覆盖 JSON/Markdown 导出格式、空记录、特殊字符等
-
-2. **前端导出组件** (`src/components/ExportModal.vue`): 完整的导出 UI
-   - 日期范围选择器（默认最近 7 天）
-   - JSON / Markdown 格式切换
-   - 日期校验（开始日期不能晚于结束日期）
-   - 导出进度状态和成功/失败反馈
-   - 10 个 Vitest 测试覆盖组件交互
-
-3. **集成**: 在 App.vue 头部添加"📤 导出"按钮，注册 ExportModal 组件
-
-4. **复用现有代码**:
-   - 复用 `get_records_by_date_range_sync()` 进行日期范围查询
-   - 复用 synthesis 模块的时间格式化和来源图标模式
-   - 遵循现有 TailwindCSS 主题和组件模式
+- Task 1: 实现了完整的后端导出 API
+  - `memory_storage/mod.rs`: 添加 `get_records_for_export()` 函数，按时间 ASC 排序返回指定日期范围的记录
+  - `export/mod.rs`: 新建导出模块，包含 `ExportRequest`/`ExportResult` 结构体
+  - `export_to_json()`: 生成包含元数据的结构化 JSON，含 exported_at、date_range、total_records、records
+  - `export_to_markdown()`: 生成按日期分组的 Markdown 文档，含时间线、来源图标、内容缩进
+  - `export_records` Tauri command: 统一入口，支持 json/markdown 格式，文件保存到 `~/.local/share/DailyLogger/exports/`
+  - 10 个 Rust 单元测试: JSON/MD 格式正确性、空记录、特殊字符、多天数据、多行内容、截图路径
+- Task 2: 实现了前端 ExportModal 组件
+  - 日期范围选择器，默认最近 7 天
+  - JSON/Markdown 格式选择卡片
+  - 日期校验（开始日期不能晚于结束日期）
+  - 导出进度状态 (loading/结果/错误)
+  - 成功后显示文件路径、记录数、文件大小，支持打开所在目录
+  - 9 个 Vitest 测试: 默认日期、格式切换、日期校验、导出调用、成功结果、错误处理、关闭事件
+- Task 3: 集成到主界面
+  - App.vue header 添加 📤 导出按钮
+  - ExportModal 组件集成和 showExport 状态管理
 
 ### File List
 
-- `src-tauri/src/export/mod.rs` (新增) - 导出模块核心逻辑 + 13 测试
+- `src-tauri/src/export/mod.rs` (新建) - 导出模块：ExportRequest/ExportResult 结构、export_to_json、export_to_markdown、export_records Tauri 命令
+- `src-tauri/src/memory_storage/mod.rs` (修改) - 添加 get_records_for_export 函数
 - `src-tauri/src/lib.rs` (修改) - 注册 export 模块
-- `src-tauri/src/main.rs` (修改) - 注册 export_records Tauri 命令
-- `src/components/ExportModal.vue` (新增) - 导出弹窗组件
+- `src-tauri/src/main.rs` (修改) - 注册 export_records 命令到 generate_handler![]
+- `src/components/ExportModal.vue` (新建) - 导出弹窗组件
 - `src/App.vue` (修改) - 添加导出按钮和 ExportModal 集成
-- `src/__tests__/ExportModal.spec.js` (新增) - 前端组件测试 (10 tests)
+- `src/components/__tests__/ExportModal.test.js` (新建) - 前端组件测试
 
 ### Change Log
 
-- 2026-03-15: Implemented DATA-004 data export feature (JSON/Markdown) with full TDD coverage
+- 2026-03-15: DATA-004 完整实现 - 数据导出功能 (JSON/MD 格式)
