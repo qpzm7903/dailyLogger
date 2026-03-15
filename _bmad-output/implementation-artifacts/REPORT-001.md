@@ -1,6 +1,6 @@
 # Story 5.1: REPORT-001 - 周报生成
 
-Status: review
+Status: review (代码审查完成，待补充测试)
 
 ## Story
 
@@ -50,6 +50,12 @@ so that I can have a comprehensive overview of my work across multiple days for 
 - [ ] Task 4: 端到端测试 (AC: All)
   - [ ] 4.1 前端 Vitest 测试: 周报生成按钮交互
   - [ ] 4.2 Rust 集成测试: 完整周报生成流程
+
+## Review Follow-ups (AI)
+
+- [ ] [AI-Review][MEDIUM] Task 2.5: 编写 get_week_records_sync 单元测试 [memory_storage/mod.rs:446]
+- [ ] [AI-Review][LOW] Task 4.1: 前端 Vitest 测试周报生成按钮交互
+- [ ] [AI-Review][LOW] Task 4.2: Rust 集成测试完整周报生成流程
 
 ## Dev Notes
 
