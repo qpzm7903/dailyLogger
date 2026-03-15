@@ -167,6 +167,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // REPORT-002: 月报生成配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN monthly_report_prompt TEXT",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
     conn.execute(
@@ -356,6 +362,8 @@ pub struct Settings {
     // REPORT-001: 周报生成配置
     pub weekly_report_prompt: Option<String>,
     pub weekly_report_day: Option<i32>, // 0=周一, 6=周日
+    // REPORT-002: 月报生成配置
+    pub monthly_report_prompt: Option<String>,
 }
 
 // DATA-003: 手动标签系统
@@ -483,6 +491,69 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
 
     let records = stmt
         .query_map(params![week_start, week_end], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(2)?,
+                content: row.get(3)?,
+                screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
+                tags: row.get(6)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect records: {}", e))?;
+
+    Ok(records)
+}
+
+/// Get all records for the current month (used for monthly report)
+pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Calculate month boundaries based on local time
+    let now = chrono::Local::now();
+    let first_day = now.date_naive().with_day(1).unwrap();
+
+    // Month start: first day of month at 00:00:00 local time
+    let month_start = first_day
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    // Month end: first day of next month at 00:00:00 - 1 second
+    let next_month = if now.month() == 12 {
+        chrono::NaiveDate::from_ymd_opt(now.year() + 1, 1, 1).unwrap()
+    } else {
+        chrono::NaiveDate::from_ymd_opt(now.year(), now.month() + 1, 1).unwrap()
+    };
+
+    let month_end = next_month
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        - chrono::Duration::seconds(1);
+
+    let month_end = month_end.to_rfc3339();
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+         WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let records = stmt
+        .query_map(params![month_start, month_end], |row| {
             Ok(Record {
                 id: row.get(0)?,
                 timestamp: row.get(1)?,
@@ -911,7 +982,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 auto_detect_work_time, use_custom_work_time,
                 custom_work_time_start, custom_work_time_end, learned_work_time,
                 capture_mode, selected_monitor_index, tag_categories, is_ollama,
-                weekly_report_prompt, weekly_report_day
+                weekly_report_prompt, weekly_report_day, monthly_report_prompt
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -950,6 +1021,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 is_ollama: row.get::<_, Option<i32>>(28)?.map(|v| v != 0),
                 weekly_report_prompt: row.get(29)?,
                 weekly_report_day: row.get(30)?,
+                monthly_report_prompt: row.get(31)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -1032,7 +1104,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             tag_categories = ?28,
             is_ollama = ?29,
             weekly_report_prompt = ?30,
-            weekly_report_day = ?31
+            weekly_report_day = ?31,
+            monthly_report_prompt = ?32
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -1070,6 +1143,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             Some(if is_ollama { 1 } else { 0 }),
             settings.weekly_report_prompt,
             settings.weekly_report_day,
+            settings.monthly_report_prompt,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1794,7 +1868,10 @@ mod tests {
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
                 tag_categories TEXT DEFAULT '[]',
-                is_ollama INTEGER DEFAULT 0
+                is_ollama INTEGER DEFAULT 0,
+                weekly_report_prompt TEXT,
+                weekly_report_day INTEGER DEFAULT 0,
+                monthly_report_prompt TEXT
             )",
             [],
         )
@@ -1876,7 +1953,8 @@ mod tests {
                 tag_categories TEXT DEFAULT '[]',
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
-                weekly_report_day INTEGER DEFAULT 0
+                weekly_report_day INTEGER DEFAULT 0,
+                monthly_report_prompt TEXT
             )",
             [],
         )

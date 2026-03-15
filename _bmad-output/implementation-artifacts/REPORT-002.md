@@ -1,6 +1,6 @@
 # Story 5.2: REPORT-002 - 月报生成
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -20,33 +20,33 @@ so that I can have a comprehensive overview of my work across the entire month f
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 数据库扩展 - 月报配置字段 (AC: #5)
-  - [ ] 1.1 在 Settings 表添加 `monthly_report_prompt` 字段 (TEXT, 可为空)
-  - [ ] 1.2 更新 Settings struct 和相关 CRUD 函数
-  - [ ] 1.3 添加数据库迁移逻辑 (ALTER TABLE)
+- [x] Task 1: 数据库扩展 - 月报配置字段 (AC: #5)
+  - [x] 1.1 在 Settings 表添加 `monthly_report_prompt` 字段 (TEXT, 可为空)
+  - [x] 1.2 更新 Settings struct 和相关 CRUD 函数
+  - [x] 1.3 添加数据库迁移逻辑 (ALTER TABLE)
 
-- [ ] Task 2: Rust 后端 - 月报生成核心逻辑 (AC: #1, #3, #4, #7)
-  - [ ] 2.1 在 memory_storage/mod.rs 添加 `get_month_records_sync()` 函数
+- [x] Task 2: Rust 后端 - 月报生成核心逻辑 (AC: #1, #3, #4, #7)
+  - [x] 2.1 在 memory_storage/mod.rs 添加 `get_month_records_sync()` 函数
     - 获取本月 1 日 00:00:00 到本月最后一天 23:59:59 的记录
     - 正确处理跨时区问题 (参考 `get_today_records_sync` 模式)
-  - [ ] 2.2 在 synthesis/mod.rs 添加 `generate_monthly_report()` Tauri command
+  - [x] 2.2 在 synthesis/mod.rs 添加 `generate_monthly_report()` Tauri command
     - 复用 `format_records_for_summary()` 格式化记录
     - 复用 LLM 调用模式 (reqwest + OpenAI API)
     - 生成文件名: `月报-{YYYY-MM}.md`
-  - [ ] 2.3 添加 `get_default_monthly_report_prompt()` 函数
+  - [x] 2.3 添加 `get_default_monthly_report_prompt()` 函数
     - 包含月度趋势分析指令
-  - [ ] 2.4 添加 `format_records_by_week()` 辅助函数
+  - [x] 2.4 添加 `format_records_by_week()` 辅助函数
     - 按周分组记录，用于趋势分析
-  - [ ] 2.5 在 main.rs 的 `generate_handler![]` 中注册新命令
-  - [ ] 2.6 编写单元测试
+  - [x] 2.5 在 main.rs 的 `generate_handler![]` 中注册新命令
+  - [x] 2.6 编写单元测试
     - 测试时间边界（1 日 00:00, 月末 23:59）
     - 测试空记录处理
     - 测试跨月边界
 
-- [ ] Task 3: 前端 - 月报生成 UI (AC: #1, #2, #5, #6)
-  - [ ] 3.1 在 App.vue 添加"生成月报"按钮
+- [x] Task 3: 前端 - 月报生成 UI (AC: #1, #2, #5, #6)
+  - [x] 3.1 在 App.vue 添加"生成月报"按钮
   - [ ] 3.2 创建 `MonthlyReportViewer.vue` 组件或复用 `DailySummaryViewer.vue` 模式
-  - [ ] 3.3 添加月报生成 loading 状态和成功/错误提示
+  - [x] 3.3 添加月报生成 loading 状态和成功/错误提示
   - [ ] 3.4 显示最近月报路径和打开按钮
   - [ ] 3.5 在 SettingsModal.vue 添加月报模板配置入口（可选）
 

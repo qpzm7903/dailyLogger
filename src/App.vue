@@ -117,6 +117,13 @@
             >
               {{ isGeneratingWeekly ? '生成中...' : '生成周报' }}
             </button>
+            <button
+              @click="generateMonthlyReport"
+              :disabled="isGeneratingMonthly"
+              class="ml-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            >
+              {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
+            </button>
           </div>
           <!-- AI-004: Tag filter -->
           <div v-if="Object.keys(tagCounts).length > 0" class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-gray-700">
@@ -259,15 +266,18 @@ const quickNotesCount = ref(0)
 const todayRecords = ref([])
 const isGenerating = ref(false)
 const isGeneratingWeekly = ref(false)
+const isGeneratingMonthly = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
 const weeklyReportPath = ref('')
+const monthlyReportPath = ref('')
 const showSettings = ref(false)
 const showQuickNote = ref(false)
 const showScreenshot = ref(false)
 const showScreenshotGallery = ref(false)
 const showSummaryViewer = ref(false)
 const showWeeklyReportViewer = ref(false)
+const showMonthlyReportViewer = ref(false)
 const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
 const showSearch = ref(false)
@@ -520,6 +530,21 @@ const generateWeeklyReport = async () => {
     showError(err, generateWeeklyReport)
   } finally {
     isGeneratingWeekly.value = false
+  }
+}
+
+const generateMonthlyReport = async () => {
+  if (isGeneratingMonthly.value) return
+  isGeneratingMonthly.value = true
+  try {
+    const result = await invoke('generate_monthly_report')
+    monthlyReportPath.value = result
+    showSuccess('月报生成成功')
+  } catch (err) {
+    console.error('Failed to generate monthly report:', err)
+    showError(err, generateMonthlyReport)
+  } finally {
+    isGeneratingMonthly.value = false
   }
 }
 

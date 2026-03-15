@@ -40,6 +40,83 @@ pub fn get_default_weekly_report_prompt() -> String {
     DEFAULT_WEEKLY_REPORT_PROMPT.to_string()
 }
 
+/// Default prompt template for monthly reports
+const DEFAULT_MONTHLY_REPORT_PROMPT: &str = r#"你是一个工作日志助手。请根据以下本月工作记录，生成一份结构化的 Markdown 格式月报。
+
+要求：
+1. 按周分组展示工作内容
+2. 提取本月关键成果和技术亮点
+3. 总结遇到的问题和解决方案
+4. 分析月度工作趋势（哪些方面投入更多时间）
+5. 列出下月待跟进事项
+6. 输出纯 Markdown 格式，不要有其他说明文字
+
+本月记录：
+{records}
+
+请生成月报："#;
+
+/// Get the default monthly report prompt
+pub fn get_default_monthly_report_prompt() -> String {
+    DEFAULT_MONTHLY_REPORT_PROMPT.to_string()
+}
+
+/// Format records grouped by week for monthly trend analysis
+pub fn format_records_by_week(records: &[Record]) -> String {
+    use chrono::Datelike;
+
+    // Group records by week
+    let mut week_groups: std::collections::BTreeMap<String, Vec<&Record>> =
+        std::collections::BTreeMap::new();
+
+    for record in records {
+        if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&record.timestamp) {
+            let local_dt = dt.with_timezone(&chrono::Local);
+            let week_num = local_dt.iso_week().week();
+            let week_key = format!(
+                "第{}周 ({}月{}日-{}日)",
+                week_num,
+                local_dt.month(),
+                local_dt.day(),
+                local_dt.format("%m-%d")
+            );
+            week_groups.entry(week_key).or_default().push(record);
+        }
+    }
+
+    // Format each week group
+    let mut output = String::new();
+    for (week, week_records) in week_groups {
+        output.push_str(&format!("### {}\n\n", week));
+        for record in week_records {
+            let time = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
+                .map(|dt| {
+                    dt.with_timezone(&chrono::Local)
+                        .format("%Y-%m-%d %H:%M")
+                        .to_string()
+                })
+                .unwrap_or_else(|_| "unknown".to_string());
+
+            let source = if record.source_type == "auto" {
+                "🖥️ 自动感知"
+            } else {
+                "⚡ 闪念"
+            };
+
+            output.push_str(&format!("- [{}] {}: {}\n", time, source, record.content));
+        }
+        output.push('\n');
+    }
+
+    output
+}
+
+/// Generate the filename for monthly report
+pub fn generate_monthly_report_filename() -> String {
+    let now = chrono::Local::now();
+    format!("月报-{}.md", now.format("%Y-%m"))
+}
+
 /// Format the summary title by replacing placeholders.
 /// Supports: {date} - replaced with YYYY-MM-DD format
 pub fn format_summary_title(format: &str) -> String {
@@ -321,6 +398,7 @@ mod tests {
             selected_monitor_index: None,
             tag_categories: None,
             is_ollama: None,
+            monthly_report_prompt: None,
         }
     }
 
@@ -500,6 +578,61 @@ mod tests {
     fn get_default_summary_prompt_is_not_empty() {
         let prompt = get_default_summary_prompt();
         assert!(!prompt.is_empty());
+    }
+
+    // ── Tests for get_default_monthly_report_prompt ──
+
+    #[test]
+    fn get_default_monthly_report_prompt_returns_expected_content() {
+        let prompt = get_default_monthly_report_prompt();
+        assert!(prompt.contains("{records}"));
+        assert!(prompt.contains("Markdown"));
+        assert!(prompt.contains("工作日志助手"));
+        assert!(prompt.contains("按周分组"));
+    }
+
+    #[test]
+    fn get_default_monthly_report_prompt_is_not_empty() {
+        let prompt = get_default_monthly_report_prompt();
+        assert!(!prompt.is_empty());
+    }
+
+    // ── Tests for format_records_by_week ──
+
+    #[test]
+    fn format_records_by_week_groups_by_week() {
+        let records = vec![
+            create_test_record("auto", "record 1"),
+            create_test_record("manual", "record 2"),
+        ];
+        let formatted = format_records_by_week(&records);
+        assert!(formatted.contains("第"));
+        assert!(formatted.contains("周"));
+    }
+
+    #[test]
+    fn format_records_by_week_contains_records() {
+        let records = vec![create_test_record("auto", "test content")];
+        let formatted = format_records_by_week(&records);
+        assert!(formatted.contains("test content"));
+    }
+
+    #[test]
+    fn format_records_by_week_empty_returns_empty_string() {
+        let records: Vec<Record> = vec![];
+        let formatted = format_records_by_week(&records);
+        assert!(formatted.is_empty());
+    }
+
+    // ── Tests for generate_monthly_report_filename ──
+
+    #[test]
+    fn generate_monthly_report_filename_format() {
+        let filename = generate_monthly_report_filename();
+        assert!(filename.starts_with("月报-"));
+        assert!(filename.ends_with(".md"));
+        // Should contain YYYY-MM format
+        assert!(filename.contains("-"));
     }
 }
 
@@ -708,6 +841,183 @@ pub async fn generate_weekly_report() -> Result<String, String> {
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
     tracing::info!("Weekly report generated: {}", path_str);
+
+    Ok(path_str)
+}
+
+/// Generate monthly report - REPORT-002
+#[command]
+pub async fn generate_monthly_report() -> Result<String, String> {
+    let settings = memory_storage::get_settings_sync()
+        .map_err(|e| format!("Failed to get settings: {}", e))?;
+
+    let obsidian_path = settings
+        .obsidian_path
+        .clone()
+        .ok_or("Obsidian path not configured")?;
+
+    if obsidian_path.is_empty() {
+        return Err("Obsidian path is empty".to_string());
+    }
+
+    let api_base_url = settings
+        .api_base_url
+        .clone()
+        .ok_or("API Base URL not configured")?;
+    let api_key = settings.api_key.clone().unwrap_or_default();
+
+    // Use summary_model_name for monthly report, fallback to model_name
+    let model_name = settings
+        .summary_model_name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .or_else(|| settings.model_name.clone())
+        .unwrap_or_else(|| "gpt-4o".to_string());
+
+    // Check if this is an Ollama endpoint
+    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
+
+    if !is_ollama && api_key.is_empty() {
+        return Err("API Key is required for non-Ollama endpoints".to_string());
+    }
+
+    // Get all records for this month
+    let all_records = memory_storage::get_month_records_sync()
+        .map_err(|e| format!("Failed to get month records: {}", e))?;
+
+    // Filter records based on include_manual_records setting
+    let records = filter_records_by_settings(all_records, &settings);
+
+    if records.is_empty() {
+        return Err("本月无记录".to_string());
+    }
+
+    // Format records for summary (use the week-grouped format for trend analysis)
+    let records_text = format_records_by_week(&records);
+
+    let prompt_template = settings
+        .monthly_report_prompt
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_MONTHLY_REPORT_PROMPT);
+
+    let prompt = prompt_template.replace("{records}", &records_text);
+
+    let client = reqwest::Client::new();
+
+    let request_body = serde_json::json!({
+        "model": model_name,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 4000
+    });
+
+    let masked_key = crate::mask_api_key(&api_key);
+    let endpoint = format!("{}/chat/completions", api_base_url);
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_request",
+            "caller": "generate_monthly_report",
+            "endpoint": endpoint,
+            "model": model_name,
+            "max_tokens": 4000,
+            "api_key_masked": masked_key,
+            "has_image": false,
+            "prompt": prompt,
+            "records_count": records.len(),
+        })
+    );
+
+    let start = std::time::Instant::now();
+    let mut request = client
+        .post(&endpoint)
+        .header("Content-Type", "application/json")
+        .json(&request_body);
+
+    if !api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {}", api_key));
+    }
+
+    let response = request.send().await.map_err(|e| {
+        let elapsed_ms = start.elapsed().as_millis();
+        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_monthly_report",
+                "error": error_msg,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        error_msg
+    })?;
+    let elapsed_ms = start.elapsed().as_millis();
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_monthly_report",
+                "status": status.as_u16(),
+                "response_body": body,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        return Err(format!("API error ({}): {}", status, body));
+    }
+
+    let response_json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let summary = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("No content in response")?;
+
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_response",
+            "caller": "generate_monthly_report",
+            "status": 200,
+            "elapsed_ms": elapsed_ms,
+            "usage": response_json.get("usage"),
+            "model": response_json.get("model"),
+            "response_id": response_json.get("id"),
+            "content": summary,
+        })
+    );
+
+    // Generate filename based on month
+    let filename = generate_monthly_report_filename();
+
+    let output_dir = PathBuf::from(&obsidian_path);
+    std::fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    let output_path = output_dir.join(&filename);
+    std::fs::write(&output_path, summary)
+        .map_err(|e| format!("Failed to write monthly report: {}", e))?;
+
+    let path_str = output_path.to_string_lossy().to_string();
+
+    // Save last monthly report path to settings
+    let mut updated_settings = settings.clone();
+    updated_settings.last_summary_path = Some(path_str.clone());
+    memory_storage::save_settings_sync(&updated_settings)
+        .map_err(|e| format!("Failed to update settings: {}", e))?;
+
+    tracing::info!("Monthly report generated: {}", path_str);
 
     Ok(path_str)
 }
