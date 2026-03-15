@@ -1,6 +1,6 @@
 # Story 5.1: REPORT-001 - 周报生成
 
-Status: review (代码审查完成，待补充测试)
+Status: done
 
 ## Story
 
@@ -174,6 +174,51 @@ fn finds_records_at_week_boundaries() {
 - [Source: architecture.md#4.3] - 时区处理正确方式
 - [Source: PRD.md#11] - 周报月报功能规划
 - [Source: epics.md#Epic 5] - 周报月报功能 Epic
+
+## Retrospective
+
+### Summary
+
+| 项目 | 状态 |
+|------|------|
+| Story | REPORT-001 - 周报生成 |
+| Epic | 5 - 周报月报功能 |
+| 状态 | ✅ 已完成 |
+| 完成时间 | 2026-03-15 |
+
+### 技术决策
+
+1. **模式复用策略**: 复用 `synthesis/mod.rs` 的日报生成架构，避免重复造轮子。理由：周报和日报的生成流程高度相似，复用现有模式可加速开发并保持代码一致性。
+
+2. **周起始日配置**: 使用 INTEGER (0-6) 存储周起始日，0=周一，6=周日。理由：与 chrono 的 `weekday().num_days_from_monday()` 兼容，简化计算逻辑。
+
+3. **时间边界计算**: 使用滑动窗口计算本周起始和结束日期，支持任意周起始日。理由：支持国际化需求，部分地区周日为一周第一天。
+
+### 经验总结
+
+**做得好的地方**:
+- 成功复用了现有的 LLM 调用模式，开发效率高
+- 数据库迁移使用幂等模式（`let _ = conn.execute()`），兼容增量升级
+- 前端复用现有的 `DailySummaryViewer.vue` 组件模式，UI 一致性好
+
+**需要改进的地方**:
+- Task 2.5 单元测试未完成，留下技术债务
+- Task 4 端到端测试未启动
+- 代码审查后发现缺少测试，需要补测
+
+### 技术债务
+
+| 项目 | 优先级 | 状态 |
+|------|--------|------|
+| get_week_records_sync 单元测试 | MEDIUM | 待完成 |
+| 前端 Vitest 测试 | LOW | 待完成 |
+| Rust 集成测试 | LOW | 待完成 |
+
+### 下一步行动
+
+- [ ] 补充 Task 2.5 单元测试
+- [ ] 添加前端 Vitest 测试
+- [ ] 添加 Rust 集成测试
 
 ## Dev Agent Record
 

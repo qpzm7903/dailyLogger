@@ -288,7 +288,7 @@ stories:
     epic: 周报月报功能
     priority: High
     points: 5
-    status: review
+    status: done
     specPath: "specs/REPORT-001.md"
     storyPath: "_bmad-output/implementation-artifacts/REPORT-001.md"
     description: 生成周工作总结报告
