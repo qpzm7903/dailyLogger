@@ -192,12 +192,9 @@ pub fn get_memory_usage_mb() -> u64 {
 #[command]
 #[cfg(feature = "screenshot")]
 pub fn benchmark_screenshot_processing() -> Result<BenchmarkResult, String> {
-    use crate::auto_perception::take_screenshot;
-
     let start = Instant::now();
     // This is a quick test - just measure the call overhead
     // Real benchmark would capture and process a full screenshot
-    // Note: take_screenshot returns a future, we need to handle it properly
     std::thread::sleep(std::time::Duration::from_millis(10));
     let elapsed = start.elapsed().as_millis() as u64;
 
