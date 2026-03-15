@@ -8,12 +8,11 @@
         <h1 class="text-xl font-semibold">DailyLogger</h1>
       </div>
       <div class="flex items-center gap-4">
-        <!-- CORE-007: Network status indicator -->
-        <div v-if="!isOnline" class="flex items-center gap-1.5 px-2 py-1 bg-yellow-600/20 text-yellow-400 rounded-lg text-xs">
-          <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-          <span>离线</span>
-          <span v-if="offlineQueueCount > 0" class="text-yellow-300">
-            ({{ offlineQueueCount }} 待处理)
+        <div v-if="!isOnline" class="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+          <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
+          离线模式
+          <span v-if="offlineQueueCount > 0" class="ml-1 px-1.5 py-0.5 bg-yellow-500/30 rounded-full">
+            {{ offlineQueueCount }} 个待同步
           </span>
         </div>
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
@@ -303,6 +302,8 @@ import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
 
 const currentTime = ref('')
+const isOnline = ref(true)
+const offlineQueueCount = ref(0)
 const autoCaptureEnabled = ref(false)
 const quickNotesCount = ref(0)
 const todayRecords = ref([])
@@ -335,10 +336,6 @@ const selectedScreenshot = ref(null)
 const selectedTagFilter = ref('')
 const allTags = ref([])
 
-// CORE-007: Network status
-const isOnline = ref(true)
-const offlineQueueCount = ref(0)
-
 // Computed
 const screenshotCount = computed(() => {
   return todayRecords.value.filter(r => r.source_type === 'auto' && r.screenshot_path).length
@@ -370,6 +367,9 @@ const tagCounts = computed(() => {
 let timeInterval = null
 let unlistenTrayOpenSettings = null
 let unlistenTrayOpenQuickNote = null
+let unlistenNetworkStatus = null
+let unlistenQueueUpdated = null
+let networkCheckInterval = null
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
@@ -643,6 +643,35 @@ onMounted(async () => {
   // Auto-refresh records every 30 seconds
   setInterval(loadTodayRecords, 30000)
 
+  // CORE-007: Network status monitoring
+  try {
+    isOnline.value = await invoke('get_network_status')
+  } catch { /* ignore */ }
+
+  // CORE-007: Load initial queue status
+  try {
+    const queueStatus = await invoke('get_offline_queue_status')
+    offlineQueueCount.value = queueStatus.pending_count || 0
+  } catch { /* ignore */ }
+
+  unlistenNetworkStatus = await listen('network-status-changed', (event) => {
+    isOnline.value = event.payload
+  })
+
+  // Listen for offline queue updates
+  unlistenQueueUpdated = await listen('offline-queue-updated', (event) => {
+    offlineQueueCount.value = event.payload?.pending_count || 0
+  })
+
+  // Also poll network status every 60s as a fallback
+  networkCheckInterval = setInterval(async () => {
+    try {
+      isOnline.value = await invoke('check_network_status')
+      const queueStatus = await invoke('get_offline_queue_status')
+      offlineQueueCount.value = queueStatus.pending_count || 0
+    } catch { /* ignore */ }
+  }, 60000)
+
   // Listen for tray-open-settings event
   unlistenTrayOpenSettings = await listen('tray-open-settings', () => {
     showSettings.value = true
@@ -659,7 +688,10 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
+  if (networkCheckInterval) clearInterval(networkCheckInterval)
   if (unlistenTrayOpenSettings) unlistenTrayOpenSettings()
   if (unlistenTrayOpenQuickNote) unlistenTrayOpenQuickNote()
+  if (unlistenNetworkStatus) unlistenNetworkStatus()
+  if (unlistenQueueUpdated) unlistenQueueUpdated()
 })
 </script>

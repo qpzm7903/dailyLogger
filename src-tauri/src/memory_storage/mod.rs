@@ -267,8 +267,8 @@ pub fn init_database() -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create index on manual_tags: {}", e))?;
 
-    // CORE-007: Initialize offline queue table (before moving conn)
-    crate::network::init_offline_queue(&conn)?;
+    // CORE-007: 离线队列表
+    crate::offline_queue::create_offline_queue_table(&conn)?;
 
     let mut db = DB_CONNECTION
         .lock()

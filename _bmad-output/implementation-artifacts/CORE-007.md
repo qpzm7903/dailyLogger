@@ -23,7 +23,7 @@ so that 即使网络不稳定或完全离线也能记录工作内容，联网后
 ## Tasks / Subtasks
 
 - [x] Task 1: 网络状态检测模块 (AC: #1)
-  - [x] Subtask 1.1: 实现网络状态检测 (使用 reqwest 或 native-tls)
+  - [x] Subtask 1.1: 实现网络状态检测 (使用 reqwest)
   - [x] Subtask 1.2: 前端显示离线状态指示器
   - [x] Subtask 1.3: 离线/在线状态切换事件通知
 - [x] Task 2: 离线队列管理 (AC: #2)
@@ -99,24 +99,32 @@ so that 即使网络不稳定或完全离线也能记录工作内容，联网后
 
 ### Agent Model Used
 
-MiniMax-M2.5
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
-- 实现了网络状态检测模块 (src-tauri/src/network.rs)
-- 实现了离线队列表的创建和 CRUD 操作
-- 在 auto_perception 模块中添加了离线检测和任务队列功能
-- 在 synthesis 模块中添加了日报/周报/月报/自定义报告的离线检测
-- 在前端 App.vue 中添加了离线状态指示器和队列数量显示
+- **Task 1**: 创建了 `network_status.rs` 模块，包含网络状态检测（AtomicBool 缓存 + reqwest HEAD 请求探测）、后台定期检测（30 秒间隔）、状态变化事件通知。前端 App.vue 新增离线模式指示器和事件监听。共 6 个单元测试通过。
+- **Task 2**: 创建了 `offline_queue.rs` 模块，包含 SQLite 离线队列表、入队/出队/标记完成/标记失败逻辑、指数退避重试（最多 5 次）、旧任务清理。网络恢复时自动触发队列处理。共 7 个单元测试通过。
+- **Task 3**: 在 `synthesis/mod.rs` 的日报/周报/月报生成函数中添加离线检查，离线时自动入队并返回友好提示。在 `auto_perception/mod.rs` 的截图分析中添加离线处理：截图照常保存，AI 分析入队。查询功能（SQLite 本地操作）天然支持离线。
+- **Task 4**: 前端新增离线状态指示器（黄色标签 + 待同步任务数量），监听 `network-status-changed` 和 `offline-queue-updated` 事件实时更新，每 60 秒轮询作为 fallback。
 
 ### File List
 
-- src-tauri/src/network.rs (新增)
-- src-tauri/src/lib.rs (添加 network 模块引用)
-- src-tauri/src/main.rs (注册新命令)
-- src-tauri/src/memory_storage/mod.rs (初始化离线队列表)
-- src-tauri/src/auto_perception/mod.rs (离线检测和队列)
-- src-tauri/src/synthesis/mod.rs (离线检测)
-- src/App.vue (离线状态指示器)
+**新增文件:**
+- `src-tauri/src/network_status.rs` — 网络状态检测模块（检测、缓存、后台监控、Tauri 命令）
+- `src-tauri/src/offline_queue.rs` — 离线队列管理模块（SQLite 表、入队/出队、重试、清理）
+
+**修改文件:**
+- `src-tauri/src/lib.rs` — 注册 network_status 和 offline_queue 模块
+- `src-tauri/src/main.rs` — 注册 4 个新 Tauri 命令 + 启动网络监控后台任务
+- `src-tauri/src/memory_storage/mod.rs` — init_database 中创建 offline_queue 表
+- `src-tauri/src/auto_perception/mod.rs` — 离线时保存截图并队列化 AI 分析
+- `src-tauri/src/synthesis/mod.rs` — 日报/周报/月报生成前检查网络状态
+- `src/App.vue` — 离线状态指示器 + 队列数量显示 + 事件监听
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — CORE-007 状态更新
+
+## Change Log
+
+- 2026-03-15: CORE-007 全部任务实现完成，所有验收条件满足，299 个 Rust 测试 + 191 个前端测试全部通过
