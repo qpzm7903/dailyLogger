@@ -400,6 +400,7 @@ mod tests {
             tag_categories: None,
             is_ollama: None,
             monthly_report_prompt: None,
+            custom_report_templates: None,
         }
     }
 
