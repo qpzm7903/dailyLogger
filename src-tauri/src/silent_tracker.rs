@@ -165,8 +165,7 @@ impl SilentPatternTracker {
     /// Remove entries older than MAX_HISTORY_DAYS.
     fn prune_old_entries(&mut self) {
         let cutoff_date = Local::now().date_naive() - Duration::days(MAX_HISTORY_DAYS);
-        self.hourly_stats
-            .retain(|s| s.date > cutoff_date);
+        self.hourly_stats.retain(|s| s.date > cutoff_date);
     }
 
     /// Get aggregated statistics for the last `duration`.
@@ -392,7 +391,10 @@ mod tests {
         tracker.record_capture(CaptureReason::ScreenChanged);
 
         assert_eq!(tracker.hourly_stats().len(), 1);
-        assert_eq!(tracker.last_capture_reason(), Some(CaptureReason::ScreenChanged));
+        assert_eq!(
+            tracker.last_capture_reason(),
+            Some(CaptureReason::ScreenChanged)
+        );
     }
 
     #[test]
@@ -578,6 +580,9 @@ mod tests {
 
         assert_eq!(tracker.consecutive_change_captures(), 1);
         assert_eq!(tracker.consecutive_silent_captures(), 0);
-        assert_eq!(tracker.last_capture_reason(), Some(CaptureReason::ManualTrigger));
+        assert_eq!(
+            tracker.last_capture_reason(),
+            Some(CaptureReason::ManualTrigger)
+        );
     }
 }

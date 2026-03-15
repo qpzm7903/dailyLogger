@@ -68,7 +68,11 @@ fn calc_change_rate(a: &[u8], b: &[u8]) -> f64 {
 /// Determine whether the screen has changed enough to warrant a new capture.
 /// Returns `Some(reason)` if we should proceed with the full capture+analysis pipeline,
 /// or `None` if the screen hasn't changed and silent timeout hasn't been exceeded.
-fn should_capture(fingerprint: &[u8], change_threshold: f64, max_silent_minutes: u64) -> Option<CaptureReason> {
+fn should_capture(
+    fingerprint: &[u8],
+    change_threshold: f64,
+    max_silent_minutes: u64,
+) -> Option<CaptureReason> {
     let mut state = SCREEN_STATE.lock().unwrap();
 
     let silent_exceeded =
