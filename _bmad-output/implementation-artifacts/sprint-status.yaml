@@ -232,7 +232,7 @@ stories:
     epic: AI 能力提升
     priority: Low
     points: 8
-    status: in-progress
+    status: done
     specPath: "specs/AI-005.md"
     storyPath: "_bmad-output/implementation-artifacts/AI-005.md"
     description: 支持本地部署的 Ollama 模型

@@ -797,6 +797,13 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
         None
     };
 
+    // AI-005: Auto-detect Ollama endpoint based on api_base_url
+    let is_ollama = settings
+        .api_base_url
+        .as_ref()
+        .map(|url| crate::ollama::is_ollama_endpoint(url))
+        .unwrap_or(false);
+
     let db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
@@ -867,7 +874,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.capture_mode,
             settings.selected_monitor_index,
             settings.tag_categories,
-            settings.is_ollama.map(|v| if v { 1 } else { 0 }),
+            Some(if is_ollama { 1 } else { 0 }),
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
