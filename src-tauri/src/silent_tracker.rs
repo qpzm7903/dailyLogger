@@ -670,9 +670,15 @@ mod tests {
         let new_threshold = calculate_optimal_silent_minutes(&tracker);
 
         // Silent ratio is 0.8 > 0.7, should increase threshold
-        assert!(new_threshold > 30, "Threshold should increase for deep work");
+        assert!(
+            new_threshold > 30,
+            "Threshold should increase for deep work"
+        );
         // Progressive: max 5 minutes per adjustment
-        assert!(new_threshold <= 35, "Adjustment should be at most 5 minutes");
+        assert!(
+            new_threshold <= 35,
+            "Adjustment should be at most 5 minutes"
+        );
     }
 
     /// AC2: Given 用户处于活跃工作状态（屏幕频繁变化）
@@ -693,9 +699,15 @@ mod tests {
         let new_threshold = calculate_optimal_silent_minutes(&tracker);
 
         // Silent ratio is 0.2 < 0.3, should decrease threshold
-        assert!(new_threshold < 30, "Threshold should decrease for active work");
+        assert!(
+            new_threshold < 30,
+            "Threshold should decrease for active work"
+        );
         // Progressive: max 5 minutes per adjustment
-        assert!(new_threshold >= 25, "Adjustment should be at most 5 minutes");
+        assert!(
+            new_threshold >= 25,
+            "Adjustment should be at most 5 minutes"
+        );
     }
 
     /// AC2: Balance state - ratio between 0.3 and 0.7
@@ -714,7 +726,10 @@ mod tests {
         let new_threshold = calculate_optimal_silent_minutes(&tracker);
 
         // Silent ratio is 0.5, within [0.3, 0.7], should keep current
-        assert_eq!(new_threshold, 30, "Threshold should stay the same for balanced work");
+        assert_eq!(
+            new_threshold, 30,
+            "Threshold should stay the same for balanced work"
+        );
     }
 
     /// Test insufficient data returns default
@@ -725,7 +740,10 @@ mod tests {
         // Only 5 captures (less than 10)
         let new_threshold = calculate_optimal_silent_minutes(&tracker);
 
-        assert_eq!(new_threshold, 30, "Should return default without sufficient data");
+        assert_eq!(
+            new_threshold, 30,
+            "Should return default without sufficient data"
+        );
     }
 
     /// Test minimum threshold limit (10 minutes)
@@ -792,7 +810,10 @@ mod tests {
         let new_threshold = calculate_optimal_silent_minutes(&tracker);
 
         // At 0.7 boundary, should increase (>= 0.7)
-        assert_eq!(new_threshold, 35, "At boundary 0.7, should increase threshold");
+        assert_eq!(
+            new_threshold, 35,
+            "At boundary 0.7, should increase threshold"
+        );
     }
 
     /// Test adjustment at boundary (silent ratio = 0.3)
@@ -811,7 +832,10 @@ mod tests {
         let new_threshold = calculate_optimal_silent_minutes(&tracker);
 
         // At 0.3 boundary, should decrease (<= 0.3)
-        assert_eq!(new_threshold, 25, "At boundary 0.3, should decrease threshold");
+        assert_eq!(
+            new_threshold, 25,
+            "At boundary 0.3, should decrease threshold"
+        );
     }
 
     /// Test all silent captures
