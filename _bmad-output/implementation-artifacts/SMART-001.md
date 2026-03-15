@@ -1,6 +1,6 @@
 # Story 2.1: 应用窗口识别
 
-Status: review
+Status: done
 
 ## Story
 
