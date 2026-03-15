@@ -437,6 +437,7 @@ pub async fn save_settings(settings: Settings) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     /// Initializes an in-memory database for testing.
     fn setup_test_db() {
@@ -526,6 +527,7 @@ mod tests {
     // ── Boundary tests for get_today_records_sync ──
 
     #[test]
+    #[serial]
     fn finds_record_saved_near_local_midnight() {
         setup_test_db();
 
@@ -544,6 +546,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn finds_record_at_last_second_of_local_today() {
         setup_test_db();
 
@@ -561,6 +564,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn excludes_record_from_yesterday() {
         setup_test_db();
 
@@ -578,6 +582,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn finds_record_at_exact_local_midnight() {
         setup_test_db();
 
@@ -597,6 +602,7 @@ mod tests {
     // ── End-to-end: add_record → get_today_records_sync ──
 
     #[test]
+    #[serial]
     fn add_record_then_query_returns_it() {
         setup_test_db();
 
@@ -611,6 +617,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn add_record_with_screenshot_path_persists() {
         setup_test_db();
 
@@ -627,6 +634,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn records_ordered_by_timestamp_descending() {
         setup_test_db();
 
@@ -656,6 +664,7 @@ mod tests {
     // ── Tests for new settings fields: summary_title_format and include_manual_records ──
 
     #[test]
+    #[serial]
     fn get_settings_returns_default_title_format() {
         setup_test_db_with_settings();
 
@@ -668,6 +677,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_settings_returns_default_include_manual_records() {
         setup_test_db_with_settings();
 
@@ -680,6 +690,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_title_format() {
         setup_test_db_with_settings();
 
@@ -696,6 +707,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_include_manual_records_false() {
         setup_test_db_with_settings();
 
@@ -712,6 +724,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_include_manual_records_true() {
         setup_test_db_with_settings();
 
@@ -735,6 +748,7 @@ mod tests {
     // ── Tests for window whitelist/blacklist settings (SMART-001 Task 2) ──
 
     #[test]
+    #[serial]
     fn get_settings_returns_default_window_whitelist() {
         setup_test_db_with_settings();
 
@@ -747,6 +761,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_settings_returns_default_window_blacklist() {
         setup_test_db_with_settings();
 
@@ -759,6 +774,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_settings_returns_default_use_whitelist_only() {
         setup_test_db_with_settings();
 
@@ -771,6 +787,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_window_whitelist() {
         setup_test_db_with_settings();
 
@@ -787,6 +804,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_window_blacklist() {
         setup_test_db_with_settings();
 
@@ -803,6 +821,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_use_whitelist_only_true() {
         setup_test_db_with_settings();
 
@@ -819,6 +838,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_use_whitelist_only_false() {
         setup_test_db_with_settings();
 
@@ -840,6 +860,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn window_whitelist_accepts_complex_json() {
         setup_test_db_with_settings();
 
@@ -858,6 +879,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn window_blacklist_accepts_empty_array() {
         setup_test_db_with_settings();
 
@@ -876,6 +898,7 @@ mod tests {
     // ── Tests for get_records_by_date_range ──
 
     #[test]
+    #[serial]
     fn get_records_by_date_range_finds_records_in_range() {
         setup_test_db();
 
@@ -913,6 +936,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_records_by_date_range_includes_end_date_boundary() {
         setup_test_db();
 
@@ -932,6 +956,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_records_by_date_range_includes_start_date_boundary() {
         setup_test_db();
 
@@ -951,6 +976,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_records_by_date_range_excludes_outside_range() {
         setup_test_db();
 
@@ -978,6 +1004,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_records_by_date_range_returns_empty_for_no_matches() {
         setup_test_db();
 
@@ -998,6 +1025,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_records_by_date_range_orders_descending() {
         setup_test_db();
 
@@ -1026,6 +1054,7 @@ mod tests {
     // ── Tests for get_today_record_count_sync ──
 
     #[test]
+    #[serial]
     fn get_today_record_count_sync_returns_zero_for_empty_db() {
         setup_test_db();
 
@@ -1034,6 +1063,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_today_record_count_sync_counts_today_records() {
         setup_test_db();
 
@@ -1052,6 +1082,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_today_record_count_sync_excludes_yesterday_records() {
         setup_test_db();
 
@@ -1075,6 +1106,7 @@ mod tests {
     // ── Tests for auto_adjust_silent and silent_adjustment_paused_until (SMART-002 Task 3) ──
 
     #[test]
+    #[serial]
     fn get_settings_returns_default_auto_adjust_silent() {
         setup_test_db_with_settings();
 
@@ -1087,6 +1119,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_settings_returns_default_silent_adjustment_paused_until() {
         setup_test_db_with_settings();
 
@@ -1098,6 +1131,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_auto_adjust_silent_false() {
         setup_test_db_with_settings();
 
@@ -1114,6 +1148,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_auto_adjust_silent_true() {
         setup_test_db_with_settings();
 
@@ -1135,6 +1170,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_persists_silent_adjustment_paused_until() {
         setup_test_db_with_settings();
 
@@ -1152,6 +1188,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn save_settings_clears_silent_adjustment_paused_until() {
         setup_test_db_with_settings();
 
@@ -1173,6 +1210,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn silent_adjustment_paused_until_accepts_rfc3339_format() {
         setup_test_db_with_settings();
 

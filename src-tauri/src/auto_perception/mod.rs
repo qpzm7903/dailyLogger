@@ -2,10 +2,13 @@ use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use tauri::command;
+use tauri::{command, Emitter};
 
 use crate::memory_storage;
-use crate::silent_tracker::{record_capture, CaptureReason};
+use crate::silent_tracker::{
+    calculate_optimal_silent_minutes, current_threshold, has_sufficient_data, record_capture,
+    set_threshold, CaptureReason,
+};
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -469,6 +472,74 @@ fn parse_window_patterns(json: Option<&str>) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// SMART-002 (AC2): Evaluate and adjust the silent threshold if needed.
+/// Returns Some((old_threshold, new_threshold)) if an adjustment was made, None otherwise.
+fn evaluate_and_adjust_threshold() -> Option<(u64, u64)> {
+    // Check if auto-adjust is enabled
+    if let Ok(settings) = memory_storage::get_settings_sync() {
+        if !settings.auto_adjust_silent.unwrap_or(true) {
+            tracing::debug!("Auto-adjust silent threshold is disabled by user");
+            return None;
+        }
+
+        // Check if adjustment is paused
+        if let Some(paused_until) = &settings.silent_adjustment_paused_until {
+            if let Ok(paused_time) = chrono::DateTime::parse_from_rfc3339(paused_until) {
+                if paused_time > chrono::Utc::now() {
+                    tracing::debug!(
+                        "Silent threshold adjustment is paused until {}",
+                        paused_until
+                    );
+                    return None;
+                }
+            }
+        }
+    }
+
+    // Check if we have sufficient data
+    if !has_sufficient_data() {
+        tracing::debug!("Insufficient capture data for threshold adjustment");
+        return None;
+    }
+
+    let old_threshold = current_threshold();
+    let new_threshold = calculate_optimal_silent_minutes(
+        &crate::silent_tracker::SILENT_PATTERN_TRACKER
+            .lock()
+            .unwrap(),
+    );
+
+    // Only adjust if there's an actual change
+    if new_threshold != old_threshold {
+        set_threshold(new_threshold);
+
+        // Persist to settings
+        if let Ok(mut settings) = memory_storage::get_settings_sync() {
+            settings.max_silent_minutes = Some(new_threshold as i32);
+            if let Err(e) = memory_storage::save_settings_sync(&settings) {
+                tracing::error!("Failed to save adjusted threshold: {}", e);
+            }
+        }
+
+        tracing::info!(
+            "Silent threshold adjusted from {} to {} minutes",
+            old_threshold,
+            new_threshold
+        );
+        return Some((old_threshold, new_threshold));
+    }
+
+    None
+}
+
+/// Payload for silent-threshold-adjusted event
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThresholdAdjustment {
+    pub old_value: u64,
+    pub new_value: u64,
+    pub reason: String,
+}
+
 async fn capture_and_store() -> Result<(), String> {
     let settings = load_capture_settings();
 
@@ -533,7 +604,7 @@ async fn capture_and_store() -> Result<(), String> {
 }
 
 #[command]
-pub async fn start_auto_capture() -> Result<(), String> {
+pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
     if AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst) {
         return Ok(());
     }
@@ -544,10 +615,14 @@ pub async fn start_auto_capture() -> Result<(), String> {
         return Err("API 密钥未配置，请在设置中配置".to_string());
     }
 
+    // SMART-002: Initialize tracker with user's current threshold
+    set_threshold(settings.max_silent_minutes);
+
     AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
 
     let interval_minutes = settings.screenshot_interval;
 
+    // Spawn capture loop
     tokio::spawn(async move {
         // Execute immediately on start
         if let Err(e) = capture_and_store().await {
@@ -567,6 +642,48 @@ pub async fn start_auto_capture() -> Result<(), String> {
 
             if let Err(e) = capture_and_store().await {
                 tracing::error!("Auto capture failed: {}", e);
+            }
+        }
+    });
+
+    // SMART-002 (AC2): Spawn hourly threshold evaluation task
+    let app_handle = app.clone();
+    tokio::spawn(async move {
+        loop {
+            // Wait 1 hour between evaluations
+            tokio::time::sleep(Duration::from_secs(60 * 60)).await;
+
+            if !AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst) {
+                break;
+            }
+
+            // Evaluate and adjust threshold if needed
+            if let Some((old_value, new_value)) = evaluate_and_adjust_threshold() {
+                // Emit event for frontend notification (AC2: adjustment > 10 min triggers notification)
+                let adjustment_magnitude = if new_value > old_value {
+                    new_value - old_value
+                } else {
+                    old_value - new_value
+                };
+
+                if adjustment_magnitude >= 10 {
+                    let reason = if new_value > old_value {
+                        "检测到深度工作模式，提高静默阈值".to_string()
+                    } else {
+                        "检测到活跃工作模式，降低静默阈值".to_string()
+                    };
+
+                    if let Err(e) = app_handle.emit(
+                        "silent-threshold-adjusted",
+                        ThresholdAdjustment {
+                            old_value,
+                            new_value,
+                            reason,
+                        },
+                    ) {
+                        tracing::error!("Failed to emit threshold adjustment event: {}", e);
+                    }
+                }
             }
         }
     });

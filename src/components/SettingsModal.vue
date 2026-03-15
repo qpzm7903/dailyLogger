@@ -216,6 +216,49 @@
           </div>
         </div>
 
+        <!-- SMART-002: 智能静默阈值调整 -->
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">静默阈值智能调整</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <input
+                v-model="settings.auto_adjust_silent"
+                type="checkbox"
+                id="auto_adjust_silent"
+                class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+              />
+              <label for="auto_adjust_silent" class="text-xs text-gray-300 cursor-pointer">
+                自动调整静默阈值
+              </label>
+            </div>
+            <span class="text-xs text-gray-500 block">
+              根据工作模式自动调整：深度工作时提高阈值，活跃工作时降低阈值
+            </span>
+            <div v-if="!settings.auto_adjust_silent" class="bg-darker rounded-lg p-3 border border-gray-700">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-400">手动模式已启用</span>
+                <span class="text-xs text-primary">{{ settings.max_silent_minutes }} 分钟</span>
+              </div>
+              <span class="text-xs text-gray-500">
+                关闭自动调整后，系统将使用您设定的固定阈值
+              </span>
+            </div>
+            <div v-else class="bg-darker rounded-lg p-3 border border-gray-700">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-400">学习状态</span>
+                <span class="text-xs text-green-400">自动学习中</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-400">当前阈值</span>
+                <span class="text-xs text-primary">{{ settings.max_silent_minutes }} 分钟</span>
+              </div>
+              <span class="text-xs text-gray-500 mt-2 block">
+                系统每小时自动评估并调整阈值（范围: 10-60 分钟）
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">窗口过滤</h3>
           <div class="space-y-3">
@@ -531,7 +574,10 @@ const settings = ref({
   include_manual_records: true,
   window_whitelist: '[]',
   window_blacklist: '[]',
-  use_whitelist_only: false
+  use_whitelist_only: false,
+  // SMART-002: Auto-adjust silent threshold
+  auto_adjust_silent: true,
+  silent_adjustment_paused_until: null
 })
 
 const loadSettings = async () => {

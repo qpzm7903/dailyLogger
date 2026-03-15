@@ -42,8 +42,9 @@ describe('SettingsModal.vue - saveSettings', () => {
     await wrapper.find('.bg-primary').trigger('click')
     await flushPromises()
 
-    // 检查成功状态（带图标的绿色提示）
-    const successMsg = wrapper.find('.text-green-400')
+    // 检查成功状态（带图标的绿色提示，位于底部 footer 区域）
+    const footer = wrapper.find('.border-t.border-gray-700')
+    const successMsg = footer.find('.text-green-400')
     expect(successMsg.exists()).toBe(true)
     expect(successMsg.text()).toContain('已保存')
   })

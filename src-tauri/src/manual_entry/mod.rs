@@ -164,6 +164,7 @@ pub async fn get_log_file_path() -> Result<String, String> {
 mod tests {
     use super::*;
     use rusqlite::Connection;
+    use serial_test::serial;
 
     /// Initializes an in-memory database for testing.
     fn setup_test_db() {
@@ -184,6 +185,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_get_logs_for_export_no_file() {
         // Test that get_logs_for_export returns error when log file doesn't exist
         let rt = tokio::runtime::Runtime::new().unwrap();
@@ -193,6 +195,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_get_log_file_path() {
         // Test that get_log_file_path returns a valid path
         let rt = tokio::runtime::Runtime::new().unwrap();
@@ -205,6 +208,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_get_recent_logs_empty() {
         // Test that get_recent_logs returns empty string when no log file exists
         let rt = tokio::runtime::Runtime::new().unwrap();
@@ -214,6 +218,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_get_recent_logs_with_lines() {
         // Test that get_recent_logs with specific line count works
         let rt = tokio::runtime::Runtime::new().unwrap();
@@ -224,6 +229,7 @@ mod tests {
     // ── tray_quick_note and add_quick_note_sync tests ──
 
     #[test]
+    #[serial]
     fn test_add_quick_note_sync_saves_record() {
         setup_test_db();
 
@@ -234,6 +240,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_add_quick_note_sync_rejects_empty_content() {
         let result = add_quick_note_sync("");
         assert!(result.is_err(), "Empty content should be rejected");
@@ -244,6 +251,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_add_quick_note_sync_rejects_whitespace_only() {
         let result = add_quick_note_sync("   \n\t  ");
         assert!(
@@ -253,6 +261,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_tray_quick_note_saves_record() {
         setup_test_db();
 
@@ -262,6 +271,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_tray_quick_note_rejects_empty_content() {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(tray_quick_note("".to_string()));
@@ -269,6 +279,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_add_quick_note_saves_record() {
         setup_test_db();
 
@@ -278,6 +289,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_add_quick_note_rejects_empty_content() {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(add_quick_note("".to_string()));
@@ -287,6 +299,7 @@ mod tests {
     // ── open_obsidian_folder tests ──
 
     #[test]
+    #[serial]
     fn test_open_obsidian_folder_sync_rejects_missing_path() {
         setup_test_db_with_settings();
 
@@ -302,6 +315,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_open_obsidian_folder_sync_rejects_empty_path() {
         setup_test_db_with_settings();
 
@@ -321,6 +335,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_open_obsidian_folder_sync_rejects_whitespace_path() {
         setup_test_db_with_settings();
 
@@ -340,6 +355,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_open_obsidian_folder_sync_rejects_nonexistent_path() {
         setup_test_db_with_settings();
 
@@ -359,6 +375,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_open_obsidian_folder_sync_opens_valid_path() {
         setup_test_db_with_settings();
 
@@ -391,8 +408,14 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_open_obsidian_folder_async_rejects_missing_path() {
         setup_test_db_with_settings();
+
+        // Explicitly clear obsidian_path to ensure it's None (protect against parallel test interference)
+        let mut settings = memory_storage::get_settings_sync().unwrap();
+        settings.obsidian_path = None;
+        memory_storage::save_settings_sync(&settings).unwrap();
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(open_obsidian_folder());
