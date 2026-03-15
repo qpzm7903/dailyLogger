@@ -411,6 +411,16 @@ retrospectives:
     status: done
     date: "2026-03-15"
     file: "CORE-retrospective.md"
+  - epic: 智能捕获优化
+    prefix: SMART
+    status: done
+    date: "2026-03-15"
+    file: "SMART-retrospective.md"
+  - epic: AI 能力提升
+    prefix: AI
+    status: done
+    date: "2026-03-15"
+    file: "AI-retrospective.md"
 
 # Velocity tracking
 velocityHistory: []
