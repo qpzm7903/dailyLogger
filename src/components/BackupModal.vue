@@ -162,7 +162,7 @@
             <div class="text-xs text-gray-300 space-y-1">
               <p>记录数: {{ restoreResult.record_count }}</p>
               <p>截图数: {{ restoreResult.screenshot_count }}</p>
-              <p v-if="restoreResult.rolled_back">已创建数据回滚备份</p>
+              <p v-if="restoreResult.auto_backup_created">已创建数据回滚备份</p>
             </div>
           </div>
         </div>
