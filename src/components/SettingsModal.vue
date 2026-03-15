@@ -217,6 +217,74 @@
         </div>
 
         <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">窗口过滤</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">窗口白名单</label>
+              <div class="flex flex-wrap gap-2 mb-2">
+                <span
+                  v-for="(tag, index) in whitelistTags"
+                  :key="'wl-' + index"
+                  class="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 text-primary text-xs rounded-lg"
+                >
+                  {{ tag }}
+                  <button
+                    type="button"
+                    @click="removeWhitelistTag(index)"
+                    class="hover:text-white transition-colors"
+                  >✕</button>
+                </span>
+              </div>
+              <input
+                v-model="newWhitelistTag"
+                type="text"
+                placeholder="输入应用名后按 Enter 添加白名单"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                @keyup.enter="addWhitelistTag"
+              />
+              <span class="text-xs text-gray-500 mt-1 block">匹配窗口标题或进程名，支持部分匹配</span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">窗口黑名单</label>
+              <div class="flex flex-wrap gap-2 mb-2">
+                <span
+                  v-for="(tag, index) in blacklistTags"
+                  :key="'bl-' + index"
+                  class="inline-flex items-center gap-1 px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-lg"
+                >
+                  {{ tag }}
+                  <button
+                    type="button"
+                    @click="removeBlacklistTag(index)"
+                    class="hover:text-white transition-colors"
+                  >✕</button>
+                </span>
+              </div>
+              <input
+                v-model="newBlacklistTag"
+                type="text"
+                placeholder="输入应用名后按 Enter 添加黑名单"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                @keyup.enter="addBlacklistTag"
+              />
+              <span class="text-xs text-gray-500 mt-1 block">匹配窗口标题或进程名，支持部分匹配</span>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <input
+                v-model="settings.use_whitelist_only"
+                type="checkbox"
+                id="use_whitelist_only"
+                class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+              />
+              <label for="use_whitelist_only" class="text-xs text-gray-300 cursor-pointer">
+                仅捕获白名单应用
+              </label>
+              <span class="text-xs text-gray-500">（启用后仅捕获白名单中的应用）</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">输出配置</h3>
           <div>
             <label class="text-xs text-gray-300 block mb-1">Obsidian Vault 路径</label>
@@ -386,6 +454,12 @@ const showDefaultSummaryPromptModal = ref(false)
 const defaultSummaryPromptContent = ref('')
 const showTemplateLibraryModal = ref(false)
 
+// Window whitelist/blacklist tag management
+const whitelistTags = ref([])
+const blacklistTags = ref([])
+const newWhitelistTag = ref('')
+const newBlacklistTag = ref('')
+
 // Preset templates for summary prompt
 const presetTemplates = [
   {
@@ -454,16 +528,55 @@ const settings = ref({
   change_threshold: 3,
   max_silent_minutes: 30,
   summary_title_format: '',
-  include_manual_records: true
+  include_manual_records: true,
+  window_whitelist: '[]',
+  window_blacklist: '[]',
+  use_whitelist_only: false
 })
 
 const loadSettings = async () => {
   try {
     const loaded = await invoke('get_settings')
     settings.value = { ...settings.value, ...loaded }
+    // Parse window whitelist/blacklist JSON arrays into tag arrays
+    try {
+      whitelistTags.value = JSON.parse(settings.value.window_whitelist || '[]')
+    } catch {
+      whitelistTags.value = []
+    }
+    try {
+      blacklistTags.value = JSON.parse(settings.value.window_blacklist || '[]')
+    } catch {
+      blacklistTags.value = []
+    }
   } catch (err) {
     console.error('Failed to load settings:', err)
   }
+}
+
+// Tag management methods
+const addWhitelistTag = () => {
+  const tag = newWhitelistTag.value.trim()
+  if (tag && !whitelistTags.value.includes(tag)) {
+    whitelistTags.value.push(tag)
+    newWhitelistTag.value = ''
+  }
+}
+
+const removeWhitelistTag = (index) => {
+  whitelistTags.value.splice(index, 1)
+}
+
+const addBlacklistTag = () => {
+  const tag = newBlacklistTag.value.trim()
+  if (tag && !blacklistTags.value.includes(tag)) {
+    blacklistTags.value.push(tag)
+    newBlacklistTag.value = ''
+  }
+}
+
+const removeBlacklistTag = (index) => {
+  blacklistTags.value.splice(index, 1)
 }
 
 const validateSettings = () => {
@@ -507,7 +620,13 @@ const saveSettings = async () => {
   saveStatus.value = ''
   saveError.value = ''
   try {
-    await invoke('save_settings', { settings: settings.value })
+    // Convert tag arrays to JSON strings before saving
+    const settingsToSave = {
+      ...settings.value,
+      window_whitelist: JSON.stringify(whitelistTags.value),
+      window_blacklist: JSON.stringify(blacklistTags.value)
+    }
+    await invoke('save_settings', { settings: settingsToSave })
     saveStatus.value = 'ok'
     showSuccess('设置已保存')
     setTimeout(() => emit('close'), 800)
