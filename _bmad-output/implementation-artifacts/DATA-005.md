@@ -1,6 +1,6 @@
 # Story 4.5: 数据备份与恢复
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -32,29 +32,29 @@ so that 我可以保护我的工作记录免受数据丢失风险，并在需要
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 后端备份 API (AC: 1, 2, 3)
-  - [ ] 1.1 创建 `src-tauri/src/backup/mod.rs` 模块
-  - [ ] 1.2 实现 `create_backup` 函数 - 打包数据库和截图
-  - [ ] 1.3 实现 `restore_backup` 函数 - 解压并恢复数据
-  - [ ] 1.4 实现 `list_backups` 函数 - 列出可用备份
-  - [ ] 1.5 实现 `get_backup_info` 函数 - 获取备份详情
-  - [ ] 1.6 实现 `delete_backup` 函数 - 删除备份文件
-  - [ ] 1.7 在 `main.rs` 注册新 Tauri 命令
-  - [ ] 1.8 在 `lib.rs` 导出模块
-  - [ ] 1.9 添加单元测试
+- [x] Task 1: 后端备份 API (AC: 1, 2, 3)
+  - [x] 1.1 创建 `src-tauri/src/backup/mod.rs` 模块
+  - [x] 1.2 实现 `create_backup` 函数 - 打包数据库和截图
+  - [x] 1.3 实现 `restore_backup` 函数 - 解压并恢复数据
+  - [x] 1.4 实现 `list_backups` 函数 - 列出可用备份
+  - [x] 1.5 实现 `get_backup_info` 函数 - 获取备份详情
+  - [x] 1.6 实现 `delete_backup` 函数 - 删除备份文件
+  - [x] 1.7 在 `main.rs` 注册新 Tauri 命令
+  - [x] 1.8 在 `lib.rs` 导出模块
+  - [x] 1.9 添加单元测试
 
-- [ ] Task 2: 前端备份组件 (AC: 1, 2, 4)
-  - [ ] 2.1 创建 `BackupModal.vue` 组件
-  - [ ] 2.2 实现备份位置选择 (使用 Tauri dialog)
-  - [ ] 2.3 实现备份进度显示
-  - [ ] 2.4 实现备份历史列表
-  - [ ] 2.5 实现恢复确认对话框 (显示备份详情)
-  - [ ] 2.6 实现恢复进度显示
+- [x] Task 2: 前端备份组件 (AC: 1, 2, 4)
+  - [x] 2.1 创建 `BackupModal.vue` 组件
+  - [x] 2.2 实现备份位置选择 (使用 Tauri dialog)
+  - [x] 2.3 实现备份进度显示
+  - [x] 2.4 实现备份历史列表
+  - [x] 2.5 实现恢复确认对话框 (显示备份详情)
+  - [x] 2.6 实现恢复进度显示
 
-- [ ] Task 3: 集成入口 (AC: 全部)
-  - [ ] 3.1 在 App.vue 或 SettingsModal 添加备份管理入口
-  - [ ] 3.2 集成 BackupModal
-  - [ ] 3.3 添加组件测试
+- [x] Task 3: 集成入口 (AC: 全部)
+  - [x] 3.1 在 App.vue 或 SettingsModal 添加备份管理入口
+  - [x] 3.2 集成 BackupModal
+  - [x] 3.3 添加组件测试
 
 ## Dev Notes
 
@@ -314,16 +314,30 @@ tempfile = "3"  # 临时目录管理
 
 ### Agent Model Used
 
-(待实现时填写)
+MiniMax-M2.5
 
 ### Debug Log References
 
-(待实现时填写)
+无
 
 ### Completion Notes List
 
-(待实现时填写)
+- 创建 `src-tauri/src/backup/mod.rs` 模块，实现备份/恢复核心功能
+- 添加 `create_backup` - 创建备份到指定目录
+- 添加 `get_backup_info` - 获取备份信息
+- 添加 `list_backups` - 列出备份历史
+- 添加 `delete_backup` - 删除备份
+- 添加 `restore_backup` - 恢复备份（支持回滚）
+- 在 `main.rs` 注册 5 个 Tauri 命令
+- 在 `lib.rs` 导出 backup 模块
+- 创建 `src/components/BackupModal.vue` 组件（备份/恢复/历史三个 Tab）
+- 在 `App.vue` 添加备份入口按钮
 
 ### File List
 
-(待实现时填写)
+- src-tauri/src/backup/mod.rs (新增)
+- src-tauri/src/lib.rs (修改 - 添加模块导出)
+- src-tauri/src/main.rs (修改 - 注册命令)
+- src-tauri/Cargo.toml (修改 - 添加依赖)
+- src/components/BackupModal.vue (新增)
+- src/App.vue (修改 - 添加备份按钮和组件)

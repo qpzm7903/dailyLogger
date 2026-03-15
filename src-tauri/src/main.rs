@@ -122,6 +122,12 @@ fn main() {
             // DATA-004: 数据导出
             daily_logger_lib::export::export_records,
             daily_logger_lib::export::open_export_dir,
+            // DATA-005: 数据备份与恢复
+            daily_logger_lib::backup::create_backup,
+            daily_logger_lib::backup::get_backup_info,
+            daily_logger_lib::backup::list_backups,
+            daily_logger_lib::backup::delete_backup,
+            daily_logger_lib::backup::restore_backup,
             daily_logger_lib::ollama::get_ollama_models,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::start_auto_capture,

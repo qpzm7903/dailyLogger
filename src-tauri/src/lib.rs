@@ -1,5 +1,6 @@
 #[cfg(feature = "screenshot")]
 pub mod auto_perception;
+pub mod backup;
 pub mod crypto;
 pub mod export;
 pub mod manual_entry;

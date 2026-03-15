@@ -24,6 +24,9 @@
         <button @click="showExport = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           📤 导出
         </button>
+        <button @click="showBackup = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+          💾 备份
+        </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
@@ -253,6 +256,7 @@
     </main>
 
     <SettingsModal v-if="showSettings" @close="showSettings = false" />
+    <BackupModal v-if="showBackup" @close="showBackup = false" />
     <QuickNoteModal v-if="showQuickNote" @close="showQuickNote = false" @save="handleQuickNote" />
     <ScreenshotModal v-if="showScreenshot" :record="selectedScreenshot" @close="showScreenshot = false" />
     <ScreenshotGallery v-if="showScreenshotGallery" @close="showScreenshotGallery = false" />
@@ -280,6 +284,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import SettingsModal from './components/SettingsModal.vue'
+import BackupModal from './components/BackupModal.vue'
 import QuickNoteModal from './components/QuickNoteModal.vue'
 import ScreenshotModal from './components/ScreenshotModal.vue'
 import ScreenshotGallery from './components/ScreenshotGallery.vue'
@@ -309,6 +314,7 @@ const monthlyReportPath = ref('')
 const customReportPath = ref('')
 const showCustomReportModal = ref(false)
 const showSettings = ref(false)
+const showBackup = ref(false)
 const showQuickNote = ref(false)
 const showScreenshot = ref(false)
 const showScreenshotGallery = ref(false)
