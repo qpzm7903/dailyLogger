@@ -9,6 +9,9 @@ use crate::silent_tracker::{
     calculate_optimal_silent_minutes, current_threshold, has_sufficient_data, record_capture,
     set_threshold, CaptureReason,
 };
+use crate::work_time::{
+    is_in_work_time, record_work_time_capture, WorkTimeSettings,
+};
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -472,6 +475,33 @@ fn parse_window_patterns(json: Option<&str>) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// SMART-003: Load work time settings from database
+fn load_work_time_settings() -> WorkTimeSettings {
+    match memory_storage::get_settings_sync() {
+        Ok(s) => WorkTimeSettings {
+            auto_detect_work_time: s.auto_detect_work_time.unwrap_or(true),
+            use_custom_work_time: s.use_custom_work_time.unwrap_or(false),
+            custom_work_time_start: s.custom_work_time_start,
+            custom_work_time_end: s.custom_work_time_end,
+            learned_work_time: s.learned_work_time,
+        },
+        Err(_) => WorkTimeSettings {
+            auto_detect_work_time: true,
+            use_custom_work_time: false,
+            custom_work_time_start: None,
+            custom_work_time_end: None,
+            learned_work_time: None,
+        },
+    }
+}
+
+/// SMART-003 (AC2): Check if current time is within work hours
+/// Returns true if capture should proceed, false if should skip
+fn should_capture_by_work_time() -> bool {
+    let settings = load_work_time_settings();
+    is_in_work_time(&settings)
+}
+
 /// SMART-002 (AC2): Evaluate and adjust the silent threshold if needed.
 /// Returns Some((old_threshold, new_threshold)) if an adjustment was made, None otherwise.
 fn evaluate_and_adjust_threshold() -> Option<(u64, u64)> {
@@ -624,9 +654,15 @@ pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
 
     // Spawn capture loop
     tokio::spawn(async move {
-        // Execute immediately on start
-        if let Err(e) = capture_and_store().await {
-            tracing::error!("Initial capture failed: {}", e);
+        // Execute immediately on start (SMART-003: also check work time)
+        if should_capture_by_work_time() {
+            if let Err(e) = capture_and_store().await {
+                tracing::error!("Initial capture failed: {}", e);
+            }
+            // SMART-003: Record capture for work time learning
+            record_work_time_capture();
+        } else {
+            tracing::debug!("Outside work time, skipping initial capture");
         }
 
         loop {
@@ -640,8 +676,17 @@ pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
                 break;
             }
 
+            // SMART-003 (AC2): Check if current time is within work hours
+            if !should_capture_by_work_time() {
+                tracing::debug!("Outside work time, skipping capture");
+                continue;
+            }
+
             if let Err(e) = capture_and_store().await {
                 tracing::error!("Auto capture failed: {}", e);
+            } else {
+                // SMART-003: Record capture for work time learning
+                record_work_time_capture();
             }
         }
     });
@@ -712,6 +757,15 @@ pub fn is_auto_capture_running() -> bool {
 #[command]
 pub fn get_auto_capture_status() -> bool {
     is_auto_capture_running()
+}
+
+/// SMART-003: Tauri command to get work time status.
+/// Returns information about current work time status and learning progress.
+#[command]
+pub fn get_work_time_status() -> crate::work_time::WorkTimeStatus {
+    use crate::work_time::get_work_time_status as get_status;
+    let settings = load_work_time_settings();
+    get_status(&settings)
 }
 
 #[command]

@@ -110,6 +110,27 @@ pub fn init_database() -> Result<(), String> {
         "ALTER TABLE settings ADD COLUMN silent_adjustment_paused_until TEXT DEFAULT NULL",
         [],
     );
+    // SMART-003: 工作时间自动识别配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN auto_detect_work_time INTEGER DEFAULT 1",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN use_custom_work_time INTEGER DEFAULT 0",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN custom_work_time_start TEXT DEFAULT '09:00'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN custom_work_time_end TEXT DEFAULT '18:00'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN learned_work_time TEXT DEFAULT NULL",
+        [],
+    );
 
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
@@ -241,6 +262,12 @@ pub struct Settings {
     // SMART-002: 自动调整静默阈值配置
     pub auto_adjust_silent: Option<bool>,
     pub silent_adjustment_paused_until: Option<String>,
+    // SMART-003: 工作时间自动识别配置
+    pub auto_detect_work_time: Option<bool>,
+    pub use_custom_work_time: Option<bool>,
+    pub custom_work_time_start: Option<String>,    // "HH:MM" format
+    pub custom_work_time_end: Option<String>,
+    pub learned_work_time: Option<String>,         // JSON: {"periods": [{"start": 9, "end": 12}, ...]}
 }
 
 pub fn add_record(
@@ -643,7 +670,9 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 summary_model_name, analysis_prompt, summary_prompt,
                 change_threshold, max_silent_minutes, summary_title_format,
                 include_manual_records, window_whitelist, window_blacklist, use_whitelist_only,
-                auto_adjust_silent, silent_adjustment_paused_until
+                auto_adjust_silent, silent_adjustment_paused_until,
+                auto_detect_work_time, use_custom_work_time,
+                custom_work_time_start, custom_work_time_end, learned_work_time
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -671,6 +700,11 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 use_whitelist_only: row.get::<_, Option<i32>>(17)?.map(|v| v != 0),
                 auto_adjust_silent: row.get::<_, Option<i32>>(18)?.map(|v| v != 0),
                 silent_adjustment_paused_until: row.get(19)?,
+                auto_detect_work_time: row.get::<_, Option<i32>>(20)?.map(|v| v != 0),
+                use_custom_work_time: row.get::<_, Option<i32>>(21)?.map(|v| v != 0),
+                custom_work_time_start: row.get(22)?,
+                custom_work_time_end: row.get(23)?,
+                learned_work_time: row.get(24)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -733,7 +767,12 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             window_blacklist = ?17,
             use_whitelist_only = ?18,
             auto_adjust_silent = ?19,
-            silent_adjustment_paused_until = ?20
+            silent_adjustment_paused_until = ?20,
+            auto_detect_work_time = ?21,
+            use_custom_work_time = ?22,
+            custom_work_time_start = ?23,
+            custom_work_time_end = ?24,
+            learned_work_time = ?25
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -758,6 +797,11 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.use_whitelist_only.map(|v| if v { 1 } else { 0 }),
             settings.auto_adjust_silent.map(|v| if v { 1 } else { 0 }),
             settings.silent_adjustment_paused_until,
+            settings.auto_detect_work_time.map(|v| if v { 1 } else { 0 }),
+            settings.use_custom_work_time.map(|v| if v { 1 } else { 0 }),
+            settings.custom_work_time_start,
+            settings.custom_work_time_end,
+            settings.learned_work_time,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -996,6 +1040,40 @@ mod tests {
             [],
         )
         .unwrap();
+        conn.execute(
+            "CREATE TABLE settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                api_base_url TEXT,
+                api_key TEXT,
+                model_name TEXT,
+                screenshot_interval INTEGER DEFAULT 5,
+                summary_time TEXT DEFAULT '18:00',
+                obsidian_path TEXT,
+                auto_capture_enabled INTEGER DEFAULT 0,
+                last_summary_path TEXT,
+                summary_model_name TEXT,
+                analysis_prompt TEXT,
+                summary_prompt TEXT,
+                change_threshold INTEGER DEFAULT 3,
+                max_silent_minutes INTEGER DEFAULT 30,
+                summary_title_format TEXT DEFAULT '工作日报 - {date}',
+                include_manual_records INTEGER DEFAULT 1,
+                window_whitelist TEXT DEFAULT '[]',
+                window_blacklist TEXT DEFAULT '[]',
+                use_whitelist_only INTEGER DEFAULT 0,
+                auto_adjust_silent INTEGER DEFAULT 1,
+                silent_adjustment_paused_until TEXT DEFAULT NULL,
+                auto_detect_work_time INTEGER DEFAULT 1,
+                use_custom_work_time INTEGER DEFAULT 0,
+                custom_work_time_start TEXT DEFAULT '09:00',
+                custom_work_time_end TEXT DEFAULT '18:00',
+                learned_work_time TEXT DEFAULT NULL
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
+            .unwrap();
         let mut db = DB_CONNECTION.lock().unwrap();
         *db = Some(conn);
     }
@@ -1036,7 +1114,12 @@ mod tests {
                 window_blacklist TEXT DEFAULT '[]',
                 use_whitelist_only INTEGER DEFAULT 0,
                 auto_adjust_silent INTEGER DEFAULT 1,
-                silent_adjustment_paused_until TEXT DEFAULT NULL
+                silent_adjustment_paused_until TEXT DEFAULT NULL,
+                auto_detect_work_time INTEGER DEFAULT 1,
+                use_custom_work_time INTEGER DEFAULT 0,
+                custom_work_time_start TEXT DEFAULT '09:00',
+                custom_work_time_end TEXT DEFAULT '18:00',
+                learned_work_time TEXT DEFAULT NULL
             )",
             [],
         )
@@ -2026,6 +2109,42 @@ mod tests {
             [],
         )
         .unwrap();
+
+        // Create settings table with all columns
+        conn.execute(
+            "CREATE TABLE settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                api_base_url TEXT,
+                api_key TEXT,
+                model_name TEXT,
+                screenshot_interval INTEGER DEFAULT 5,
+                summary_time TEXT DEFAULT '18:00',
+                obsidian_path TEXT,
+                auto_capture_enabled INTEGER DEFAULT 0,
+                last_summary_path TEXT,
+                summary_model_name TEXT,
+                analysis_prompt TEXT,
+                summary_prompt TEXT,
+                change_threshold INTEGER DEFAULT 3,
+                max_silent_minutes INTEGER DEFAULT 30,
+                summary_title_format TEXT DEFAULT '工作日报 - {date}',
+                include_manual_records INTEGER DEFAULT 1,
+                window_whitelist TEXT DEFAULT '[]',
+                window_blacklist TEXT DEFAULT '[]',
+                use_whitelist_only INTEGER DEFAULT 0,
+                auto_adjust_silent INTEGER DEFAULT 1,
+                silent_adjustment_paused_until TEXT DEFAULT NULL,
+                auto_detect_work_time INTEGER DEFAULT 1,
+                use_custom_work_time INTEGER DEFAULT 0,
+                custom_work_time_start TEXT DEFAULT '09:00',
+                custom_work_time_end TEXT DEFAULT '18:00',
+                learned_work_time TEXT DEFAULT NULL
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
+            .unwrap();
 
         // Create FTS5 virtual table
         conn.execute(

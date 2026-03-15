@@ -279,6 +279,11 @@ mod tests {
             use_whitelist_only: None,
             auto_adjust_silent: None,
             silent_adjustment_paused_until: None,
+            auto_detect_work_time: None,
+            use_custom_work_time: None,
+            custom_work_time_start: None,
+            custom_work_time_end: None,
+            learned_work_time: None,
         }
     }
 

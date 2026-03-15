@@ -6,6 +6,7 @@ pub mod memory_storage;
 pub mod silent_tracker;
 pub mod synthesis;
 pub mod window_info;
+pub mod work_time;
 
 use once_cell::sync::Lazy;
 use std::sync::Mutex;

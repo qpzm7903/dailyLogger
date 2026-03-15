@@ -89,6 +89,35 @@ Status: ready-for-dev
 
 ## Dev Notes
 
+### ⚠️ CRITICAL: Code Reuse from SMART-002
+
+**MUST REUSE the following patterns from `src-tauri/src/silent_tracker.rs`:**
+
+1. **`HourlyStats` structure** - Already tracks captures per hour. EXTEND it to add work time detection:
+   ```rust
+   // Existing in silent_tracker.rs (lines 46-56):
+   pub struct HourlyStats {
+       pub date: NaiveDate,
+       pub hour: u8,
+       pub silent_captures: u32,
+       pub change_captures: u32,
+   }
+   // ADD: pub is_work_hour: bool, // Determined by activity threshold
+   ```
+
+2. **Global tracker pattern** - Use the same `Lazy<Mutex<...>>` pattern:
+   ```rust
+   // Pattern from silent_tracker.rs (line 317-318):
+   static SILENT_PATTERN_TRACKER: Lazy<Mutex<SilentPatternTracker>> =
+       Lazy::new(|| Mutex::new(SilentPatternTracker::default()));
+   ```
+
+3. **Sliding window pruning** - Reuse `prune_old_entries()` logic (lines 184-187)
+
+4. **Settings field migration pattern** - Follow SMART-002's approach:
+   - `let _ = conn.execute("ALTER TABLE...")` for idempotent migration
+   - Update Settings struct, SELECT query, UPDATE query, and test helpers
+
 ### 技术需求
 
 1. **时间模式学习** - 统计每小时的活动频率，识别活跃时段

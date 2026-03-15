@@ -180,6 +180,40 @@ mod tests {
             [],
         )
         .unwrap();
+        conn.execute(
+            "CREATE TABLE settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                api_base_url TEXT,
+                api_key TEXT,
+                model_name TEXT,
+                screenshot_interval INTEGER DEFAULT 5,
+                summary_time TEXT DEFAULT '18:00',
+                obsidian_path TEXT,
+                auto_capture_enabled INTEGER DEFAULT 0,
+                last_summary_path TEXT,
+                summary_model_name TEXT,
+                analysis_prompt TEXT,
+                summary_prompt TEXT,
+                change_threshold INTEGER DEFAULT 3,
+                max_silent_minutes INTEGER DEFAULT 30,
+                summary_title_format TEXT DEFAULT '工作日报 - {date}',
+                include_manual_records INTEGER DEFAULT 1,
+                window_whitelist TEXT DEFAULT '[]',
+                window_blacklist TEXT DEFAULT '[]',
+                use_whitelist_only INTEGER DEFAULT 0,
+                auto_adjust_silent INTEGER DEFAULT 1,
+                silent_adjustment_paused_until TEXT DEFAULT NULL,
+                auto_detect_work_time INTEGER DEFAULT 1,
+                use_custom_work_time INTEGER DEFAULT 0,
+                custom_work_time_start TEXT DEFAULT '09:00',
+                custom_work_time_end TEXT DEFAULT '18:00',
+                learned_work_time TEXT DEFAULT NULL
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
+            .unwrap();
         let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
         *db = Some(conn);
     }
@@ -461,7 +495,12 @@ mod tests {
                 window_blacklist TEXT DEFAULT '[]',
                 use_whitelist_only INTEGER DEFAULT 0,
                 auto_adjust_silent INTEGER DEFAULT 1,
-                silent_adjustment_paused_until TEXT DEFAULT NULL
+                silent_adjustment_paused_until TEXT DEFAULT NULL,
+                auto_detect_work_time INTEGER DEFAULT 1,
+                use_custom_work_time INTEGER DEFAULT 0,
+                custom_work_time_start TEXT DEFAULT '09:00',
+                custom_work_time_end TEXT DEFAULT '18:00',
+                learned_work_time TEXT DEFAULT NULL
             )",
             [],
         )
