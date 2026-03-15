@@ -153,6 +153,12 @@ retrospectives:
     date: "2026-03-15"
     file: "REPORT-retrospective.md"
 
+# Story Retrospectives (CORE-007)
+story_retrospectives:
+  - story: CORE-007
+    date: "2026-03-15"
+    file: "CORE-007-retro-2026-03-15.md"
+
 # Velocity tracking
 velocityHistory:
   - sprint: 1
