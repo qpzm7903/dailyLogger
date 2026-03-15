@@ -73,6 +73,21 @@ stories:
       - 支持快速记录 (无需打开主窗口)
       - 支持直接打开 Obsidian 文件夹
 
+  - id: CORE-006
+    title: API Key 加密存储
+    epic: 核心功能完善
+    priority: High
+    points: 3
+    status: done
+    specPath: "specs/CORE-006.md"
+    storyPath: "_bmad-output/implementation-artifacts/CORE-006.md"
+    description: 使用 AES-256-GCM 加密存储 API Key
+    acceptanceCriteria:
+      - API Key 加密后存入数据库
+      - 应用启动时正确解密
+      - 自动迁移明文 Key
+      - 日志中 API Key 脱敏显示
+
   # Sprint 2 Stories
   - id: SMART-001
     title: 应用窗口识别
