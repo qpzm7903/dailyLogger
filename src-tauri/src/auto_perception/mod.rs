@@ -1457,7 +1457,9 @@ mod tests {
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
                 tag_categories TEXT DEFAULT '[]',
-                is_ollama INTEGER DEFAULT 0
+                is_ollama INTEGER DEFAULT 0,
+                weekly_report_prompt TEXT,
+                weekly_report_day INTEGER DEFAULT 0
             )",
             [],
         )
@@ -1737,7 +1739,9 @@ mod tests {
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
                 tag_categories TEXT DEFAULT '[]',
-                is_ollama INTEGER DEFAULT 0
+                is_ollama INTEGER DEFAULT 0,
+                weekly_report_prompt TEXT,
+                weekly_report_day INTEGER DEFAULT 0
             )",
             [],
         )
