@@ -1,6 +1,6 @@
 # Story 4.1: 历史记录浏览
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

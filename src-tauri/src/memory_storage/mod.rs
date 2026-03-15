@@ -340,6 +340,120 @@ pub fn get_records_by_date_range_sync(
     Ok(records)
 }
 
+/// Delete a record by ID
+pub fn delete_record_sync(id: i64) -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let rows_affected = conn
+        .execute("DELETE FROM records WHERE id = ?1", params![id])
+        .map_err(|e| format!("Failed to delete record: {}", e))?;
+
+    if rows_affected == 0 {
+        return Err(format!("Record with id {} not found", id));
+    }
+
+    tracing::info!("Deleted record with id {}", id);
+    Ok(())
+}
+
+/// Get history records with filtering and pagination
+/// - start_date/end_date: YYYY-MM-DD format (local timezone)
+/// - source_type: None for all, Some("auto") or Some("manual") for filtering
+/// - page: 0-indexed page number
+/// - page_size: number of records per page (default 50)
+pub fn get_history_records_sync(
+    start_date: String,
+    end_date: String,
+    source_type: Option<String>,
+    page: i64,
+    page_size: i64,
+) -> Result<Vec<Record>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
+    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
+
+    // Parse end_date (YYYY-MM-DD) to local end of day 23:59:59
+    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(23, 59, 59)
+        .unwrap();
+
+    // Convert to UTC RFC3339
+    let start_utc = start_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let end_utc = end_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let offset = page * page_size;
+
+    let sql = if let Some(ref st) = source_type {
+        if st != "auto" && st != "manual" {
+            return Err(format!(
+                "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
+                st
+            ));
+        }
+        "SELECT id, timestamp, source_type, content, screenshot_path FROM records
+         WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
+         ORDER BY timestamp DESC LIMIT ?4 OFFSET ?5"
+    } else {
+        "SELECT id, timestamp, source_type, content, screenshot_path FROM records
+         WHERE timestamp >= ?1 AND timestamp <= ?2
+         ORDER BY timestamp DESC LIMIT ?3 OFFSET ?4"
+    };
+
+    let mut stmt = conn
+        .prepare(sql)
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let records = if let Some(ref st) = source_type {
+        stmt.query_map(params![start_utc, end_utc, st, page_size, offset], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(2)?,
+                content: row.get(3)?,
+                screenshot_path: row.get(4)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect records: {}", e))?
+    } else {
+        stmt.query_map(params![start_utc, end_utc, page_size, offset], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(2)?,
+                content: row.get(3)?,
+                screenshot_path: row.get(4)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect records: {}", e))?
+    };
+
+    Ok(records)
+}
+
 pub fn get_settings_sync() -> Result<Settings, String> {
     let db = DB_CONNECTION
         .lock()
@@ -497,6 +611,26 @@ pub async fn get_settings() -> Result<Settings, String> {
 #[command]
 pub async fn save_settings(settings: Settings) -> Result<(), String> {
     save_settings_sync(&settings)
+}
+
+/// Delete a record by ID
+#[command]
+pub async fn delete_record(id: i64) -> Result<(), String> {
+    delete_record_sync(id)
+}
+
+/// Get history records with filtering and pagination
+#[command]
+pub async fn get_history_records(
+    start_date: String,
+    end_date: String,
+    source_type: Option<String>,
+    page: Option<i64>,
+    page_size: Option<i64>,
+) -> Result<Vec<Record>, String> {
+    let page = page.unwrap_or(0);
+    let page_size = page_size.unwrap_or(50);
+    get_history_records_sync(start_date, end_date, source_type, page, page_size)
 }
 
 /// Result of testing API connection
@@ -1455,5 +1589,236 @@ mod tests {
                 ts
             );
         }
+    }
+
+    // ── Tests for delete_record_sync (DATA-001) ──
+
+    #[test]
+    #[serial]
+    fn delete_record_removes_existing_record() {
+        setup_test_db();
+
+        // Insert a record
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "record to delete");
+        insert_record_with_ts(&ts, "record to keep");
+
+        // Get the id of the record to delete
+        let records = get_today_records_sync().unwrap();
+        let record_to_delete = records.iter().find(|r| r.content == "record to delete").unwrap();
+
+        // Delete it
+        let result = delete_record_sync(record_to_delete.id);
+        assert!(result.is_ok(), "delete_record should succeed for existing record");
+
+        // Verify it's deleted
+        let remaining = get_today_records_sync().unwrap();
+        assert!(
+            !remaining.iter().any(|r| r.content == "record to delete"),
+            "Record should be deleted"
+        );
+        assert!(
+            remaining.iter().any(|r| r.content == "record to keep"),
+            "Other records should remain"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn delete_record_returns_error_for_nonexistent_id() {
+        setup_test_db();
+
+        let result = delete_record_sync(999999);
+        assert!(result.is_err(), "delete_record should return error for nonexistent id");
+        assert!(
+            result.unwrap_err().contains("not found"),
+            "Error message should mention record not found"
+        );
+    }
+
+    // ── Tests for get_history_records_sync (DATA-001) ──
+
+    #[test]
+    #[serial]
+    fn get_history_records_filters_by_source_type() {
+        setup_test_db();
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+
+        // Insert records with different source types
+        {
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                params![ts, "auto", "auto record"],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                params![ts, "manual", "manual record"],
+            )
+            .unwrap();
+        }
+
+        let date_str = today.format("%Y-%m-%d").to_string();
+
+        // Test filter by auto
+        let auto_records =
+            get_history_records_sync(date_str.clone(), date_str.clone(), Some("auto".to_string()), 0, 50)
+                .unwrap();
+        assert!(
+            auto_records.iter().any(|r| r.content == "auto record"),
+            "Should find auto record"
+        );
+        assert!(
+            !auto_records.iter().any(|r| r.content == "manual record"),
+            "Should not find manual record when filtering by auto"
+        );
+
+        // Test filter by manual
+        let manual_records =
+            get_history_records_sync(date_str.clone(), date_str.clone(), Some("manual".to_string()), 0, 50)
+                .unwrap();
+        assert!(
+            manual_records.iter().any(|r| r.content == "manual record"),
+            "Should find manual record"
+        );
+        assert!(
+            !manual_records.iter().any(|r| r.content == "auto record"),
+            "Should not find auto record when filtering by manual"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn get_history_records_returns_all_when_no_filter() {
+        setup_test_db();
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+
+        {
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                params![ts, "auto", "auto record"],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                params![ts, "manual", "manual record"],
+            )
+            .unwrap();
+        }
+
+        let date_str = today.format("%Y-%m-%d").to_string();
+        let records =
+            get_history_records_sync(date_str.clone(), date_str, None, 0, 50).unwrap();
+
+        assert!(
+            records.iter().any(|r| r.content == "auto record"),
+            "Should find auto record when no filter"
+        );
+        assert!(
+            records.iter().any(|r| r.content == "manual record"),
+            "Should find manual record when no filter"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn get_history_records_paginates_correctly() {
+        setup_test_db();
+
+        let today = chrono::Local::now().date_naive();
+        let date_str = today.format("%Y-%m-%d").to_string();
+
+        // Insert 5 records
+        {
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            for i in 0..5 {
+                let ts = local_to_utc_rfc3339(today.and_hms_opt(10 + i, 0, 0).unwrap());
+                conn.execute(
+                    "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                    params![ts, "auto", format!("record {}", i)],
+                )
+                .unwrap();
+            }
+        }
+
+        // First page (2 records)
+        let page1 = get_history_records_sync(
+            date_str.clone(),
+            date_str.clone(),
+            None,
+            0,
+            2,
+        )
+        .unwrap();
+        assert_eq!(page1.len(), 2, "First page should have 2 records");
+
+        // Second page (2 records)
+        let page2 = get_history_records_sync(
+            date_str.clone(),
+            date_str.clone(),
+            None,
+            1,
+            2,
+        )
+        .unwrap();
+        assert_eq!(page2.len(), 2, "Second page should have 2 records");
+
+        // Third page (1 record)
+        let page3 = get_history_records_sync(
+            date_str.clone(),
+            date_str.clone(),
+            None,
+            2,
+            2,
+        )
+        .unwrap();
+        assert_eq!(page3.len(), 1, "Third page should have 1 record");
+
+        // Verify no overlap between pages
+        let page1_contents: std::collections::HashSet<_> = page1.iter().map(|r| r.content.clone()).collect();
+        let page2_contents: std::collections::HashSet<_> = page2.iter().map(|r| r.content.clone()).collect();
+        let page3_contents: std::collections::HashSet<_> = page3.iter().map(|r| r.content.clone()).collect();
+
+        assert!(
+            page1_contents.is_disjoint(&page2_contents),
+            "Pages should not overlap"
+        );
+        assert!(
+            page2_contents.is_disjoint(&page3_contents),
+            "Pages should not overlap"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn get_history_records_rejects_invalid_source_type() {
+        setup_test_db();
+
+        let today = chrono::Local::now().date_naive();
+        let date_str = today.format("%Y-%m-%d").to_string();
+
+        let result = get_history_records_sync(
+            date_str.clone(),
+            date_str,
+            Some("invalid".to_string()),
+            0,
+            50,
+        );
+
+        assert!(result.is_err(), "Should reject invalid source_type");
+        assert!(
+            result.unwrap_err().contains("Invalid source_type"),
+            "Error message should mention invalid source_type"
+        );
     }
 }
