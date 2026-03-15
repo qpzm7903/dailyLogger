@@ -1,6 +1,6 @@
 # Story 1.5: 系统托盘菜单完善
 
-Status: review
+Status: done
 
 ## Story
 

@@ -65,7 +65,7 @@ stories:
     epic: 核心功能完善
     priority: Medium
     points: 2
-    status: in-progress
+    status: done
     specPath: "specs/CORE-005.md"
     description: 完善系统托盘菜单功能
     acceptanceCriteria:

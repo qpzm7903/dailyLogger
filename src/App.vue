@@ -203,6 +203,7 @@ const screenshotCount = computed(() => {
 
 let timeInterval = null
 let unlistenTrayOpenSettings = null
+let unlistenTrayOpenQuickNote = null
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
@@ -377,6 +378,11 @@ onMounted(async () => {
     showSettings.value = true
   })
 
+  // Listen for tray-open-quick-note event
+  unlistenTrayOpenQuickNote = await listen('tray-open-quick-note', () => {
+    showQuickNote.value = true
+  })
+
   await loadSettings()
   await loadTodayRecords()
 })
@@ -384,5 +390,6 @@ onMounted(async () => {
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
   if (unlistenTrayOpenSettings) unlistenTrayOpenSettings()
+  if (unlistenTrayOpenQuickNote) unlistenTrayOpenQuickNote()
 })
 </script>
