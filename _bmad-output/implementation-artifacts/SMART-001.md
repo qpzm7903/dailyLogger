@@ -64,12 +64,12 @@ Status: ready-for-dev
   - [x] 实现白名单优先级逻辑
   - [x] 编写匹配逻辑单元测试
 
-- [-] Task 4: 集成到捕获流程 (AC: 1, 2, 3)
-  - [ ] 修改 `capture_and_store()` 函数
-  - [ ] 在截图前获取窗口信息
-  - [ ] 应用窗口过滤规则
-  - [ ] 将窗口信息写入记录 content JSON
-  - [ ] 更新 `ScreenAnalysis` 结构体添加窗口字段
+- [x] Task 4: 集成到捕获流程 (AC: 1, 2, 3)
+  - [x] 修改 `capture_and_store()` 函数
+  - [x] 在截图前获取窗口信息
+  - [x] 应用窗口过滤规则
+  - [x] 将窗口信息写入记录 content JSON
+  - [x] 更新 `ScreenAnalysis` 结构体添加窗口字段
 
 - [ ] Task 5: 前端设置界面支持 (AC: 2, 3)
   - [ ] 添加窗口白名单配置 UI（标签输入）

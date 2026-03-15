@@ -346,3 +346,29 @@ Clippy 警告嵌套 if 可折叠。解决：将 `if !blacklist.is_empty() { if m
 
 - **模糊匹配模式**：`patterns.iter().any(|p| text.to_lowercase().contains(&p.to_lowercase()))`
 - **过滤逻辑文档**：函数注释需说明 AC 对应关系
+
+---
+
+## SMART-001 Task 4 - 2026-03-15
+
+### 技术决策
+
+1. **ScreenAnalysis 扩展**：添加 `active_window: Option<ActiveWindow>` 字段，使用 `#[serde(skip_serializing_if = "Option::is_none")]` 避免序列化空值。理由：保持向后兼容，旧的 JSON 反序列化时没有 active_window 字段也不会报错。
+
+2. **CaptureSettings 扩展**：添加 `window_whitelist`, `window_blacklist`, `use_whitelist_only` 三个字段。理由：将窗口过滤配置集成到捕获设置中，便于 `capture_and_store()` 统一访问。
+
+3. **窗口过滤时机**：在截图之前获取窗口信息并应用过滤规则。理由：如果窗口被过滤，跳过截图和 AI 分析，节省资源和 API 调用。
+
+4. **parse_window_patterns 函数**：解析 JSON 数组字符串为 `Vec<String>`，解析失败返回空 Vec。理由：提供优雅降级，配置错误不阻塞主流程。
+
+5. **content JSON 格式**：直接在 JSON 中添加 `active_window` 字段，包含 `title` 和 `process_name`。理由：AC1 要求记录中包含窗口信息，前端可直接解析使用。
+
+### 遇到问题
+
+无重大问题。代码编译通过，所有 104 个测试通过，clippy 无警告。
+
+### 后续约定
+
+- **窗口过滤集成模式**：在异步函数开始时获取窗口信息，应用过滤后再执行耗时操作（截图、AI 分析）
+- **配置解析模式**：JSON 字符串解析失败时返回默认值（空数组），避免配置错误导致功能完全失效
+- **测试隔离**：`auto_perception` 模块测试依赖 `screenshot` feature，CI 使用 `--no-default-features` 跳过

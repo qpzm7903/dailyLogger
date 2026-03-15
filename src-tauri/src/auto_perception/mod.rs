@@ -106,10 +106,13 @@ pub struct ScreenAnalysis {
     pub current_focus: String,
     pub active_software: String,
     pub context_keywords: Vec<String>,
+    /// Window information captured at the time of screenshot (SMART-001)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active_window: Option<ActiveWindow>,
 }
 
 // Re-export ActiveWindow from window_info module for convenience
-pub use crate::window_info::{get_active_window, ActiveWindow};
+pub use crate::window_info::{get_active_window, should_capture_by_window, ActiveWindow};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaptureSettings {
@@ -120,6 +123,10 @@ pub struct CaptureSettings {
     pub analysis_prompt: Option<String>,
     pub change_threshold: f64,
     pub max_silent_minutes: u64,
+    // SMART-001: Window filtering settings
+    pub window_whitelist: Vec<String>,
+    pub window_blacklist: Vec<String>,
+    pub use_whitelist_only: bool,
 }
 
 impl Default for CaptureSettings {
@@ -132,6 +139,9 @@ impl Default for CaptureSettings {
             analysis_prompt: None,
             change_threshold: DEFAULT_CHANGE_THRESHOLD,
             max_silent_minutes: DEFAULT_MAX_SILENT_MINUTES,
+            window_whitelist: Vec::new(),
+            window_blacklist: Vec::new(),
+            use_whitelist_only: false,
         }
     }
 }
@@ -432,9 +442,20 @@ fn load_capture_settings() -> CaptureSettings {
             analysis_prompt: s.analysis_prompt,
             change_threshold: s.change_threshold.unwrap_or(3) as f64,
             max_silent_minutes: s.max_silent_minutes.unwrap_or(30) as u64,
+            // SMART-001: Parse window filter settings from JSON
+            window_whitelist: parse_window_patterns(s.window_whitelist.as_deref()),
+            window_blacklist: parse_window_patterns(s.window_blacklist.as_deref()),
+            use_whitelist_only: s.use_whitelist_only.unwrap_or(false),
         },
         Err(_) => CaptureSettings::default(),
     }
+}
+
+/// Parse a JSON array string into a Vec<String>.
+/// Returns an empty Vec if parsing fails or input is empty.
+fn parse_window_patterns(json: Option<&str>) -> Vec<String> {
+    json.and_then(|s| serde_json::from_str(s).ok())
+        .unwrap_or_default()
 }
 
 async fn capture_and_store() -> Result<(), String> {
@@ -442,6 +463,24 @@ async fn capture_and_store() -> Result<(), String> {
 
     if settings.api_key.is_empty() {
         return Err("API 密钥未配置，请在设置中配置".to_string());
+    }
+
+    // SMART-001: Get active window info before screenshot
+    let active_window = get_active_window();
+
+    // SMART-001: Apply window filtering rules (AC2, AC3)
+    if !should_capture_by_window(
+        &active_window,
+        &settings.window_whitelist,
+        &settings.window_blacklist,
+        settings.use_whitelist_only,
+    ) {
+        tracing::info!(
+            "Skipping capture: window filtered (title='{}', process='{}')",
+            active_window.title,
+            active_window.process_name
+        );
+        return Ok(());
     }
 
     let image_base64 = capture_screen()?;
@@ -460,10 +499,15 @@ async fn capture_and_store() -> Result<(), String> {
 
     let analysis = analyze_screen(&settings, &image_base64).await?;
 
+    // SMART-001: Include window info in content JSON (AC1)
     let content = serde_json::json!({
         "current_focus": analysis.current_focus,
         "active_software": analysis.active_software,
-        "context_keywords": analysis.context_keywords
+        "context_keywords": analysis.context_keywords,
+        "active_window": {
+            "title": active_window.title,
+            "process_name": active_window.process_name
+        }
     })
     .to_string();
 
@@ -778,5 +822,132 @@ mod tests {
     fn get_default_analysis_prompt_returns_non_empty() {
         let prompt = get_default_analysis_prompt();
         assert!(!prompt.is_empty(), "default prompt should not be empty");
+    }
+
+    // ── SMART-001: parse_window_patterns tests ──
+
+    #[test]
+    fn parse_window_patterns_parses_valid_json_array() {
+        let json = r#"["VS Code", "IntelliJ IDEA", "Chrome"]"#;
+        let patterns = parse_window_patterns(Some(json));
+        assert_eq!(patterns, vec!["VS Code", "IntelliJ IDEA", "Chrome"]);
+    }
+
+    #[test]
+    fn parse_window_patterns_returns_empty_for_none() {
+        let patterns = parse_window_patterns(None);
+        assert!(patterns.is_empty(), "None should return empty Vec");
+    }
+
+    #[test]
+    fn parse_window_patterns_returns_empty_for_empty_string() {
+        let patterns = parse_window_patterns(Some(""));
+        assert!(patterns.is_empty(), "empty string should return empty Vec");
+    }
+
+    #[test]
+    fn parse_window_patterns_returns_empty_for_invalid_json() {
+        let patterns = parse_window_patterns(Some("not valid json"));
+        assert!(patterns.is_empty(), "invalid JSON should return empty Vec");
+    }
+
+    #[test]
+    fn parse_window_patterns_handles_empty_array() {
+        let patterns = parse_window_patterns(Some("[]"));
+        assert!(patterns.is_empty(), "empty array should return empty Vec");
+    }
+
+    #[test]
+    fn parse_window_patterns_handles_unicode() {
+        let json = r#"["微信", "企业微信", "浏览器"]"#;
+        let patterns = parse_window_patterns(Some(json));
+        assert_eq!(patterns, vec!["微信", "企业微信", "浏览器"]);
+    }
+
+    // ── SMART-001: ScreenAnalysis with active_window tests ──
+
+    #[test]
+    fn screen_analysis_serializes_with_active_window() {
+        let analysis = ScreenAnalysis {
+            current_focus: "编写代码".to_string(),
+            active_software: "VS Code".to_string(),
+            context_keywords: vec!["Rust".to_string()],
+            active_window: Some(ActiveWindow {
+                title: "main.rs - VS Code".to_string(),
+                process_name: "Code".to_string(),
+            }),
+        };
+        let json = serde_json::to_string(&analysis).unwrap();
+        assert!(json.contains("\"active_window\""));
+        assert!(json.contains("\"title\":\"main.rs - VS Code\""));
+        assert!(json.contains("\"process_name\":\"Code\""));
+    }
+
+    #[test]
+    fn screen_analysis_serializes_without_active_window() {
+        let analysis = ScreenAnalysis {
+            current_focus: "编写代码".to_string(),
+            active_software: "VS Code".to_string(),
+            context_keywords: vec!["Rust".to_string()],
+            active_window: None,
+        };
+        let json = serde_json::to_string(&analysis).unwrap();
+        // skip_serializing_if means active_window should not appear when None
+        assert!(!json.contains("\"active_window\""));
+    }
+
+    #[test]
+    fn screen_analysis_deserializes_with_active_window() {
+        let json = r#"{
+            "current_focus": "测试",
+            "active_software": "Terminal",
+            "context_keywords": ["test"],
+            "active_window": {"title": "bash", "process_name": "bash"}
+        }"#;
+        let analysis: ScreenAnalysis = serde_json::from_str(json).unwrap();
+        assert!(analysis.active_window.is_some());
+        let window = analysis.active_window.unwrap();
+        assert_eq!(window.title, "bash");
+        assert_eq!(window.process_name, "bash");
+    }
+
+    #[test]
+    fn screen_analysis_deserializes_without_active_window() {
+        let json = r#"{
+            "current_focus": "测试",
+            "active_software": "Terminal",
+            "context_keywords": ["test"]
+        }"#;
+        let analysis: ScreenAnalysis = serde_json::from_str(json).unwrap();
+        assert!(analysis.active_window.is_none());
+    }
+
+    // ── SMART-001: CaptureSettings window filter tests ──
+
+    #[test]
+    fn capture_settings_default_has_empty_window_filters() {
+        let settings = CaptureSettings::default();
+        assert!(settings.window_whitelist.is_empty());
+        assert!(settings.window_blacklist.is_empty());
+        assert!(!settings.use_whitelist_only);
+    }
+
+    #[test]
+    fn capture_settings_can_hold_window_filters() {
+        let settings = CaptureSettings {
+            api_base_url: String::new(),
+            api_key: String::new(),
+            model_name: String::new(),
+            screenshot_interval: 5,
+            analysis_prompt: None,
+            change_threshold: 3.0,
+            max_silent_minutes: 30,
+            window_whitelist: vec!["VS Code".to_string()],
+            window_blacklist: vec!["Chrome".to_string()],
+            use_whitelist_only: true,
+        };
+        assert_eq!(settings.window_whitelist, vec!["VS Code"]);
+        assert_eq!(settings.window_blacklist, vec!["Chrome"]);
+        assert!(settings.use_whitelist_only);
     }
 }
