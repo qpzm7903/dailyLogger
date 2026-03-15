@@ -1,6 +1,6 @@
 # Story 5.2: REPORT-002 - 月报生成
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -221,3 +221,22 @@ fn excludes_records_from_previous_month() {
 ### Completion Notes List
 
 ### File List
+
+## Code Review Findings (2026-03-15)
+
+### Issues Found: 1 HIGH, 0 MEDIUM, 0 LOW
+
+#### HIGH Issues (Fixed)
+1. **[UI] Missing monthly report path display and viewer**
+   - Task 3.2: 创建 MonthlyReportViewer.vue - 未实现
+   - Task 3.4: 显示最近月报路径和打开按钮 - 未实现
+   - AC #2: 显示文件路径并提供打开选项 - 未实现
+   - AC #6: 打开月报文件 - 未实现
+   - **Fixed**: 已添加月报路径显示和 DailySummaryViewer 组件集成
+
+#### Remaining Tasks
+- [ ] 3.5 在 SettingsModal.vue 添加月报模板配置入口（可选）
+- [ ] 4. 端到端测试
+
+### Dev Agent Record Updated
+- File List updated with fixes
