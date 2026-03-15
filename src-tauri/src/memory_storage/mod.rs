@@ -3698,9 +3698,8 @@ mod tests {
     fn week_records_empty_db_returns_empty() {
         setup_test_db();
         // Don't insert any records
-        let records = get_week_records_sync(0).unwrap();
+        let _records = get_week_records_sync(0).unwrap();
         // May contain records from parallel tests, but at minimum should not error
-        assert!(records.len() >= 0);
     }
 
     #[test]

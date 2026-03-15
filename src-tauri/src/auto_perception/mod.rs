@@ -1019,6 +1019,7 @@ pub async fn take_screenshot() -> Result<String, String> {
 mod tests {
     use super::*;
     use base64::Engine;
+    use serial_test::serial;
 
     fn make_minimal_png_base64() -> String {
         // 1×1 transparent PNG (RGBA)
@@ -1162,6 +1163,7 @@ mod tests {
     // ── is_auto_capture_running tests ──
 
     #[test]
+    #[serial]
     fn is_auto_capture_running_returns_false_by_default() {
         // Reset to known state
         AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
@@ -1169,6 +1171,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn is_auto_capture_running_returns_true_after_start() {
         AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
         assert!(is_auto_capture_running());
@@ -1177,6 +1180,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn is_auto_capture_running_reflects_state_changes() {
         AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
         assert!(!is_auto_capture_running());
@@ -1191,12 +1195,14 @@ mod tests {
     // ── get_auto_capture_status command tests ──
 
     #[test]
+    #[serial]
     fn get_auto_capture_status_returns_false_by_default() {
         AUTO_CAPTURE_RUNNING.store(false, Ordering::SeqCst);
         assert!(!get_auto_capture_status());
     }
 
     #[test]
+    #[serial]
     fn get_auto_capture_status_returns_true_when_running() {
         AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
         assert!(get_auto_capture_status());
