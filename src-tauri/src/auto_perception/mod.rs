@@ -1498,7 +1498,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn load_work_time_settings_loads_custom_time() {
         use crate::memory_storage::get_settings_sync;
         setup_test_db_with_work_time();
