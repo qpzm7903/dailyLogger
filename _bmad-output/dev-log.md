@@ -4,6 +4,28 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 ---
 
+## SMART-002 故事总结 - 2026-03-15
+
+### 关键技术决策
+
+1. **模块独立性**：`silent_tracker` 作为顶级模块而非 `auto_perception` 子模块。理由：不依赖 screenshot feature，始终可用。
+
+2. **内存滑动窗口**：7天每小时统计数据存内存，自动裁剪过期条目。理由：避免频繁磁盘IO，最多168条记录占用可控。
+
+3. **渐进式阈值调整**：每次调整上限5分钟，边界10-60分钟。理由：符合 Dev Notes 要求，避免用户体验剧烈变化。
+
+### 问题与解决
+
+**测试隔离**：并行测试污染 DB_CONNECTION 全局状态。解决：`--test-threads=1` 运行，测试用 `.iter().any()` 定位记录。
+
+### 后续约定
+
+- **Settings 字段新增清单**：迁移→结构体→SELECT→UPDATE→测试helper 五处同步
+- **幂等迁移**：`let _ = conn.execute("ALTER TABLE...")` 忽略列已存在错误
+- **布尔存储**：INTEGER 0/1，读写转换 `map(|v| v != 0)` / `map(|v| if v { 1 } else { 0 })`
+
+---
+
 ## SMART-002 Task 3 - 2026-03-15
 
 ### 技术决策
