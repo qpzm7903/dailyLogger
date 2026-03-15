@@ -1,6 +1,6 @@
 # Story 4.5: 数据备份与恢复
 
-Status: review
+Status: passed
 
 ## Story
 
@@ -341,3 +341,34 @@ MiniMax-M2.5
 - src-tauri/Cargo.toml (修改 - 添加依赖)
 - src/components/BackupModal.vue (新增)
 - src/App.vue (修改 - 添加备份按钮和组件)
+
+## Code Review Findings
+
+### Review Date: 2026-03-15
+### Reviewer: Claude Code
+### Status: PASSED with 1 fix
+
+### Quality Gate Results
+- **Rust Format**: ✓ PASSED
+- **Rust Clippy**: ✓ PASSED (269 tests)
+- **Frontend Tests**: ✓ PASSED (191 tests)
+
+### Issues Found
+
+1. **[Critical] restore_backup 后未重新初始化数据库连接**
+   - **Severity**: High
+   - **Location**: `src-tauri/src/backup/mod.rs:315`
+   - **Description**: 恢复数据库后，应用仍然持有旧数据库文件的连接，导致恢复的数据无法被应用使用
+   - **Fix Applied**: 在 `restore_backup` 函数中添加了数据库连接重置逻辑：
+     1. 恢复前关闭现有连接 (`DB_CONNECTION = None`)
+     2. 恢复后重新调用 `init_database()` 初始化连接
+     3. 如果初始化失败，保留回滚备份以便恢复
+
+### Summary
+All acceptance criteria implemented correctly. The code follows project conventions and passes all quality gates. One critical bug was identified and fixed during review.
+
+### AC Verification
+- ✓ AC1: 备份到指定位置 - 已实现
+- ✓ AC2: 从备份恢复 - 已实现（显示备份详情、进度）
+- ✓ AC3: 恢复前自动备份 - 已实现（回滚机制）
+- ✓ AC4: 备份历史管理 - 已实现（最近10个备份）

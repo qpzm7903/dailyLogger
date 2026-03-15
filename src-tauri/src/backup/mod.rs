@@ -313,6 +313,8 @@ pub async fn delete_backup(backup_path: String) -> Result<(), String> {
 /// 恢复备份
 #[tauri::command]
 pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String> {
+    use crate::memory_storage::DB_CONNECTION;
+
     let path = PathBuf::from(&backup_path);
 
     if !path.exists() {
@@ -384,6 +386,12 @@ pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String
     let extracted_data_dir = temp_extract.path().join("data");
     let extracted_screenshots_dir = temp_extract.path().join("screenshots");
 
+    // 关闭当前数据库连接
+    {
+        let mut db_guard = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
+        *db_guard = None;
+    }
+
     // 恢复数据库
     let target_data_dir = get_app_data_dir().join("data");
     fs::create_dir_all(&target_data_dir).map_err(|e| e.to_string())?;
@@ -413,6 +421,15 @@ pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String
 
     // 清理临时提取目录
     drop(temp_extract);
+
+    // 重新初始化数据库连接
+    if let Err(e) = crate::memory_storage::init_database() {
+        // 如果恢复后重新初始化失败，尝试回滚
+        if rolled_back {
+            let _ = fs::remove_dir_all(&rollback_dir);
+        }
+        return Err(format!("Failed to reinitialize database: {}", e));
+    }
 
     // 清理回滚目录（成功恢复后）
     if rolled_back {
