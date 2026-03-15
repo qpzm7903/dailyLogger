@@ -1481,6 +1481,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn load_work_time_settings_returns_defaults() {
         setup_test_db_with_work_time();
 
@@ -1507,6 +1508,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn load_work_time_settings_loads_custom_time() {
         use crate::memory_storage::get_settings_sync;
         setup_test_db_with_work_time();
@@ -1543,6 +1545,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn should_capture_by_work_time_returns_true_when_disabled() {
         use crate::memory_storage::get_settings_sync;
         setup_test_db_with_work_time();
@@ -1560,6 +1563,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn should_capture_by_work_time_uses_custom_time_when_enabled() {
         use crate::memory_storage::get_settings_sync;
         setup_test_db_with_work_time();
@@ -1578,6 +1582,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn get_work_time_status_command_returns_valid_status() {
         setup_test_db_with_work_time();
 
@@ -1774,6 +1779,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn load_capture_settings_defaults_to_primary_mode() {
         setup_test_db_with_multi_monitor();
 
@@ -1783,6 +1789,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn load_capture_settings_loads_custom_mode() {
         use crate::memory_storage::get_settings_sync;
         setup_test_db_with_multi_monitor();
