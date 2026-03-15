@@ -97,6 +97,8 @@ fn main() {
             daily_logger_lib::memory_storage::get_records_by_date_range,
             daily_logger_lib::memory_storage::get_settings,
             daily_logger_lib::memory_storage::save_settings,
+            daily_logger_lib::memory_storage::test_api_connection,
+            daily_logger_lib::memory_storage::get_model_info,
             daily_logger_lib::synthesis::generate_daily_summary,
             daily_logger_lib::synthesis::get_default_summary_prompt,
             #[cfg(feature = "screenshot")]

@@ -36,6 +36,20 @@
                 >{{ showApiKey ? '隐藏' : '显示' }}</button>
               </div>
             </div>
+            <!-- Test Connection Button -->
+            <div class="pt-2">
+              <button
+                @click="testConnection"
+                :disabled="isTestingConnection || !settings.api_base_url || !settings.api_key || !settings.model_name"
+                class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                {{ isTestingConnection ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="connectionTestResult" :class="connectionTestResult.success ? 'text-green-400' : 'text-red-400'" class="ml-2 text-xs">
+                {{ connectionTestResult.message }}
+                <span v-if="connectionTestResult.latency_ms">({{ connectionTestResult.latency_ms }}ms)</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -44,13 +58,25 @@
           <div class="space-y-3">
             <div>
               <label class="text-xs text-gray-300 block mb-1">分析模型</label>
-              <input
-                v-model="settings.model_name"
-                type="text"
-                placeholder="gpt-4o"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
-              />
-              <span class="text-xs text-gray-500 mt-1 block">需要支持 Vision 能力的模型</span>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="settings.model_name"
+                  type="text"
+                  placeholder="gpt-4o"
+                  class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+                <button
+                  @click="getModelInfo('analysis')"
+                  :disabled="isLoadingModelInfo || !settings.model_name"
+                  type="button"
+                  class="text-gray-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
+                  title="查看模型上下文窗口"
+                >ℹ️</button>
+              </div>
+              <span v-if="analysisModelInfo?.context_window" class="text-xs text-gray-500 mt-1 block">
+                上下文窗口: {{ analysisModelInfo.context_window / 1000 }}K tokens
+              </span>
+              <span v-else class="text-xs text-gray-500 mt-1 block">需要支持 Vision 能力的模型</span>
             </div>
             <div>
               <label class="text-xs text-gray-300 block mb-1">分析 Prompt</label>
@@ -95,13 +121,25 @@
             </div>
             <div>
               <label class="text-xs text-gray-300 block mb-1">日报模型</label>
-              <input
-                v-model="settings.summary_model_name"
-                type="text"
-                placeholder="留空则使用分析模型"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
-              />
-              <span class="text-xs text-gray-500 mt-1 block">纯文本模型即可，不需要 Vision</span>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="settings.summary_model_name"
+                  type="text"
+                  placeholder="留空则使用分析模型"
+                  class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+                <button
+                  @click="getModelInfo('summary')"
+                  :disabled="isLoadingModelInfo || !settings.summary_model_name"
+                  type="button"
+                  class="text-gray-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
+                  title="查看模型上下文窗口"
+                >ℹ️</button>
+              </div>
+              <span v-if="summaryModelInfo?.context_window" class="text-xs text-gray-500 mt-1 block">
+                上下文窗口: {{ summaryModelInfo.context_window / 1000 }}K tokens
+              </span>
+              <span v-else class="text-xs text-gray-500 mt-1 block">纯文本模型即可，不需要 Vision</span>
             </div>
             <div>
               <label class="text-xs text-gray-300 block mb-1">日报 Prompt</label>
@@ -497,6 +535,15 @@ const showDefaultSummaryPromptModal = ref(false)
 const defaultSummaryPromptContent = ref('')
 const showTemplateLibraryModal = ref(false)
 
+// API Connection test state
+const isTestingConnection = ref(false)
+const connectionTestResult = ref(null)
+
+// Model info state
+const isLoadingModelInfo = ref(false)
+const analysisModelInfo = ref(null)
+const summaryModelInfo = ref(null)
+
 // Window whitelist/blacklist tag management
 const whitelistTags = ref([])
 const blacklistTags = ref([])
@@ -735,6 +782,75 @@ const showDefaultPrompt = async () => {
 const resetPrompt = () => {
   settings.value.analysis_prompt = ''
   showSuccess('已重置为默认 Prompt，保存后生效')
+}
+
+// API Connection test
+const testConnection = async () => {
+  if (!settings.value.api_base_url || !settings.value.api_key || !settings.value.model_name) {
+    showError('请先填写 API Base URL、API Key 和分析模型')
+    return
+  }
+
+  isTestingConnection.value = true
+  connectionTestResult.value = null
+
+  try {
+    const result = await invoke('test_api_connection', {
+      apiBaseUrl: settings.value.api_base_url,
+      apiKey: settings.value.api_key,
+      modelName: settings.value.model_name
+    })
+    connectionTestResult.value = result
+    if (result.success) {
+      showSuccess(`连接成功 (${result.latency_ms}ms)`)
+    } else {
+      showError(result.message)
+    }
+  } catch (err) {
+    console.error('Failed to test connection:', err)
+    connectionTestResult.value = { success: false, message: String(err) }
+    showError(err)
+  } finally {
+    isTestingConnection.value = false
+  }
+}
+
+// Get model info
+const getModelInfo = async (type) => {
+  const modelName = type === 'analysis' ? settings.value.model_name : settings.value.summary_model_name
+  if (!modelName) {
+    showError('请先填写模型名称')
+    return
+  }
+
+  isLoadingModelInfo.value = true
+
+  try {
+    const result = await invoke('get_model_info', {
+      apiBaseUrl: settings.value.api_base_url,
+      apiKey: settings.value.api_key,
+      modelName: modelName
+    })
+
+    if (type === 'analysis') {
+      analysisModelInfo.value = result
+    } else {
+      summaryModelInfo.value = result
+    }
+
+    if (result.error) {
+      showError(result.error)
+    } else if (result.context_window) {
+      showSuccess(`${modelName}: ${result.context_window / 1000}K tokens`)
+    } else {
+      showSuccess('模型信息不可用，请参考模型文档')
+    }
+  } catch (err) {
+    console.error('Failed to get model info:', err)
+    showError(err)
+  } finally {
+    isLoadingModelInfo.value = false
+  }
 }
 
 // Summary Prompt functions

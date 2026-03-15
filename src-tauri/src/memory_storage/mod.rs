@@ -499,6 +499,162 @@ pub async fn save_settings(settings: Settings) -> Result<(), String> {
     save_settings_sync(&settings)
 }
 
+/// Result of testing API connection
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectionTestResult {
+    pub success: bool,
+    pub message: String,
+    pub latency_ms: Option<u64>,
+}
+
+/// Model information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelInfo {
+    pub model_id: String,
+    pub context_window: Option<u64>,
+    pub error: Option<String>,
+}
+
+/// Test API connection by sending a simple request
+#[command]
+pub async fn test_api_connection(
+    api_base_url: String,
+    api_key: String,
+    model_name: String,
+) -> Result<ConnectionTestResult, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let start = std::time::Instant::now();
+
+    // Send a simple "Say 'ok'" request
+    let request_body = serde_json::json!({
+        "model": model_name,
+        "messages": [{"role": "user", "content": "Say 'ok'"}],
+        "max_tokens": 5
+    });
+
+    let url = if api_base_url.ends_with('/') {
+        format!("{}chat/completions", api_base_url)
+    } else {
+        format!("{}/chat/completions", api_base_url)
+    };
+
+    let response = client
+        .post(&url)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&request_body)
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) if resp.status().is_success() => {
+            Ok(ConnectionTestResult {
+                success: true,
+                message: "连接成功".to_string(),
+                latency_ms: Some(start.elapsed().as_millis() as u64),
+            })
+        }
+        Ok(resp) => {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            let message = if status.as_u16() == 401 {
+                "API Key 无效".to_string()
+            } else if status.as_u16() == 404 {
+                "API 端点不存在或模型不支持".to_string()
+            } else {
+                format!("API 错误 ({}): {}", status, body)
+            };
+            Ok(ConnectionTestResult {
+                success: false,
+                message,
+                latency_ms: Some(start.elapsed().as_millis() as u64),
+            })
+        }
+        Err(e) => {
+            let message = if e.is_timeout() {
+                "连接超时，请检查网络或 API 地址".to_string()
+            } else if e.is_connect() {
+                format!("无法连接到服务器: {}", e)
+            } else {
+                format!("连接失败: {}", e)
+            };
+            Ok(ConnectionTestResult {
+                success: false,
+                message,
+                latency_ms: None,
+            })
+        }
+    }
+}
+
+/// Get model information including context window
+#[command]
+pub async fn get_model_info(
+    api_base_url: String,
+    api_key: String,
+    model_name: String,
+) -> Result<ModelInfo, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    // OpenAI compatible API /models endpoint
+    let url = if api_base_url.ends_with('/') {
+        format!("{}models/{}", api_base_url, model_name)
+    } else {
+        format!("{}/models/{}", api_base_url, model_name)
+    };
+
+    let response = client
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) if resp.status().is_success() => {
+            let json: serde_json::Value = resp.json().await.unwrap_or(serde_json::json!({}));
+
+            // OpenAI returns format: {"id": "gpt-4o", "context_window": 128000}
+            // Or in some APIs it's max_tokens
+            let context_window = json
+                .get("context_window")
+                .or_else(|| json.get("max_tokens"))
+                .or_else(|| {
+                    // Some APIs return it in model_info
+                    json.get("model_info")
+                        .and_then(|mi| mi.get("context_window"))
+                })
+                .and_then(|v| v.as_u64());
+
+            Ok(ModelInfo {
+                model_id: model_name,
+                context_window,
+                error: None,
+            })
+        }
+        Ok(resp) => {
+            let status = resp.status();
+            Ok(ModelInfo {
+                model_id: model_name,
+                context_window: None,
+                error: Some(format!("无法获取模型信息 (状态: {})", status)),
+            })
+        }
+        Err(e) => {
+            Ok(ModelInfo {
+                model_id: model_name,
+                context_window: None,
+                error: Some(format!("请求失败: {}", e)),
+            })
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
