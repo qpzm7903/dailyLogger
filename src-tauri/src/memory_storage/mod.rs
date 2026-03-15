@@ -1092,8 +1092,7 @@ mod tests {
 
         let settings = get_settings_sync().unwrap();
         assert_eq!(
-            settings.silent_adjustment_paused_until,
-            None,
+            settings.silent_adjustment_paused_until, None,
             "Default silent_adjustment_paused_until should be None"
         );
     }
@@ -1168,8 +1167,7 @@ mod tests {
 
         let reloaded = get_settings_sync().unwrap();
         assert_eq!(
-            reloaded.silent_adjustment_paused_until,
-            None,
+            reloaded.silent_adjustment_paused_until, None,
             "Cleared silent_adjustment_paused_until should be None"
         );
     }
