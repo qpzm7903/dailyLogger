@@ -1,9 +1,11 @@
 use once_cell::sync::Lazy;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::command;
+
+use crate::crypto;
 
 pub static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 
@@ -114,7 +116,42 @@ pub fn init_database() -> Result<(), String> {
         .map_err(|e| format!("Lock error: {}", e))?;
     *db = Some(conn);
 
+    // Migrate plain text API key to encrypted storage
+    migrate_plain_api_key()?;
+
     tracing::info!("Database initialized at {:?}", db_path);
+    Ok(())
+}
+
+/// Migrate plain text API key to encrypted storage
+fn migrate_plain_api_key() -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Query current API key
+    let api_key: Option<String> = conn
+        .query_row("SELECT api_key FROM settings WHERE id = 1", [], |row| {
+            row.get::<_, Option<String>>(0)
+        })
+        .optional()
+        .map_err(|e| format!("Failed to query API key: {}", e))?
+        .flatten();
+
+    if let Some(key) = api_key {
+        if !key.is_empty() && !crypto::is_encrypted(&key) {
+            // Plain text key, encrypt it
+            let encrypted = crypto::encrypt_api_key(&key)?;
+            conn.execute(
+                "UPDATE settings SET api_key = ?1 WHERE id = 1",
+                params![encrypted],
+            )
+            .map_err(|e| format!("Failed to update encrypted API key: {}", e))?;
+            tracing::info!("Migrated plain API key to encrypted storage");
+        }
+    }
+
     Ok(())
 }
 
@@ -348,10 +385,38 @@ pub fn get_settings_sync() -> Result<Settings, String> {
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
+    // Decrypt API key if it's encrypted
+    let settings = if let Some(ref api_key) = settings.api_key {
+        if !api_key.is_empty() {
+            let mut decrypted_settings = settings.clone();
+            decrypted_settings.api_key = Some(crypto::decrypt_api_key(api_key).map_err(|e| {
+                format!("Failed to decrypt API key: {}", e)
+            })?);
+            decrypted_settings
+        } else {
+            settings
+        }
+    } else {
+        settings
+    };
+
     Ok(settings)
 }
 
 pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
+    // Encrypt API key before saving
+    let encrypted_api_key = if let Some(ref api_key) = settings.api_key {
+        if !api_key.is_empty() && !crypto::is_encrypted(api_key) {
+            Some(crypto::encrypt_api_key(api_key).map_err(|e| {
+                format!("Failed to encrypt API key: {}", e)
+            })?)
+        } else {
+            settings.api_key.clone()
+        }
+    } else {
+        None
+    };
+
     let db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
@@ -382,7 +447,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
          WHERE id = 1",
         params![
             settings.api_base_url,
-            settings.api_key,
+            encrypted_api_key,
             settings.model_name,
             settings.screenshot_interval,
             settings.summary_time,

@@ -1,5 +1,6 @@
 #[cfg(feature = "screenshot")]
 pub mod auto_perception;
+pub mod crypto;
 pub mod manual_entry;
 pub mod memory_storage;
 pub mod silent_tracker;
@@ -16,12 +17,21 @@ pub struct AppState {
     pub auto_capture_running: bool,
 }
 
-/// Mask an API key for safe logging: show only the last 4 characters.
+/// Mask an API key for safe logging: show prefix (up to 5 chars) + "..." + "****".
+/// Example: "sk-abc123xyz9999" -> "sk-ab...****"
 pub fn mask_api_key(key: &str) -> String {
-    if key.len() <= 4 {
+    if key.is_empty() {
         return "****".to_string();
     }
-    format!("****{}", &key[key.len() - 4..])
+
+    // Check if it's an encrypted key - don't reveal any part of it
+    if crate::crypto::is_encrypted(key) {
+        return "[encrypted]".to_string();
+    }
+
+    // Show prefix (first 5 chars or less) + "..." + "****"
+    let prefix_len = key.len().min(5);
+    format!("{}...****", &key[..prefix_len])
 }
 
 /// Add two i32 values and return their sum.
@@ -40,14 +50,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mask_api_key_hides_prefix() {
-        assert_eq!(mask_api_key("sk-abc123xyz9999"), "****9999");
+    fn mask_api_key_shows_prefix() {
+        assert_eq!(mask_api_key("sk-abc123xyz9999"), "sk-ab...****");
     }
 
     #[test]
-    fn mask_api_key_short_key_fully_masked() {
-        assert_eq!(mask_api_key("ab"), "****");
-        assert_eq!(mask_api_key("abcd"), "****");
+    fn mask_api_key_short_key_shows_available_prefix() {
+        assert_eq!(mask_api_key("ab"), "ab...****");
+        assert_eq!(mask_api_key("abcd"), "abcd...****");
     }
 
     #[test]
@@ -57,7 +67,12 @@ mod tests {
 
     #[test]
     fn mask_api_key_exactly_five_chars() {
-        assert_eq!(mask_api_key("12345"), "****2345");
+        assert_eq!(mask_api_key("12345"), "12345...****");
+    }
+
+    #[test]
+    fn mask_api_key_encrypted_key() {
+        assert_eq!(mask_api_key("ENC:somebase64data"), "[encrypted]");
     }
 
     #[test]
