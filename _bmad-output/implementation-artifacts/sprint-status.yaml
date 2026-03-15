@@ -61,7 +61,7 @@ development_status:
   # ========================================
   # Epic 1: 核心功能完善 (MVP+) - P0
   # ========================================
-  epic-1-core: in-progress
+  epic-1-core: done
   CORE-001: done        # 设置界面优化 [3pts]
   CORE-002: done        # 截图画廊增强 [5pts]
   CORE-003: done        # 日报生成模板优化 [3pts]
