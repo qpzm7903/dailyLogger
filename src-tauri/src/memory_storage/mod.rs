@@ -111,6 +111,47 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // DATA-002: FTS5 全文搜索虚拟表
+    // 使用 unicode61 tokenchars 选项支持中文字符
+    conn.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5(
+            content,
+            content='records',
+            content_rowid='id',
+            tokenize='unicode61 tokenchars \"-_\"'
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 table: {}", e))?;
+
+    // FTS5 triggers for automatic index sync
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS records_ai AFTER INSERT ON records BEGIN
+            INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
+        END",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 insert trigger: {}", e))?;
+
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS records_ad AFTER DELETE ON records BEGIN
+            INSERT INTO records_fts(records_fts, rowid, content)
+            VALUES ('delete', old.id, old.content);
+        END",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 delete trigger: {}", e))?;
+
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS records_au AFTER UPDATE ON records BEGIN
+            INSERT INTO records_fts(records_fts, rowid, content)
+            VALUES ('delete', old.id, old.content);
+            INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
+        END",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 update trigger: {}", e))?;
+
     let mut db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
@@ -162,6 +203,16 @@ pub struct Record {
     pub source_type: String,
     pub content: String,
     pub screenshot_path: Option<String>,
+}
+
+/// Full-text search result with highlighting
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResult {
+    pub record: Record,
+    /// Highlighted snippet with <mark> tags around matched keywords
+    pub snippet: String,
+    /// Relevance score (lower is better with bm25)
+    pub rank: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -454,6 +505,131 @@ pub fn get_history_records_sync(
     Ok(records)
 }
 
+/// Full-text search on records content
+/// - query: search keyword(s)
+/// - order_by: "rank" (relevance) or "time" (timestamp DESC)
+/// - limit: maximum number of results (default 50)
+///
+/// Note: For queries containing CJK characters, uses LIKE search as fallback
+/// since FTS5's unicode61 tokenizer doesn't handle Chinese word segmentation well.
+pub fn search_records_sync(
+    query: &str,
+    order_by: &str,
+    limit: i64,
+) -> Result<Vec<SearchResult>, String> {
+    if query.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Check if query contains CJK characters
+    let has_cjk = query.chars().any(|c| {
+        let cp = c as u32;
+        // CJK Unified Ideographs: U+4E00..U+9FFF
+        // CJK Unified Ideographs Extension A: U+3400..U+4DBF
+        // CJK Compatibility Ideographs: U+F900..U+FAFF
+        (0x4E00..=0x9FFF).contains(&cp)
+            || (0x3400..=0x4DBF).contains(&cp)
+            || (0xF900..=0xFAFF).contains(&cp)
+    });
+
+    if has_cjk {
+        // Use LIKE search for CJK queries
+        // Note: Both time and rank order use the same SQL since LIKE doesn't have relevance score
+        let sql = "SELECT
+                id, timestamp, source_type, content, screenshot_path
+            FROM records
+            WHERE content LIKE ?1
+            ORDER BY timestamp DESC
+            LIMIT ?2";
+
+        let mut stmt = conn
+            .prepare(sql)
+            .map_err(|e| format!("Failed to prepare search query: {}", e))?;
+
+        let like_pattern = format!("%{}%", query);
+
+        let results = stmt
+            .query_map(params![like_pattern, limit], |row| {
+                let content: String = row.get(3)?;
+                // Manually highlight the keyword
+                let snippet = content.replace(query, &format!("<mark>{}</mark>", query));
+                Ok(SearchResult {
+                    record: Record {
+                        id: row.get(0)?,
+                        timestamp: row.get(1)?,
+                        source_type: row.get(2)?,
+                        content,
+                        screenshot_path: row.get(4)?,
+                    },
+                    snippet,
+                    rank: 0.0, // LIKE search doesn't have relevance score
+                })
+            })
+            .map_err(|e| format!("Failed to search records: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("Failed to collect search results: {}", e))?;
+
+        Ok(results)
+    } else {
+        // Use FTS5 for non-CJK queries
+        let escaped_query = query.replace('\"', "\"\"");
+
+        let sql = if order_by == "time" {
+            "SELECT
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path,
+                highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
+                bm25(records_fts) as rank
+            FROM records_fts
+            JOIN records r ON r.id = records_fts.rowid
+            WHERE records_fts MATCH ?1
+            ORDER BY r.timestamp DESC
+            LIMIT ?2"
+        } else {
+            "SELECT
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path,
+                highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
+                bm25(records_fts) as rank
+            FROM records_fts
+            JOIN records r ON r.id = records_fts.rowid
+            WHERE records_fts MATCH ?1
+            ORDER BY rank
+            LIMIT ?2"
+        };
+
+        let mut stmt = conn
+            .prepare(sql)
+            .map_err(|e| format!("Failed to prepare search query: {}", e))?;
+
+        // Wrap query in double quotes for exact phrase matching
+        let fts_query = format!("\"{}\"", escaped_query);
+
+        let results = stmt
+            .query_map(params![fts_query, limit], |row| {
+                Ok(SearchResult {
+                    record: Record {
+                        id: row.get(0)?,
+                        timestamp: row.get(1)?,
+                        source_type: row.get(2)?,
+                        content: row.get(3)?,
+                        screenshot_path: row.get(4)?,
+                    },
+                    snippet: row.get(5)?,
+                    rank: row.get(6)?,
+                })
+            })
+            .map_err(|e| format!("Failed to search records: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("Failed to collect search results: {}", e))?;
+
+        Ok(results)
+    }
+}
+
 pub fn get_settings_sync() -> Result<Settings, String> {
     let db = DB_CONNECTION
         .lock()
@@ -631,6 +807,18 @@ pub async fn get_history_records(
     let page = page.unwrap_or(0);
     let page_size = page_size.unwrap_or(50);
     get_history_records_sync(start_date, end_date, source_type, page, page_size)
+}
+
+/// Full-text search on records content
+#[command]
+pub async fn search_records(
+    query: String,
+    order_by: Option<String>,
+    limit: Option<i64>,
+) -> Result<Vec<SearchResult>, String> {
+    let order_by = order_by.unwrap_or_else(|| "rank".to_string());
+    let limit = limit.unwrap_or(50);
+    search_records_sync(&query, &order_by, limit)
 }
 
 /// Result of testing API connection
@@ -1819,6 +2007,255 @@ mod tests {
         assert!(
             result.unwrap_err().contains("Invalid source_type"),
             "Error message should mention invalid source_type"
+        );
+    }
+
+    // ── Tests for search_records_sync (DATA-002) ──
+
+    /// Helper to setup test DB with FTS5 table for search tests
+    fn setup_test_db_with_fts() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                screenshot_path TEXT
+            )",
+            [],
+        )
+        .unwrap();
+
+        // Create FTS5 virtual table
+        conn.execute(
+            "CREATE VIRTUAL TABLE records_fts USING fts5(
+                content,
+                content='records',
+                content_rowid='id',
+                tokenize='unicode61'
+            )",
+            [],
+        )
+        .unwrap();
+
+        // Create FTS5 triggers
+        conn.execute(
+            "CREATE TRIGGER records_ai AFTER INSERT ON records BEGIN
+                INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
+            END",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "CREATE TRIGGER records_ad AFTER DELETE ON records BEGIN
+                INSERT INTO records_fts(records_fts, rowid, content)
+                VALUES ('delete', old.id, old.content);
+            END",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "CREATE TRIGGER records_au AFTER UPDATE ON records BEGIN
+                INSERT INTO records_fts(records_fts, rowid, content)
+                VALUES ('delete', old.id, old.content);
+                INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
+            END",
+            [],
+        )
+        .unwrap();
+
+        let mut db = DB_CONNECTION.lock().unwrap();
+        *db = Some(conn);
+    }
+
+    #[test]
+    #[serial]
+    fn search_records_finds_matching_keyword() {
+        setup_test_db_with_fts();
+
+        // Insert records with different content
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "Working on Rust project today");
+        insert_record_with_ts(&ts, "Meeting with team about design");
+
+        let results = search_records_sync("Rust", "rank", 50).unwrap();
+        assert!(
+            results.iter().any(|r| r.record.content.contains("Rust")),
+            "Should find record with 'Rust' keyword"
+        );
+        assert!(
+            !results.iter().any(|r| r.record.content.contains("design")),
+            "Should not return record without 'Rust' keyword"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn search_records_supports_chinese_keyword() {
+        // Note: For CJK queries, uses LIKE search as fallback
+        setup_test_db_with_fts(); // FTS5 needed for non-CJK "Rust" search
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "今天学习了 Rust 编程语言");
+        insert_record_with_ts(&ts, "Tomorrow I will study Python");
+
+        let results = search_records_sync("Rust", "rank", 50).unwrap();
+        assert!(
+            results.iter().any(|r| r.record.content.contains("Rust")),
+            "Should find record with 'Rust' in Chinese content"
+        );
+
+        // CJK search uses LIKE fallback which supports substring matching
+        let results_cn = search_records_sync("学习", "rank", 50).unwrap();
+        assert!(
+            results_cn.iter().any(|r| r.record.content.contains("学习")),
+            "Should find record with Chinese keyword '学习'"
+        );
+
+        // Verify highlight is applied
+        assert!(
+            results_cn[0].snippet.contains("<mark>学习</mark>"),
+            "Snippet should contain highlighted Chinese keyword"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn search_records_returns_empty_for_empty_query() {
+        setup_test_db_with_fts();
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "Some content here");
+
+        let results = search_records_sync("", "rank", 50).unwrap();
+        assert!(
+            results.is_empty(),
+            "Empty query should return empty results"
+        );
+
+        let results_whitespace = search_records_sync("   ", "rank", 50).unwrap();
+        assert!(
+            results_whitespace.is_empty(),
+            "Whitespace-only query should return empty results"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn search_records_orders_by_relevance() {
+        setup_test_db_with_fts();
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+
+        // Insert records with varying relevance to "Rust"
+        insert_record_with_ts(&ts, "Rust Rust Rust"); // Higher relevance (more matches)
+        insert_record_with_ts(&ts, "Rust programming language"); // Lower relevance
+
+        let results = search_records_sync("Rust", "rank", 50).unwrap();
+        assert!(
+            results.len() >= 2,
+            "Should find at least 2 records with 'Rust'"
+        );
+
+        // With bm25, lower rank is better. The record with more "Rust" occurrences
+        // should have a lower (better) rank.
+        let rust_rust_rust = results
+            .iter()
+            .find(|r| r.record.content == "Rust Rust Rust");
+        let rust_programming = results
+            .iter()
+            .find(|r| r.record.content == "Rust programming language");
+
+        assert!(
+            rust_rust_rust.is_some() && rust_programming.is_some(),
+            "Both records should be found"
+        );
+
+        // Verify ordering: more relevant (lower rank) should come first
+        assert!(
+            rust_rust_rust.unwrap().rank < rust_programming.unwrap().rank,
+            "Record with more keyword occurrences should have better (lower) rank"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn search_records_orders_by_time() {
+        setup_test_db_with_fts();
+
+        let today = chrono::Local::now().date_naive();
+        let ts_early = local_to_utc_rfc3339(today.and_hms_opt(9, 0, 0).unwrap());
+        let ts_late = local_to_utc_rfc3339(today.and_hms_opt(15, 0, 0).unwrap());
+
+        insert_record_with_ts(&ts_early, "Rust early morning");
+        insert_record_with_ts(&ts_late, "Rust afternoon work");
+
+        let results = search_records_sync("Rust", "time", 50).unwrap();
+        assert!(
+            results.len() >= 2,
+            "Should find at least 2 records with 'Rust'"
+        );
+
+        // With time ordering, later timestamp should come first
+        let pos_early = results
+            .iter()
+            .position(|r| r.record.content == "Rust early morning");
+        let pos_late = results
+            .iter()
+            .position(|r| r.record.content == "Rust afternoon work");
+
+        assert!(
+            pos_late.unwrap() < pos_early.unwrap(),
+            "Later record should appear first with time ordering"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn search_records_includes_highlight_snippet() {
+        setup_test_db_with_fts();
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "Working on Rust project with Cargo");
+
+        let results = search_records_sync("Rust", "rank", 50).unwrap();
+        assert!(
+            !results.is_empty(),
+            "Should find matching record"
+        );
+
+        let snippet = &results[0].snippet;
+        assert!(
+            snippet.contains("<mark>Rust</mark>"),
+            "Snippet should contain highlighted keyword: {}",
+            snippet
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn search_records_respects_limit() {
+        setup_test_db_with_fts();
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+
+        // Insert 10 records all with the same keyword
+        for i in 0..10 {
+            insert_record_with_ts(&ts, &format!("Rust record number {}", i));
+        }
+
+        let results = search_records_sync("Rust", "rank", 5).unwrap();
+        assert_eq!(
+            results.len(),
+            5,
+            "Should return only 5 results when limit is 5"
         );
     }
 }

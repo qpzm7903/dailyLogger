@@ -101,6 +101,7 @@ fn main() {
             daily_logger_lib::memory_storage::get_model_info,
             daily_logger_lib::memory_storage::delete_record,
             daily_logger_lib::memory_storage::get_history_records,
+            daily_logger_lib::memory_storage::search_records,
             daily_logger_lib::synthesis::generate_daily_summary,
             daily_logger_lib::synthesis::get_default_summary_prompt,
             #[cfg(feature = "screenshot")]

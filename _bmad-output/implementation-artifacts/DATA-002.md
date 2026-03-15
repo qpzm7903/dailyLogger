@@ -32,11 +32,11 @@ so that 我可以快速定位特定的工作记录，无需逐条浏览.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 后端 FTS 索引与 API (AC: 1, 3, 4)
-  - [ ] 1.1 创建 FTS5 虚拟表迁移逻辑 (init_database 中添加)
-  - [ ] 1.2 实现 `search_records` 函数 (全文搜索 + 相关性排序)
-  - [ ] 1.3 在 `main.rs` 注册 `search_records` Tauri 命令
-  - [ ] 1.4 添加单元测试覆盖搜索边界条件
+- [x] Task 1: 后端 FTS 索引与 API (AC: 1, 3, 4)
+  - [x] 1.1 创建 FTS5 虚拟表迁移逻辑 (init_database 中添加)
+  - [x] 1.2 实现 `search_records` 函数 (全文搜索 + 相关性排序)
+  - [x] 1.3 在 `main.rs` 注册 `search_records` Tauri 命令
+  - [x] 1.4 添加单元测试覆盖搜索边界条件
 
 - [ ] Task 2: 前端搜索组件 (AC: 1, 2)
   - [ ] 2.1 创建 `SearchPanel.vue` 组件
@@ -224,16 +224,24 @@ SearchPanel.vue
 
 ### Agent Model Used
 
-(待实现时填写)
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
-(待实现时填写)
+- 实现混合搜索策略：FTS5 用于英文关键词，LIKE 搜索作为中文/CJK 字符的回退
+- unicode61 tokenizer 不支持中文分词，因此采用 CJK 字符检测和 LIKE 模式匹配
 
 ### Completion Notes List
 
-(待实现时填写)
+- **2026-03-15 Task 1 完成**: 后端 FTS 索引与 API 已实现
+  - 添加 SearchResult 结构体 (record, snippet, rank)
+  - 创建 FTS5 虚拟表 `records_fts` 及同步触发器
+  - 实现 `search_records_sync()` 支持 CJK 混合搜索
+  - 注册 `search_records` Tauri 命令
+  - 添加 7 个单元测试，覆盖中文搜索、英文搜索、排序、高亮等场景
+  - 所有 170 个测试通过
 
 ### File List
 
-(待实现时填写)
+- `src-tauri/src/memory_storage/mod.rs` - FTS 表创建、search_records_sync()、SearchResult 结构体
+- `src-tauri/src/main.rs` - 注册 search_records 命令
