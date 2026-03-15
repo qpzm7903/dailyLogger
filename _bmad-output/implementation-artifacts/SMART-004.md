@@ -1,6 +1,6 @@
 # Story 2.4: 多显示器支持优化
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
