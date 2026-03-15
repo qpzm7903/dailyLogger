@@ -1,6 +1,6 @@
 # Story 4.4: 数据导出 (JSON/MD)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -304,14 +304,53 @@ Claude Opus 4.6
 
 ### File List
 
-- `src-tauri/src/export/mod.rs` (新建) - 导出模块：ExportRequest/ExportResult 结构、export_to_json、export_to_markdown、export_records Tauri 命令
+- `src-tauri/src/export/mod.rs` (新建/修改) - 导出模块：ExportRequest/ExportResult 结构、export_to_json、export_to_markdown、export_records、open_export_dir Tauri 命令
 - `src-tauri/src/memory_storage/mod.rs` (修改) - 添加 get_records_for_export 函数
 - `src-tauri/src/lib.rs` (修改) - 注册 export 模块
-- `src-tauri/src/main.rs` (修改) - 注册 export_records 命令到 generate_handler![]
-- `src/components/ExportModal.vue` (新建) - 导出弹窗组件
+- `src-tauri/src/main.rs` (修改) - 注册 export_records 和 open_export_dir 命令到 generate_handler![]
+- `src/components/ExportModal.vue` (新建/修改) - 导出弹窗组件 + 打开目录按钮
 - `src/App.vue` (修改) - 添加导出按钮和 ExportModal 集成
 - `src/components/__tests__/ExportModal.test.js` (新建) - 前端组件测试
+- `src/__tests__/ExportModal.spec.js` (新增/修改) - 前端组件测试 (12 tests)
 
 ### Change Log
 
 - 2026-03-15: DATA-004 完整实现 - 数据导出功能 (JSON/MD 格式)
+- 2026-03-15: Code review fixes — added open_export_dir command (AC4), fixed filename collision with timestamp suffix
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Weiyicheng on 2026-03-15
+**Outcome:** Approved (after fixes)
+
+### Findings Summary
+
+| Severity | Count | Fixed |
+|----------|-------|-------|
+| HIGH | 0 | - |
+| MEDIUM | 1 | 1 |
+| LOW | 1 | 1 |
+
+### MEDIUM-1: Task 2.5 "open directory" not implemented (FIXED)
+
+- **Issue:** ExportModal.vue showed file path after export but had no button to open the containing directory. AC4 explicitly requires "支持打开导出文件所在目录". Task 2.5 was marked [x] but the feature was missing.
+- **Fix:** Added `open_export_dir` Tauri command in `export/mod.rs` following the existing cross-platform pattern from `manual_entry/open_obsidian_folder`. Added "打开目录" button in ExportModal.vue. Registered the new command in `main.rs`.
+
+### LOW-1: Filename collision on same-day exports (FIXED)
+
+- **Issue:** Export filename used only date (`dailylogger-export-YYYY-MM-DD.ext`). Multiple exports on the same day in the same format would silently overwrite.
+- **Fix:** Changed filename format to include timestamp: `dailylogger-export-YYYY-MM-DD_HHMMSS.ext`
+
+### AC Validation Results
+
+| AC | Status |
+|----|--------|
+| AC1: JSON 格式导出 | PASS |
+| AC2: Markdown 格式导出 | PASS |
+| AC3: 日期范围选择 | PASS |
+| AC4: 导出进度反馈 | PASS (after fix) |
+
+### Test Results
+
+- Rust: 242 tests passed (including 13 export tests)
+- Frontend: 179 tests passed (including 12 ExportModal tests)

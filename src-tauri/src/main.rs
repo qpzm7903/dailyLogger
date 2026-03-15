@@ -119,6 +119,7 @@ fn main() {
             daily_logger_lib::synthesis::generate_weekly_report,
             // DATA-004: 数据导出
             daily_logger_lib::export::export_records,
+            daily_logger_lib::export::open_export_dir,
             daily_logger_lib::ollama::get_ollama_models,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::start_auto_capture,

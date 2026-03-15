@@ -121,6 +121,47 @@ pub fn export_to_markdown(
     Ok(md)
 }
 
+/// Tauri command: open the export directory in the system file manager
+#[command]
+pub async fn open_export_dir(path: String) -> Result<(), String> {
+    let dir = std::path::Path::new(&path)
+        .parent()
+        .ok_or_else(|| "Cannot determine parent directory".to_string())?;
+
+    if !dir.exists() {
+        return Err(format!("Directory does not exist: {}", dir.display()));
+    }
+
+    let dir_str = dir.to_string_lossy().to_string();
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&dir_str)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&dir_str)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&dir_str)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    tracing::info!("Opened export directory: {}", dir_str);
+    Ok(())
+}
+
 /// Tauri command: export records to JSON or Markdown file
 #[command]
 pub async fn export_records(request: ExportRequest) -> Result<ExportResult, String> {
@@ -136,13 +177,18 @@ pub async fn export_records(request: ExportRequest) -> Result<ExportResult, Stri
     std::fs::create_dir_all(&export_dir)
         .map_err(|e| format!("Failed to create export directory: {}", e))?;
 
-    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+    // Generate filename with timestamp to avoid overwriting previous exports
+    let now = chrono::Local::now();
     let extension = if request.format == "json" {
         "json"
     } else {
         "md"
     };
-    let filename = format!("dailylogger-export-{}.{}", today, extension);
+    let filename = format!(
+        "dailylogger-export-{}.{}",
+        now.format("%Y-%m-%d_%H%M%S"),
+        extension
+    );
     let output_path = export_dir.join(&filename);
 
     std::fs::write(&output_path, &content)

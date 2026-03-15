@@ -154,4 +154,52 @@ describe('ExportModal', () => {
 
     expect(wrapper.emitted('close')).toBeTruthy()
   })
+
+  it('shows open directory button after successful export', async () => {
+    invoke.mockResolvedValue({
+      path: '/home/user/exports/dailylogger-export-2026-03-14.json',
+      record_count: 10,
+      file_size: 512,
+    })
+
+    const wrapper = mount(ExportModal)
+
+    const exportBtn = wrapper.findAll('button').find(b =>
+      b.text() === '导出' || b.text() === '导出中...'
+    )
+    await exportBtn.trigger('click')
+
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain('打开目录')
+    })
+  })
+
+  it('calls open_export_dir when open directory button is clicked', async () => {
+    invoke.mockResolvedValueOnce({
+      path: '/home/user/exports/dailylogger-export-2026-03-14.json',
+      record_count: 10,
+      file_size: 512,
+    })
+    invoke.mockResolvedValueOnce(undefined) // for open_export_dir
+
+    const wrapper = mount(ExportModal)
+
+    const exportBtn = wrapper.findAll('button').find(b =>
+      b.text() === '导出' || b.text() === '导出中...'
+    )
+    await exportBtn.trigger('click')
+
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain('打开目录')
+    })
+
+    const openDirBtn = wrapper.findAll('button').find(b => b.text().includes('打开目录'))
+    await openDirBtn.trigger('click')
+
+    await vi.waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith('open_export_dir', {
+        path: '/home/user/exports/dailylogger-export-2026-03-14.json',
+      })
+    })
+  })
 })

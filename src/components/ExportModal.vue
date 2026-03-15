@@ -156,14 +156,11 @@ async function doExport() {
 }
 
 async function openExportDir() {
-  if (!exportResult.value) return
+  if (!exportResult.value?.path) return
   try {
-    // Extract directory from the file path
-    const path = exportResult.value.path
-    const dir = path.substring(0, path.lastIndexOf('/')) || path.substring(0, path.lastIndexOf('\\'))
-    await invoke('plugin:shell|open', { path: dir })
-  } catch (e) {
-    console.error('Failed to open directory:', e)
+    await invoke('open_export_dir', { path: exportResult.value.path })
+  } catch (err) {
+    console.error('Failed to open export directory:', err)
   }
 }
 </script>
