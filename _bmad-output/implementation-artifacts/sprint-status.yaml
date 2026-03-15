@@ -68,7 +68,7 @@ development_status:
   CORE-004: done        # 错误处理与用户提示 [3pts]
   CORE-005: done        # 系统托盘菜单完善 [2pts]
   CORE-006: done        # API Key 加密存储 [3pts]
-  CORE-007: ready-for-dev  # 离线模式支持 [5pts]
+  CORE-007: ready-for-dev    # 离线模式支持 [5pts]
   CORE-008: backlog     # 跨平台兼容性测试 [3pts]
   epic-1-retrospective: done
 
