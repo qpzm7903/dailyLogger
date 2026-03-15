@@ -1,6 +1,6 @@
 # Story 5.2: REPORT-002 - 月报生成
 
-Status: in-progress
+Status: review
 
 ## Story
 
