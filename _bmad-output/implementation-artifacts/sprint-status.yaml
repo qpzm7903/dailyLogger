@@ -302,17 +302,14 @@ stories:
     epic: 周报月报功能
     priority: Medium
     points: 5
-    status: in-progress
+    status: done
     specPath: "specs/REPORT-002.md"
     storyPath: "_bmad-output/implementation-artifacts/REPORT-002.md"
-    description: 生成月度工作总结报告（代码审查修复：UI显示问题已修复，待测试）
+    description: 生成月度工作总结报告
     acceptanceCriteria:
       - 自动汇总本月记录
       - 生成结构化月报
       - 支持月度趋势分析
-    codeReviewFixes:
-      - 添加月报路径显示
-      - 添加 DailySummaryViewer 集成
 
   - id: REPORT-003
     title: 自定义报告周期
