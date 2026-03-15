@@ -57,7 +57,7 @@ Status: ready-for-dev
   - [x] 更新 `Settings` 结构体添加新字段
   - [x] 编写数据库迁移测试
 
-- [ ] Task 3: 实现窗口过滤逻辑 (AC: 2, 3)
+- [-] Task 3: 实现窗口过滤逻辑 (AC: 2, 3)
   - [ ] 创建 `should_capture_by_window()` 函数
   - [ ] 实现白名单匹配逻辑（模糊匹配窗口标题）
   - [ ] 实现黑名单匹配逻辑
