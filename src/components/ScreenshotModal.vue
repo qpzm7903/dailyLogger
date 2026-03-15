@@ -5,18 +5,35 @@
         <h2 class="text-lg font-semibold">截图详情</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
-      
+
       <div class="p-6 overflow-auto max-h-[70vh]">
-        <img 
-          v-if="screenshotData" 
-          :src="screenshotData" 
-          alt="Screenshot" 
+        <img
+          v-if="screenshotData"
+          :src="screenshotData"
+          alt="Screenshot"
           class="w-full h-auto rounded-lg"
         />
         <div v-else class="text-center py-8 text-gray-500">
           加载中...
         </div>
-        
+
+        <!-- Window Info Section (SMART-001 Task 6) -->
+        <div
+          v-if="windowInfo && (windowInfo.title || windowInfo.process_name)"
+          class="mt-4 p-3 bg-darker rounded-lg border border-gray-700 window-info-section"
+        >
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-sm">{{ getWindowIcon(windowInfo.process_name) }}</span>
+            <span class="text-xs text-gray-400">窗口</span>
+          </div>
+          <p v-if="windowInfo.title" class="text-sm text-gray-300 truncate" :title="windowInfo.title">
+            {{ windowInfo.title }}
+          </p>
+          <p v-if="windowInfo.process_name" class="text-xs text-gray-500 mt-1">
+            {{ windowInfo.process_name }}
+          </p>
+        </div>
+
         <div class="mt-4 p-4 bg-darker rounded-lg">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
@@ -33,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
 const props = defineProps({
@@ -59,6 +76,47 @@ const parseContent = (content) => {
   } catch {
     return content
   }
+}
+
+// SMART-001 Task 6: Extract window info from content JSON
+const windowInfo = computed(() => {
+  if (!props.record.content) return null
+  try {
+    const parsed = JSON.parse(props.record.content)
+    return parsed.active_window || null
+  } catch {
+    return null
+  }
+})
+
+// SMART-001 Task 6: Get icon based on process name
+const getWindowIcon = (processName) => {
+  if (!processName) return '🖥️'
+  const name = processName.toLowerCase()
+
+  // Common development tools
+  if (name.includes('code') || name.includes('vscode')) return '💻'
+  if (name.includes('idea') || name.includes('intellij')) return '☕'
+  if (name.includes('atom') || name.includes('sublime')) return '📝'
+
+  // Browsers
+  if (name.includes('chrome')) return '🌐'
+  if (name.includes('firefox')) return '🦊'
+  if (name.includes('edge') || name.includes('msedge')) return '🌊'
+  if (name.includes('safari')) return '🧭'
+
+  // Communication
+  if (name.includes('slack') || name.includes('discord') || name.includes('teams')) return '💬'
+  if (name.includes('wechat') || name.includes('微信')) return '💬'
+
+  // Terminal
+  if (name.includes('terminal') || name.includes('cmd') || name.includes('bash') || name.includes('powershell')) return '⌨️'
+
+  // Office
+  if (name.includes('word') || name.includes('excel') || name.includes('powerpoint')) return '📊'
+
+  // Default
+  return '🖥️'
 }
 
 const loadScreenshot = async () => {

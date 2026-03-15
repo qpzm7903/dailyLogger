@@ -124,6 +124,16 @@
                   </span>
                 </div>
               </div>
+              <!-- Window Info Display (SMART-001 Task 6) -->
+              <div
+                v-if="getWindowInfo(record) && (getWindowInfo(record).title || getWindowInfo(record).process_name)"
+                class="window-info flex items-center gap-1.5 mb-1.5 text-xs text-gray-400"
+              >
+                <span>{{ getWindowIcon(getWindowInfo(record)?.process_name) }}</span>
+                <span class="truncate max-w-[200px]" :title="getWindowInfo(record)?.title">
+                  {{ getWindowInfo(record)?.title || getWindowInfo(record)?.process_name }}
+                </span>
+              </div>
               <p class="text-sm text-gray-300 line-clamp-3">{{ record.content }}</p>
             </div>
           </div>
@@ -202,6 +212,47 @@ const formatTime = (timestamp) => {
   const h = date.getHours().toString().padStart(2, '0')
   const m = date.getMinutes().toString().padStart(2, '0')
   return `${h}:${m}`
+}
+
+// SMART-001 Task 6: Helper to parse window info from record content
+const getWindowInfo = (record) => {
+  if (!record.content) return null
+  try {
+    const parsed = JSON.parse(record.content)
+    return parsed.active_window || null
+  } catch {
+    return null
+  }
+}
+
+// SMART-001 Task 6: Get icon based on process name
+const getWindowIcon = (processName) => {
+  if (!processName) return '🖥️'
+  const name = processName.toLowerCase()
+
+  // Common development tools
+  if (name.includes('code') || name.includes('vscode')) return '💻'
+  if (name.includes('idea') || name.includes('intellij')) return '☕'
+  if (name.includes('atom') || name.includes('sublime')) return '📝'
+
+  // Browsers
+  if (name.includes('chrome')) return '🌐'
+  if (name.includes('firefox')) return '🦊'
+  if (name.includes('edge') || name.includes('msedge')) return '🌊'
+  if (name.includes('safari')) return '🧭'
+
+  // Communication
+  if (name.includes('slack') || name.includes('discord') || name.includes('teams')) return '💬'
+  if (name.includes('wechat') || name.includes('微信')) return '💬'
+
+  // Terminal
+  if (name.includes('terminal') || name.includes('cmd') || name.includes('bash') || name.includes('powershell')) return '⌨️'
+
+  // Office
+  if (name.includes('word') || name.includes('excel') || name.includes('powerpoint')) return '📊'
+
+  // Default
+  return '🖥️'
 }
 
 const updateTime = () => {
