@@ -1,6 +1,7 @@
 #[cfg(feature = "screenshot")]
 pub mod auto_perception;
 pub mod crypto;
+pub mod export;
 pub mod manual_entry;
 pub mod memory_storage;
 #[cfg(feature = "screenshot")]

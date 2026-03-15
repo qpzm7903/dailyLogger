@@ -21,6 +21,9 @@
         <button @click="showTagCloud = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           🏷️ 标签
         </button>
+        <button @click="showExport = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+          📤 导出
+        </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
@@ -208,6 +211,7 @@
     <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
     <TagCloud v-if="showTagCloud" @close="showTagCloud = false" @tagSelected="handleTagSelected" />
+    <ExportModal v-if="showExport" @close="showExport = false" />
     <Toast />
   </div>
 </template>
@@ -225,6 +229,7 @@ import LogViewer from './components/LogViewer.vue'
 import HistoryViewer from './components/HistoryViewer.vue'
 import SearchPanel from './components/SearchPanel.vue'
 import TagCloud from './components/TagCloud.vue'
+import ExportModal from './components/ExportModal.vue'
 import Toast from './components/Toast.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
@@ -245,6 +250,7 @@ const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
 const showSearch = ref(false)
 const showTagCloud = ref(false)
+const showExport = ref(false)
 const selectedScreenshot = ref(null)
 
 // AI-004: Tag filtering state

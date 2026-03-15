@@ -118,6 +118,8 @@ fn main() {
             daily_logger_lib::synthesis::get_default_summary_prompt,
             daily_logger_lib::ollama::get_ollama_models,
             daily_logger_lib::ollama::test_api_connection_with_ollama,
+            // DATA-004: 数据导出
+            daily_logger_lib::export::export_records,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::start_auto_capture,
             #[cfg(feature = "screenshot")]
