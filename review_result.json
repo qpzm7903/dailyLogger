@@ -1,24 +1,31 @@
 {
   "task_id": "SMART-002",
-  "title": "Task 2: 实现智能阈值调整算法",
+  "title": "Task 3: 扩展数据库 Schema (AC: 2, 3)",
   "verdict": "pass",
-  "score": 95,
-  "summary": "正确实现 AC2 智能阈值调整算法。calculate_optimal_silent_minutes() 函数根据用户行为模式（静默超时比例）自动调整阈值，符合渐进式调整策略（每次最多 5 分钟）和边界限制（10-60 分钟）。16 个测试用例覆盖所有验收条件和边界场景。格式化问题已修复。",
+  "score": 92,
+  "summary": "Implementation correctly fulfills Task 3 requirements. Added auto_adjust_silent and silent_adjustment_paused_until fields to settings table with proper migrations, struct updates, and comprehensive test coverage (8 new tests). Fixed minor formatting issues during review.",
   "issues": [
     {
       "severity": "low",
-      "description": "代码提交前未运行 cargo fmt，导致部分 assert! 宏格式不符合 rustfmt 规范",
-      "location": "silent_tracker.rs:670, 693, 714, 725, 792, 811",
-      "fix": "已运行 cargo fmt 修复"
+      "description": "Test isolation with global DB_CONNECTION causes intermittent failures with parallel execution (--test-threads=1 required)",
+      "location": "src-tauri/src/memory_storage/mod.rs",
+      "recommendation": "Pre-existing architectural issue, not introduced by this change. Tests pass with single-threaded execution."
+    },
+    {
+      "severity": "low",
+      "description": "Formatting inconsistency in assert_eq! macros (fixed during review)",
+      "location": "src-tauri/src/memory_storage/mod.rs:1092, 1168",
+      "recommendation": "Fixed by running cargo fmt"
     }
   ],
   "strengths": [
-    "测试覆盖全面：16 个测试用例覆盖 AC2 所有场景（深度工作/活跃工作/平衡状态）和边界条件（最小/最大阈值、边界比例值 0.7/0.3、不足数据）",
-    "渐进式调整实现正确：MAX_ADJUSTMENT = 5 确保每次调整最多 5 分钟，避免用户体验突变",
-    "边界保护完整：MIN_THRESHOLD=10, MAX_THRESHOLD=60 防止极端值",
-    "常量公开暴露：pub const 便于其他模块引用和测试验证",
-    "文档注释清晰：函数文档说明算法逻辑和参数/返回值",
-    "Default trait 正确使用 DEFAULT_THRESHOLD"
+    "Correctly implemented all 5 required changes: ALTER TABLE migrations, Settings struct fields, SELECT query, UPDATE query, test helpers",
+    "Used idempotent migration pattern (let _ = conn.execute()) consistent with existing codebase",
+    "Default value of 1 (true) for auto_adjust_silent matches AC3 requirement for auto-adjust enabled by default",
+    "Proper type conversions for boolean fields (INTEGER 0/1 <-> Option<bool>)",
+    "8 comprehensive tests covering: default values, persistence (true/false), clearing values, RFC3339 format validation",
+    "Updated test helpers in all 3 modules (memory_storage, manual_entry, synthesis) to maintain consistency",
+    "Clear comments marking SMART-002 changes"
   ],
   "recommendation": "approve"
 }
