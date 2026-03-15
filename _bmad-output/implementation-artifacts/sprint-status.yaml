@@ -190,7 +190,7 @@ stories:
     epic: 智能捕获优化
     priority: Medium
     points: 3
-    status: in-progress
+    status: done
     specPath: "specs/SMART-003.md"
     storyPath: "_bmad-output/implementation-artifacts/SMART-003.md"
     description: 自动识别用户工作时间，非工作时间暂停捕获
