@@ -150,6 +150,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     ); // JSON array of custom tag categories
 
+    // AI-005: Ollama 本地模型支持
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN is_ollama INTEGER DEFAULT 0",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
     conn.execute(
@@ -295,6 +301,8 @@ pub struct Settings {
     pub selected_monitor_index: Option<i32>, // For "secondary" mode
     // AI-004: 工作分类标签配置
     pub tag_categories: Option<String>, // JSON: Vec<String> of custom tag categories
+    // AI-005: Ollama 本地模型支持
+    pub is_ollama: Option<bool>,
 }
 
 pub fn add_record(
@@ -714,7 +722,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 auto_adjust_silent, silent_adjustment_paused_until,
                 auto_detect_work_time, use_custom_work_time,
                 custom_work_time_start, custom_work_time_end, learned_work_time,
-                capture_mode, selected_monitor_index, tag_categories
+                capture_mode, selected_monitor_index, tag_categories, is_ollama
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -750,6 +758,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 capture_mode: row.get(25)?,
                 selected_monitor_index: row.get(26)?,
                 tag_categories: row.get(27)?,
+                is_ollama: row.get::<_, Option<i32>>(28)?.map(|v| v != 0),
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -822,7 +831,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             learned_work_time = ?25,
             capture_mode = ?26,
             selected_monitor_index = ?27,
-            tag_categories = ?28
+            tag_categories = ?28,
+            is_ollama = ?29
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -857,6 +867,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.capture_mode,
             settings.selected_monitor_index,
             settings.tag_categories,
+            settings.is_ollama.map(|v| if v { 1 } else { 0 }),
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1216,7 +1227,8 @@ mod tests {
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
-                tag_categories TEXT DEFAULT '[]'
+                tag_categories TEXT DEFAULT '[]',
+                is_ollama INTEGER DEFAULT 0
             )",
             [],
         )
@@ -1273,7 +1285,8 @@ mod tests {
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
-                tag_categories TEXT DEFAULT '[]'
+                tag_categories TEXT DEFAULT '[]',
+                is_ollama INTEGER DEFAULT 0
             )",
             [],
         )

@@ -643,26 +643,34 @@ async fn analyze_screen(
     );
 
     let start = std::time::Instant::now();
-    let response = client
+
+    // Check if this is an Ollama endpoint
+    let is_ollama = crate::ollama::is_ollama_endpoint(&settings.api_base_url);
+
+    let mut request = client
         .post(&endpoint)
-        .header("Authorization", format!("Bearer {}", settings.api_key))
         .header("Content-Type", "application/json")
-        .json(&request_body)
-        .send()
-        .await
-        .map_err(|e| {
-            let elapsed_ms = start.elapsed().as_millis();
-            tracing::error!(
-                "{}",
-                serde_json::json!({
-                    "event": "llm_error",
-                    "caller": "analyze_screen",
-                    "error": format!("API request failed: {}", e),
-                    "elapsed_ms": elapsed_ms,
-                })
-            );
-            format!("API request failed: {}", e)
-        })?;
+        .json(&request_body);
+
+    // Only add Authorization header if API key is provided (not required for Ollama)
+    if !settings.api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {}", settings.api_key));
+    }
+
+    let response = request.send().await.map_err(|e| {
+        let elapsed_ms = start.elapsed().as_millis();
+        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "analyze_screen",
+                "error": error_msg,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        error_msg
+    })?;
     let elapsed_ms = start.elapsed().as_millis();
 
     if !response.status().is_success() {
@@ -1546,7 +1554,8 @@ mod tests {
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
-                tag_categories TEXT DEFAULT '[]'
+                tag_categories TEXT DEFAULT '[]',
+                is_ollama INTEGER DEFAULT 0
             )",
             [],
         )
@@ -1825,7 +1834,8 @@ mod tests {
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
-                tag_categories TEXT DEFAULT '[]'
+                tag_categories TEXT DEFAULT '[]',
+                is_ollama INTEGER DEFAULT 0
             )",
             [],
         )

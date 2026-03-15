@@ -93,7 +93,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .api_base_url
         .clone()
         .ok_or("API Base URL not configured")?;
-    let api_key = settings.api_key.clone().ok_or("API Key not configured")?;
+    let api_key = settings.api_key.clone().unwrap_or_default();
     // 日报生成优先使用 summary_model_name，未配置时回退到 model_name
     let model_name = settings
         .summary_model_name
@@ -102,8 +102,12 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .or_else(|| settings.model_name.clone())
         .unwrap_or_else(|| "gpt-4o".to_string());
 
-    if api_key.is_empty() {
-        return Err("API Key is empty".to_string());
+    // Check if this is an Ollama endpoint (doesn't require API Key)
+    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
+
+    // For non-Ollama endpoints, API Key is required
+    if !is_ollama && api_key.is_empty() {
+        return Err("API Key is required for non-Ollama endpoints".to_string());
     }
 
     // Get all today's records
@@ -159,26 +163,30 @@ pub async fn generate_daily_summary() -> Result<String, String> {
     );
 
     let start = std::time::Instant::now();
-    let response = client
+    let mut request = client
         .post(&endpoint)
-        .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
-        .json(&request_body)
-        .send()
-        .await
-        .map_err(|e| {
-            let elapsed_ms = start.elapsed().as_millis();
-            tracing::error!(
-                "{}",
-                serde_json::json!({
-                    "event": "llm_error",
-                    "caller": "generate_daily_summary",
-                    "error": format!("API request failed: {}", e),
-                    "elapsed_ms": elapsed_ms,
-                })
-            );
-            format!("API request failed: {}", e)
-        })?;
+        .json(&request_body);
+
+    // Only add Authorization header if API key is provided (not required for Ollama)
+    if !api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {}", api_key));
+    }
+
+    let response = request.send().await.map_err(|e| {
+        let elapsed_ms = start.elapsed().as_millis();
+        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_daily_summary",
+                "error": error_msg,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        error_msg
+    })?;
     let elapsed_ms = start.elapsed().as_millis();
 
     if !response.status().is_success() {
@@ -289,6 +297,7 @@ mod tests {
             capture_mode: None,
             selected_monitor_index: None,
             tag_categories: None,
+            is_ollama: None,
         }
     }
 

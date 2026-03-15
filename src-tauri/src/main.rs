@@ -107,6 +107,8 @@ fn main() {
             daily_logger_lib::memory_storage::get_records_by_tag,
             daily_logger_lib::synthesis::generate_daily_summary,
             daily_logger_lib::synthesis::get_default_summary_prompt,
+            daily_logger_lib::ollama::get_ollama_models,
+            daily_logger_lib::ollama::test_api_connection_with_ollama,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::start_auto_capture,
             #[cfg(feature = "screenshot")]

@@ -12,15 +12,25 @@
           <div class="space-y-3">
             <div>
               <label class="text-xs text-gray-300 block mb-1">Base URL</label>
-              <input
-                v-model="settings.api_base_url"
-                type="text"
-                placeholder="https://api.openai.com/v1"
-                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
-              />
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="settings.api_base_url"
+                  type="text"
+                  placeholder="https://api.openai.com/v1"
+                  class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+                <!-- Ollama status indicator -->
+                <span v-if="isOllama" class="text-xs text-green-400 whitespace-nowrap">🦙 Ollama</span>
+              </div>
+              <span class="text-xs text-gray-500 mt-1 block">
+                Ollama 用户请填写 http://localhost:11434/v1
+              </span>
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">API Key</label>
+              <label class="text-xs text-gray-300 block mb-1">
+                API Key
+                <span v-if="isOllama" class="text-gray-500">(Ollama 可留空)</span>
+              </label>
               <div class="relative">
                 <input
                   v-model="settings.api_key"
@@ -38,17 +48,44 @@
             </div>
             <!-- Test Connection Button -->
             <div class="pt-2">
-              <button
-                @click="testConnection"
-                :disabled="isTestingConnection || !settings.api_base_url || !settings.api_key || !settings.model_name"
-                class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-              >
-                {{ isTestingConnection ? '测试中...' : '测试连接' }}
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  @click="testConnection"
+                  :disabled="isTestingConnection || !settings.api_base_url || !settings.model_name || (!isOllama && !settings.api_key)"
+                  class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                >
+                  {{ isTestingConnection ? '测试中...' : '测试连接' }}
+                </button>
+                <!-- Ollama model fetch button -->
+                <button
+                  v-if="isOllama"
+                  @click="fetchOllamaModels"
+                  :disabled="isLoadingOllamaModels || !settings.api_base_url"
+                  class="px-3 py-1.5 text-sm bg-purple-700 hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                >
+                  {{ isLoadingOllamaModels ? '获取中...' : '获取模型列表' }}
+                </button>
+              </div>
               <span v-if="connectionTestResult" :class="connectionTestResult.success ? 'text-green-400' : 'text-red-400'" class="ml-2 text-xs">
                 {{ connectionTestResult.message }}
                 <span v-if="connectionTestResult.latency_ms">({{ connectionTestResult.latency_ms }}ms)</span>
               </span>
+              <!-- Ollama model list -->
+              <div v-if="isOllama && ollamaModels.length > 0" class="mt-3">
+                <label class="text-xs text-gray-300 block mb-1">选择模型</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="model in ollamaModels"
+                    :key="model"
+                    @click="selectOllamaModel(model)"
+                    class="px-2 py-1 text-xs rounded border transition-colors"
+                    :class="settings.model_name === model ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+                  >
+                    {{ model }}
+                  </button>
+                </div>
+              </div>
+              <p v-if="ollamaModelError" class="text-xs text-red-400 mt-1">{{ ollamaModelError }}</p>
             </div>
           </div>
         </div>
@@ -759,7 +796,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeFile, writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
@@ -884,7 +921,9 @@ const settings = ref({
   capture_mode: 'primary',
   selected_monitor_index: 0,
   // AI-004: Tag categories
-  tag_categories: ''
+  tag_categories: '',
+  // AI-005: Ollama support
+  is_ollama: false
 })
 
 // SMART-003: Work time status for learning progress display
@@ -1130,8 +1169,15 @@ const resetTagCategories = () => {
 
 // API Connection test
 const testConnection = async () => {
-  if (!settings.value.api_base_url || !settings.value.api_key || !settings.value.model_name) {
-    showError('请先填写 API Base URL、API Key 和分析模型')
+  if (!settings.value.api_base_url || !settings.value.model_name) {
+    showError('请先填写 API Base URL 和分析模型')
+    return
+  }
+
+  // For non-Ollama endpoints, API Key is required
+  const isOllama = isOllamaEndpoint(settings.value.api_base_url)
+  if (!isOllama && !settings.value.api_key) {
+    showError('请先填写 API Key')
     return
   }
 
@@ -1139,9 +1185,9 @@ const testConnection = async () => {
   connectionTestResult.value = null
 
   try {
-    const result = await invoke('test_api_connection', {
+    const result = await invoke('test_api_connection_with_ollama', {
       apiBaseUrl: settings.value.api_base_url,
-      apiKey: settings.value.api_key,
+      apiKey: settings.value.api_key || null,
       modelName: settings.value.model_name
     })
     connectionTestResult.value = result
@@ -1195,6 +1241,64 @@ const getModelInfo = async (type) => {
   } finally {
     isLoadingModelInfo.value = false
   }
+}
+
+// AI-005: Ollama support
+const ollamaModels = ref([])
+const isLoadingOllamaModels = ref(false)
+const ollamaModelError = ref('')
+
+// Check if the current endpoint is an Ollama endpoint
+const isOllamaEndpoint = (url) => {
+  if (!url) return false
+  const urlLower = url.toLowerCase()
+  return urlLower.includes('localhost:11434') ||
+         urlLower.includes('127.0.0.1:11434') ||
+         urlLower.includes(':11434/v1') ||
+         urlLower.includes(':11434/')
+}
+
+// Computed property for Ollama status
+const isOllama = computed(() => isOllamaEndpoint(settings.value.api_base_url))
+
+// Fetch available models from Ollama
+const fetchOllamaModels = async () => {
+  if (!settings.value.api_base_url) {
+    showError('请先填写 Base URL')
+    return
+  }
+
+  isLoadingOllamaModels.value = true
+  ollamaModelError.value = ''
+
+  try {
+    const result = await invoke('get_ollama_models', {
+      baseUrl: settings.value.api_base_url
+    })
+
+    if (result.success) {
+      ollamaModels.value = result.models
+      if (result.models.length === 0) {
+        ollamaModelError.value = '未找到已安装的模型，请使用 ollama pull <model> 安装'
+      } else {
+        showSuccess(`找到 ${result.models.length} 个模型`)
+      }
+    } else {
+      ollamaModelError.value = result.message
+      showError(result.message)
+    }
+  } catch (err) {
+    console.error('Failed to fetch Ollama models:', err)
+    ollamaModelError.value = String(err)
+    showError(err)
+  } finally {
+    isLoadingOllamaModels.value = false
+  }
+}
+
+// Select an Ollama model
+const selectOllamaModel = (modelName) => {
+  settings.value.model_name = modelName
 }
 
 // Summary Prompt functions

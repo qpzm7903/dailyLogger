@@ -6,6 +6,7 @@ pub mod memory_storage;
 #[cfg(feature = "screenshot")]
 pub mod monitor;
 pub mod monitor_types;
+pub mod ollama;
 pub mod silent_tracker;
 pub mod synthesis;
 pub mod window_info;
