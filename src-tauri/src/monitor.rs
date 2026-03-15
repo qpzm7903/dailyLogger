@@ -18,31 +18,34 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
         return Err("No monitors found".to_string());
     }
 
-    // Find primary monitor (usually the first one)
-    let primary_monitor = monitors
-        .iter()
-        .find(|m| {
-            // On most systems, primary monitor has position (0, 0)
-            // xcap doesn't have a direct is_primary method, so we check position
-            m.position().0 == 0 && m.position().1 == 0
-        })
-        .map(|m| m.id())
-        .or_else(|| monitors.first().map(|m| m.id())); // Fallback to first monitor
-
     let result: Vec<MonitorDetail> = monitors
         .iter()
         .enumerate()
         .map(|(index, m)| {
-            let (x, y) = m.position();
-            let (width, height) = m.resolution();
+            // Use friendly_name for better display, fallback to name or default
+            let name = m
+                .friendly_name()
+                .or_else(|_| m.name())
+                .unwrap_or_else(|_| format!("Monitor {}", index + 1));
+
+            // xcap 0.9.x uses separate x(), y(), width(), height() methods
+            // All return XCapResult, so we unwrap with sensible defaults
+            let x = m.x().unwrap_or(0);
+            let y = m.y().unwrap_or(0);
+            let width = m.width().unwrap_or(0);
+            let height = m.height().unwrap_or(0);
+
+            // xcap 0.9.x provides is_primary() method
+            let is_primary = m.is_primary().unwrap_or(index == 0);
+
             MonitorDetail {
                 index,
-                name: m.name().unwrap_or_else(|| format!("Monitor {}", index + 1)),
+                name,
                 width,
                 height,
                 x,
                 y,
-                is_primary: primary_monitor.map_or(index == 0, |id| m.id() == id),
+                is_primary,
             }
         })
         .collect();
