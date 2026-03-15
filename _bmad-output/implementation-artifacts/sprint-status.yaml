@@ -37,7 +37,7 @@
 # - Latest release: v1.8.1
 
 generated: 2026-03-15
-last_updated: "2026-03-15T23:30:00Z"
+last_updated: "2026-03-15T22:55:00Z"
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -69,7 +69,7 @@ development_status:
   CORE-005: done        # 系统托盘菜单完善 [2pts]
   CORE-006: done        # API Key 加密存储 [3pts]
   CORE-007: done           # 离线模式支持 [5pts]
-  CORE-008: review   # 跨平台兼容性测试 [3pts]
+  CORE-008: in-progress   # 跨平台兼容性测试 [3pts] — code review: 大部分 AC 未实现，回退
   epic-1-retrospective: done
 
   # ========================================
