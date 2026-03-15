@@ -8,6 +8,14 @@
         <h1 class="text-xl font-semibold">DailyLogger</h1>
       </div>
       <div class="flex items-center gap-4">
+        <!-- CORE-007: Network status indicator -->
+        <div v-if="!isOnline" class="flex items-center gap-1.5 px-2 py-1 bg-yellow-600/20 text-yellow-400 rounded-lg text-xs">
+          <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+          <span>离线</span>
+          <span v-if="offlineQueueCount > 0" class="text-yellow-300">
+            ({{ offlineQueueCount }} 待处理)
+          </span>
+        </div>
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
         <button @click="showLogViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           🗒️ 日志
@@ -327,6 +335,10 @@ const selectedScreenshot = ref(null)
 const selectedTagFilter = ref('')
 const allTags = ref([])
 
+// CORE-007: Network status
+const isOnline = ref(true)
+const offlineQueueCount = ref(0)
+
 // Computed
 const screenshotCount = computed(() => {
   return todayRecords.value.filter(r => r.source_type === 'auto' && r.screenshot_path).length
@@ -595,6 +607,18 @@ const loadTodayRecords = async () => {
     const records = await invoke('get_today_records')
     todayRecords.value = records
     quickNotesCount.value = records.filter(r => r.source_type === 'manual').length
+
+    // CORE-007: Check network status and queue
+    try {
+      const status = await invoke('check_network_status')
+      isOnline.value = status === 'Online'
+
+      const queueStatus = await invoke('get_offline_queue_status')
+      offlineQueueCount.value = queueStatus.pending_tasks
+    } catch (e) {
+      console.error('Failed to check network status:', e)
+      isOnline.value = false
+    }
   } catch (err) {
     console.error('Failed to load records:', err)
   }

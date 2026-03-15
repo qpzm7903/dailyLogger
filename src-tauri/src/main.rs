@@ -145,6 +145,10 @@ fn main() {
             daily_logger_lib::auto_perception::get_work_time_status,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::monitor::get_monitors,
+            // CORE-007: 离线模式支持
+            daily_logger_lib::network::check_network_status,
+            daily_logger_lib::network::get_offline_queue_status,
+            daily_logger_lib::network::process_offline_queue,
         ])
         .setup(|app| {
             tracing::info!("Application setup complete");

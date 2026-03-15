@@ -1,6 +1,6 @@
 # Story 1.7: 离线模式支持
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -12,30 +12,30 @@ so that 即使网络不稳定或完全离线也能记录工作内容，联网后
 
 ## Acceptance Criteria
 
-1. [ ] 应用在检测到网络断开时显示离线状态提示 (AC: #1)
-2. [ ] 离线状态下截图仍可保存到本地 (AC: #1)
-3. [ ] 离线状态下手动速记仍可保存到本地 (AC: #1)
-4. [ ] 离线状态的 AI 分析请求自动加入本地队列 (AC: #2)
-5. [ ] 网络恢复后自动重试队列中的 AI 分析请求 (AC: #2)
-6. [ ] 离线状态不影响已有记录的查看和浏览 (AC: #3)
-7. [ ] 离线状态下日报生成功能给出明确提示 (AC: #4)
+1. [x] 应用在检测到网络断开时显示离线状态提示 (AC: #1)
+2. [x] 离线状态下截图仍可保存到本地 (AC: #1)
+3. [x] 离线状态下手动速记仍可保存到本地 (AC: #1)
+4. [x] 离线状态的 AI 分析请求自动加入本地队列 (AC: #2)
+5. [x] 网络恢复后自动重试队列中的 AI 分析请求 (AC: #2)
+6. [x] 离线状态不影响已有记录的查看和浏览 (AC: #3)
+7. [x] 离线状态下日报生成功能给出明确提示 (AC: #4)
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 网络状态检测模块 (AC: #1)
-  - [ ] Subtask 1.1: 实现网络状态检测 (使用 reqwest 或 native-tls)
-  - [ ] Subtask 1.2: 前端显示离线状态指示器
-  - [ ] Subtask 1.3: 离线/在线状态切换事件通知
-- [ ] Task 2: 离线队列管理 (AC: #2)
-  - [ ] Subtask 2.1: 设计离线任务队列数据结构 (SQLite 表)
-  - [ ] Subtask 2.2: 实现入队/出队逻辑
-  - [ ] Subtask 2.3: 网络恢复后自动重试 (指数退避)
-- [ ] Task 3: 离线兼容性改造 (AC: #3, #4)
-  - [ ] Subtask 3.1: 查询功能在离线时正常工作
-  - [ ] Subtask 3.2: 日报生成在离线时提示用户
-- [ ] Task 4: 用户体验优化
-  - [ ] Subtask 4.1: 离线状态下的友好提示文案
-  - [ ] Subtask 4.2: 队列中任务数量显示
+- [x] Task 1: 网络状态检测模块 (AC: #1)
+  - [x] Subtask 1.1: 实现网络状态检测 (使用 reqwest 或 native-tls)
+  - [x] Subtask 1.2: 前端显示离线状态指示器
+  - [x] Subtask 1.3: 离线/在线状态切换事件通知
+- [x] Task 2: 离线队列管理 (AC: #2)
+  - [x] Subtask 2.1: 设计离线任务队列数据结构 (SQLite 表)
+  - [x] Subtask 2.2: 实现入队/出队逻辑
+  - [x] Subtask 2.3: 网络恢复后自动重试 (指数退避)
+- [x] Task 3: 离线兼容性改造 (AC: #3, #4)
+  - [x] Subtask 3.1: 查询功能在离线时正常工作
+  - [x] Subtask 3.2: 日报生成在离线时提示用户
+- [x] Task 4: 用户体验优化
+  - [x] Subtask 4.1: 离线状态下的友好提示文案
+  - [x] Subtask 4.2: 队列中任务数量显示
 
 ## Dev Notes
 
@@ -105,4 +105,18 @@ MiniMax-M2.5
 
 ### Completion Notes List
 
+- 实现了网络状态检测模块 (src-tauri/src/network.rs)
+- 实现了离线队列表的创建和 CRUD 操作
+- 在 auto_perception 模块中添加了离线检测和任务队列功能
+- 在 synthesis 模块中添加了日报/周报/月报/自定义报告的离线检测
+- 在前端 App.vue 中添加了离线状态指示器和队列数量显示
+
 ### File List
+
+- src-tauri/src/network.rs (新增)
+- src-tauri/src/lib.rs (添加 network 模块引用)
+- src-tauri/src/main.rs (注册新命令)
+- src-tauri/src/memory_storage/mod.rs (初始化离线队列表)
+- src-tauri/src/auto_perception/mod.rs (离线检测和队列)
+- src-tauri/src/synthesis/mod.rs (离线检测)
+- src/App.vue (离线状态指示器)

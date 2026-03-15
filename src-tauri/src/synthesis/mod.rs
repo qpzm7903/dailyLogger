@@ -191,6 +191,26 @@ pub fn generate_summary_filename(settings: &Settings) -> String {
 
 #[command]
 pub async fn generate_daily_summary() -> Result<String, String> {
+    // CORE-007: Check network status first
+    let network_status =
+        crate::network::check_network_status().unwrap_or(crate::network::NetworkStatus::Offline);
+    if network_status == crate::network::NetworkStatus::Offline {
+        // Check queue status
+        let queue_status = crate::network::get_offline_queue_status().ok();
+        let pending_count = queue_status.map(|s| s.pending_tasks).unwrap_or(0);
+
+        if pending_count > 0 {
+            return Err(format!(
+                "当前处于离线模式，日报生成需要网络连接。\n\n离线队列中还有 {} 个待处理任务，联网后自动重试。\n请检查网络连接后重试。",
+                pending_count
+            ));
+        } else {
+            return Err(
+                "当前处于离线模式，日报生成需要网络连接。\n\n请检查网络连接后重试。".to_string(),
+            );
+        }
+    }
+
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
@@ -888,6 +908,15 @@ pub fn generate_weekly_report_filename(week_start_day: i32) -> String {
 /// Generate weekly report - REPORT-001
 #[command]
 pub async fn generate_weekly_report() -> Result<String, String> {
+    // CORE-007: Check network status first
+    let network_status =
+        crate::network::check_network_status().unwrap_or(crate::network::NetworkStatus::Offline);
+    if network_status == crate::network::NetworkStatus::Offline {
+        return Err(
+            "当前处于离线模式，周报生成需要网络连接。\n\n请检查网络连接后重试。".to_string(),
+        );
+    }
+
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
@@ -1068,6 +1097,15 @@ pub async fn generate_weekly_report() -> Result<String, String> {
 /// Generate monthly report - REPORT-002
 #[command]
 pub async fn generate_monthly_report() -> Result<String, String> {
+    // CORE-007: Check network status first
+    let network_status =
+        crate::network::check_network_status().unwrap_or(crate::network::NetworkStatus::Offline);
+    if network_status == crate::network::NetworkStatus::Offline {
+        return Err(
+            "当前处于离线模式，月报生成需要网络连接。\n\n请检查网络连接后重试。".to_string(),
+        );
+    }
+
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
@@ -1294,6 +1332,15 @@ pub async fn generate_custom_report(
     end_date: String,
     report_name: Option<String>,
 ) -> Result<String, String> {
+    // CORE-007: Check network status first
+    let network_status =
+        crate::network::check_network_status().unwrap_or(crate::network::NetworkStatus::Offline);
+    if network_status == crate::network::NetworkStatus::Offline {
+        return Err(
+            "当前处于离线模式，报告生成需要网络连接。\n\n请检查网络连接后重试。".to_string(),
+        );
+    }
+
     // Validate date format
     let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
         .map_err(|e| format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e))?;

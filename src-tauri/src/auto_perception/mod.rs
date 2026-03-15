@@ -810,6 +810,64 @@ async fn capture_and_store() -> Result<(), String> {
 
     let screenshot_path = save_screenshot(&image_base64);
 
+    // CORE-007: Check network status and queue AI analysis if offline
+    let network_status =
+        crate::network::check_network_status().unwrap_or(crate::network::NetworkStatus::Offline);
+
+    if network_status == crate::network::NetworkStatus::Offline {
+        // Queue the AI analysis task for later processing
+        let task_payload = serde_json::json!({
+            "image_base64": image_base64,
+            "settings": {
+                "api_base_url": settings.api_base_url,
+                "api_key": settings.api_key,
+                "model_name": settings.model_name,
+                "analysis_prompt": settings.analysis_prompt,
+            },
+            "screenshot_path": screenshot_path,
+        });
+
+        let db = crate::memory_storage::DB_CONNECTION
+            .lock()
+            .map_err(|e| format!("Failed to lock DB: {}", e))?;
+        let conn = db.as_ref().ok_or("Database not initialized")?;
+
+        crate::network::add_offline_task("ai_analysis", &task_payload.to_string(), conn)
+            .map_err(|e| format!("Failed to queue offline task: {}", e))?;
+
+        tracing::info!("Network offline - AI analysis queued for later");
+
+        // Still save the record with placeholder content
+        let content = serde_json::json!({
+            "current_focus": "[离线模式 - 待分析]",
+            "active_software": "[离线模式]",
+            "context_keywords": [],
+            "active_window": {
+                "title": active_window.title,
+                "process_name": active_window.process_name
+            },
+            "monitor_info": {
+                "count": monitor_info.count,
+                "capture_mode": capture_mode.to_string()
+            }
+        })
+        .to_string();
+
+        let monitor_info_json = serde_json::to_string(&monitor_info).ok();
+
+        memory_storage::add_record(
+            "auto",
+            &content,
+            screenshot_path.as_deref(),
+            monitor_info_json.as_deref(),
+            None,
+        )
+        .map_err(|e| format!("Failed to store capture: {}", e))?;
+
+        return Ok(());
+    }
+
+    // Online: proceed with normal AI analysis
     let analysis = analyze_screen(&settings, &image_base64).await?;
 
     // SMART-001: Include window info in content JSON (AC1)
