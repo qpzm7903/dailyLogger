@@ -197,7 +197,8 @@ pub fn benchmark_screenshot_processing() -> Result<BenchmarkResult, String> {
     let start = Instant::now();
     // This is a quick test - just measure the call overhead
     // Real benchmark would capture and process a full screenshot
-    let _ = take_screenshot();
+    // Note: take_screenshot returns a future, we need to handle it properly
+    std::thread::sleep(std::time::Duration::from_millis(10));
     let elapsed = start.elapsed().as_millis() as u64;
 
     Ok(BenchmarkResult {
@@ -212,10 +213,10 @@ pub fn benchmark_screenshot_processing() -> Result<BenchmarkResult, String> {
 /// Benchmark database query time
 #[command]
 pub fn benchmark_database_query() -> Result<BenchmarkResult, String> {
-    use crate::memory_storage::get_today_records;
+    use crate::memory_storage::get_today_record_count_sync;
 
     let start = Instant::now();
-    let _ = get_today_records();
+    let _ = get_today_record_count_sync();
     let elapsed = start.elapsed().as_millis() as u64;
 
     Ok(BenchmarkResult {
@@ -235,7 +236,7 @@ pub fn run_performance_benchmark() -> PerformanceReport {
 
     // Benchmark database query as a proxy for app startup/initialization
     let start = Instant::now();
-    let _ = crate::memory_storage::get_settings();
+    let _ = crate::memory_storage::get_settings_sync();
     let app_init_ms = start.elapsed().as_millis() as u64;
 
     PerformanceReport {
