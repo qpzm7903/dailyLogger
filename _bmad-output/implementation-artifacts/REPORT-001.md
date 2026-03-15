@@ -212,21 +212,23 @@ fn finds_records_at_week_boundaries() {
 - 前端复用现有的 `DailySummaryViewer.vue` 组件模式，UI 一致性好
 
 **需要改进的地方**:
-- Task 2.5 单元测试未完成，留下技术债务
-- Task 4 端到端测试未启动
-- 代码审查后发现缺少测试，需要补测
+- ~~Task 2.5 单元测试未完成~~ → 已在 Code Review 2 中补充 12 个测试
+- Task 4 端到端测试未启动（优先级 LOW，延后处理）
+- 初始开发阶段应同步编写测试，避免在审查阶段补测
 
 ### 技术债务
 
 | 项目 | 优先级 | 状态 |
 |------|--------|------|
-| get_week_records_sync 单元测试 | MEDIUM | 待完成 |
+| ~~get_week_records_sync 单元测试~~ | MEDIUM | ✅ 已完成 (Code Review 2 中补充) |
 | 前端 Vitest 测试 | LOW | 待完成 |
 | Rust 集成测试 | LOW | 待完成 |
+| ~~generate_weekly_report_filename 测试~~ | MEDIUM | ✅ 已完成 (Code Review 2 中补充) |
+| ~~get_default_weekly_report_prompt 测试~~ | MEDIUM | ✅ 已完成 (Code Review 2 中补充) |
 
 ### 下一步行动
 
-- [ ] 补充 Task 2.5 单元测试
+- [x] 补充 Task 2.5 单元测试 (已在 Code Review 2 中完成，新增 12 个测试)
 - [ ] 添加前端 Vitest 测试
 - [ ] 添加 Rust 集成测试
 
