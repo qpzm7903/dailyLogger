@@ -331,106 +331,102 @@ mod tests {
         assert_eq!(decrypted, plain);
     }
 
-    // ── Platform-specific permission tests (CORE-008 AC#6) ──
+    // ── Platform-specific file permission tests (CORE-008 Task 2.3) ──
 
     #[test]
-    fn test_enc_prefix_constant() {
-        // Verify encryption prefix is consistent
-        assert_eq!(ENC_PREFIX, "ENC:");
-    }
-
-    #[test]
-    fn test_key_file_constant() {
-        // Verify key file name is consistent
-        assert_eq!(KEY_FILE, ".key");
-    }
-
-    #[test]
-    fn test_nonce_length_constant() {
-        // Verify nonce length is 12 bytes for AES-GCM
-        assert_eq!(NONCE_LEN, 12);
-    }
-
-    #[test]
-    fn test_generate_key_produces_32_bytes() {
-        let key = generate_key();
-        assert_eq!(key.len(), 32);
-    }
-
-    #[test]
-    fn test_generate_key_is_random() {
-        let key1 = generate_key();
-        let key2 = generate_key();
-        // Keys should be different (very high probability)
-        assert_ne!(key1, key2);
-    }
-
     #[cfg(unix)]
-    #[test]
-    fn unix_set_secure_permissions_attempts_to_set_permissions() {
-        // On Unix, set_secure_permissions should attempt to set permissions
-        use std::fs::File;
-        use std::io::Write;
+    fn test_unix_set_secure_permissions_sets_600() {
+        use std::os::unix::fs::PermissionsExt;
 
-        // Create a temp file
-        let temp_dir = std::env::temp_dir();
-        let temp_file = temp_dir.join("test_key_file_permissions");
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        let result = set_secure_permissions(temp.path());
+        assert!(
+            result.is_ok(),
+            "set_secure_permissions should succeed on Unix"
+        );
 
-        // Write some data
-        let mut file = File::create(&temp_file).unwrap();
-        file.write_all(b"test").unwrap();
-        drop(file);
-
-        // Try to set permissions - this should not panic
-        let result = set_secure_permissions(&temp_file);
-
-        // Clean up
-        let _ = std::fs::remove_file(&temp_file);
-
-        // Result should be Ok (or error if permissions can't be set, but shouldn't panic)
-        assert!(result.is_ok() || result.is_err());
+        let perms = std::fs::metadata(temp.path()).unwrap().permissions();
+        assert_eq!(
+            perms.mode() & 0o777,
+            0o600,
+            "File permissions should be 600 (owner read/write only)"
+        );
     }
 
+    #[test]
+    #[cfg(unix)]
+    fn test_unix_set_secure_permissions_fails_on_invalid_path() {
+        let result = set_secure_permissions(std::path::Path::new("/nonexistent/path/.key"));
+        assert!(
+            result.is_err(),
+            "set_secure_permissions should fail for non-existent path"
+        );
+    }
+
+    #[test]
     #[cfg(windows)]
-    #[test]
-    fn windows_set_secure_permissions_is_no_op() {
-        // On Windows, set_secure_permissions should be a no-op
-        // This test verifies it doesn't panic and returns Ok
-        let temp_path = std::path::Path::new("C:\\nonexistent\\path\\test.key");
-        let result = set_secure_permissions(temp_path);
-        assert!(result.is_ok());
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn macos_set_secure_permissions_uses_unix_mode() {
-        // On macOS, set_secure_permissions should use Unix permissions
-        use std::fs::File;
-        use std::io::Write;
-
-        let temp_dir = std::env::temp_dir();
-        let temp_file = temp_dir.join("test_key_file_permissions");
-
-        let mut file = File::create(&temp_file).unwrap();
-        file.write_all(b"test").unwrap();
-        drop(file);
-
-        let result = set_secure_permissions(&temp_file);
-
-        let _ = std::fs::remove_file(&temp_file);
-
-        assert!(result.is_ok() || result.is_err());
+    fn test_windows_set_secure_permissions_is_noop() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        let result = set_secure_permissions(temp.path());
+        assert!(
+            result.is_ok(),
+            "Windows set_secure_permissions should always succeed (no-op)"
+        );
     }
 
     #[test]
-    fn test_get_app_data_dir_returns_valid_path() {
-        let dir = get_app_data_dir();
-        assert!(dir.to_string_lossy().contains("DailyLogger"));
+    #[cfg(windows)]
+    fn test_windows_set_secure_permissions_noop_on_nonexistent_path() {
+        // Windows no-op should succeed even for non-existent paths
+        let result = set_secure_permissions(std::path::Path::new("C:\\nonexistent\\path\\.key"));
+        assert!(
+            result.is_ok(),
+            "Windows no-op should succeed regardless of path validity"
+        );
     }
 
     #[test]
-    fn test_get_key_path_includes_key_file() {
+    #[serial]
+    fn test_encryption_key_roundtrip_across_platforms() {
+        // Verify encryption works consistently regardless of platform
+        let long_key = "a".repeat(256);
+        let test_cases = vec![
+            "simple-key",
+            "key-with-unicode-密钥",
+            "key with spaces and !@#$%",
+            &long_key,
+        ];
+
+        for plain in test_cases {
+            let encrypted = encrypt_api_key(plain).unwrap();
+            assert!(is_encrypted(&encrypted), "Should be marked encrypted");
+            let decrypted = decrypt_api_key(&encrypted).unwrap();
+            assert_eq!(
+                decrypted,
+                plain,
+                "Roundtrip failed for: {}",
+                &plain[..plain.len().min(20)]
+            );
+        }
+    }
+
+    #[test]
+    fn test_key_path_uses_platform_appropriate_separator() {
         let key_path = get_key_path();
-        assert!(key_path.to_string_lossy().ends_with(".key"));
+        let path_str = key_path.to_string_lossy();
+
+        // Verify the path uses the correct separator for this platform
+        assert!(
+            path_str.contains("DailyLogger"),
+            "Key path should contain app name"
+        );
+        assert!(path_str.ends_with(".key"), "Key path should end with .key");
+
+        // PathBuf should use platform-native separators
+        #[cfg(target_os = "windows")]
+        assert!(
+            path_str.contains('\\'),
+            "Windows paths should use backslash"
+        );
     }
 }

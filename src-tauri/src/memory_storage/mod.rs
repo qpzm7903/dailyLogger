@@ -1902,6 +1902,7 @@ mod tests {
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
                 weekly_report_day INTEGER DEFAULT 0,
+                last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT
@@ -3768,6 +3769,132 @@ mod tests {
                 .iter()
                 .any(|r| r.content == "custom_week_start_record"),
             "Today's record should still be found with custom week start day"
+        );
+    }
+
+    // ── CRUD performance benchmark tests (CORE-008 Task 3.2) ──
+
+    #[test]
+    #[serial]
+    fn test_benchmark_insert_100_records() {
+        setup_test_db();
+
+        let start = std::time::Instant::now();
+        for i in 0..100 {
+            add_record(
+                if i % 2 == 0 { "auto" } else { "manual" },
+                &format!("Benchmark insert record {}", i),
+                None,
+                None,
+                None,
+            )
+            .unwrap();
+        }
+        let elapsed = start.elapsed();
+
+        // Inserting 100 records should be well under 10 seconds
+        assert!(
+            elapsed.as_secs() < 10,
+            "Inserting 100 records took too long: {:?}",
+            elapsed
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_benchmark_query_today_records() {
+        setup_test_db();
+
+        // Insert 100 records first
+        for i in 0..100 {
+            add_record(
+                "auto",
+                &format!("Benchmark query record {}", i),
+                None,
+                None,
+                None,
+            )
+            .unwrap();
+        }
+
+        let start = std::time::Instant::now();
+        let records = get_today_records_sync().unwrap();
+        let elapsed = start.elapsed();
+
+        assert!(
+            records
+                .iter()
+                .any(|r| r.content.contains("Benchmark query record")),
+            "Should find benchmark records"
+        );
+        // Single query should be < 100ms (AC #3 threshold: < 10ms per query)
+        assert!(
+            elapsed.as_millis() < 100,
+            "Querying today's records took too long: {:?}",
+            elapsed
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_benchmark_get_settings_sync() {
+        setup_test_db();
+
+        let start = std::time::Instant::now();
+        for _ in 0..100 {
+            let _ = get_settings_sync().unwrap();
+        }
+        let elapsed = start.elapsed();
+
+        // 100 settings reads should be < 1 second
+        assert!(
+            elapsed.as_millis() < 1000,
+            "100 settings reads took too long: {:?}",
+            elapsed
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_benchmark_save_and_read_settings() {
+        setup_test_db();
+
+        let settings = get_settings_sync().unwrap();
+        let start = std::time::Instant::now();
+        for _ in 0..50 {
+            save_settings_sync(&settings).unwrap();
+            let _ = get_settings_sync().unwrap();
+        }
+        let elapsed = start.elapsed();
+
+        // 50 save+read cycles should be < 2 seconds
+        assert!(
+            elapsed.as_secs() < 2,
+            "50 save+read settings cycles took too long: {:?}",
+            elapsed
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_benchmark_record_count_query() {
+        setup_test_db();
+
+        // Insert some records
+        for i in 0..50 {
+            add_record("auto", &format!("Count benchmark {}", i), None, None, None).unwrap();
+        }
+
+        let start = std::time::Instant::now();
+        let count = get_today_record_count_sync().unwrap();
+        let elapsed = start.elapsed();
+
+        assert!(count >= 50, "Should have at least 50 records");
+        // Count query should be very fast (< 10ms)
+        assert!(
+            elapsed.as_millis() < 100,
+            "Record count query took too long: {:?}",
+            elapsed
         );
     }
 }

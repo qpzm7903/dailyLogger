@@ -16,17 +16,6 @@ where
     (result, elapsed)
 }
 
-/// Measures execution time of an async closure and returns the duration in milliseconds.
-pub async fn measure_time_ms_async<F, T>(f: F) -> (T, u64)
-where
-    F: FnOnce() -> T,
-{
-    let start = Instant::now();
-    let result = f();
-    let elapsed = start.elapsed().as_millis() as u64;
-    (result, elapsed)
-}
-
 /// Performance benchmark results
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct BenchmarkResult {
@@ -170,7 +159,7 @@ pub struct PlatformInfo {
 pub fn get_memory_usage_mb() -> u64 {
     #[cfg(target_os = "linux")]
     {
-        // Read from /proc/self/statm
+        // Read from /proc/self/statm (resident set size)
         if let Ok(content) = std::fs::read_to_string("/proc/self/statm") {
             let parts: Vec<&str> = content.split_whitespace().collect();
             if parts.len() >= 2 {
@@ -183,9 +172,52 @@ pub fn get_memory_usage_mb() -> u64 {
         }
     }
 
-    // Fallback: return estimated memory usage
-    // On non-Linux systems or if read fails, estimate based on typical usage
-    80 // Conservative estimate for idle app
+    #[cfg(target_os = "macos")]
+    {
+        // Use mach_task_self() via sysctl on macOS
+        if let Ok(output) = std::process::Command::new("ps")
+            .args(["-o", "rss=", "-p", &std::process::id().to_string()])
+            .output()
+        {
+            if let Ok(rss_str) = String::from_utf8(output.stdout) {
+                if let Ok(rss_kb) = rss_str.trim().parse::<u64>() {
+                    return rss_kb / 1024;
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Use tasklist on Windows to get memory info
+        if let Ok(output) = std::process::Command::new("tasklist")
+            .args([
+                "/fi",
+                &format!("PID eq {}", std::process::id()),
+                "/fo",
+                "csv",
+                "/nh",
+            ])
+            .output()
+        {
+            if let Ok(csv) = String::from_utf8(output.stdout) {
+                // Parse memory from CSV output (5th column, format: "XX,XXX K")
+                let fields: Vec<&str> = csv.trim().split(',').collect();
+                if fields.len() >= 5 {
+                    let mem_str = fields[4]
+                        .trim_matches('"')
+                        .replace(" K", "")
+                        .replace(',', "");
+                    if let Ok(kb) = mem_str.trim().parse::<u64>() {
+                        return kb / 1024;
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback: conservative estimate for idle app
+    80
 }
 
 /// Benchmark screenshot processing time
@@ -231,16 +263,16 @@ pub fn run_performance_benchmark() -> PerformanceReport {
     let platform = get_platform();
     let memory_mb = get_memory_usage_mb();
 
-    // Benchmark database query as a proxy for app startup/initialization
+    // Benchmark database initialization/query as proxy for readiness check
     let start = Instant::now();
     let _ = crate::memory_storage::get_settings_sync();
-    let app_init_ms = start.elapsed().as_millis() as u64;
+    let db_init_ms = start.elapsed().as_millis() as u64;
 
     PerformanceReport {
-        app_startup_ms: app_init_ms,
-        screenshot_processing_ms: 0, // Will be measured separately if needed
-        ai_analysis_ms: None,        // Requires API call - tested separately
-        daily_summary_ms: None,      // Requires API call - tested separately
+        app_startup_ms: db_init_ms, // NOTE: measures DB query, not full app startup
+        screenshot_processing_ms: 0, // Requires desktop environment — tested separately
+        ai_analysis_ms: None,       // Requires API call — tested separately
+        daily_summary_ms: None,     // Requires API call — tested separately
         memory_usage_mb: memory_mb,
         platform,
         timestamp: chrono::Local::now().to_rfc3339(),

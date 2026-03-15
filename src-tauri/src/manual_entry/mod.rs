@@ -472,6 +472,88 @@ mod tests {
             .contains("请先在设置中配置 Obsidian 路径"));
     }
 
+    // ── Platform command verification tests (CORE-008 Task 2.4) ──
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn test_macos_open_command_available_for_obsidian() {
+        // Verify 'open' command exists on macOS (used by open_obsidian_folder_sync)
+        let output = std::process::Command::new("which")
+            .arg("open")
+            .output()
+            .expect("'which' command should work on macOS");
+        assert!(
+            output.status.success(),
+            "macOS 'open' command should be available for opening directories"
+        );
+    }
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn test_windows_explorer_available_for_obsidian() {
+        // Verify 'explorer' command exists on Windows
+        let output = std::process::Command::new("where")
+            .arg("explorer")
+            .output()
+            .expect("'where' command should work on Windows");
+        assert!(
+            output.status.success(),
+            "Windows 'explorer' should be available for opening directories"
+        );
+    }
+
+    #[test]
+    #[serial]
+    #[cfg(target_os = "macos")]
+    fn test_open_obsidian_folder_spawns_open_on_macos() {
+        setup_test_db_with_settings();
+
+        // Use a valid existing directory
+        let temp_dir = std::env::temp_dir();
+        let mut settings = memory_storage::get_settings_sync().unwrap();
+        settings.obsidian_path = Some(temp_dir.to_string_lossy().to_string());
+        memory_storage::save_settings_sync(&settings).unwrap();
+
+        let result = open_obsidian_folder_sync();
+        assert!(
+            result.is_ok(),
+            "open_obsidian_folder should succeed on macOS with valid path"
+        );
+    }
+
+    #[test]
+    #[serial]
+    #[cfg(target_os = "windows")]
+    fn test_open_obsidian_folder_spawns_explorer_on_windows() {
+        setup_test_db_with_settings();
+
+        let temp_dir = std::env::temp_dir();
+        let mut settings = memory_storage::get_settings_sync().unwrap();
+        settings.obsidian_path = Some(temp_dir.to_string_lossy().to_string());
+        memory_storage::save_settings_sync(&settings).unwrap();
+
+        let result = open_obsidian_folder_sync();
+        assert!(
+            result.is_ok(),
+            "open_obsidian_folder should succeed on Windows with valid path"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_open_obsidian_folder_path_validation_is_platform_independent() {
+        setup_test_db_with_settings();
+
+        // Path validation (empty, nonexistent) should work the same on all platforms
+        let mut settings = memory_storage::get_settings_sync().unwrap();
+        settings.obsidian_path = Some("/absolutely/nonexistent/path/12345".to_string());
+        memory_storage::save_settings_sync(&settings).unwrap();
+
+        let result = open_obsidian_folder_sync();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Obsidian 路径不存在"));
+    }
+
     // Helper function to set up test database with settings table
     fn setup_test_db_with_settings() {
         let conn = Connection::open_in_memory().unwrap();

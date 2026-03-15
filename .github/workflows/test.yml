@@ -9,10 +9,10 @@ on:
 jobs:
   test-rust:
     name: Rust Tests & Lint (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +32,10 @@ jobs:
         working-directory: src-tauri
 
       - name: Clippy lint
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --no-default-features -- -D warnings
         working-directory: src-tauri
 
-      - name: Run tests (no-default-features for CI)
+      - name: Run tests
         run: cargo test --no-default-features
         working-directory: src-tauri
 

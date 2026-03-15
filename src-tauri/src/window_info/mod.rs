@@ -576,61 +576,88 @@ mod tests {
         assert!(!should_capture_by_window(&window, &[], &blacklist, false));
     }
 
-    // ── Platform-specific behavior tests (CORE-008 AC#2) ──
+    // ── Platform-specific compilation and behavior tests (CORE-008 Task 2.1) ──
 
     #[test]
-    fn platform_specific_get_active_window_returns_valid_struct() {
-        // All platforms should return a valid ActiveWindow struct
+    fn test_platform_specific_get_active_window_compiles_and_runs() {
+        // Verifies the correct platform-specific implementation was compiled
+        let platform = std::env::consts::OS;
+        assert!(
+            platform == "macos" || platform == "windows" || platform == "linux",
+            "get_active_window should be compiled for platform: {}",
+            platform
+        );
+
+        // The function should not panic regardless of platform/desktop availability
         let window = get_active_window();
-        // Verify the struct has the expected fields (no panics)
-        let _ = window.title.as_str();
-        let _ = window.process_name.as_str();
+        let _ = &window.title;
+        let _ = &window.process_name;
     }
 
-    #[cfg(target_os = "windows")]
     #[test]
-    fn windows_platform_has_get_active_window_implementation() {
-        // On Windows, get_active_window should be available
-        let window = get_active_window();
-        // Just verify it compiles and runs without panic
-        assert!(window.title.is_empty() || !window.title.is_empty());
-        assert!(window.process_name.is_empty() || !window.process_name.is_empty());
-    }
-
     #[cfg(target_os = "macos")]
-    #[test]
-    fn macos_platform_has_get_active_window_implementation() {
-        // On macOS, get_active_window should be available
+    fn test_macos_get_active_window_graceful_without_desktop() {
+        // macOS CI may not have a GUI session — osascript should fail gracefully
         let window = get_active_window();
-        // Just verify it compiles and runs without panic
-        assert!(window.title.is_empty() || !window.title.is_empty());
-        assert!(window.process_name.is_empty() || !window.process_name.is_empty());
+        // Should return empty strings rather than panicking
+        // (osascript returns error text that gets trimmed/defaulted)
+        let _ = &window.title;
+        let _ = &window.process_name;
     }
 
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn test_windows_get_active_window_returns_valid_struct() {
+        // Windows CI runners have a desktop session
+        let window = get_active_window();
+        // Should return a valid struct without panicking
+        let _ = &window.title;
+        let _ = &window.process_name;
+    }
+
+    #[test]
     #[cfg(target_os = "linux")]
-    #[test]
-    fn linux_platform_has_get_active_window_implementation() {
-        // On Linux, get_active_window should be available
+    fn test_linux_get_active_window_graceful_without_xdotool() {
+        // Linux CI likely has no xdotool installed — should return defaults
         let window = get_active_window();
-        // Just verify it compiles and runs without panic
-        assert!(window.title.is_empty() || !window.title.is_empty());
-        assert!(window.process_name.is_empty() || !window.process_name.is_empty());
-    }
-
-    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    #[test]
-    fn fallback_platform_returns_default_active_window() {
-        // On unsupported platforms, should return default (empty) struct
-        let window = get_active_window();
-        assert!(window.title.is_empty());
-        assert!(window.process_name.is_empty());
+        // Without xdotool, the function returns defaults (empty strings)
+        let _ = &window.title;
+        let _ = &window.process_name;
     }
 
     #[test]
-    fn active_window_has_correct_default() {
-        // Verify default is consistent across all platforms
-        let default_window = ActiveWindow::default();
-        assert_eq!(default_window.title, "");
-        assert_eq!(default_window.process_name, "");
+    fn test_active_window_default_is_consistent_across_platforms() {
+        // Ensure the fallback struct is consistent regardless of platform
+        let default = ActiveWindow::default();
+        assert!(default.title.is_empty());
+        assert!(default.process_name.is_empty());
+
+        // Serialization format should be identical across platforms
+        let json = serde_json::to_string(&default).unwrap();
+        let round_trip: ActiveWindow = serde_json::from_str(&json).unwrap();
+        assert_eq!(round_trip.title, default.title);
+        assert_eq!(round_trip.process_name, default.process_name);
+    }
+
+    #[test]
+    fn test_window_filtering_works_identically_across_platforms() {
+        // Window filtering logic is platform-agnostic — verify consistency
+        let window = ActiveWindow {
+            title: "Test App - Document".to_string(),
+            process_name: "testapp".to_string(),
+        };
+
+        // These assertions must hold on ALL platforms
+        let whitelist = vec!["Test App".to_string()];
+        let blacklist = vec!["blocked".to_string()];
+
+        assert!(should_capture_by_window(&window, &whitelist, &[], true));
+        assert!(should_capture_by_window(&window, &[], &blacklist, false));
+        assert!(!should_capture_by_window(
+            &window,
+            &vec!["Other".to_string()],
+            &[],
+            true
+        ));
     }
 }
