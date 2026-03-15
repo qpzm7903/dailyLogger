@@ -55,7 +55,7 @@ Status: ready-for-dev
   - [x] 设置调整上下限（最小 10 分钟，最大 60 分钟）
   - [x] 编写算法单元测试
 
-- [ ] Task 3: 扩展数据库 Schema (AC: 2, 3)
+- [-] Task 3: 扩展数据库 Schema (AC: 2, 3)
   - [ ] 在 settings 表添加 `auto_adjust_silent` 字段（布尔值，默认开启）
   - [ ] 在 settings 表添加 `silent_adjustment_paused_until` 字段（时间戳）
   - [ ] 创建 `silent_patterns` 表存储行为模式历史（可选，或内存存储）
