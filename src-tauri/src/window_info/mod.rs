@@ -27,7 +27,6 @@ pub struct ActiveWindow {
 /// - **Linux**: Uses xdotool command-line tool
 #[cfg(target_os = "windows")]
 pub fn get_active_window() -> ActiveWindow {
-    use windows::Win32::Foundation::HWND;
     use windows::Win32::System::ProcessStatus::GetModuleFileNameExW;
     use windows::Win32::System::Threading::OpenProcess;
     use windows::Win32::UI::WindowsAndMessaging::{
