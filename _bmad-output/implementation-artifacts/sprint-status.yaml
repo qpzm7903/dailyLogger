@@ -406,6 +406,11 @@ retrospectives:
     status: done
     date: "2026-03-15"
     file: "DATA-retrospective.md"
+  - epic: 核心功能完善
+    prefix: CORE
+    status: done
+    date: "2026-03-15"
+    file: "CORE-retrospective.md"
 
 # Velocity tracking
 velocityHistory: []
