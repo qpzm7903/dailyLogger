@@ -4,6 +4,39 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 ---
 
+## SMART-004 故事总结 - 2026-03-15
+
+### 关键技术决策
+
+1. **类型模块分离**: `monitor_types.rs` 不依赖 screenshot feature，确保 `CaptureMode`, `MonitorInfo` 等类型始终可用。理由：前端需要独立于截图功能访问这些类型。
+
+2. **跨平台 API 兼容**: xcap 0.9.x API 变更，使用 `name()` 替代可能 panic 的 `friendly_name()`，使用单独方法替代链式调用。理由：CI 环境下 `friendly_name()` 会 panic，需要更健壮的实现。
+
+3. **显示器拼接算法**: 根据显示器虚拟坐标 (x, y) 计算画布边界，使用 `image::imageops::overlay` 放置各显示器截图到正确位置。理由：支持任意显示器布局（水平、垂直、混合）。
+
+4. **Settings 字段扩展模式**: `capture_mode` 用 TEXT 存储 "primary"/"secondary"/"all"，`selected_monitor_index` 用 INTEGER 存储副显示器索引。理由：延续现有 Settings 字段惯例。
+
+### 问题与解决
+
+**xcap API 兼容性问题**: xcap 0.9.x 移除了 `friendly_name()` 的稳定实现，改为 `name()` 并需处理 Result。解决：使用 `unwrap_or_else` 提供默认名称 "Monitor {index}"。
+
+**前端测试环境缺失**: vitest 依赖未安装，导致前端测试无法运行。解决：标记为技术债务，待后续修复测试环境。
+
+### 后续约定
+
+- **显示器模块结构**: `monitor.rs` 依赖 screenshot feature，`monitor_types.rs` 独立可用
+- **拼接函数命名**: `stitch_monitors_xcap()` (macOS/Linux), `stitch_monitors_windows()` (Windows)
+- **CaptureMode 默认值**: `Primary`，使用 `#[derive(Default)]`
+- **monitor_info 存储**: JSON 序列化的 `MonitorInfo` 结构体
+
+### 技术债务追踪
+
+| 项目 | 来源 | 优先级 | 状态 |
+|-----|------|--------|------|
+| 前端测试环境 | SMART-004 Task 6 | Medium | 待处理 |
+
+---
+
 ## SMART-003 故事总结 - 2026-03-15
 
 ### 关键技术决策
