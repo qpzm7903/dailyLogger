@@ -7,7 +7,7 @@ pub fn add_quick_note_sync(content: &str) -> Result<i64, String> {
         return Err("内容不能为空".to_string());
     }
 
-    memory_storage::add_record("manual", content, None, None)
+    memory_storage::add_record("manual", content, None, None, None)
         .map_err(|e| format!("保存记录失败: {}", e))
 }
 
@@ -80,7 +80,7 @@ pub async fn add_quick_note(content: String) -> Result<(), String> {
         return Err("Content cannot be empty".to_string());
     }
 
-    memory_storage::add_record("manual", &content, None, None)
+    memory_storage::add_record("manual", &content, None, None, None)
         .map_err(|e| format!("Failed to save note: {}", e))?;
 
     tracing::info!("Quick note added: {}...", &content[..content.len().min(50)]);
@@ -177,7 +177,8 @@ mod tests {
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 screenshot_path TEXT,
-                monitor_info TEXT
+                monitor_info TEXT,
+                tags TEXT
             )",
             [],
         )
@@ -211,7 +212,8 @@ mod tests {
                 custom_work_time_end TEXT DEFAULT '18:00',
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -473,7 +475,8 @@ mod tests {
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 screenshot_path TEXT,
-                monitor_info TEXT
+                monitor_info TEXT,
+                tags TEXT
             )",
             [],
         )
@@ -507,7 +510,8 @@ mod tests {
                 custom_work_time_end TEXT DEFAULT '18:00',
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]'
             )",
             [],
         )

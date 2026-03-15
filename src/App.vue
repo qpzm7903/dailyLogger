@@ -105,12 +105,34 @@
               {{ isGenerating ? '生成中...' : '生成日报' }}
             </button>
           </div>
-          <div v-if="todayRecords.length === 0" class="text-center py-8 text-gray-500">
-            暂无记录
+          <!-- AI-004: Tag filter -->
+          <div v-if="Object.keys(tagCounts).length > 0" class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-gray-700">
+            <button
+              @click="selectedTagFilter = ''"
+              :class="selectedTagFilter === '' ? 'bg-primary text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+              class="px-2.5 py-1 rounded-full text-xs transition-colors"
+            >
+              全部 ({{ todayRecords.length }})
+            </button>
+            <button
+              v-for="(count, tag) in tagCounts"
+              :key="tag"
+              @click="selectedTagFilter = tag"
+              :class="[
+                getTagColor(tag),
+                'px-2.5 py-1 rounded-full text-xs transition-colors',
+                selectedTagFilter === tag ? 'ring-2 ring-primary ring-offset-1 ring-offset-dark' : ''
+              ]"
+            >
+              {{ tag }} ({{ count }})
+            </button>
+          </div>
+          <div v-if="filteredRecords.length === 0" class="text-center py-8 text-gray-500">
+            {{ todayRecords.length === 0 ? '暂无记录' : '无匹配标签的记录' }}
           </div>
           <div v-else class="space-y-3 max-h-80 overflow-y-auto pr-1">
             <div
-              v-for="record in todayRecords"
+              v-for="record in filteredRecords"
               :key="record.id"
               @click="record.source_type === 'auto' && record.screenshot_path && openScreenshot(record)"
               :class="record.source_type === 'auto' && record.screenshot_path
@@ -141,6 +163,17 @@
                 </span>
               </div>
               <p class="text-sm text-gray-300 line-clamp-3">{{ record.content }}</p>
+              <!-- AI-004: Tag badges -->
+              <div v-if="getRecordTags(record).length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  v-for="tag in getRecordTags(record)"
+                  :key="tag"
+                  :class="getTagColor(tag)"
+                  class="px-2 py-0.5 rounded-full text-xs"
+                >
+                  {{ tag }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -208,9 +241,36 @@ const showHistoryViewer = ref(false)
 const showSearch = ref(false)
 const selectedScreenshot = ref(null)
 
+// AI-004: Tag filtering state
+const selectedTagFilter = ref('')
+const allTags = ref([])
+
 // Computed
 const screenshotCount = computed(() => {
   return todayRecords.value.filter(r => r.source_type === 'auto' && r.screenshot_path).length
+})
+
+// AI-004: Computed filtered records based on selected tag
+const filteredRecords = computed(() => {
+  if (!selectedTagFilter.value) {
+    return todayRecords.value
+  }
+  return todayRecords.value.filter(record => {
+    const tags = getRecordTags(record)
+    return tags.includes(selectedTagFilter.value)
+  })
+})
+
+// AI-004: Computed tag counts for filter display
+const tagCounts = computed(() => {
+  const counts = {}
+  todayRecords.value.forEach(record => {
+    const tags = getRecordTags(record)
+    tags.forEach(tag => {
+      counts[tag] = (counts[tag] || 0) + 1
+    })
+  })
+  return counts
 })
 
 let timeInterval = null
@@ -266,6 +326,53 @@ const getWindowIcon = (processName) => {
 
   // Default
   return '🖥️'
+}
+
+// AI-004: Tag color mapping
+const tagColors = {
+  '开发': 'bg-blue-500/20 text-blue-400',
+  '会议': 'bg-purple-500/20 text-purple-400',
+  '写作': 'bg-green-500/20 text-green-400',
+  '学习': 'bg-yellow-500/20 text-yellow-400',
+  '研究': 'bg-cyan-500/20 text-cyan-400',
+  '沟通': 'bg-orange-500/20 text-orange-400',
+  '规划': 'bg-pink-500/20 text-pink-400',
+  '文档': 'bg-indigo-500/20 text-indigo-400',
+  '测试': 'bg-red-500/20 text-red-400',
+  '设计': 'bg-teal-500/20 text-teal-400',
+}
+const defaultTagColor = 'bg-gray-500/20 text-gray-400'
+
+// AI-004: Get tag color class
+const getTagColor = (tag) => {
+  return tagColors[tag] || defaultTagColor
+}
+
+// AI-004: Parse tags from record
+const getRecordTags = (record) => {
+  // First check if tags field exists (new records from AI-004)
+  if (record.tags) {
+    try {
+      const tags = JSON.parse(record.tags)
+      if (Array.isArray(tags) && tags.length > 0) {
+        return tags.slice(0, 3) // Limit to 3 tags
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+  // Fallback: try to parse tags from content (for auto records with ScreenAnalysis)
+  if (record.source_type === 'auto' && record.content) {
+    try {
+      const parsed = JSON.parse(record.content)
+      if (parsed.tags && Array.isArray(parsed.tags) && parsed.tags.length > 0) {
+        return parsed.tags.slice(0, 3)
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+  return []
 }
 
 const updateTime = () => {

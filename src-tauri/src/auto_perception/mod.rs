@@ -126,6 +126,9 @@ pub struct ScreenAnalysis {
     /// Window information captured at the time of screenshot (SMART-001)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active_window: Option<ActiveWindow>,
+    /// Work category tags (AI-004)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
 }
 
 // Re-export ActiveWindow from window_info module for convenience
@@ -591,9 +594,10 @@ const DEFAULT_ANALYSIS_PROMPT: &str = r#"Analyze this screenshot and return a JS
 - current_focus: What is the user currently working on? (1-2 sentences in Chinese)
 - active_software: What software is being used? (in Chinese)
 - context_keywords: What are the key topics/technologies? (array of strings, in Chinese)
+- tags: Work category tags from this list: ["开发", "会议", "写作", "学习", "研究", "沟通", "规划", "文档", "测试", "设计"]. Select 1-3 most relevant tags. (array of strings)
 
 Return ONLY valid JSON, no other text. Example format:
-{"current_focus": "编写 Rust 后端代码", "active_software": "VS Code", "context_keywords": ["Rust", "Tauri", "异步编程"]}"#;
+{"current_focus": "编写 Rust 后端代码", "active_software": "VS Code", "context_keywords": ["Rust", "Tauri", "异步编程"], "tags": ["开发", "测试"]}"#;
 
 async fn analyze_screen(
     settings: &CaptureSettings,
@@ -918,11 +922,18 @@ async fn capture_and_store() -> Result<(), String> {
     // SMART-004: Store monitor_info as JSON in the monitor_info field
     let monitor_info_json = serde_json::to_string(&monitor_info).ok();
 
+    // AI-004: Store tags as JSON
+    let tags_json = analysis
+        .tags
+        .as_ref()
+        .and_then(|t| serde_json::to_string(t).ok());
+
     memory_storage::add_record(
         "auto",
         &content,
         screenshot_path.as_deref(),
         monitor_info_json.as_deref(),
+        tags_json.as_deref(),
     )
     .map_err(|e| format!("Failed to store capture: {}", e))?;
 
@@ -1361,6 +1372,7 @@ mod tests {
                 title: "main.rs - VS Code".to_string(),
                 process_name: "Code".to_string(),
             }),
+            tags: None,
         };
         let json = serde_json::to_string(&analysis).unwrap();
         assert!(json.contains("\"active_window\""));
@@ -1375,6 +1387,7 @@ mod tests {
             active_software: "VS Code".to_string(),
             context_keywords: vec!["Rust".to_string()],
             active_window: None,
+            tags: None,
         };
         let json = serde_json::to_string(&analysis).unwrap();
         // skip_serializing_if means active_window should not appear when None
@@ -1405,6 +1418,62 @@ mod tests {
         }"#;
         let analysis: ScreenAnalysis = serde_json::from_str(json).unwrap();
         assert!(analysis.active_window.is_none());
+    }
+
+    // ── AI-004: ScreenAnalysis tags field tests ──
+
+    #[test]
+    fn screen_analysis_parses_tags_field() {
+        let json = r#"{
+            "current_focus": "测试",
+            "active_software": "App",
+            "context_keywords": [],
+            "tags": ["开发", "测试"]
+        }"#;
+        let analysis: ScreenAnalysis = serde_json::from_str(json).unwrap();
+        assert!(analysis.tags.is_some());
+        let tags = analysis.tags.unwrap();
+        assert_eq!(tags, vec!["开发", "测试"]);
+    }
+
+    #[test]
+    fn screen_analysis_tags_optional() {
+        let json = r#"{
+            "current_focus": "测试",
+            "active_software": "App",
+            "context_keywords": []
+        }"#;
+        let analysis: ScreenAnalysis = serde_json::from_str(json).unwrap();
+        assert!(analysis.tags.is_none());
+    }
+
+    #[test]
+    fn screen_analysis_serializes_tags_when_present() {
+        let analysis = ScreenAnalysis {
+            current_focus: "编写代码".to_string(),
+            active_software: "VS Code".to_string(),
+            context_keywords: vec!["Rust".to_string()],
+            active_window: None,
+            tags: Some(vec!["开发".to_string(), "测试".to_string()]),
+        };
+        let json = serde_json::to_string(&analysis).unwrap();
+        assert!(json.contains("\"tags\""));
+        assert!(json.contains("\"开发\""));
+        assert!(json.contains("\"测试\""));
+    }
+
+    #[test]
+    fn screen_analysis_skips_serializing_tags_when_none() {
+        let analysis = ScreenAnalysis {
+            current_focus: "编写代码".to_string(),
+            active_software: "VS Code".to_string(),
+            context_keywords: vec!["Rust".to_string()],
+            active_window: None,
+            tags: None,
+        };
+        let json = serde_json::to_string(&analysis).unwrap();
+        // skip_serializing_if means tags should not appear when None
+        assert!(!json.contains("\"tags\""));
     }
 
     // ── SMART-001: CaptureSettings window filter tests ──
@@ -1476,7 +1545,8 @@ mod tests {
                 custom_work_time_end TEXT DEFAULT '18:00',
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -1754,7 +1824,8 @@ mod tests {
                 custom_work_time_end TEXT DEFAULT '18:00',
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]'
             )",
             [],
         )

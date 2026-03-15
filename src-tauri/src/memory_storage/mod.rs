@@ -143,6 +143,13 @@ pub fn init_database() -> Result<(), String> {
     // SMART-004: records表添加monitor_info字段
     let _ = conn.execute("ALTER TABLE records ADD COLUMN monitor_info TEXT", []);
 
+    // AI-004: 工作分类标签
+    let _ = conn.execute("ALTER TABLE records ADD COLUMN tags TEXT", []); // JSON array of tags
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN tag_categories TEXT DEFAULT '[]'",
+        [],
+    ); // JSON array of custom tag categories
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
     conn.execute(
@@ -237,6 +244,8 @@ pub struct Record {
     pub screenshot_path: Option<String>,
     // SMART-004: 多显示器配置信息
     pub monitor_info: Option<String>, // JSON: MonitorInfo serialized
+    // AI-004: 工作分类标签
+    pub tags: Option<String>, // JSON: Vec<String> serialized
 }
 
 /// Full-text search result with highlighting
@@ -284,6 +293,8 @@ pub struct Settings {
     // SMART-004: 多显示器支持配置
     pub capture_mode: Option<String>, // "primary" | "secondary" | "all"
     pub selected_monitor_index: Option<i32>, // For "secondary" mode
+    // AI-004: 工作分类标签配置
+    pub tag_categories: Option<String>, // JSON: Vec<String> of custom tag categories
 }
 
 pub fn add_record(
@@ -291,6 +302,7 @@ pub fn add_record(
     content: &str,
     screenshot_path: Option<&str>,
     monitor_info: Option<&str>,
+    tags: Option<&str>,
 ) -> Result<i64, String> {
     let db = DB_CONNECTION
         .lock()
@@ -300,8 +312,8 @@ pub fn add_record(
     let timestamp = chrono::Utc::now().to_rfc3339();
 
     conn.execute(
-        "INSERT INTO records (timestamp, source_type, content, screenshot_path, monitor_info) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![timestamp, source_type, content, screenshot_path, monitor_info],
+        "INSERT INTO records (timestamp, source_type, content, screenshot_path, monitor_info, tags) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![timestamp, source_type, content, screenshot_path, monitor_info, tags],
     ).map_err(|e| format!("Failed to insert record: {}", e))?;
 
     Ok(conn.last_insert_rowid())
@@ -324,7 +336,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
          WHERE timestamp >= ?1 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -338,6 +350,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
+                tags: row.get(6)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -414,7 +427,7 @@ pub fn get_records_by_date_range_sync(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -428,6 +441,7 @@ pub fn get_records_by_date_range_sync(
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
+                tags: row.get(6)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -507,11 +521,11 @@ pub fn get_history_records_sync(
                 st
             ));
         }
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
          ORDER BY timestamp DESC LIMIT ?4 OFFSET ?5"
     } else {
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2
          ORDER BY timestamp DESC LIMIT ?3 OFFSET ?4"
     };
@@ -529,6 +543,7 @@ pub fn get_history_records_sync(
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
+                tags: row.get(6)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -543,6 +558,7 @@ pub fn get_history_records_sync(
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
+                tags: row.get(6)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -589,7 +605,7 @@ pub fn search_records_sync(
         // Use LIKE search for CJK queries
         // Note: Both time and rank order use the same SQL since LIKE doesn't have relevance score
         let sql = "SELECT
-                id, timestamp, source_type, content, screenshot_path, monitor_info
+                id, timestamp, source_type, content, screenshot_path, monitor_info, tags
             FROM records
             WHERE content LIKE ?1
             ORDER BY timestamp DESC
@@ -614,6 +630,7 @@ pub fn search_records_sync(
                         content,
                         screenshot_path: row.get(4)?,
                         monitor_info: row.get(5)?,
+                        tags: row.get(6)?,
                     },
                     snippet,
                     rank: 0.0, // LIKE search doesn't have relevance score
@@ -630,7 +647,7 @@ pub fn search_records_sync(
 
         let sql = if order_by == "time" {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -640,7 +657,7 @@ pub fn search_records_sync(
             LIMIT ?2"
         } else {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -667,9 +684,10 @@ pub fn search_records_sync(
                         content: row.get(3)?,
                         screenshot_path: row.get(4)?,
                         monitor_info: row.get(5)?,
+                        tags: row.get(6)?,
                     },
-                    snippet: row.get(6)?,
-                    rank: row.get(7)?,
+                    snippet: row.get(7)?,
+                    rank: row.get(8)?,
                 })
             })
             .map_err(|e| format!("Failed to search records: {}", e))?
@@ -696,7 +714,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 auto_adjust_silent, silent_adjustment_paused_until,
                 auto_detect_work_time, use_custom_work_time,
                 custom_work_time_start, custom_work_time_end, learned_work_time,
-                capture_mode, selected_monitor_index
+                capture_mode, selected_monitor_index, tag_categories
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -731,6 +749,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 learned_work_time: row.get(24)?,
                 capture_mode: row.get(25)?,
                 selected_monitor_index: row.get(26)?,
+                tag_categories: row.get(27)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -802,7 +821,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             custom_work_time_end = ?24,
             learned_work_time = ?25,
             capture_mode = ?26,
-            selected_monitor_index = ?27
+            selected_monitor_index = ?27,
+            tag_categories = ?28
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -836,6 +856,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.learned_work_time,
             settings.capture_mode,
             settings.selected_monitor_index,
+            settings.tag_categories,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1051,6 +1072,99 @@ pub async fn get_model_info(
     }
 }
 
+// ─── AI-004: 工作分类标签相关命令 ────────────────────────────────────────────
+
+/// Default tag categories for work classification
+pub const DEFAULT_TAG_CATEGORIES: &[&str] = &[
+    "开发", "会议", "写作", "学习", "研究", "沟通", "规划", "文档", "测试", "设计",
+];
+
+/// Get the default tag categories
+#[command]
+pub fn get_default_tag_categories() -> Vec<String> {
+    DEFAULT_TAG_CATEGORIES
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+/// Get all unique tags currently used in records
+#[command]
+pub fn get_all_tags() -> Result<Vec<String>, String> {
+    let db_guard = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+
+    let mut stmt = conn
+        .prepare("SELECT DISTINCT tags FROM records WHERE tags IS NOT NULL AND tags != '[]'")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let tag_strings: Vec<String> = stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // Parse JSON arrays and collect unique tags
+    let mut unique_tags = std::collections::HashSet::new();
+    for tag_str in tag_strings {
+        if let Ok(tags) = serde_json::from_str::<Vec<String>>(&tag_str) {
+            for tag in tags {
+                unique_tags.insert(tag);
+            }
+        }
+    }
+
+    let mut result: Vec<String> = unique_tags.into_iter().collect();
+    result.sort();
+    Ok(result)
+}
+
+/// Get records filtered by a specific tag
+#[command]
+pub fn get_records_by_tag(tag: String) -> Result<Vec<Record>, String> {
+    let db_guard = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+
+    // Get all records with tags and filter in Rust (SQLite doesn't handle JSON arrays well)
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags
+             FROM records
+             WHERE tags IS NOT NULL
+             ORDER BY timestamp DESC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let records: Vec<Record> = stmt
+        .query_map([], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(2)?,
+                content: row.get(3)?,
+                screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
+                tags: row.get(6)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .filter_map(|r| r.ok())
+        .filter(|r| {
+            r.tags
+                .as_ref()
+                .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok())
+                .map(|tags| tags.contains(&tag))
+                .unwrap_or(false)
+        })
+        .collect();
+
+    Ok(records)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1066,7 +1180,8 @@ mod tests {
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 screenshot_path TEXT,
-                monitor_info TEXT
+                monitor_info TEXT,
+                tags TEXT
             )",
             [],
         )
@@ -1100,7 +1215,8 @@ mod tests {
                 custom_work_time_end TEXT DEFAULT '18:00',
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -1121,7 +1237,8 @@ mod tests {
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 screenshot_path TEXT,
-                monitor_info TEXT
+                monitor_info TEXT,
+                tags TEXT
             )",
             [],
         )
@@ -1155,7 +1272,8 @@ mod tests {
                 custom_work_time_end TEXT DEFAULT '18:00',
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -1268,7 +1386,7 @@ mod tests {
     fn add_record_then_query_returns_it() {
         setup_test_db();
 
-        let id = add_record("manual", "e2e test note", None, None).unwrap();
+        let id = add_record("manual", "e2e test note", None, None, None).unwrap();
         assert!(id > 0);
 
         let records = get_today_records_sync().unwrap();
@@ -1283,7 +1401,14 @@ mod tests {
     fn add_record_with_screenshot_path_persists() {
         setup_test_db();
 
-        let id = add_record("auto", "screenshot analysis", Some("/tmp/shot.png"), None).unwrap();
+        let id = add_record(
+            "auto",
+            "screenshot analysis",
+            Some("/tmp/shot.png"),
+            None,
+            None,
+        )
+        .unwrap();
         assert!(id > 0);
 
         let records = get_today_records_sync().unwrap();
@@ -2144,7 +2269,8 @@ mod tests {
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 screenshot_path TEXT,
-                monitor_info TEXT
+                monitor_info TEXT,
+                tags TEXT
             )",
             [],
         )
@@ -2180,7 +2306,8 @@ mod tests {
                 custom_work_time_end TEXT DEFAULT '18:00',
                 learned_work_time TEXT DEFAULT NULL,
                 capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -2414,6 +2541,136 @@ mod tests {
             results.len(),
             5,
             "Should return only 5 results when limit is 5"
+        );
+    }
+
+    // ── Tests for AI-004: Tag functionality ──
+
+    #[test]
+    #[serial]
+    fn get_default_tag_categories_returns_expected_tags() {
+        let tags = get_default_tag_categories();
+        assert!(!tags.is_empty(), "Should return non-empty list");
+        assert!(tags.contains(&"开发".to_string()), "Should contain '开发'");
+        assert!(tags.contains(&"会议".to_string()), "Should contain '会议'");
+        assert!(tags.contains(&"写作".to_string()), "Should contain '写作'");
+    }
+
+    #[test]
+    #[serial]
+    fn get_default_tag_categories_has_expected_count() {
+        let tags = get_default_tag_categories();
+        assert_eq!(tags.len(), 10, "Should have 10 default tag categories");
+    }
+
+    #[test]
+    #[serial]
+    fn get_all_tags_returns_empty_when_no_records() {
+        setup_test_db();
+        let tags = get_all_tags().unwrap();
+        assert!(tags.is_empty(), "Should return empty when no records exist");
+    }
+
+    #[test]
+    #[serial]
+    fn get_all_tags_returns_unique_tags_from_records() {
+        setup_test_db();
+
+        // Add records with tags
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"test1"}"#,
+            None,
+            None,
+            Some(r#"["开发","测试"]"#),
+        );
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"test2"}"#,
+            None,
+            None,
+            Some(r#"["会议","开发"]"#),
+        );
+        let _ = add_record("manual", "plain text", None, None, None);
+
+        let tags = get_all_tags().unwrap();
+        assert_eq!(tags.len(), 3, "Should have 3 unique tags");
+        assert!(tags.contains(&"开发".to_string()));
+        assert!(tags.contains(&"测试".to_string()));
+        assert!(tags.contains(&"会议".to_string()));
+    }
+
+    #[test]
+    #[serial]
+    fn get_records_by_tag_returns_matching_records() {
+        setup_test_db();
+
+        // Add records with different tags
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"dev work"}"#,
+            None,
+            None,
+            Some(r#"["开发"]"#),
+        );
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"meeting"}"#,
+            None,
+            None,
+            Some(r#"["会议"]"#),
+        );
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"dev and test"}"#,
+            None,
+            None,
+            Some(r#"["开发","测试"]"#),
+        );
+
+        let records = get_records_by_tag("开发".to_string()).unwrap();
+        assert_eq!(records.len(), 2, "Should find 2 records with '开发' tag");
+
+        let meeting_records = get_records_by_tag("会议".to_string()).unwrap();
+        assert_eq!(
+            meeting_records.len(),
+            1,
+            "Should find 1 record with '会议' tag"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn get_records_by_tag_returns_empty_for_nonexistent_tag() {
+        setup_test_db();
+
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"test"}"#,
+            None,
+            None,
+            Some(r#"["开发"]"#),
+        );
+        let records = get_records_by_tag("不存在".to_string()).unwrap();
+        assert!(
+            records.is_empty(),
+            "Should return empty for nonexistent tag"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn get_records_by_tag_ignores_records_without_tags() {
+        setup_test_db();
+
+        // Add records without tags
+        let _ = add_record("auto", r#"{"current_focus":"no tags"}"#, None, None, None);
+        let _ = add_record("manual", "plain text", None, None, None);
+
+        let records = get_records_by_tag("开发".to_string()).unwrap();
+        assert!(
+            records.is_empty(),
+            "Should return empty when no records have tags"
         );
     }
 }

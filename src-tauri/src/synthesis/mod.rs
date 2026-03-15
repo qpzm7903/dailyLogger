@@ -255,6 +255,7 @@ mod tests {
             content: content.to_string(),
             screenshot_path: None,
             monitor_info: None,
+            tags: None,
         }
     }
 
@@ -287,6 +288,7 @@ mod tests {
             learned_work_time: None,
             capture_mode: None,
             selected_monitor_index: None,
+            tag_categories: None,
         }
     }
 

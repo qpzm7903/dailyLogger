@@ -202,6 +202,39 @@
           </div>
         </div>
 
+        <!-- AI-004: 标签分类配置 -->
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">标签分类</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">自定义标签分类</label>
+              <textarea
+                v-model="tagCategoriesText"
+                rows="4"
+                placeholder="每行一个标签，留空使用默认分类"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y font-mono"
+              />
+              <span class="text-xs text-gray-500 mt-1 block">AI 分析时将从这些标签中选择最匹配的分类</span>
+              <div class="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  @click="showDefaultTagCategories"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  查看默认标签
+                </button>
+                <button
+                  type="button"
+                  @click="resetTagCategories"
+                  class="text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  重置为默认
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">时间策略</h3>
           <div class="space-y-3">
@@ -624,6 +657,35 @@
         </div>
       </div>
 
+      <!-- AI-004: Default Tag Categories Modal -->
+      <div v-if="showDefaultTagCategoriesModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showDefaultTagCategoriesModal = false">
+        <div class="bg-dark rounded-2xl w-[400px] max-h-[80vh] overflow-hidden border border-gray-700">
+          <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">默认标签分类</h3>
+            <button @click="showDefaultTagCategoriesModal = false" class="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div class="p-6 overflow-y-auto max-h-[60vh]">
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="tag in defaultTagCategoriesContent"
+                :key="tag"
+                class="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm"
+              >
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end">
+            <button
+              @click="showDefaultTagCategoriesModal = false"
+              class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 transition-colors"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Template Library Modal -->
       <div v-if="showTemplateLibraryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showTemplateLibraryModal = false">
         <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-hidden border border-gray-700">
@@ -732,6 +794,11 @@ const blacklistTags = ref([])
 const newWhitelistTag = ref('')
 const newBlacklistTag = ref('')
 
+// AI-004: Tag categories
+const tagCategoriesText = ref('')
+const showDefaultTagCategoriesModal = ref(false)
+const defaultTagCategoriesContent = ref([])
+
 // Preset templates for summary prompt
 const presetTemplates = [
   {
@@ -815,7 +882,9 @@ const settings = ref({
   learned_work_time: null,
   // SMART-004: Multi-monitor support
   capture_mode: 'primary',
-  selected_monitor_index: 0
+  selected_monitor_index: 0,
+  // AI-004: Tag categories
+  tag_categories: ''
 })
 
 // SMART-003: Work time status for learning progress display
@@ -841,6 +910,13 @@ const loadSettings = async () => {
       blacklistTags.value = JSON.parse(settings.value.window_blacklist || '[]')
     } catch {
       blacklistTags.value = []
+    }
+    // AI-004: Parse tag categories JSON array into newline-separated text
+    try {
+      const tagCategories = JSON.parse(settings.value.tag_categories || '[]')
+      tagCategoriesText.value = tagCategories.join('\n')
+    } catch {
+      tagCategoriesText.value = ''
     }
     // SMART-003: Load work time status
     await loadWorkTimeStatus()
@@ -962,7 +1038,14 @@ const saveSettings = async () => {
     const settingsToSave = {
       ...settings.value,
       window_whitelist: JSON.stringify(whitelistTags.value),
-      window_blacklist: JSON.stringify(blacklistTags.value)
+      window_blacklist: JSON.stringify(blacklistTags.value),
+      // AI-004: Convert tag categories text to JSON array
+      tag_categories: JSON.stringify(
+        tagCategoriesText.value
+          .split('\n')
+          .map(t => t.trim())
+          .filter(t => t.length > 0)
+      )
     }
     await invoke('save_settings', { settings: settingsToSave })
     saveStatus.value = 'ok'
@@ -1027,6 +1110,22 @@ const showDefaultPrompt = async () => {
 const resetPrompt = () => {
   settings.value.analysis_prompt = ''
   showSuccess('已重置为默认 Prompt，保存后生效')
+}
+
+// AI-004: Tag categories methods
+const showDefaultTagCategories = async () => {
+  try {
+    defaultTagCategoriesContent.value = await invoke('get_default_tag_categories')
+    showDefaultTagCategoriesModal.value = true
+  } catch (err) {
+    console.error('Failed to get default tag categories:', err)
+    showError(err)
+  }
+}
+
+const resetTagCategories = () => {
+  tagCategoriesText.value = ''
+  showSuccess('已重置为默认标签分类，保存后生效')
 }
 
 // API Connection test
