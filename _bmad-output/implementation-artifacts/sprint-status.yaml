@@ -218,7 +218,7 @@ stories:
     epic: AI 能力提升
     priority: Medium
     points: 5
-    status: in-progress
+    status: done
     specPath: "specs/AI-004.md"
     storyPath: "_bmad-output/implementation-artifacts/AI-004.md"
     description: AI 自动生成工作分类标签
