@@ -1,6 +1,6 @@
 # Story 5.3: REPORT-003 - 自定义报告周期
 
-Status: review
+Status: done
 
 ## Story
 
@@ -267,5 +267,30 @@ fn calculates_quarter_range_correctly() {
 ## Change Log
 
 - 2026-03-15: Implemented Tasks 1-3 (database, backend, frontend)
+- 2026-03-15: Code review fixes - added custom report viewer UI to display generated report path and allow opening
+
+## Code Review Findings (2026-03-15)
+
+### Issues Found
+- **[MEDIUM]** AC#5 PARTIAL: 报告生成后没有显示文件路径和提供打开选项
+  - Fixed: Added `showCustomReportViewer` and `customReportPath` display in App.vue
+  - Added DailySummaryViewer for custom reports
+
+### Verification
+- All Acceptance Criteria now implemented:
+  - ✅ AC#1: 日期范围选择器显示
+  - ✅ AC#2: 日期范围选择可生成报告
+  - ✅ AC#3: 双周报预设正确计算
+  - ✅ AC#4: 季度报预设正确计算
+  - ✅ AC#5: 报告生成后显示路径并提供打开选项 (FIXED)
+  - ✅ AC#6: 空记录时提示"所选时间范围内无记录"
+
+### Files Modified
+
+- `src-tauri/src/memory_storage/mod.rs` - Database schema and Settings struct
+- `src-tauri/src/synthesis/mod.rs` - Custom report generation logic
+- `src-tauri/src/main.rs` - Registered Tauri command
+- `src/App.vue` - Added custom report button, state, and viewer
+- `src/components/CustomReportModal.vue` - New component for custom report UI
 
 ### File List

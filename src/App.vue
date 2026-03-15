@@ -241,6 +241,13 @@
           <div v-if="!monthlyReportPath && summaryPath" class="text-center py-2 text-gray-500 text-sm">
             尚未生成月报
           </div>
+          <div v-if="customReportPath" class="bg-darker rounded-lg p-3 border border-gray-700">
+            <p class="text-xs text-gray-500 mb-1">自定义报告</p>
+            <p
+              @click="showCustomReportViewer = true"
+              class="text-sm text-gray-300 cursor-pointer hover:text-orange-400 hover:underline"
+            >{{ customReportPath }}</p>
+          </div>
         </div>
       </div>
     </main>
@@ -252,6 +259,7 @@
     <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
     <DailySummaryViewer v-if="showWeeklyReportViewer" :summaryPath="weeklyReportPath" @close="showWeeklyReportViewer = false" />
     <DailySummaryViewer v-if="showMonthlyReportViewer" :summaryPath="monthlyReportPath" @close="showMonthlyReportViewer = false" />
+    <DailySummaryViewer v-if="showCustomReportViewer" :summaryPath="customReportPath" @close="showCustomReportViewer = false" />
     <CustomReportModal
       v-if="showCustomReportModal"
       :show="showCustomReportModal"
@@ -307,6 +315,7 @@ const showScreenshotGallery = ref(false)
 const showSummaryViewer = ref(false)
 const showWeeklyReportViewer = ref(false)
 const showMonthlyReportViewer = ref(false)
+const showCustomReportViewer = ref(false)
 const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
 const showSearch = ref(false)
