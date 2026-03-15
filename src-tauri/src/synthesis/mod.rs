@@ -1519,3 +1519,208 @@ pub async fn generate_custom_report(
 
     Ok(path_str)
 }
+
+// ── Performance benchmark tests (CORE-008 AC#3) ──
+
+#[cfg(test)]
+mod benchmarks {
+    use super::*;
+    use crate::memory_storage::Record;
+    use std::time::Instant;
+
+    fn create_test_record(source_type: &str, content: &str) -> Record {
+        Record {
+            id: 1,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            source_type: source_type.to_string(),
+            content: content.to_string(),
+            screenshot_path: None,
+            monitor_info: None,
+            tags: None,
+        }
+    }
+
+    fn create_settings_with_include_manual(include: bool) -> Settings {
+        Settings {
+            include_manual_records: Some(include),
+            weekly_report_prompt: None,
+            weekly_report_day: None,
+            last_weekly_report_path: None,
+            summary_title_format: None,
+            api_base_url: None,
+            api_key: None,
+            model_name: None,
+            screenshot_interval: None,
+            summary_time: None,
+            obsidian_path: None,
+            auto_capture_enabled: None,
+            last_summary_path: None,
+            summary_model_name: None,
+            analysis_prompt: None,
+            summary_prompt: None,
+            change_threshold: None,
+            max_silent_minutes: None,
+            window_whitelist: None,
+            window_blacklist: None,
+            use_whitelist_only: None,
+            auto_adjust_silent: None,
+            silent_adjustment_paused_until: None,
+            auto_detect_work_time: None,
+            use_custom_work_time: None,
+            custom_work_time_start: None,
+            custom_work_time_end: None,
+            learned_work_time: None,
+            capture_mode: None,
+            selected_monitor_index: None,
+            tag_categories: None,
+            is_ollama: None,
+            monthly_report_prompt: None,
+            custom_report_prompt: None,
+            last_custom_report_path: None,
+        }
+    }
+
+    /// Benchmark: format_records_for_summary with 100 records
+    /// AC requirement: < 30 seconds for daily summary generation (100 records)
+    #[test]
+    fn benchmark_format_records_for_summary_100_records() {
+        let mut records = Vec::with_capacity(100);
+        for i in 0..100 {
+            records.push(Record {
+                id: i as i64,
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                source_type: if i % 2 == 0 { "auto".to_string() } else { "manual".to_string() },
+                content: format!("工作内容 #{}: 完成了功能开发、代码审查和文档编写。涉及 Rust、Vue、Tauri 等技术栈。", i),
+                screenshot_path: None,
+                monitor_info: None,
+                tags: None,
+            });
+        }
+
+        let start = Instant::now();
+        let _result = format_records_for_summary(&records);
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // Benchmark threshold: should complete in < 1000ms for formatting alone
+        // (AI generation would be additional, but we're testing the data processing part)
+        assert!(
+            elapsed_ms < 1000,
+            "format_records_for_summary with 100 records took {}ms (threshold: 1000ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Benchmark: filter_records_by_settings with 100 records
+    #[test]
+    fn benchmark_filter_records_100_records() {
+        let settings = create_settings_with_include_manual(true);
+        let mut records = Vec::with_capacity(100);
+        for i in 0..100 {
+            records.push(Record {
+                id: i as i64,
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                source_type: if i % 3 == 0 {
+                    "auto".to_string()
+                } else {
+                    "manual".to_string()
+                },
+                content: format!("测试记录 #{}", i),
+                screenshot_path: None,
+                monitor_info: None,
+                tags: None,
+            });
+        }
+
+        let start = Instant::now();
+        let _result = filter_records_by_settings(records, &settings);
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // Threshold: should complete in < 100ms
+        assert!(
+            elapsed_ms < 100,
+            "filter_records_by_settings with 100 records took {}ms (threshold: 100ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Benchmark: generate_summary_filename
+    #[test]
+    fn benchmark_generate_summary_filename() {
+        let settings = create_settings_with_include_manual(true);
+
+        let start = Instant::now();
+        for _ in 0..1000 {
+            let _ = generate_summary_filename(&settings);
+        }
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // Threshold: 1000 iterations should complete in < 100ms
+        assert!(
+            elapsed_ms < 100,
+            "1000 iterations of generate_summary_filename took {}ms (threshold: 100ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Benchmark: format_summary_title
+    #[test]
+    fn benchmark_format_summary_title() {
+        let start = Instant::now();
+        for _ in 0..10000 {
+            let _ = format_summary_title("工作日报 - {date}");
+        }
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // Threshold: 10000 iterations should complete in < 100ms
+        assert!(
+            elapsed_ms < 100,
+            "10000 iterations of format_summary_title took {}ms (threshold: 100ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Performance test: simulate full daily summary generation workflow (without AI API call)
+    /// This simulates: filtering 100 records + formatting for summary
+    #[test]
+    fn benchmark_daily_summary_workflow_100_records() {
+        let settings = create_settings_with_include_manual(true);
+
+        // Create 100 test records
+        let mut records = Vec::with_capacity(100);
+        for i in 0..100 {
+            records.push(Record {
+                id: i as i64,
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                source_type: if i % 2 == 0 { "auto".to_string() } else { "manual".to_string() },
+                content: format!(
+                    "工作内容 #{}: 完成了功能开发、代码审查和文档编写。涉及 Rust、Vue、Tauri 等技术栈。处理了多个任务，包括性能优化、bug 修复和新功能实现。",
+                    i
+                ),
+                screenshot_path: None,
+                monitor_info: None,
+                tags: None,
+            });
+        }
+
+        let start = Instant::now();
+
+        // Step 1: Filter records (simulates settings-based filtering)
+        let filtered = filter_records_by_settings(records, &settings);
+
+        // Step 2: Generate filename
+        let _filename = generate_summary_filename(&settings);
+
+        // Step 3: Format records for summary (simulates what would be sent to AI)
+        let _formatted = format_records_for_summary(&filtered);
+
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // Total workflow (without AI) should complete in < 2 seconds
+        // Full requirement: < 30 seconds including AI API call
+        assert!(
+            elapsed_ms < 2000,
+            "Daily summary workflow (100 records) took {}ms (threshold: 2000ms, full target: < 30000ms with AI)",
+            elapsed_ms
+        );
+    }
+}

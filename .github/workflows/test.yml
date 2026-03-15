@@ -8,8 +8,11 @@ on:
 
 jobs:
   test-rust:
-    name: Rust Tests & Lint
-    runs-on: macos-latest
+    name: Rust Tests & Lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +35,8 @@ jobs:
         run: cargo clippy -- -D warnings
         working-directory: src-tauri
 
-      - name: Run tests
-        run: cargo test
+      - name: Run tests (no-default-features for CI)
+        run: cargo test --no-default-features
         working-directory: src-tauri
 
   test-frontend:

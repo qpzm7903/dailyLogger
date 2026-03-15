@@ -3771,3 +3771,250 @@ mod tests {
         );
     }
 }
+
+// ── Performance benchmark tests (CORE-008 AC#3) ──
+
+#[cfg(test)]
+mod benchmarks {
+    use super::*;
+    use serial_test::serial;
+    use std::time::Instant;
+
+    fn setup_test_db() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                screenshot_path TEXT,
+                monitor_info TEXT,
+                tags TEXT
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "CREATE TABLE settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                api_base_url TEXT,
+                api_key TEXT,
+                model_name TEXT,
+                screenshot_interval INTEGER DEFAULT 5,
+                summary_time TEXT DEFAULT '18:00',
+                obsidian_path TEXT,
+                auto_capture_enabled INTEGER DEFAULT 0,
+                last_summary_path TEXT,
+                summary_model_name TEXT,
+                analysis_prompt TEXT,
+                summary_prompt TEXT,
+                change_threshold INTEGER DEFAULT 3,
+                max_silent_minutes INTEGER DEFAULT 30,
+                summary_title_format TEXT DEFAULT '工作日报 - {date}',
+                include_manual_records INTEGER DEFAULT 1,
+                window_whitelist TEXT DEFAULT '[]',
+                window_blacklist TEXT DEFAULT '[]',
+                use_whitelist_only INTEGER DEFAULT 0,
+                auto_adjust_silent INTEGER DEFAULT 1,
+                silent_adjustment_paused_until TEXT DEFAULT NULL,
+                auto_detect_work_time INTEGER DEFAULT 1,
+                use_custom_work_time INTEGER DEFAULT 0,
+                custom_work_time_start TEXT DEFAULT '09:00',
+                custom_work_time_end TEXT DEFAULT '18:00',
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0,
+                tag_categories TEXT DEFAULT '[]',
+                is_ollama INTEGER DEFAULT 0,
+                weekly_report_prompt TEXT,
+                weekly_report_day INTEGER DEFAULT 0,
+                last_weekly_report_path TEXT,
+                monthly_report_prompt TEXT,
+                custom_report_prompt TEXT,
+                last_custom_report_path TEXT
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
+            .unwrap();
+        let mut db = DB_CONNECTION.lock().unwrap();
+        *db = Some(conn);
+    }
+
+    /// Benchmark: Insert 100 records
+    /// AC requirement: Database CRUD < 10ms per operation
+    #[test]
+    #[serial]
+    fn benchmark_insert_100_records() {
+        setup_test_db();
+
+        let start = Instant::now();
+        for i in 0..100 {
+            let _ = add_record(
+                "auto",
+                &format!("Benchmark test record #{}", i),
+                None,
+                None,
+                None,
+            );
+        }
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // 100 inserts should complete in < 1000ms (10ms avg per insert)
+        assert!(
+            elapsed_ms < 1000,
+            "Inserting 100 records took {}ms (threshold: 1000ms, avg: {}ms per insert)",
+            elapsed_ms,
+            elapsed_ms / 100
+        );
+    }
+
+    /// Benchmark: Query records by date range
+    #[test]
+    #[serial]
+    fn benchmark_query_records_by_date_range() {
+        setup_test_db();
+
+        // Insert 100 records first
+        for i in 0..100 {
+            let ts = chrono::Utc::now().to_rfc3339();
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                params![ts, "manual", format!("Query test record #{}", i)],
+            )
+            .unwrap();
+        }
+
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        let start = Instant::now();
+        let _ = get_records_for_export(&today, &today);
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // Query should complete in < 100ms
+        assert!(
+            elapsed_ms < 100,
+            "Querying records by date range took {}ms (threshold: 100ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Benchmark: Get settings (read operation)
+    #[test]
+    #[serial]
+    fn benchmark_get_settings() {
+        setup_test_db();
+
+        let start = Instant::now();
+        for _ in 0..1000 {
+            let _ = get_settings_sync();
+        }
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // 1000 settings reads should complete in < 500ms
+        assert!(
+            elapsed_ms < 500,
+            "1000 settings reads took {}ms (threshold: 500ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Benchmark: Save settings (write operation)
+    #[test]
+    #[serial]
+    fn benchmark_save_settings() {
+        setup_test_db();
+
+        let start = Instant::now();
+        for i in 0..100 {
+            let mut settings = get_settings_sync().unwrap();
+            settings.summary_prompt = Some(format!("Test prompt #{}", i));
+            let _ = save_settings_sync(&settings);
+        }
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // 100 settings saves should complete in < 1000ms
+        assert!(
+            elapsed_ms < 1000,
+            "100 settings saves took {}ms (threshold: 1000ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Benchmark: Get today's records
+    #[test]
+    #[serial]
+    fn benchmark_get_today_records() {
+        setup_test_db();
+
+        // Insert 50 records
+        for i in 0..50 {
+            let ts = chrono::Utc::now().to_rfc3339();
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+                params![ts, "manual", format!("Today record #{}", i)],
+            )
+            .unwrap();
+        }
+
+        let start = Instant::now();
+        for _ in 0..100 {
+            let _ = get_today_records_sync();
+        }
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // 100 queries should complete in < 500ms
+        assert!(
+            elapsed_ms < 500,
+            "100 get_today_records calls took {}ms (threshold: 500ms)",
+            elapsed_ms
+        );
+    }
+
+    /// Performance test: Batch operations simulation
+    /// Simulates a typical workflow: query + process + update
+    #[test]
+    #[serial]
+    fn benchmark_crud_workflow_100_records() {
+        setup_test_db();
+
+        // Insert 100 records
+        for i in 0..100 {
+            let _ = add_record(
+                "auto",
+                &format!("CRUD workflow record #{}", i),
+                None,
+                None,
+                None,
+            );
+        }
+
+        let start = Instant::now();
+
+        // Step 1: Query today's records
+        let records = get_today_records_sync().unwrap();
+
+        // Step 2: Process (count)
+        let count = records.len();
+
+        // Step 3: Get settings
+        let _settings = get_settings_sync().unwrap();
+
+        let elapsed_ms = start.elapsed().as_millis();
+
+        // Full CRUD workflow should complete in < 500ms
+        assert!(
+            elapsed_ms < 500,
+            "CRUD workflow (100 records) took {}ms (threshold: 500ms)",
+            elapsed_ms
+        );
+
+        // Verify we got records
+        assert!(count > 0, "Should have retrieved records");
+    }
+}
