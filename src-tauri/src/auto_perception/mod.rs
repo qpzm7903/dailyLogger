@@ -305,60 +305,9 @@ fn stitch_monitors_windows(
     ))
 }
 
-// ─── SMART-004: Multi-monitor capture support (macOS/Linux) ──────────────────
-
-/// Capture screen with specified mode (macOS/Linux)
-/// Returns (base64_image, monitor_info)
-#[cfg(not(target_os = "windows"))]
-fn capture_screen_with_mode(
-    mode: CaptureMode,
-    selected_index: usize,
-) -> Result<(String, MonitorInfo), String> {
-    let monitor_details = get_monitor_list()?;
-    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
-
-    if monitors.is_empty() {
-        return Err("No monitors found".to_string());
-    }
-
-    let monitor_info = MonitorInfo {
-        count: monitor_details.len(),
-        monitors: monitor_details.clone(),
-    };
-
-    let image = match mode {
-        CaptureMode::Primary => {
-            // Find primary monitor (usually at position 0,0)
-            let primary_index = monitor_details
-                .iter()
-                .position(|m| m.is_primary)
-                .unwrap_or(0);
-            capture_single_monitor_xcap(&monitors, primary_index)?
-        }
-        CaptureMode::Secondary => {
-            // Use selected_index, fallback to first non-primary if out of bounds
-            let index = if selected_index < monitors.len() {
-                selected_index
-            } else {
-                // Fallback to first non-primary monitor
-                monitor_details
-                    .iter()
-                    .position(|m| !m.is_primary)
-                    .unwrap_or(0)
-            };
-            capture_single_monitor_xcap(&monitors, index)?
-        }
-        CaptureMode::All => {
-            // Stitch all monitors together
-            stitch_monitors_xcap(&monitors, &monitor_details)?
-        }
-    };
-
-    Ok((image, monitor_info))
-}
+// ─── Shared xcap implementation for all platforms ───────────────────
 
 /// Capture a single monitor by index (xcap version)
-#[cfg(not(target_os = "windows"))]
 fn capture_single_monitor_xcap(monitors: &[xcap::Monitor], index: usize) -> Result<String, String> {
     if index >= monitors.len() {
         return Err(format!(
@@ -385,7 +334,6 @@ fn capture_single_monitor_xcap(monitors: &[xcap::Monitor], index: usize) -> Resu
 }
 
 /// Stitch all monitors into a single image (xcap version)
-#[cfg(not(target_os = "windows"))]
 fn stitch_monitors_xcap(
     monitors: &[xcap::Monitor],
     monitor_details: &[crate::monitor_types::MonitorDetail],

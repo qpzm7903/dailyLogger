@@ -9,8 +9,7 @@ pub use crate::monitor_types::{CaptureMode, MonitorDetail, MonitorInfo, MonitorS
 
 // ─── Platform-specific implementations ───────────────────────────────────────
 
-/// Get list of all connected monitors (non-Windows: macOS, Linux)
-#[cfg(not(target_os = "windows"))]
+/// Get list of all connected monitors (all platforms using xcap)
 pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
     let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
@@ -21,7 +20,7 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
     let result: Vec<MonitorDetail> = monitors
         .iter()
         .enumerate()
-        .map(|(index, m)| {
+        .map(|(index, m): (usize, &xcap::Monitor)| {
             // Note: friendly_name() can panic on some systems (e.g., CI runners)
             // Use name() which is more reliable, fallback to default
             let name = m
@@ -36,45 +35,6 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
             let height = m.height().unwrap_or(0);
 
             // xcap 0.9.x provides is_primary() method
-            let is_primary = m.is_primary().unwrap_or(index == 0);
-
-            MonitorDetail {
-                index,
-                name,
-                width,
-                height,
-                x,
-                y,
-                is_primary,
-            }
-        })
-        .collect();
-
-    Ok(result)
-}
-
-/// Get list of all connected monitors (Windows)
-/// Uses xcap for cross-platform compatibility
-#[cfg(target_os = "windows")]
-pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
-    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
-
-    if monitors.is_empty() {
-        return Err("No monitors found".to_string());
-    }
-
-    let result: Vec<MonitorDetail> = monitors
-        .iter()
-        .enumerate()
-        .map(|(index, m)| {
-            let name = m
-                .name()
-                .unwrap_or_else(|_| format!("Monitor {}", index + 1));
-
-            let x = m.x().unwrap_or(0);
-            let y = m.y().unwrap_or(0);
-            let width = m.width().unwrap_or(0);
-            let height = m.height().unwrap_or(0);
             let is_primary = m.is_primary().unwrap_or(index == 0);
 
             MonitorDetail {
