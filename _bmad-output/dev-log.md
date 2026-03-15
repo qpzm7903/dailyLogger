@@ -396,3 +396,27 @@ Clippy 警告嵌套 if 可折叠。解决：将 `if !blacklist.is_empty() { if m
 - **标签输入模式**：`v-model` 绑定输入值，`@keyup.enter` 触发添加，空值或重复值忽略
 - **标签样式**：白名单 primary 色，黑名单 red 色，统一 `text-xs rounded-lg` 样式
 - **测试定位**：通过元素内容或父元素 class 过滤特定组件，避免全局索引依赖
+
+---
+
+## SMART-001 Task 6 - 2026-03-15
+
+### 技术决策
+
+1. **JSON 解析容错**：`getWindowInfo()` 使用 try/catch 解析 content JSON，失败返回 null。理由：旧记录无 `active_window` 字段或格式异常时优雅降级，不阻塞 UI。
+
+2. **图标映射函数**：`getWindowIcon()` 根据 process_name 返回应用专属 emoji，未知应用返回 🖥️。理由：视觉化区分应用类型，提升 UX 可识别度。
+
+3. **条件渲染**：仅在 `active_window` 存在且 `title` 或 `process_name` 非空时显示窗口信息区。理由：避免空数据区域，保持 UI 简洁。
+
+4. **组件复用问题**：App.vue 和 ScreenshotModal.vue 各自定义 `getWindowIcon()` 函数。理由：任务紧急未抽取公共函数，后续可优化为共享 util。
+
+### 遇到问题
+
+无重大问题。开发顺利，前端测试全部通过。
+
+### 后续约定
+
+- **窗口信息显示模式**：computed 属性解析 JSON + 图标函数 + 条件渲染
+- **图标映射扩展**：新增应用在 `getWindowIcon()` 函数中添加判断分支
+- **JSON 解析容错**：try/catch 返回 null/fallback，不抛异常阻塞流程
