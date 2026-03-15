@@ -314,7 +314,7 @@ pub fn calculate_optimal_silent_minutes(tracker: &SilentPatternTracker) -> u64 {
 }
 
 /// Global silent pattern tracker instance.
-static SILENT_PATTERN_TRACKER: Lazy<Mutex<SilentPatternTracker>> =
+pub static SILENT_PATTERN_TRACKER: Lazy<Mutex<SilentPatternTracker>> =
     Lazy::new(|| Mutex::new(SilentPatternTracker::default()));
 
 /// Record a capture event in the global tracker.

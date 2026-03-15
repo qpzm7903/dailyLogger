@@ -224,8 +224,11 @@ describe('ScreenshotGallery', () => {
       const wrapper = await mountGallery()
 
       const html = wrapper.html()
-      // Should contain formatted time (formatTimeShort outputs HH:MM:SS)
-      expect(html.includes('09:00') || html.includes('09:05') || html.includes('09:10')).toBe(true)
+      // Compute expected local time from first mock timestamp (avoids timezone hardcoding)
+      const d = new Date(mockScreenshots[0].timestamp)
+      const expectedHH = String(d.getHours()).padStart(2, '0')
+      const expectedMM = String(d.getMinutes()).padStart(2, '0')
+      expect(html.includes(`${expectedHH}:${expectedMM}`)).toBe(true)
     })
 
     it('opens modal when clicking on screenshot', async () => {
@@ -595,9 +598,13 @@ describe('ScreenshotGallery', () => {
       const gridContainer = wrapper.find('.grid')
       const html = gridContainer.html()
 
-      // Should show exact HH:mm:ss format (e.g., 09:00:00)
-      // Check that it matches exactly the formatTimeShort output
-      expect(html).toMatch(/09:00:00|09:05:00|09:10:00/)
+      // Compute expected local times from mock data to avoid timezone hardcoding
+      const expectedPatterns = mockScreenshots.map(s => {
+        const d = new Date(s.timestamp)
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
+      })
+      const regex = new RegExp(expectedPatterns.join('|'))
+      expect(html).toMatch(regex)
     })
 
     it('shows timestamp in HH:mm:ss format in list view', async () => {
@@ -612,8 +619,13 @@ describe('ScreenshotGallery', () => {
       const listContainer = wrapper.find('.divide-y')
       const html = listContainer.html()
 
-      // List view should have timestamps in HH:mm:ss format
-      expect(html).toMatch(/09:00:00|09:05:00|09:10:00/)
+      // Compute expected local times from mock data to avoid timezone hardcoding
+      const expectedPatterns = mockScreenshots.map(s => {
+        const d = new Date(s.timestamp)
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
+      })
+      const regex = new RegExp(expectedPatterns.join('|'))
+      expect(html).toMatch(regex)
     })
   })
 })

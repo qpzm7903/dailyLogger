@@ -32,7 +32,56 @@ npm run test          # Vitest (run once)
 npm run test:watch    # Watch mode
 ```
 
-### Pre-commit checklist (required before every PR)
+### Quality Gate Workflow（强制，每次代码变更后必须完整执行）
+
+每次完成代码变更后，**必须**按顺序执行以下四个步骤，绝不能跳过任何一步。
+
+#### 步骤 1：Code Formatting（代码格式化）
+```bash
+# Rust
+cd src-tauri && cargo fmt
+
+# Frontend
+npm run format  # 如无此命令可跳过
+```
+若格式化命令报错，必须自主修复，不允许手动改行绕过。
+
+#### 步骤 2：Static Analysis（静态分析）
+```bash
+# Rust — 零警告容忍
+cd src-tauri && cargo clippy -- -D warnings
+
+# Frontend
+npm run lint  # 如有配置
+```
+所有 warning 和 error 必须修复后才能进入下一步。
+
+#### 步骤 3：Local Test Execution（本地测试）
+```bash
+cd src-tauri && cargo test
+npm run test
+```
+不允许使用 mock workaround 绕过核心逻辑测试。测试全绿后方可提交。
+
+#### 步骤 4：CI 状态验证（提交后必须检查）
+执行 `git push` 后，**必须主动监控 GitHub Actions CI 状态**：
+```bash
+# 查看最新 workflow 运行状态
+gh run list --limit 5
+
+# 持续等待并查看结果（直到 completed）
+gh run watch
+
+# 若有失败，查看详情
+gh run view --log-failed
+```
+- CI **通过** → 任务完成
+- CI **失败** → 立即分析报错、修复、重新推送，再次验证 CI，直到通过为止
+- **禁止**在 CI 红灯状态下进行下一个任务
+
+> **原则**：每次 `git push` 都要看到 CI 绿灯，才算本次变更真正完成。
+
+### Pre-commit checklist（快速参考）
 ```bash
 cd src-tauri && cargo fmt && cargo clippy -- -D warnings && cargo test
 npm run test

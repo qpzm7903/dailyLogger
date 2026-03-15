@@ -161,7 +161,7 @@ fn main() {
                     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
                     let separator1 = PredefinedMenuItem::separator(app)?;
                     let separator2 = PredefinedMenuItem::separator(app)?;
-                    let separator3 = PredefinedMenuItem::separator(app)?;
+                    let _separator3 = PredefinedMenuItem::separator(app)?;
 
                     // Menu order: 自动捕获 → 生成日报 → 快速记录 → 打开Obsidian → 分隔线 → 设置 → 显示窗口 → 分隔线 → 退出
                     Menu::with_items(
@@ -272,13 +272,14 @@ fn main() {
                                 };
                                 let running = is_auto_capture_running();
                                 let app_handle = app.clone();
+                                let app_handle2 = app.clone();
                                 tauri::async_runtime::spawn(async move {
                                     let result = if running {
                                         tracing::info!("Stopping auto capture from tray");
                                         stop_auto_capture().await
                                     } else {
                                         tracing::info!("Starting auto capture from tray");
-                                        start_auto_capture().await
+                                        start_auto_capture(app_handle2).await
                                     };
                                     if let Err(e) = result {
                                         tracing::error!("Failed to toggle auto capture: {}", e);

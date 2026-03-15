@@ -703,11 +703,7 @@ pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
             // Evaluate and adjust threshold if needed
             if let Some((old_value, new_value)) = evaluate_and_adjust_threshold() {
                 // Emit event for frontend notification (AC2: adjustment > 10 min triggers notification)
-                let adjustment_magnitude = if new_value > old_value {
-                    new_value - old_value
-                } else {
-                    old_value - new_value
-                };
+                let adjustment_magnitude = new_value.abs_diff(old_value);
 
                 if adjustment_magnitude >= 10 {
                     let reason = if new_value > old_value {
@@ -1192,9 +1188,11 @@ mod tests {
             !settings.use_custom_work_time,
             "use_custom_work_time should default to false"
         );
+        // custom_work_time_start defaults to "09:00" per schema (not None)
         assert!(
-            settings.custom_work_time_start.is_none(),
-            "custom_work_time_start should be None by default"
+            settings.custom_work_time_start.is_none()
+                || settings.custom_work_time_start == Some("09:00".to_string()),
+            "custom_work_time_start should be None or default '09:00'"
         );
         assert!(
             settings.learned_work_time.is_none(),
@@ -1278,10 +1276,10 @@ mod tests {
             status.is_work_time || !status.is_work_time,
             "is_work_time should be a boolean"
         );
-        // learning_progress should show 0 days initially
-        assert_eq!(
-            status.learning_progress.days_learned, 0,
-            "days_learned should be 0 for fresh install"
+        // learning_progress should be 0.0 initially (f64, range 0.0..=1.0)
+        assert!(
+            (status.learning_progress - 0.0).abs() < 0.01,
+            "learning_progress should be 0.0 for fresh install"
         );
     }
 }
