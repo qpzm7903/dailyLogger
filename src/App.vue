@@ -18,6 +18,9 @@
         <button @click="showSearch = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           🔍 搜索
         </button>
+        <button @click="showTagCloud = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+          🏷️ 标签
+        </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
@@ -204,6 +207,7 @@
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
     <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
+    <TagCloud v-if="showTagCloud" @close="showTagCloud = false" @tagSelected="handleTagSelected" />
     <Toast />
   </div>
 </template>
@@ -220,6 +224,7 @@ import DailySummaryViewer from './components/DailySummaryViewer.vue'
 import LogViewer from './components/LogViewer.vue'
 import HistoryViewer from './components/HistoryViewer.vue'
 import SearchPanel from './components/SearchPanel.vue'
+import TagCloud from './components/TagCloud.vue'
 import Toast from './components/Toast.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
@@ -239,6 +244,7 @@ const showSummaryViewer = ref(false)
 const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
 const showSearch = ref(false)
+const showTagCloud = ref(false)
 const selectedScreenshot = ref(null)
 
 // AI-004: Tag filtering state
@@ -448,6 +454,15 @@ const handleQuickNote = async (content) => {
   } catch (err) {
     console.error('Failed to save quick note:', err)
   }
+}
+
+// Handle tag selection from TagCloud
+const handleTagSelected = (tag) => {
+  showTagCloud.value = false
+  showHistoryViewer.value = true
+  // The HistoryViewer will handle the tag filtering
+  // We could emit an event to pass the selected tag, but for now
+  // the user can select it in the HistoryViewer's TagFilter
 }
 
 const generateSummary = async () => {

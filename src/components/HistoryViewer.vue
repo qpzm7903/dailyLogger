@@ -48,6 +48,14 @@
         </span>
       </div>
 
+      <!-- Tag Filter -->
+      <div class="px-6 py-3 border-b border-gray-700">
+        <TagFilter
+          ref="tagFilterRef"
+          v-model="selectedTags"
+        />
+      </div>
+
       <!-- Record List -->
       <div class="flex-1 overflow-auto p-4" ref="scrollContainer" @scroll="handleScroll">
         <div v-if="isLoading && records.length === 0" class="text-center py-8 text-gray-500">
@@ -75,6 +83,14 @@
                   <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
                 </div>
                 <p class="text-sm text-gray-300 truncate">{{ truncateContent(record.content) }}</p>
+                <!-- Manual tags -->
+                <div v-if="getRecordTags(record.id).length > 0" class="flex flex-wrap gap-1 mt-2">
+                  <TagBadge
+                    v-for="tag in getRecordTags(record.id)"
+                    :key="tag.id"
+                    :tag="tag"
+                  />
+                </div>
               </div>
               <button
                 @click="confirmDelete(record)"
@@ -122,9 +138,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { showSuccess, showError } from '../stores/toast'
+import TagFilter from './TagFilter.vue'
+import TagBadge from './TagBadge.vue'
 
 const emit = defineEmits(['close'])
 
@@ -132,7 +150,9 @@ const emit = defineEmits(['close'])
 const startDate = ref('')
 const endDate = ref('')
 const sourceType = ref(null)
+const selectedTags = ref([])
 const records = ref([])
+const recordTags = ref({}) // Map of record id to tags
 const isLoading = ref(false)
 const isLoadingMore = ref(false)
 const page = ref(0)
@@ -141,6 +161,7 @@ const hasMore = ref(true)
 const scrollContainer = ref(null)
 const recordToDelete = ref(null)
 const isDeleting = ref(false)
+const tagFilterRef = ref(null)
 
 // Initialize dates to last 7 days
 onMounted(() => {
@@ -153,6 +174,11 @@ onMounted(() => {
 
   loadRecords()
 })
+
+// Watch for tag filter changes
+watch(selectedTags, () => {
+  loadRecords()
+}, { deep: true })
 
 function formatDate(date) {
   return date.toISOString().split('T')[0]
@@ -186,19 +212,38 @@ async function loadRecords() {
   isLoading.value = true
   page.value = 0
   records.value = []
+  recordTags.value = {}
   hasMore.value = true
 
   try {
-    const result = await invoke('get_history_records', {
-      startDate: startDate.value,
-      endDate: endDate.value,
-      sourceType: sourceType.value,
-      page: 0,
-      pageSize: pageSize
-    })
+    // If tags are selected, use tag-based filtering
+    if (selectedTags.value.length > 0) {
+      const tagIds = selectedTags.value.map(t => t.id)
+      const result = await invoke('get_records_by_manual_tags', {
+        tagIds: tagIds,
+        startDate: startDate.value,
+        endDate: endDate.value,
+        sourceType: sourceType.value
+      })
 
-    records.value = result
-    hasMore.value = result.length === pageSize
+      records.value = result
+      hasMore.value = false // Tag-based query doesn't support pagination
+    } else {
+      // Regular date/source filtering
+      const result = await invoke('get_history_records', {
+        startDate: startDate.value,
+        endDate: endDate.value,
+        sourceType: sourceType.value,
+        page: 0,
+        pageSize: pageSize
+      })
+
+      records.value = result
+      hasMore.value = result.length === pageSize
+    }
+
+    // Load tags for all records
+    await loadRecordTags()
   } catch (error) {
     showError(`加载记录失败: ${error}`)
   } finally {
@@ -206,8 +251,27 @@ async function loadRecords() {
   }
 }
 
+// Load tags for all displayed records
+async function loadRecordTags() {
+  for (const record of records.value) {
+    try {
+      const tags = await invoke('get_tags_for_record', { recordId: record.id })
+      recordTags.value[record.id] = tags
+    } catch (e) {
+      console.error(`Failed to load tags for record ${record.id}:`, e)
+      recordTags.value[record.id] = []
+    }
+  }
+}
+
+// Get tags for a specific record
+function getRecordTags(recordId) {
+  return recordTags.value[recordId] || []
+}
+
 async function loadMoreRecords() {
   if (isLoadingMore.value || !hasMore.value) return
+  if (selectedTags.value.length > 0) return // Tag-based query doesn't support pagination
 
   isLoadingMore.value = true
   page.value += 1
@@ -223,6 +287,17 @@ async function loadMoreRecords() {
 
     records.value.push(...result)
     hasMore.value = result.length === pageSize
+
+    // Load tags for new records
+    for (const record of result) {
+      try {
+        const tags = await invoke('get_tags_for_record', { recordId: record.id })
+        recordTags.value[record.id] = tags
+      } catch (e) {
+        console.error(`Failed to load tags for record ${record.id}:`, e)
+        recordTags.value[record.id] = []
+      }
+    }
   } catch (error) {
     showError(`加载更多失败: ${error}`)
     page.value -= 1 // Revert page increment on error
