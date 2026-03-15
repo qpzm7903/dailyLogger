@@ -1459,7 +1459,8 @@ mod tests {
                 tag_categories TEXT DEFAULT '[]',
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
-                weekly_report_day INTEGER DEFAULT 0
+                weekly_report_day INTEGER DEFAULT 0,
+                monthly_report_prompt TEXT
             )",
             [],
         )
@@ -1741,7 +1742,8 @@ mod tests {
                 tag_categories TEXT DEFAULT '[]',
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
-                weekly_report_day INTEGER DEFAULT 0
+                weekly_report_day INTEGER DEFAULT 0,
+                monthly_report_prompt TEXT
             )",
             [],
         )
