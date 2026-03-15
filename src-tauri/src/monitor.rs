@@ -22,10 +22,10 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
         .iter()
         .enumerate()
         .map(|(index, m)| {
-            // Use friendly_name for better display, fallback to name or default
+            // Note: friendly_name() can panic on some systems (e.g., CI runners)
+            // Use name() which is more reliable, fallback to default
             let name = m
-                .friendly_name()
-                .or_else(|_| m.name())
+                .name()
                 .unwrap_or_else(|_| format!("Monitor {}", index + 1));
 
             // xcap 0.9.x uses separate x(), y(), width(), height() methods
