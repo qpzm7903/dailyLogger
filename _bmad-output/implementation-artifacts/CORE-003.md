@@ -1,6 +1,6 @@
 # Story 1.3: 日报生成模板优化
 
-Status: review
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 1.4: 错误处理与用户提示
 
-Status: review
+Status: done
 
 ## Story
 

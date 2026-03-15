@@ -13,7 +13,7 @@ stories:
     epic: 核心功能完善
     priority: High
     points: 3
-    status: review
+    status: done
     specPath: "specs/CORE-001.md"
     description: 优化设置界面的交互体验，改进表单布局和验证提示
     acceptanceCriteria:
@@ -39,7 +39,7 @@ stories:
     epic: 核心功能完善
     priority: High
     points: 3
-    status: review
+    status: done
     specPath: "specs/CORE-003.md"
     description: 优化 AI 生成的日报模板，增加可定制性
     acceptanceCriteria:
@@ -52,7 +52,7 @@ stories:
     epic: 核心功能完善
     priority: Medium
     points: 3
-    status: review
+    status: done
     specPath: "specs/CORE-004.md"
     description: 完善错误处理机制，提供友好的用户提示
     acceptanceCriteria:
@@ -105,7 +105,7 @@ stories:
     epic: AI 能力提升
     priority: High
     points: 2
-    status: review
+    status: done
     specPath: "specs/AI-002.md"
     description: 允许用户自定义截图分析 Prompt
     acceptanceCriteria:
@@ -132,7 +132,7 @@ stories:
     epic: AI 能力提升
     priority: Medium
     points: 3
-    status: review
+    status: done
     specPath: "specs/AI-003.md"
     description: 允许用户自定义日报生成模板
     acceptanceCriteria:

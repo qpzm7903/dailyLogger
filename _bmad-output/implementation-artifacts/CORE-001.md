@@ -1,6 +1,6 @@
 # Story 1.1: 设置界面优化
 
-Status: review
+Status: done
 
 ## Story
 
