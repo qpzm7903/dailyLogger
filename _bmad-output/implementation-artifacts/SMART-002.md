@@ -42,11 +42,11 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [-] Task 1: 实现用户行为模式数据收集 (AC: 1)
-  - [ ] 创建 `SilentPatternTracker` 结构体跟踪捕获行为
-  - [ ] 记录每次捕获的时间、原因（屏幕变化/静默超时）
-  - [ ] 存储最近 7 天的行为模式数据
-  - [ ] 实现内存中滑动窗口统计（避免频繁磁盘 IO）
+- [x] Task 1: 实现用户行为模式数据收集 (AC: 1)
+  - [x] 创建 `SilentPatternTracker` 结构体跟踪捕获行为
+  - [x] 记录每次捕获的时间、原因（屏幕变化/静默超时）
+  - [x] 存储最近 7 天的行为模式数据
+  - [x] 实现内存中滑动窗口统计（避免频繁磁盘 IO）
 
 - [ ] Task 2: 实现智能阈值调整算法 (AC: 2)
   - [ ] 创建 `calculate_optimal_silent_minutes()` 函数

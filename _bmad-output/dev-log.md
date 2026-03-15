@@ -4,6 +4,33 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 ---
 
+## SMART-002 Task 1 - 2026-03-15
+
+### 技术决策
+
+1. **独立模块设计**：`silent_tracker` 作为独立顶级模块而非 `auto_perception` 子模块。理由：`auto_perception` 依赖 `screenshot` feature，而静默模式跟踪不需要截图功能，应始终可用。
+
+2. **内存滑动窗口**：使用 `Vec<HourlyStats>` 存储最近 7 天的每小时统计数据，自动裁剪过期条目。理由：避免频繁磁盘 IO，内存占用可控（7天 × 24小时 = 最多 168 条记录）。
+
+3. **连续捕获计数**：跟踪 `consecutive_silent_captures` 和 `consecutive_change_captures` 用于实时模式检测。理由：支持 AC1 要求的"检测到用户持续活跃"场景。
+
+4. **should_capture 返回类型**：改为 `Option<CaptureReason>` 而非 `bool`，在决策时自动记录捕获原因。理由：将模式跟踪集成到现有流程，无需额外调用点。
+
+5. **全局单例模式**：使用 `Lazy<Mutex<SilentPatternTracker>>` 实现全局跟踪器。理由：跨异步任务共享状态，与项目现有 `SCREEN_STATE` 模式一致。
+
+### 遇到问题
+
+测试隔离问题：并行运行时 `DB_CONNECTION` 全局状态可能被其他测试污染。解决：使用 `--test-threads=1` 运行测试。
+
+### 后续约定
+
+- **模式跟踪位置**：`src-tauri/src/silent_tracker.rs`
+- **捕获原因枚举**：`CaptureReason::{ScreenChanged, SilentTimeout, ManualTrigger}`
+- **测试命令**：`cargo test --no-default-features -- --test-threads=1`
+- **连续计数重置规则**：ScreenChanged 或 ManualTrigger 重置 silent 计数；SilentTimeout 重置 change 计数
+
+---
+
 ## AI-003 - 2026-03-14
 
 ### 技术决策

@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 use tauri::command;
 
 use crate::memory_storage;
+use crate::silent_tracker::{record_capture, CaptureReason};
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -65,8 +66,9 @@ fn calc_change_rate(a: &[u8], b: &[u8]) -> f64 {
 }
 
 /// Determine whether the screen has changed enough to warrant a new capture.
-/// Returns `true` if we should proceed with the full capture+analysis pipeline.
-fn should_capture(fingerprint: &[u8], change_threshold: f64, max_silent_minutes: u64) -> bool {
+/// Returns `Some(reason)` if we should proceed with the full capture+analysis pipeline,
+/// or `None` if the screen hasn't changed and silent timeout hasn't been exceeded.
+fn should_capture(fingerprint: &[u8], change_threshold: f64, max_silent_minutes: u64) -> Option<CaptureReason> {
     let mut state = SCREEN_STATE.lock().unwrap();
 
     let silent_exceeded =
@@ -85,20 +87,25 @@ fn should_capture(fingerprint: &[u8], change_threshold: f64, max_silent_minutes:
         }
     };
 
-    if changed || silent_exceeded {
-        if silent_exceeded && !changed {
-            tracing::info!(
-                "Screen unchanged but max silent time ({} min) exceeded, forcing capture",
-                max_silent_minutes
-            );
-        }
-        state.last_fingerprint = Some(fingerprint.to_vec());
-        state.last_capture_time = Instant::now();
-        true
+    let reason = if changed {
+        CaptureReason::ScreenChanged
+    } else if silent_exceeded {
+        tracing::info!(
+            "Screen unchanged but max silent time ({} min) exceeded, forcing capture",
+            max_silent_minutes
+        );
+        CaptureReason::SilentTimeout
     } else {
         tracing::debug!("Screen unchanged, skipping capture");
-        false
-    }
+        return None;
+    };
+
+    // SMART-002: Record capture reason for pattern tracking (AC1)
+    record_capture(reason);
+
+    state.last_fingerprint = Some(fingerprint.to_vec());
+    state.last_capture_time = Instant::now();
+    Some(reason)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -486,12 +493,15 @@ async fn capture_and_store() -> Result<(), String> {
     let image_base64 = capture_screen()?;
 
     // Check if screen has changed enough to warrant a full capture
+    // SMART-002: should_capture now returns Option<CaptureReason> for pattern tracking
     let fingerprint = compute_fingerprint(&image_base64)?;
-    if !should_capture(
+    if should_capture(
         &fingerprint,
         settings.change_threshold,
         settings.max_silent_minutes,
-    ) {
+    )
+    .is_none()
+    {
         return Ok(());
     }
 
