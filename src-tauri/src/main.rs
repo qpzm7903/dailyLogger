@@ -131,6 +131,13 @@ fn main() {
             daily_logger_lib::ollama::get_ollama_models,
             daily_logger_lib::network_status::get_network_status,
             daily_logger_lib::network_status::check_network_status,
+            // CORE-008: Performance benchmark
+            daily_logger_lib::performance::get_platform_info,
+            daily_logger_lib::performance::get_memory_usage_mb,
+            daily_logger_lib::performance::benchmark_database_query,
+            daily_logger_lib::performance::run_performance_benchmark,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::performance::benchmark_screenshot_processing,
             daily_logger_lib::offline_queue::get_offline_queue_status,
             daily_logger_lib::offline_queue::process_offline_queue,
             #[cfg(feature = "screenshot")]
