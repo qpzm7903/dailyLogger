@@ -204,7 +204,7 @@ stories:
     epic: 智能捕获优化
     priority: Low
     points: 2
-    status: in-progress
+    status: done
     specPath: "specs/SMART-004.md"
     storyPath: "_bmad-output/implementation-artifacts/SMART-004.md"
     description: 优化多显示器环境下的截图体验

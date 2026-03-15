@@ -2,6 +2,86 @@
 
 Status: done
 
+## Code Review Results (2026-03-15)
+
+### Acceptance Criteria Validation
+
+#### AC1 - 选择捕获特定显示器 ✅ IMPLEMENTED
+- `monitor.rs`: `get_monitor_list()` implemented for both Windows and macOS/Linux platforms
+- `monitor_types.rs`: `CaptureMode` enum with Primary, Secondary, All variants
+- `auto_perception/mod.rs`: `capture_screen_with_mode()` supports all capture modes with proper fallback logic
+- Frontend: Radio buttons for mode selection in SettingsModal.vue (lines 467-498)
+
+#### AC2 - 拼接多显示器截图 ✅ IMPLEMENTED
+- `stitch_monitors_xcap()` for macOS/Linux at lines 478-534
+- `stitch_monitors_windows()` at lines 329-395
+- `calculate_monitor_bounds()` correctly calculates canvas size based on monitor positions
+- Uses `image::imageops::overlay()` for proper image composition
+
+#### AC3 - 记录显示器配置信息 ✅ IMPLEMENTED
+- Database schema migration: `monitor_info TEXT` column added to records table
+- Database schema: `capture_mode` and `selected_monitor_index` in settings table
+- Types: `MonitorInfo`, `MonitorDetail`, `MonitorSummary` structs properly defined
+- `CaptureSettings` struct includes monitor configuration fields
+
+#### AC4 - 前端设置界面支持 ✅ IMPLEMENTED
+- Full monitor settings UI in SettingsModal.vue (lines 462-548)
+- Shows connected monitors with name, resolution, primary indicator
+- Capture mode selection via radio buttons (Primary/Secondary/All)
+- Single monitor shows simplified display with "当前只有一台显示器" message
+- Loads monitors via `get_monitors` Tauri command
+- Monitor selection button for Secondary mode with visual feedback
+
+### Task Completion Verification
+
+- [x] Task 1: 实现显示器枚举功能 ✅
+  - `get_monitors()` command registered in main.rs
+  - Cross-platform: xcap for macOS/Linux, windows_capture for Windows
+  - Returns MonitorSummary with index, name, resolution, is_primary
+
+- [x] Task 2: 扩展数据库 Schema ✅
+  - `capture_mode TEXT DEFAULT 'primary'` added
+  - `selected_monitor_index INTEGER DEFAULT 0` added
+  - `monitor_info TEXT` added to records table
+  - Settings struct updated with new fields
+
+- [x] Task 3: 修改截图捕获逻辑 ✅
+  - `capture_screen_with_mode()` supports Primary/Secondary/All modes
+  - `capture_single_monitor_xcap/windows()` for individual capture
+  - `stitch_monitors_xcap/windows()` for multi-monitor stitching
+  - Proper fallback for out-of-bounds monitor index
+
+- [x] Task 4: 记录显示器配置信息 ✅
+  - `MonitorInfo` and `MonitorDetail` structs created
+  - Monitor info passed from capture functions
+
+- [x] Task 5: 前端设置界面支持 ✅
+  - SettingsModal.vue has complete monitor settings section
+  - Monitor list display with visual indicators
+  - Mode selection with radio buttons
+  - Secondary mode shows monitor selection buttons
+
+- [x] Task 6: 编写测试 ✅
+  - monitor_types.rs: Tests for CaptureMode serialization/deserialization
+  - monitor.rs: Tests for get_monitor_list(), get_monitors(), get_monitor_info()
+
+### Code Quality Assessment
+
+**Strengths:**
+- Clean separation of platform-specific code using `#[cfg(target_os = "windows")]`
+- Proper error handling with descriptive Chinese error messages
+- Comprehensive unit tests for all new types and functions
+- UI follows existing TailwindCSS patterns and Chinese localization
+
+**Observations:**
+- Image stitching handles coordinate transformation correctly
+- Fallback logic for invalid monitor index is robust
+- Frontend properly handles loading states and errors
+
+### Verdict: PASS
+
+All acceptance criteria are fully implemented. All tasks are complete. Code quality is good with proper tests.
+
 ## Story
 
 作为一个 DailyLogger 用户，
