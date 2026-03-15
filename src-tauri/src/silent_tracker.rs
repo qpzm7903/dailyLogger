@@ -13,6 +13,24 @@ use once_cell::sync::Lazy;
 /// Maximum number of days to keep in the sliding window.
 const MAX_HISTORY_DAYS: i64 = 7;
 
+/// Minimum allowed threshold for max_silent_minutes (in minutes).
+pub const MIN_THRESHOLD: u64 = 10;
+
+/// Maximum allowed threshold for max_silent_minutes (in minutes).
+pub const MAX_THRESHOLD: u64 = 60;
+
+/// Default threshold for max_silent_minutes (in minutes).
+pub const DEFAULT_THRESHOLD: u64 = 30;
+
+/// Maximum adjustment per evaluation (in minutes).
+pub const MAX_ADJUSTMENT: u64 = 5;
+
+/// Silent ratio threshold above which we increase the threshold (deep work).
+pub const HIGH_SILENT_RATIO: f64 = 0.7;
+
+/// Silent ratio threshold below which we decrease the threshold (active work).
+pub const LOW_SILENT_RATIO: f64 = 0.3;
+
 /// Reason why a capture was triggered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CaptureReason {
@@ -245,7 +263,53 @@ impl SilentPatternTracker {
 
 impl Default for SilentPatternTracker {
     fn default() -> Self {
-        Self::new(30) // Default 30 minutes
+        Self::new(DEFAULT_THRESHOLD)
+    }
+}
+
+/// Calculate the optimal max_silent_minutes based on user's work patterns.
+///
+/// This is the core algorithm for AC2: automatically adjusting the silent threshold
+/// based on detected user behavior patterns.
+///
+/// # Algorithm
+///
+/// 1. If insufficient data (< 10 captures in 24h), return current threshold
+/// 2. Calculate the ratio of silent timeout captures to total captures
+/// 3. If ratio >= 0.7: user is in deep work, increase threshold (max +5 min)
+/// 4. If ratio <= 0.3: user is active, decrease threshold (max -5 min)
+/// 5. Otherwise: balanced work, keep current threshold
+/// 6. Clamp result to [MIN_THRESHOLD, MAX_THRESHOLD]
+///
+/// # Arguments
+///
+/// * `tracker` - Reference to the silent pattern tracker
+///
+/// # Returns
+///
+/// The recommended threshold in minutes.
+pub fn calculate_optimal_silent_minutes(tracker: &SilentPatternTracker) -> u64 {
+    let current = tracker.current_threshold();
+
+    // Check if we have sufficient data
+    if !tracker.has_sufficient_data() {
+        return DEFAULT_THRESHOLD;
+    }
+
+    // Get stats for last 24 hours
+    let stats = tracker.get_recent_stats(Duration::hours(24));
+    let silent_ratio = stats.silent_ratio();
+
+    // Apply adjustment based on silent ratio
+    if silent_ratio >= HIGH_SILENT_RATIO {
+        // Deep work detected: increase threshold
+        (current + MAX_ADJUSTMENT).min(MAX_THRESHOLD)
+    } else if silent_ratio <= LOW_SILENT_RATIO {
+        // Active work detected: decrease threshold
+        current.saturating_sub(MAX_ADJUSTMENT).max(MIN_THRESHOLD)
+    } else {
+        // Balanced work: keep current threshold
+        current
     }
 }
 
@@ -584,5 +648,241 @@ mod tests {
             tracker.last_capture_reason(),
             Some(CaptureReason::ManualTrigger)
         );
+    }
+
+    // ── AC2 Algorithm Tests ──
+
+    /// AC2: Given 用户处于深度工作状态（屏幕长期无变化）
+    /// When 系统检测到连续多次因静默超时触发捕获
+    /// Then 自动提高 max_silent_minutes（如从 30 分钟提高到 45 分钟）
+    #[test]
+    fn ac2_high_silent_ratio_increases_threshold() {
+        let mut tracker = create_test_tracker();
+
+        // Simulate deep work: 80% silent timeout, 20% screen changes
+        for _ in 0..8 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+        for _ in 0..2 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // Silent ratio is 0.8 > 0.7, should increase threshold
+        assert!(new_threshold > 30, "Threshold should increase for deep work");
+        // Progressive: max 5 minutes per adjustment
+        assert!(new_threshold <= 35, "Adjustment should be at most 5 minutes");
+    }
+
+    /// AC2: Given 用户处于活跃工作状态（屏幕频繁变化）
+    /// When 系统检测到多次捕获间隔都很短
+    /// Then 自动降低 max_silent_minutes（如从 30 分钟降低到 15 分钟）
+    #[test]
+    fn ac2_low_silent_ratio_decreases_threshold() {
+        let mut tracker = create_test_tracker();
+
+        // Simulate active work: 20% silent timeout, 80% screen changes
+        for _ in 0..2 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+        for _ in 0..8 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // Silent ratio is 0.2 < 0.3, should decrease threshold
+        assert!(new_threshold < 30, "Threshold should decrease for active work");
+        // Progressive: max 5 minutes per adjustment
+        assert!(new_threshold >= 25, "Adjustment should be at most 5 minutes");
+    }
+
+    /// AC2: Balance state - ratio between 0.3 and 0.7
+    #[test]
+    fn ac2_balanced_ratio_keeps_threshold() {
+        let mut tracker = create_test_tracker();
+
+        // Simulate balanced work: 50% silent, 50% changes
+        for _ in 0..5 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+        for _ in 0..5 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // Silent ratio is 0.5, within [0.3, 0.7], should keep current
+        assert_eq!(new_threshold, 30, "Threshold should stay the same for balanced work");
+    }
+
+    /// Test insufficient data returns default
+    #[test]
+    fn insufficient_data_returns_default() {
+        let tracker = create_test_tracker();
+
+        // Only 5 captures (less than 10)
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        assert_eq!(new_threshold, 30, "Should return default without sufficient data");
+    }
+
+    /// Test minimum threshold limit (10 minutes)
+    #[test]
+    fn threshold_respects_minimum_limit() {
+        let mut tracker = SilentPatternTracker::new(12); // Start at 12
+
+        // Simulate very active work
+        for _ in 0..10 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // Should not go below 10
+        assert!(new_threshold >= 10, "Threshold should not go below minimum");
+    }
+
+    /// Test maximum threshold limit (60 minutes)
+    #[test]
+    fn threshold_respects_maximum_limit() {
+        let mut tracker = SilentPatternTracker::new(58); // Start at 58
+
+        // Simulate deep work
+        for _ in 0..10 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // Should not go above 60
+        assert!(new_threshold <= 60, "Threshold should not exceed maximum");
+    }
+
+    /// Test progressive adjustment is exactly 5 minutes
+    #[test]
+    fn progressive_adjustment_is_at_most_5_minutes() {
+        let mut tracker = SilentPatternTracker::new(30);
+
+        // All silent captures (100%)
+        for _ in 0..15 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // Should increase by exactly 5 minutes (progressive)
+        assert_eq!(new_threshold, 35, "Should increase by exactly 5 minutes");
+    }
+
+    /// Test adjustment at boundary (silent ratio = 0.7)
+    #[test]
+    fn boundary_silent_ratio_0_7_increases_threshold() {
+        let mut tracker = create_test_tracker();
+
+        // Exactly 70% silent ratio (7 silent, 3 change)
+        for _ in 0..7 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+        for _ in 0..3 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // At 0.7 boundary, should increase (>= 0.7)
+        assert_eq!(new_threshold, 35, "At boundary 0.7, should increase threshold");
+    }
+
+    /// Test adjustment at boundary (silent ratio = 0.3)
+    #[test]
+    fn boundary_silent_ratio_0_3_decreases_threshold() {
+        let mut tracker = create_test_tracker();
+
+        // Exactly 30% silent ratio (3 silent, 7 change)
+        for _ in 0..3 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+        for _ in 0..7 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // At 0.3 boundary, should decrease (<= 0.3)
+        assert_eq!(new_threshold, 25, "At boundary 0.3, should decrease threshold");
+    }
+
+    /// Test all silent captures
+    #[test]
+    fn all_silent_captures_maximizes_increase() {
+        let mut tracker = SilentPatternTracker::new(30);
+
+        // 100% silent
+        for _ in 0..10 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+        assert_eq!(new_threshold, 35);
+    }
+
+    /// Test all screen change captures
+    #[test]
+    fn all_change_captures_maximizes_decrease() {
+        let mut tracker = SilentPatternTracker::new(30);
+
+        // 100% screen changes
+        for _ in 0..10 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+        assert_eq!(new_threshold, 25);
+    }
+
+    /// Test adjustment respects current threshold (not starting from default)
+    #[test]
+    fn adjustment_uses_current_threshold() {
+        let mut tracker = SilentPatternTracker::new(45); // Current is 45
+
+        // High silent ratio
+        for _ in 0..10 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+
+        // Should increase from 45, not from 30
+        assert_eq!(new_threshold, 50);
+    }
+
+    /// Test minimum threshold already at limit
+    #[test]
+    fn at_minimum_threshold_stays_at_minimum() {
+        let mut tracker = SilentPatternTracker::new(10);
+
+        // Active work would decrease, but already at minimum
+        for _ in 0..10 {
+            tracker.record_capture(CaptureReason::ScreenChanged);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+        assert_eq!(new_threshold, 10, "Should stay at minimum");
+    }
+
+    /// Test maximum threshold already at limit
+    #[test]
+    fn at_maximum_threshold_stays_at_maximum() {
+        let mut tracker = SilentPatternTracker::new(60);
+
+        // Deep work would increase, but already at maximum
+        for _ in 0..10 {
+            tracker.record_capture(CaptureReason::SilentTimeout);
+        }
+
+        let new_threshold = calculate_optimal_silent_minutes(&tracker);
+        assert_eq!(new_threshold, 60, "Should stay at maximum");
     }
 }
