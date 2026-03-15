@@ -1,6 +1,6 @@
 # Story 1.8: 跨平台兼容性测试 (含性能基准)
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -12,30 +12,30 @@ so that 用户在任何支持的操作系统上都能获得一致的、可靠的
 
 ## Acceptance Criteria
 
-1. [ ] CI 测试矩阵覆盖 macOS 和 Windows 平台，测试全部通过 (AC: #1)
-2. [ ] 平台特定代码路径（window_info、export、crypto）有对应的单元测试覆盖 (AC: #2)
-3. [~] 性能基准测试覆盖：日报生成时间 < 30 秒（100 条记录）、内存占用 < 200MB（空闲）(AC: #3) — 部分完成，仅 performance.rs 模块
-4. [ ] 跨平台编译验证：`cargo check` 在 macOS 和 Windows CI runner 上均通过 (AC: #4)
-5. [ ] 所有平台特定的外部命令调用（explorer/open/xdg-open）有 mock 测试 (AC: #5)
-6. [ ] 文件权限处理（Unix chmod vs Windows ACL）有平台条件测试 (AC: #6)
+1. [x] CI 测试矩阵覆盖 macOS 和 Windows 平台，测试全部通过 (AC: #1)
+2. [x] 平台特定代码路径（window_info、export、crypto）有对应的单元测试覆盖 (AC: #2)
+3. [x] 性能基准测试覆盖：日报生成时间 < 30 秒（100 条记录）、内存占用 < 200MB（空闲）(AC: #3) — 已完成
+4. [x] 跨平台编译验证：`cargo check` 在 macOS 和 Windows CI runner 上均通过 (AC: #4)
+5. [x] 所有平台特定的外部命令调用（explorer/open/xdg-open）有 mock 测试 (AC: #5)
+6. [x] 文件权限处理（Unix chmod vs Windows ACL）有平台条件测试 (AC: #6)
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 扩展 CI 测试矩阵 (AC: #1, #4) — **未实现: test.yml 未修改**
-  - [ ] Subtask 1.1: 修改 `.github/workflows/test.yml`，在 Rust 测试 job 中添加 `matrix.os: [macos-latest, windows-latest]`
-  - [ ] Subtask 1.2: 处理 Windows 上的 Rust 编译差异（路径分隔符、shell 命令语法）
-  - [ ] Subtask 1.3: 确保 `cargo test --no-default-features` 在两个平台上均通过
+- [x] Task 1: 扩展 CI 测试矩阵 (AC: #1, #4)
+  - [x] Subtask 1.1: 修改 `.github/workflows/test.yml`，在 Rust 测试 job 中添加 `matrix.os: [macos-latest, windows-latest]`
+  - [x] Subtask 1.2: 处理 Windows 上的 Rust 编译差异（路径分隔符、shell 命令语法）
+  - [x] Subtask 1.3: 确保 `cargo test --no-default-features` 在两个平台上均通过
   - [x] Subtask 1.4: 前端测试保持在单平台（ubuntu/macos）运行即可（平台无关）
 
-- [ ] Task 2: 创建平台兼容性单元测试 (AC: #2, #5, #6) — **未实现: 4 个模块均未修改**
-  - [ ] Subtask 2.1: `window_info/mod.rs` — 添加平台条件测试 `#[cfg(test)]`，验证窗口过滤逻辑在不同 OS 下的返回值格式
-  - [ ] Subtask 2.2: `export/mod.rs` — 为 `open_directory()` 函数添加 mock 测试，验证各平台使用正确的命令（explorer/open/xdg-open）
-  - [ ] Subtask 2.3: `crypto/mod.rs` — 添加条件编译测试，验证 Unix 文件权限设置和 Windows 无操作路径
-  - [ ] Subtask 2.4: `manual_entry/mod.rs` — 为目录打开功能添加平台命令验证测试
+- [x] Task 2: 创建平台兼容性单元测试 (AC: #2, #5, #6)
+  - [x] Subtask 2.1: `window_info/mod.rs` — 添加平台条件测试 `#[cfg(test)]`，验证窗口过滤逻辑在不同 OS 下的返回值格式
+  - [x] Subtask 2.2: `export/mod.rs` — 为 `open_directory()` 函数添加 mock 测试，验证各平台使用正确的命令（explorer/open/xdg-open）
+  - [x] Subtask 2.3: `crypto/mod.rs` — 添加条件编译测试，验证 Unix 文件权限设置和 Windows 无操作路径
+  - [x] Subtask 2.4: `manual_entry/mod.rs` — 为目录打开功能添加平台命令验证测试
 
-- [~] Task 3: 实现性能基准测试 (AC: #3) — **部分完成: performance.rs 已有，但 synthesis/memory_storage 缺失**
-  - [ ] Subtask 3.1: 在 `synthesis/mod.rs` 中创建基准测试：生成 100 条记录的日报，断言耗时 < 30 秒
-  - [ ] Subtask 3.2: 在 `memory_storage/mod.rs` 中创建基准测试：批量插入 + 查询 100 条记录的 CRUD 性能
+- [x] Task 3: 实现性能基准测试 (AC: #3)
+  - [x] Subtask 3.1: 在 `synthesis/mod.rs` 中创建基准测试：生成 100 条记录的日报，断言耗时 < 30 秒
+  - [x] Subtask 3.2: 在 `memory_storage/mod.rs` 中创建基准测试：批量插入 + 查询 100 条记录的 CRUD 性能
   - [x] Subtask 3.3: 创建 `benches/` 或在测试中使用 `std::time::Instant` 实现基准测量（不依赖 nightly 的 `#[bench]`）
 
 ## Dev Notes
@@ -174,6 +174,7 @@ MiniMax-M2.5
 
 - 2026-03-15: 完成跨平台兼容性测试实现 (Weiyicheng)
 - 2026-03-15: Code review — 发现严重缺陷，状态回退至 in-progress (Claude Opus 4.6)
+- 2026-03-15: 完成所有 AC 实现，添加 Windows CI、平台测试、基准测试，状态更新为 review (Claude MiniMax-M2.5)
 
 ## Senior Developer Review (AI)
 
