@@ -459,6 +459,94 @@
           </div>
         </div>
 
+        <!-- SMART-004: 显示器设置 -->
+        <div v-if="isScreenshotEnabled">
+          <h3 class="text-sm font-medium text-gray-300 mb-3">显示器设置</h3>
+          <div class="space-y-3">
+            <!-- 多显示器时显示捕获模式选择 -->
+            <div v-if="monitors?.length > 1" class="space-y-2">
+              <label class="text-xs text-gray-300 block mb-1">捕获模式</label>
+              <div class="flex flex-wrap gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="settings.capture_mode"
+                    value="primary"
+                    class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
+                  />
+                  <span class="text-sm text-gray-300">主显示器</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="settings.capture_mode"
+                    value="secondary"
+                    class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
+                  />
+                  <span class="text-sm text-gray-300">副显示器</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="settings.capture_mode"
+                    value="all"
+                    class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
+                  />
+                  <span class="text-sm text-gray-300">全部拼接</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 显示器列表 -->
+            <div v-if="monitors?.length > 1" class="space-y-1">
+              <label class="text-xs text-gray-300 block mb-1">已连接显示器</label>
+              <div
+                v-for="m in monitors"
+                :key="m.index"
+                class="flex items-center gap-2 text-sm bg-darker rounded-lg px-3 py-2 border border-gray-700"
+              >
+                <span class="text-gray-300">{{ m.name }}</span>
+                <span class="text-gray-500">{{ m.resolution }}</span>
+                <span v-if="m.is_primary" class="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">主</span>
+                <!-- 副显示器模式下可选择 -->
+                <button
+                  v-if="settings.capture_mode === 'secondary' && !m.is_primary"
+                  type="button"
+                  @click="settings.selected_monitor_index = m.index"
+                  :class="[
+                    'ml-auto text-xs px-2 py-1 rounded transition-colors',
+                    settings.selected_monitor_index === m.index
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ]"
+                >
+                  {{ settings.selected_monitor_index === m.index ? '已选择' : '选择' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 单显示器提示 -->
+            <div v-if="monitors?.length === 1" class="bg-darker rounded-lg p-3 border border-gray-700">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-gray-400">当前显示器</span>
+                <span class="text-xs text-gray-300">{{ monitors[0]?.name || '未知' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-400">分辨率</span>
+                <span class="text-xs text-gray-300">{{ monitors[0]?.resolution || '未知' }}</span>
+              </div>
+            </div>
+
+            <!-- 加载中或错误状态 -->
+            <div v-if="isLoadingMonitors" class="text-xs text-gray-500">
+              正在加载显示器信息...
+            </div>
+            <div v-if="monitorError" class="text-xs text-red-400">
+              {{ monitorError }}
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">输出配置</h3>
           <div>
@@ -724,11 +812,20 @@ const settings = ref({
   use_custom_work_time: false,
   custom_work_time_start: '09:00',
   custom_work_time_end: '18:00',
-  learned_work_time: null
+  learned_work_time: null,
+  // SMART-004: Multi-monitor support
+  capture_mode: 'primary',
+  selected_monitor_index: 0
 })
 
 // SMART-003: Work time status for learning progress display
 const workTimeStatus = ref(null)
+
+// SMART-004: Monitor settings
+const monitors = ref([])
+const isLoadingMonitors = ref(false)
+const monitorError = ref('')
+const isScreenshotEnabled = ref(true) // Will be set based on backend capability
 
 const loadSettings = async () => {
   try {
@@ -747,6 +844,8 @@ const loadSettings = async () => {
     }
     // SMART-003: Load work time status
     await loadWorkTimeStatus()
+    // SMART-004: Load monitors
+    await loadMonitors()
   } catch (err) {
     console.error('Failed to load settings:', err)
   }
@@ -759,6 +858,25 @@ const loadWorkTimeStatus = async () => {
   } catch (err) {
     console.error('Failed to load work time status:', err)
     // Don't show error to user - this is optional info
+  }
+}
+
+// SMART-004: Load monitor list
+const loadMonitors = async () => {
+  isLoadingMonitors.value = true
+  monitorError.value = ''
+  try {
+    monitors.value = await invoke('get_monitors')
+  } catch (err) {
+    console.error('Failed to load monitors:', err)
+    // If get_monitors is not available, screenshot feature is likely disabled
+    if (String(err).includes('not found') || String(err).includes('not registered')) {
+      isScreenshotEnabled.value = false
+    } else {
+      monitorError.value = `加载显示器信息失败: ${err}`
+    }
+  } finally {
+    isLoadingMonitors.value = false
   }
 }
 

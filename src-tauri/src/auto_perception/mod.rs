@@ -5,6 +5,8 @@ use std::time::{Duration, Instant};
 use tauri::{command, Emitter};
 
 use crate::memory_storage;
+use crate::monitor::get_monitor_list;
+use crate::monitor_types::{CaptureMode, MonitorInfo};
 use crate::silent_tracker::{
     calculate_optimal_silent_minutes, current_threshold, has_sufficient_data, record_capture,
     set_threshold, CaptureReason,
@@ -142,6 +144,9 @@ pub struct CaptureSettings {
     pub window_whitelist: Vec<String>,
     pub window_blacklist: Vec<String>,
     pub use_whitelist_only: bool,
+    // SMART-004: Multi-monitor capture settings
+    pub capture_mode: String,
+    pub selected_monitor_index: usize,
 }
 
 impl Default for CaptureSettings {
@@ -157,6 +162,9 @@ impl Default for CaptureSettings {
             window_whitelist: Vec::new(),
             window_blacklist: Vec::new(),
             use_whitelist_only: false,
+            // SMART-004: Default to primary monitor
+            capture_mode: "primary".to_string(),
+            selected_monitor_index: 0,
         }
     }
 }
@@ -255,6 +263,231 @@ fn capture_screen() -> Result<String, String> {
     ))
 }
 
+// ─── SMART-004: Multi-monitor capture support (Windows) ──────────────────────
+
+/// Capture screen with specified mode (Windows)
+/// Returns (base64_image, monitor_info)
+#[cfg(target_os = "windows")]
+fn capture_screen_with_mode(
+    mode: CaptureMode,
+    selected_index: usize,
+) -> Result<(String, MonitorInfo), String> {
+    use windows_capture::monitor::Monitor;
+
+    let monitor_details = get_monitor_list()?;
+    let monitors = Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+
+    if monitors.is_empty() {
+        return Err("No monitors found".to_string());
+    }
+
+    let monitor_info = MonitorInfo {
+        count: monitor_details.len(),
+        monitors: monitor_details.clone(),
+    };
+
+    let image = match mode {
+        CaptureMode::Primary => {
+            // Find primary monitor
+            let primary_index = monitor_details
+                .iter()
+                .position(|m| m.is_primary)
+                .unwrap_or(0);
+            capture_single_monitor_windows(&monitors, primary_index)?
+        }
+        CaptureMode::Secondary => {
+            // Use selected_index, fallback to first non-primary if out of bounds
+            let index = if selected_index < monitors.len() {
+                selected_index
+            } else {
+                // Fallback to first non-primary monitor
+                monitor_details
+                    .iter()
+                    .position(|m| !m.is_primary)
+                    .unwrap_or(0)
+            };
+            capture_single_monitor_windows(&monitors, index)?
+        }
+        CaptureMode::All => {
+            // Stitch all monitors together
+            stitch_monitors_windows(&monitors, &monitor_details)?
+        }
+    };
+
+    Ok((image, monitor_info))
+}
+
+/// Capture a single monitor by index (Windows version)
+#[cfg(target_os = "windows")]
+fn capture_single_monitor_windows(
+    monitors: &[windows_capture::monitor::Monitor],
+    index: usize,
+) -> Result<String, String> {
+    use std::sync::mpsc;
+    use windows_capture::{
+        capture::{Context, GraphicsCaptureApiHandler},
+        frame::Frame,
+        graphics_capture_api::InternalCaptureControl,
+        settings::{
+            ColorFormat, CursorCaptureSettings, DirtyRegionSettings, DrawBorderSettings,
+            MinimumUpdateIntervalSettings, SecondaryWindowSettings, Settings,
+        },
+    };
+
+    if index >= monitors.len() {
+        return Err(format!(
+            "Monitor index {} out of bounds ({} monitors)",
+            index,
+            monitors.len()
+        ));
+    }
+
+    type FrameResult = Result<(u32, u32, Vec<u8>), String>;
+
+    struct OneShot {
+        tx: mpsc::SyncSender<FrameResult>,
+    }
+
+    impl GraphicsCaptureApiHandler for OneShot {
+        type Flags = mpsc::SyncSender<FrameResult>;
+        type Error = Box<dyn std::error::Error + Send + Sync>;
+
+        fn new(ctx: Context<Self::Flags>) -> Result<Self, Self::Error> {
+            Ok(Self { tx: ctx.flags })
+        }
+
+        fn on_frame_arrived(
+            &mut self,
+            frame: &mut Frame,
+            capture_control: InternalCaptureControl,
+        ) -> Result<(), Self::Error> {
+            let width = frame.width();
+            let height = frame.height();
+            let mut buffer = frame.buffer()?;
+            let row_pitch = buffer.row_pitch() as usize;
+            let raw = buffer.as_raw_buffer();
+            let row_bytes = width as usize * 4;
+
+            let mut rgba_data = Vec::with_capacity(row_bytes * height as usize);
+            for y in 0..(height as usize) {
+                let start = y * row_pitch;
+                rgba_data.extend_from_slice(&raw[start..start + row_bytes]);
+            }
+
+            let _ = self.tx.send(Ok((width, height, rgba_data)));
+            capture_control.stop();
+            Ok(())
+        }
+
+        fn on_closed(&mut self) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    let (tx, rx) = mpsc::sync_channel(1);
+    let settings = Settings::new(
+        monitors[index].clone(),
+        CursorCaptureSettings::Default,
+        DrawBorderSettings::Default,
+        SecondaryWindowSettings::Default,
+        MinimumUpdateIntervalSettings::Default,
+        DirtyRegionSettings::Default,
+        ColorFormat::Rgba8,
+        tx,
+    );
+
+    let _control = OneShot::start_free_threaded(settings)
+        .map_err(|e| format!("Failed to start screen capture: {e}"))?;
+
+    let (width, height, rgba_data) = rx
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .map_err(|_| "Screen capture timed out after 5s".to_string())?
+        .map_err(|e| e)?;
+
+    let image = image::RgbaImage::from_raw(width, height, rgba_data)
+        .ok_or_else(|| "Failed to construct image from frame data".to_string())?;
+
+    let mut buf = Vec::new();
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode PNG: {e}"))?;
+
+    Ok(base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        &buf,
+    ))
+}
+
+/// Stitch all monitors into a single image (Windows version)
+#[cfg(target_os = "windows")]
+fn stitch_monitors_windows(
+    monitors: &[windows_capture::monitor::Monitor],
+    monitor_details: &[crate::monitor_types::MonitorDetail],
+) -> Result<String, String> {
+    if monitors.is_empty() {
+        return Err("No monitors to stitch".to_string());
+    }
+
+    // Capture all monitor images
+    let mut captured_images: Vec<(crate::monitor_types::MonitorDetail, image::RgbaImage)> =
+        Vec::new();
+
+    for (index, _monitor) in monitors.iter().enumerate() {
+        // Capture each monitor
+        let image_base64 = capture_single_monitor_windows(monitors, index)?;
+
+        // Decode base64 to image
+        let image_data =
+            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &image_base64)
+                .map_err(|e| format!("Failed to decode captured image: {}", e))?;
+
+        let img = image::load_from_memory(&image_data)
+            .map_err(|e| format!("Failed to load image: {}", e))?;
+
+        let rgba_image = img.to_rgba8();
+
+        let detail = monitor_details.get(index).cloned().unwrap_or_else(|| {
+            crate::monitor_types::MonitorDetail {
+                index,
+                name: format!("Monitor {}", index + 1),
+                width: rgba_image.width(),
+                height: rgba_image.height(),
+                x: 0,
+                y: 0,
+                is_primary: index == 0,
+            }
+        });
+
+        captured_images.push((detail, rgba_image));
+    }
+
+    // Calculate bounding box for all monitors
+    let (min_x, min_y, max_x, max_y) = calculate_monitor_bounds(&captured_images);
+    let total_width = (max_x - min_x) as u32;
+    let total_height = (max_y - min_y) as u32;
+
+    // Create canvas and overlay all monitor images
+    let mut canvas = image::RgbaImage::new(total_width, total_height);
+
+    for (monitor, img) in &captured_images {
+        let offset_x = (monitor.x - min_x) as u64;
+        let offset_y = (monitor.y - min_y) as u64;
+        image::imageops::overlay(&mut canvas, img, offset_x, offset_y);
+    }
+
+    // Encode to base64
+    let mut buffer = Vec::new();
+    let mut cursor = std::io::Cursor::new(&mut buffer);
+    image::DynamicImage::ImageRgba8(canvas)
+        .write_to(&mut cursor, image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode stitched image: {}", e))?;
+
+    Ok(base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        &buffer,
+    ))
+}
+
 // ─── 非 Windows（macOS / Linux）：xcap ───────────────────────────
 #[cfg(not(target_os = "windows"))]
 fn capture_screen() -> Result<String, String> {
@@ -278,6 +511,169 @@ fn capture_screen() -> Result<String, String> {
         &base64::engine::general_purpose::STANDARD,
         &buffer,
     ))
+}
+
+// ─── SMART-004: Multi-monitor capture support (macOS/Linux) ──────────────────
+
+/// Capture screen with specified mode (macOS/Linux)
+/// Returns (base64_image, monitor_info)
+#[cfg(not(target_os = "windows"))]
+fn capture_screen_with_mode(
+    mode: CaptureMode,
+    selected_index: usize,
+) -> Result<(String, MonitorInfo), String> {
+    let monitor_details = get_monitor_list()?;
+    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+
+    if monitors.is_empty() {
+        return Err("No monitors found".to_string());
+    }
+
+    let monitor_info = MonitorInfo {
+        count: monitor_details.len(),
+        monitors: monitor_details.clone(),
+    };
+
+    let image = match mode {
+        CaptureMode::Primary => {
+            // Find primary monitor (usually at position 0,0)
+            let primary_index = monitor_details
+                .iter()
+                .position(|m| m.is_primary)
+                .unwrap_or(0);
+            capture_single_monitor_xcap(&monitors, primary_index)?
+        }
+        CaptureMode::Secondary => {
+            // Use selected_index, fallback to first non-primary if out of bounds
+            let index = if selected_index < monitors.len() {
+                selected_index
+            } else {
+                // Fallback to first non-primary monitor
+                monitor_details
+                    .iter()
+                    .position(|m| !m.is_primary)
+                    .unwrap_or(0)
+            };
+            capture_single_monitor_xcap(&monitors, index)?
+        }
+        CaptureMode::All => {
+            // Stitch all monitors together
+            stitch_monitors_xcap(&monitors, &monitor_details)?
+        }
+    };
+
+    Ok((image, monitor_info))
+}
+
+/// Capture a single monitor by index (xcap version)
+#[cfg(not(target_os = "windows"))]
+fn capture_single_monitor_xcap(monitors: &[xcap::Monitor], index: usize) -> Result<String, String> {
+    if index >= monitors.len() {
+        return Err(format!(
+            "Monitor index {} out of bounds ({} monitors)",
+            index,
+            monitors.len()
+        ));
+    }
+
+    let rgba_image = monitors[index]
+        .capture_image()
+        .map_err(|e| format!("Failed to capture monitor {}: {}", index, e))?;
+
+    let mut buffer = Vec::new();
+    let mut cursor = std::io::Cursor::new(&mut buffer);
+    image::DynamicImage::ImageRgba8(rgba_image)
+        .write_to(&mut cursor, image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode image: {}", e))?;
+
+    Ok(base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        &buffer,
+    ))
+}
+
+/// Stitch all monitors into a single image (xcap version)
+#[cfg(not(target_os = "windows"))]
+fn stitch_monitors_xcap(
+    monitors: &[xcap::Monitor],
+    monitor_details: &[crate::monitor_types::MonitorDetail],
+) -> Result<String, String> {
+    if monitors.is_empty() {
+        return Err("No monitors to stitch".to_string());
+    }
+
+    // Capture all monitor images
+    let mut captured_images: Vec<(crate::monitor_types::MonitorDetail, image::RgbaImage)> =
+        Vec::new();
+
+    for (index, monitor) in monitors.iter().enumerate() {
+        let rgba_image = monitor
+            .capture_image()
+            .map_err(|e| format!("Failed to capture monitor {}: {}", index, e))?;
+
+        let detail = monitor_details.get(index).cloned().unwrap_or_else(|| {
+            crate::monitor_types::MonitorDetail {
+                index,
+                name: format!("Monitor {}", index + 1),
+                width: rgba_image.width(),
+                height: rgba_image.height(),
+                x: 0,
+                y: 0,
+                is_primary: index == 0,
+            }
+        });
+
+        captured_images.push((detail, rgba_image));
+    }
+
+    // Calculate bounding box for all monitors
+    let (min_x, min_y, max_x, max_y) = calculate_monitor_bounds(&captured_images);
+    let total_width = (max_x - min_x) as u32;
+    let total_height = (max_y - min_y) as u32;
+
+    // Create canvas and overlay all monitor images
+    let mut canvas = image::RgbaImage::new(total_width, total_height);
+
+    for (monitor, img) in &captured_images {
+        let offset_x = (monitor.x - min_x) as u64;
+        let offset_y = (monitor.y - min_y) as u64;
+        image::imageops::overlay(&mut canvas, img, offset_x, offset_y);
+    }
+
+    // Encode to base64
+    let mut buffer = Vec::new();
+    let mut cursor = std::io::Cursor::new(&mut buffer);
+    image::DynamicImage::ImageRgba8(canvas)
+        .write_to(&mut cursor, image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode stitched image: {}", e))?;
+
+    Ok(base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        &buffer,
+    ))
+}
+
+/// Calculate the bounding box for all monitor images
+fn calculate_monitor_bounds(
+    monitors: &[(crate::monitor_types::MonitorDetail, image::RgbaImage)],
+) -> (i32, i32, i32, i32) {
+    if monitors.is_empty() {
+        return (0, 0, 0, 0);
+    }
+
+    let mut min_x = i32::MAX;
+    let mut min_y = i32::MAX;
+    let mut max_x = i32::MIN;
+    let mut max_y = i32::MIN;
+
+    for (monitor, img) in monitors {
+        min_x = min_x.min(monitor.x);
+        min_y = min_y.min(monitor.y);
+        max_x = max_x.max(monitor.x + img.width() as i32);
+        max_y = max_y.max(monitor.y + img.height() as i32);
+    }
+
+    (min_x, min_y, max_x, max_y)
 }
 
 fn save_screenshot(image_base64: &str) -> Option<String> {
@@ -461,6 +857,9 @@ fn load_capture_settings() -> CaptureSettings {
             window_whitelist: parse_window_patterns(s.window_whitelist.as_deref()),
             window_blacklist: parse_window_patterns(s.window_blacklist.as_deref()),
             use_whitelist_only: s.use_whitelist_only.unwrap_or(false),
+            // SMART-004: Load multi-monitor settings
+            capture_mode: s.capture_mode.unwrap_or_else(|| "primary".to_string()),
+            selected_monitor_index: s.selected_monitor_index.unwrap_or(0) as usize,
         },
         Err(_) => CaptureSettings::default(),
     }
@@ -593,7 +992,13 @@ async fn capture_and_store() -> Result<(), String> {
         return Ok(());
     }
 
-    let image_base64 = capture_screen()?;
+    // SMART-004: Parse capture mode and capture with multi-monitor support
+    let capture_mode = settings
+        .capture_mode
+        .parse::<CaptureMode>()
+        .unwrap_or(CaptureMode::Primary);
+    let (image_base64, monitor_info) =
+        capture_screen_with_mode(capture_mode, settings.selected_monitor_index)?;
 
     // Check if screen has changed enough to warrant a full capture
     // SMART-002: should_capture now returns Option<CaptureReason> for pattern tracking
@@ -613,6 +1018,7 @@ async fn capture_and_store() -> Result<(), String> {
     let analysis = analyze_screen(&settings, &image_base64).await?;
 
     // SMART-001: Include window info in content JSON (AC1)
+    // SMART-004: Include monitor info in content JSON (AC3)
     let content = serde_json::json!({
         "current_focus": analysis.current_focus,
         "active_software": analysis.active_software,
@@ -620,12 +1026,24 @@ async fn capture_and_store() -> Result<(), String> {
         "active_window": {
             "title": active_window.title,
             "process_name": active_window.process_name
+        },
+        "monitor_info": {
+            "count": monitor_info.count,
+            "capture_mode": capture_mode.to_string()
         }
     })
     .to_string();
 
-    memory_storage::add_record("auto", &content, screenshot_path.as_deref(), None)
-        .map_err(|e| format!("Failed to store capture: {}", e))?;
+    // SMART-004: Store monitor_info as JSON in the monitor_info field
+    let monitor_info_json = serde_json::to_string(&monitor_info).ok();
+
+    memory_storage::add_record(
+        "auto",
+        &content,
+        screenshot_path.as_deref(),
+        monitor_info_json.as_deref(),
+    )
+    .map_err(|e| format!("Failed to store capture: {}", e))?;
 
     tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
     Ok(())
@@ -782,7 +1200,14 @@ pub fn get_default_analysis_prompt() -> String {
 /// 返回截图文件的绝对路径，供前端直接预览。
 #[command]
 pub async fn take_screenshot() -> Result<String, String> {
-    let image_base64 = capture_screen()?;
+    // SMART-004: Use multi-monitor capture settings
+    let settings = load_capture_settings();
+    let capture_mode = settings
+        .capture_mode
+        .parse::<CaptureMode>()
+        .unwrap_or(CaptureMode::Primary);
+    let (image_base64, _monitor_info) =
+        capture_screen_with_mode(capture_mode, settings.selected_monitor_index)?;
     let path = save_screenshot(&image_base64).ok_or_else(|| "截图保存失败".to_string())?;
     tracing::info!("Screenshot saved for preview: {}", path);
     Ok(path)
@@ -1124,10 +1549,15 @@ mod tests {
             window_whitelist: vec!["VS Code".to_string()],
             window_blacklist: vec!["Chrome".to_string()],
             use_whitelist_only: true,
+            // SMART-004: New fields
+            capture_mode: "all".to_string(),
+            selected_monitor_index: 1,
         };
         assert_eq!(settings.window_whitelist, vec!["VS Code"]);
         assert_eq!(settings.window_blacklist, vec!["Chrome"]);
         assert!(settings.use_whitelist_only);
+        assert_eq!(settings.capture_mode, "all");
+        assert_eq!(settings.selected_monitor_index, 1);
     }
 
     // ── SMART-003: Work time integration tests ──
@@ -1163,7 +1593,9 @@ mod tests {
                 use_custom_work_time INTEGER DEFAULT 0,
                 custom_work_time_start TEXT DEFAULT '09:00',
                 custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0
             )",
             [],
         )
@@ -1281,5 +1713,199 @@ mod tests {
             (status.learning_progress - 0.0).abs() < 0.01,
             "learning_progress should be 0.0 for fresh install"
         );
+    }
+
+    // ── SMART-004: Multi-monitor capture settings tests ──
+
+    #[test]
+    fn capture_settings_default_has_primary_capture_mode() {
+        let settings = CaptureSettings::default();
+        assert_eq!(settings.capture_mode, "primary");
+        assert_eq!(settings.selected_monitor_index, 0);
+    }
+
+    #[test]
+    fn calculate_monitor_bounds_returns_zeros_for_empty() {
+        let monitors: Vec<(crate::monitor_types::MonitorDetail, image::RgbaImage)> = Vec::new();
+        let (min_x, min_y, max_x, max_y) = calculate_monitor_bounds(&monitors);
+        assert_eq!((min_x, min_y, max_x, max_y), (0, 0, 0, 0));
+    }
+
+    #[test]
+    fn calculate_monitor_bounds_single_monitor() {
+        let detail = crate::monitor_types::MonitorDetail {
+            index: 0,
+            name: "Primary".to_string(),
+            width: 1920,
+            height: 1080,
+            x: 0,
+            y: 0,
+            is_primary: true,
+        };
+        let img = image::RgbaImage::new(1920, 1080);
+        let monitors = vec![(detail, img)];
+
+        let (min_x, min_y, max_x, max_y) = calculate_monitor_bounds(&monitors);
+        assert_eq!(min_x, 0);
+        assert_eq!(min_y, 0);
+        assert_eq!(max_x, 1920);
+        assert_eq!(max_y, 1080);
+    }
+
+    #[test]
+    fn calculate_monitor_bounds_dual_monitors_horizontal() {
+        // Two monitors side by side: Primary at (0,0), Secondary at (1920,0)
+        let detail1 = crate::monitor_types::MonitorDetail {
+            index: 0,
+            name: "Primary".to_string(),
+            width: 1920,
+            height: 1080,
+            x: 0,
+            y: 0,
+            is_primary: true,
+        };
+        let detail2 = crate::monitor_types::MonitorDetail {
+            index: 1,
+            name: "Secondary".to_string(),
+            width: 2560,
+            height: 1440,
+            x: 1920,
+            y: 0,
+            is_primary: false,
+        };
+        let img1 = image::RgbaImage::new(1920, 1080);
+        let img2 = image::RgbaImage::new(2560, 1440);
+        let monitors = vec![(detail1, img1), (detail2, img2)];
+
+        let (min_x, min_y, max_x, max_y) = calculate_monitor_bounds(&monitors);
+        assert_eq!(min_x, 0);
+        assert_eq!(min_y, 0);
+        assert_eq!(max_x, 4480); // 1920 + 2560
+        assert_eq!(max_y, 1440); // max(1080, 1440)
+    }
+
+    #[test]
+    fn calculate_monitor_bounds_dual_monitors_vertical() {
+        // Two monitors stacked: Primary at (0,0), Secondary at (0,1080)
+        let detail1 = crate::monitor_types::MonitorDetail {
+            index: 0,
+            name: "Primary".to_string(),
+            width: 1920,
+            height: 1080,
+            x: 0,
+            y: 0,
+            is_primary: true,
+        };
+        let detail2 = crate::monitor_types::MonitorDetail {
+            index: 1,
+            name: "Secondary".to_string(),
+            width: 1920,
+            height: 1080,
+            x: 0,
+            y: 1080,
+            is_primary: false,
+        };
+        let img1 = image::RgbaImage::new(1920, 1080);
+        let img2 = image::RgbaImage::new(1920, 1080);
+        let monitors = vec![(detail1, img1), (detail2, img2)];
+
+        let (min_x, min_y, max_x, max_y) = calculate_monitor_bounds(&monitors);
+        assert_eq!(min_x, 0);
+        assert_eq!(min_y, 0);
+        assert_eq!(max_x, 1920);
+        assert_eq!(max_y, 2160); // 1080 + 1080
+    }
+
+    #[test]
+    fn calculate_monitor_bounds_with_negative_positions() {
+        // Monitor at negative position (e.g., monitor to the left of primary)
+        let detail = crate::monitor_types::MonitorDetail {
+            index: 0,
+            name: "Left".to_string(),
+            width: 1920,
+            height: 1080,
+            x: -1920,
+            y: 0,
+            is_primary: false,
+        };
+        let img = image::RgbaImage::new(1920, 1080);
+        let monitors = vec![(detail, img)];
+
+        let (min_x, min_y, max_x, max_y) = calculate_monitor_bounds(&monitors);
+        assert_eq!(min_x, -1920);
+        assert_eq!(min_y, 0);
+        assert_eq!(max_x, 0); // -1920 + 1920
+        assert_eq!(max_y, 1080);
+    }
+
+    // ── SMART-004: load_capture_settings multi-monitor tests ──
+
+    /// Helper: Setup test database with multi-monitor settings support
+    fn setup_test_db_with_multi_monitor() {
+        use rusqlite::Connection;
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                api_base_url TEXT,
+                api_key TEXT,
+                model_name TEXT,
+                screenshot_interval INTEGER DEFAULT 5,
+                summary_time TEXT DEFAULT '18:00',
+                obsidian_path TEXT,
+                auto_capture_enabled INTEGER DEFAULT 0,
+                last_summary_path TEXT,
+                summary_model_name TEXT,
+                analysis_prompt TEXT,
+                summary_prompt TEXT,
+                change_threshold INTEGER DEFAULT 3,
+                max_silent_minutes INTEGER DEFAULT 30,
+                summary_title_format TEXT DEFAULT '工作日报 - {date}',
+                include_manual_records INTEGER DEFAULT 1,
+                window_whitelist TEXT DEFAULT '[]',
+                window_blacklist TEXT DEFAULT '[]',
+                use_whitelist_only INTEGER DEFAULT 0,
+                auto_adjust_silent INTEGER DEFAULT 1,
+                silent_adjustment_paused_until TEXT DEFAULT NULL,
+                auto_detect_work_time INTEGER DEFAULT 1,
+                use_custom_work_time INTEGER DEFAULT 0,
+                custom_work_time_start TEXT DEFAULT '09:00',
+                custom_work_time_end TEXT DEFAULT '18:00',
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0
+            )",
+            [],
+        )
+        .unwrap();
+        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
+            .unwrap();
+        let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+        *db = Some(conn);
+    }
+
+    #[test]
+    fn load_capture_settings_defaults_to_primary_mode() {
+        setup_test_db_with_multi_monitor();
+
+        let settings = load_capture_settings();
+        assert_eq!(settings.capture_mode, "primary");
+        assert_eq!(settings.selected_monitor_index, 0);
+    }
+
+    #[test]
+    fn load_capture_settings_loads_custom_mode() {
+        use crate::memory_storage::get_settings_sync;
+        setup_test_db_with_multi_monitor();
+
+        // Save custom capture settings
+        let mut settings = get_settings_sync().unwrap();
+        settings.capture_mode = Some("all".to_string());
+        settings.selected_monitor_index = Some(2);
+        crate::memory_storage::save_settings_sync(&settings).unwrap();
+
+        let loaded = load_capture_settings();
+        assert_eq!(loaded.capture_mode, "all");
+        assert_eq!(loaded.selected_monitor_index, 2);
     }
 }
