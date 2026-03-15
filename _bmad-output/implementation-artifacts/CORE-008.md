@@ -177,15 +177,18 @@ Claude Opus 4.6 (review follow-up implementation)
 - `src-tauri/src/export/mod.rs` (修改 — 添加 7 个平台命令验证测试)
 - `src-tauri/src/crypto/mod.rs` (修改 — 添加 6 个平台条件测试)
 - `src-tauri/src/manual_entry/mod.rs` (修改 — 添加 5 个平台命令验证测试)
-- `src-tauri/src/synthesis/mod.rs` (修改 — 添加 3 个性能基准测试)
-- `src-tauri/src/memory_storage/mod.rs` (修改 — 添加 5 个 CRUD 基准测试 + 修复 schema)
-- `src-tauri/src/performance.rs` (修改 — 删除 measure_time_ms_async + 改进内存测量 + 修正注释)
+- `src-tauri/src/synthesis/mod.rs` (修改 — 添加性能基准测试模块)
+- `src-tauri/src/memory_storage/mod.rs` (修改 — 添加 CRUD 基准测试模块 + 修复 schema)
+- `src-tauri/src/performance.rs` (修改 — 删除 measure_time_ms_async + 改进内存测量 + 修正注释 + 统一 serde derive 风格)
+- `src-tauri/src/lib.rs` (修改 — 注册 performance 模块)
+- `src-tauri/src/main.rs` (修改 — 注册 performance commands 到 generate_handler)
 
 ## Change Log
 
 - 2026-03-15: 完成跨平台兼容性测试实现 (Weiyicheng)
-- 2026-03-15: Code review — 发现严重缺陷，状态回退至 in-progress (Claude Opus 4.6)
+- 2026-03-15: Code review #1 — 发现严重缺陷，状态回退至 in-progress (Claude Opus 4.6)
 - 2026-03-15: 完成所有 review follow-up 修复 — 全部 AC 已满足，19 个新测试添加 (Claude Opus 4.6)
+- 2026-03-15: Code review #2 — Approved，所有 AC 验证通过，修复 2 MEDIUM + 1 LOW 问题，状态 → done (Claude Opus 4.6)
 
 ## Senior Developer Review (AI)
 
@@ -224,3 +227,51 @@ Claude Opus 4.6 (review follow-up implementation)
 
 1. ~~**`get_memory_usage_mb` 硬编码返回值**~~ → **已修复**: 添加 macOS (ps -o rss) 和 Windows (tasklist) 内存测量
 2. ~~**`run_performance_benchmark` 指标误标**~~ → **已修复**: 添加注释说明实际测量内容
+
+---
+
+## Senior Developer Review #2 (AI)
+
+**审查日期**: 2026-03-15
+**审查者**: Claude Opus 4.6 (adversarial code review)
+**结论**: Approved — 状态 → done
+
+### 审查范围
+
+基于第一次 review follow-up 修复后的完整实现进行二次审查，验证所有 AC 和 Task 的真实性。
+
+### AC 验证结果
+
+| AC | 状态 | 证据 |
+|----|------|------|
+| #1 CI 测试矩阵 | IMPLEMENTED | `test.yml` matrix: `[macos-latest, windows-latest]`，CI 运行成功 |
+| #2 平台单元测试 | IMPLEMENTED | window_info(6), export(5), crypto(5), manual_entry(8) = 24 tests |
+| #3 性能基准 | IMPLEMENTED | synthesis benchmarks(5), memory_storage benchmarks(6), performance.rs(5) |
+| #4 跨平台编译 | IMPLEMENTED | CI 双平台 `cargo clippy --no-default-features` + `cargo test --no-default-features` |
+| #5 命令 mock 测试 | IMPLEMENTED | export + manual_entry 平台命令验证（open/explorer/xdg-open） |
+| #6 文件权限测试 | IMPLEMENTED | crypto Unix chmod 600 + Windows no-op + 非法路径处理 |
+
+### Task [x] 验证
+
+所有 3 个 Task 及其子任务均已验证为真实完成。
+
+### Git vs Story File List
+
+**本次发现 2 个差异（已修复）：**
+- `src-tauri/src/lib.rs` — git 中有 CORE-008 变更但未在 File List 中记录 → 已补充
+- `src-tauri/src/main.rs` — git 中有 CORE-008 变更但未在 File List 中记录 → 已补充
+
+### 已修复问题
+
+**MEDIUM (2 项 — 已在本次 review 中修复):**
+1. **重复基准测试** — `synthesis/mod.rs` 和 `memory_storage/mod.rs` 各包含两组几乎相同的基准测试（内联 + `mod benchmarks`），删除 8 个重复的内联测试，保留更完善的 `mod benchmarks` 版本
+2. **File List 不完整** — 补充 `lib.rs` 和 `main.rs` 到 File List
+
+**LOW (1 项 — 已在本次 review 中修复):**
+1. **serde derive 风格不一致** — `performance.rs` 统一使用导入的 `Serialize, Deserialize` 代替全路径 `serde::Serialize`
+
+### 测试结果
+
+- 修复后 Rust 测试: **333 passed, 0 failed**（从 341 减少 8 个重复测试）
+- `cargo clippy --no-default-features -- -D warnings`: 零警告
+- `cargo fmt`: 无格式问题

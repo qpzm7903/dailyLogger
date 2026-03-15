@@ -17,7 +17,7 @@ where
 }
 
 /// Performance benchmark results
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BenchmarkResult {
     pub metric: String,
     pub value: u64,
@@ -27,7 +27,7 @@ pub struct BenchmarkResult {
 }
 
 /// Performance benchmark report
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PerformanceReport {
     pub app_startup_ms: u64,
     pub screenshot_processing_ms: u64,
