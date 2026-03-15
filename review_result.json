@@ -1,27 +1,23 @@
 {
   "task_id": "SMART-001",
-  "title": "Task 1: 实现跨平台窗口信息获取",
+  "title": "Task 2: 扩展数据库 Schema (窗口白名单/黑名单配置)",
   "verdict": "pass",
-  "score": 85,
-  "summary": "Implementation correctly creates cross-platform window detection module with proper Windows API usage, macOS AppleScript, and Linux xdotool support. Code quality issues (unused import, CloseHandle usage) have been fixed. Tests cover struct creation/serialization and verify the function doesn't panic. Mock tests for platform-specific behavior were not implemented but the existing tests provide reasonable coverage.",
+  "score": 92,
+  "summary": "Task 2 实现正确完整。数据库迁移、结构体扩展、查询更新、测试覆盖均符合规范。代码风格与现有代码一致，使用幂等迁移策略避免首次创建和增量迁移的重复逻辑。",
   "issues": [
     {
       "severity": "low",
-      "file": "src-tauri/src/window_info/mod.rs",
-      "line": 188,
-      "description": "Tests don't mock platform-specific behavior as suggested by spec. The spec says '编写单元测试（mock 各平台返回）' but tests only verify struct creation/serialization and that get_active_window() doesn't panic.",
-      "suggestion": "Consider adding mock tests using trait-based abstraction if more rigorous platform-specific testing is needed. Current tests are adequate for verifying the function works without panicking."
+      "location": "src-tauri/src/memory_storage/mod.rs:89-101",
+      "description": "迁移使用 `let _ = ...` 忽略所有错误，可能掩盖其他迁移问题（如磁盘空间不足、权限问题等）",
+      "suggestion": "考虑仅忽略 SqliteFailure(Error) 中特定错误码，或添加 tracing::warn! 记录被忽略的错误"
     }
   ],
   "strengths": [
-    "Proper use of PROCESS_QUERY_LIMITED_INFORMATION (0x1000) for minimal privilege on Windows",
-    "Good graceful degradation - returns empty strings instead of panicking on failure",
-    "Proper conditional compilation for cross-platform support",
-    "Fallback implementation for unsupported platforms (FreeBSD, etc.)",
-    "Serde derive with #[serde(default)] for JSON deserialization robustness",
-    "All 7 tests pass and clippy passes with no warnings",
-    "Fixed: unused import removed",
-    "Fixed: CloseHandle now uses proper API instead of accessing raw handle"
+    "测试覆盖全面：9 个新测试覆盖默认值、持久化、布尔值双向转换、Unicode 和特殊字符",
+    "代码一致性：命名、类型、布尔转换模式与现有代码保持一致",
+    "幂等迁移：使用 `let _ = ...` 实现"列已存在"错误的静默处理，支持增量迁移",
+    "默认值合理：JSON 数组默认 '[]' 便于前端直接 JSON.parse()，无需 null 处理",
+    "测试辅助函数更新完整：synthesis/mod.rs 中的 create_settings_with_include_manual 已包含新字段"
   ],
   "recommendation": "approve"
 }
