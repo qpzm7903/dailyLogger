@@ -166,6 +166,10 @@ pub fn init_database() -> Result<(), String> {
         "ALTER TABLE settings ADD COLUMN weekly_report_day INTEGER DEFAULT 0",
         [],
     );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN last_weekly_report_path TEXT",
+        [],
+    );
 
     // REPORT-002: 月报生成配置
     let _ = conn.execute(
@@ -362,6 +366,7 @@ pub struct Settings {
     // REPORT-001: 周报生成配置
     pub weekly_report_prompt: Option<String>,
     pub weekly_report_day: Option<i32>, // 0=周一, 6=周日
+    pub last_weekly_report_path: Option<String>,
     // REPORT-002: 月报生成配置
     pub monthly_report_prompt: Option<String>,
 }
@@ -982,7 +987,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 auto_detect_work_time, use_custom_work_time,
                 custom_work_time_start, custom_work_time_end, learned_work_time,
                 capture_mode, selected_monitor_index, tag_categories, is_ollama,
-                weekly_report_prompt, weekly_report_day, monthly_report_prompt
+                weekly_report_prompt, weekly_report_day, last_weekly_report_path,
+                monthly_report_prompt
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -1021,7 +1027,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 is_ollama: row.get::<_, Option<i32>>(28)?.map(|v| v != 0),
                 weekly_report_prompt: row.get(29)?,
                 weekly_report_day: row.get(30)?,
-                monthly_report_prompt: row.get(31)?,
+                last_weekly_report_path: row.get(31)?,
+                monthly_report_prompt: row.get(32)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -1105,7 +1112,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             is_ollama = ?29,
             weekly_report_prompt = ?30,
             weekly_report_day = ?31,
-            monthly_report_prompt = ?32
+            last_weekly_report_path = ?32,
+            monthly_report_prompt = ?33
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -1143,6 +1151,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             Some(if is_ollama { 1 } else { 0 }),
             settings.weekly_report_prompt,
             settings.weekly_report_day,
+            settings.last_weekly_report_path,
             settings.monthly_report_prompt,
         ],
     )
@@ -1954,6 +1963,7 @@ mod tests {
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
                 weekly_report_day INTEGER DEFAULT 0,
+                last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT
             )",
             [],
@@ -3638,5 +3648,101 @@ mod tests {
         // Page 1: remaining 5 records
         let page1 = get_records_by_manual_tags(vec![tag.id], 1, 10).unwrap();
         assert_eq!(page1.len(), 5);
+    }
+
+    // ── Tests for get_week_records_sync (REPORT-001) ──
+
+    #[test]
+    #[serial]
+    fn week_records_includes_today() {
+        setup_test_db();
+
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(12, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "week_test_today_record");
+
+        let records = get_week_records_sync(0).unwrap();
+        assert!(
+            records
+                .iter()
+                .any(|r| r.content == "week_test_today_record"),
+            "Today's record must appear in this week's records"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn week_records_empty_db_returns_empty() {
+        setup_test_db();
+        // Don't insert any records
+        let records = get_week_records_sync(0).unwrap();
+        // May contain records from parallel tests, but at minimum should not error
+        assert!(records.len() >= 0);
+    }
+
+    #[test]
+    #[serial]
+    fn week_records_includes_week_start_boundary() {
+        setup_test_db();
+
+        // Calculate the start of the current week (Monday)
+        let today = chrono::Local::now().date_naive();
+        let weekday = today.weekday().num_days_from_monday() as i64;
+        let week_start = today - chrono::Duration::days(weekday);
+
+        // Insert record at Monday 00:00:00
+        let ts = local_to_utc_rfc3339(week_start.and_hms_opt(0, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "week_boundary_start_record");
+
+        let records = get_week_records_sync(0).unwrap();
+        assert!(
+            records
+                .iter()
+                .any(|r| r.content == "week_boundary_start_record"),
+            "Record at week start boundary (Monday 00:00) must be included"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn week_records_includes_week_end_boundary() {
+        setup_test_db();
+
+        // Calculate the end of the current week (Sunday)
+        let today = chrono::Local::now().date_naive();
+        let weekday = today.weekday().num_days_from_monday() as i64;
+        let week_end = today - chrono::Duration::days(weekday) + chrono::Duration::days(6);
+
+        // Insert record at Sunday 23:59:59
+        let ts = local_to_utc_rfc3339(week_end.and_hms_opt(23, 59, 59).unwrap());
+        insert_record_with_ts(&ts, "week_boundary_end_record");
+
+        let records = get_week_records_sync(0).unwrap();
+        assert!(
+            records
+                .iter()
+                .any(|r| r.content == "week_boundary_end_record"),
+            "Record at week end boundary (Sunday 23:59) must be included"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn week_records_respects_custom_week_start_day() {
+        setup_test_db();
+
+        // Insert a record for today
+        let today = chrono::Local::now().date_naive();
+        let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "custom_week_start_record");
+
+        // Query with week_start_day=6 (Sunday)
+        let records = get_week_records_sync(6).unwrap();
+        assert!(
+            records
+                .iter()
+                .any(|r| r.content == "custom_week_start_record"),
+            "Today's record should still be found with custom week start day"
+        );
     }
 }

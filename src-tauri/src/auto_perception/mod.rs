@@ -1460,6 +1460,7 @@ mod tests {
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
                 weekly_report_day INTEGER DEFAULT 0,
+                last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT
             )",
             [],
@@ -1750,6 +1751,7 @@ mod tests {
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
                 weekly_report_day INTEGER DEFAULT 0,
+                last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT
             )",
             [],

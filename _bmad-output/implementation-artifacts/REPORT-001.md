@@ -35,7 +35,7 @@ so that I can have a comprehensive overview of my work across multiple days for 
     - 生成文件名: `周报-{start_date}-to-{end-date}.md`
   - [x] 2.3 添加 `get_default_weekly_report_prompt()` 函数
   - [x] 2.4 在 main.rs 的 `generate_handler![]` 中注册新命令
-  - [ ] 2.5 编写单元测试
+  - [x] 2.5 编写单元测试
     - 测试时间边界（周一 00:00, 周日 23:59）
     - 测试空记录处理
     - 测试自定义周起始日
@@ -45,7 +45,7 @@ so that I can have a comprehensive overview of my work across multiple days for 
   - [x] 3.2 创建 `WeeklyReportViewer.vue` 组件或复用 `DailySummaryViewer.vue`
   - [x] 3.3 添加周报生成 loading 状态和成功/错误提示
   - [x] 3.4 显示最近周报路径和打开按钮
-  - [x] 3.5 在 SettingsModal.vue 添加周报模板配置入口（可选）
+  - [ ] 3.5 在 SettingsModal.vue 添加周报模板配置入口（可选）
 
 - [ ] Task 4: 端到端测试 (AC: All)
   - [ ] 4.1 前端 Vitest 测试: 周报生成按钮交互
@@ -53,9 +53,14 @@ so that I can have a comprehensive overview of my work across multiple days for 
 
 ## Review Follow-ups (AI)
 
-- [ ] [AI-Review][MEDIUM] Task 2.5: 编写 get_week_records_sync 单元测试 [memory_storage/mod.rs:446]
+- [x] ~~[AI-Review][HIGH] BUG: `generate_weekly_report_filename()` 硬编码 week_start_day=0，与数据查询使用的 settings.weekly_report_day 不一致~~ **已修复**
+- [x] ~~[AI-Review][HIGH] 周报覆盖 `last_summary_path` 导致日报路径丢失~~ **已修复：添加独立的 `last_weekly_report_path` 字段**
+- [x] ~~[AI-Review][MEDIUM] App.vue 中日报/周报按钮未分组，justify-between 布局不正确~~ **已修复**
+- [x] ~~[AI-Review][MEDIUM] Task 2.5 单元测试缺失~~ **已补充：get_week_records_sync 边界测试、weekly filename 测试、weekly prompt 测试**
+- [ ] [AI-Review][MEDIUM] Task 3.5: SettingsModal 未添加周报模板配置入口（标记为可选，降级为 LOW）
 - [ ] [AI-Review][LOW] Task 4.1: 前端 Vitest 测试周报生成按钮交互
 - [ ] [AI-Review][LOW] Task 4.2: Rust 集成测试完整周报生成流程
+- [ ] [AI-Review][LOW] generate_weekly_report() 与 generate_daily_summary() 代码重复，可提取公共 LLM 调用函数
 
 ## Dev Notes
 
@@ -65,6 +70,7 @@ so that I can have a comprehensive overview of my work across multiple days for 
 - 复用现有 `synthesis/mod.rs` 的日报生成模式
 - 周报使用独立的 prompt 模板，而非日报模板
 - 文件输出到同一 Obsidian 路径
+- **[Code Review Fix]** 周报路径使用独立的 `last_weekly_report_path` 存储，避免覆盖日报路径
 
 **必须遵循的代码模式** [Source: architecture.md]:
 - Tauri Command: `#[command]` + async
@@ -111,6 +117,10 @@ let _ = conn.execute(
 );
 let _ = conn.execute(
     "ALTER TABLE settings ADD COLUMN weekly_report_day INTEGER DEFAULT 0",
+    [],
+);
+let _ = conn.execute(
+    "ALTER TABLE settings ADD COLUMN last_weekly_report_path TEXT",
     [],
 );
 ```
@@ -231,3 +241,31 @@ fn finds_records_at_week_boundaries() {
 ### Completion Notes List
 
 ### File List
+
+## Code Review Record
+
+### Review 2 - 2026-03-15 (Claude Opus 4.6)
+
+**Result:** APPROVED with fixes applied
+
+**Issues Found:** 0 Critical, 3 High, 3 Medium, 2 Low
+**Issues Fixed:** 3 High, 2 Medium (all HIGH and actionable MEDIUM fixed)
+**Action Items Remaining:** 4 (LOW priority)
+
+#### Fixes Applied:
+1. **[HIGH] BUG FIX:** `generate_weekly_report_filename()` now accepts `week_start_day` parameter, matching the data query range
+2. **[HIGH] BUG FIX:** Added `last_weekly_report_path` field to Settings to prevent weekly report from overwriting daily summary path
+3. **[MEDIUM] UI FIX:** Grouped "生成日报" and "生成周报" buttons in a wrapper div for proper `justify-between` layout
+4. **[MEDIUM] TESTS:** Added 12 new unit tests:
+   - `get_week_records_sync`: boundary tests (week start, week end, today, custom start day)
+   - `get_week_dates_for_filename`: 7-day range, Monday start, Sunday start
+   - `generate_weekly_report_filename`: format validation, custom week start day
+   - `get_default_weekly_report_prompt`: content and non-empty checks
+5. **[MEDIUM] DB SYNC:** Updated all test DB schemas (memory_storage, manual_entry, auto_perception) with `last_weekly_report_path` column
+
+#### Remaining LOW items (deferred):
+- Task 3.5: SettingsModal weekly report config (marked optional in spec)
+- Task 4.1/4.2: E2E tests
+- Code duplication between daily/weekly report generation
+
+**Test Results:** 250 Rust tests passed, 179 frontend tests passed

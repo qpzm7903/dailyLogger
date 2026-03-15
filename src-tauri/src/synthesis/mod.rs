@@ -370,6 +370,7 @@ mod tests {
             include_manual_records: Some(include),
             weekly_report_prompt: None,
             weekly_report_day: None,
+            last_weekly_report_path: None,
             summary_title_format: None,
             api_base_url: None,
             api_key: None,
@@ -580,6 +581,88 @@ mod tests {
         assert!(!prompt.is_empty());
     }
 
+    // ── Tests for get_default_weekly_report_prompt ──
+
+    #[test]
+    fn get_default_weekly_report_prompt_returns_expected_content() {
+        let prompt = get_default_weekly_report_prompt();
+        assert!(prompt.contains("{records}"));
+        assert!(prompt.contains("Markdown"));
+        assert!(prompt.contains("周报"));
+    }
+
+    #[test]
+    fn get_default_weekly_report_prompt_is_not_empty() {
+        let prompt = get_default_weekly_report_prompt();
+        assert!(!prompt.is_empty());
+    }
+
+    // ── Tests for get_week_dates_for_filename ──
+
+    #[test]
+    fn week_dates_returns_7_day_range() {
+        let (start, end) = get_week_dates_for_filename(0);
+        let start_date =
+            chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d").expect("valid start date");
+        let end_date = chrono::NaiveDate::parse_from_str(&end, "%Y-%m-%d").expect("valid end date");
+        let diff = (end_date - start_date).num_days();
+        assert_eq!(diff, 6, "Week range should be 6 days (Mon-Sun)");
+    }
+
+    #[test]
+    fn week_dates_start_is_monday_when_week_start_day_is_0() {
+        let (start, _end) = get_week_dates_for_filename(0);
+        let start_date =
+            chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d").expect("valid start date");
+        assert_eq!(
+            start_date.weekday(),
+            chrono::Weekday::Mon,
+            "Week should start on Monday when week_start_day=0"
+        );
+    }
+
+    #[test]
+    fn week_dates_start_is_sunday_when_week_start_day_is_6() {
+        let (start, _end) = get_week_dates_for_filename(6);
+        let start_date =
+            chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d").expect("valid start date");
+        assert_eq!(
+            start_date.weekday(),
+            chrono::Weekday::Sun,
+            "Week should start on Sunday when week_start_day=6"
+        );
+    }
+
+    // ── Tests for generate_weekly_report_filename ──
+
+    #[test]
+    fn weekly_report_filename_has_correct_format() {
+        let filename = generate_weekly_report_filename(0);
+        assert!(
+            filename.starts_with("周报-"),
+            "Filename should start with '周报-'"
+        );
+        assert!(filename.contains("-to-"), "Filename should contain '-to-'");
+        assert!(filename.ends_with(".md"), "Filename should end with '.md'");
+    }
+
+    #[test]
+    fn weekly_report_filename_uses_correct_week_start_day() {
+        // When week_start_day=6 (Sunday), the start date should be a Sunday
+        let filename = generate_weekly_report_filename(6);
+        // Extract start date from filename: "周报-YYYY-MM-DD-to-YYYY-MM-DD.md"
+        let parts: Vec<&str> = filename.split('-').collect();
+        // parts: ["周报", "YYYY", "MM", "DD", "to", "YYYY", "MM", "DD.md"]
+        let start_date_str = format!("{}-{}-{}", parts[1], parts[2], parts[3]);
+        let start_date = chrono::NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")
+            .expect("valid start date in filename");
+        assert_eq!(
+            start_date.weekday(),
+            chrono::Weekday::Sun,
+            "Filename should reflect Sunday as week start"
+        );
+    }
+
     // ── Tests for get_default_monthly_report_prompt ──
 
     #[test]
@@ -660,8 +743,9 @@ fn get_week_dates_for_filename(week_start_day: i32) -> (String, String) {
 }
 
 /// Generate the filename for weekly report.
-pub fn generate_weekly_report_filename() -> String {
-    let (start_date, end_date) = get_week_dates_for_filename(0);
+/// `week_start_day`: 0=Monday, 6=Sunday
+pub fn generate_weekly_report_filename(week_start_day: i32) -> String {
+    let (start_date, end_date) = get_week_dates_for_filename(week_start_day);
     format!("周报-{}-to-{}.md", start_date, end_date)
 }
 
@@ -821,8 +905,8 @@ pub async fn generate_weekly_report() -> Result<String, String> {
         })
     );
 
-    // Generate filename based on week dates
-    let filename = generate_weekly_report_filename();
+    // Generate filename based on week dates (use same week_start_day as data query)
+    let filename = generate_weekly_report_filename(week_start_day);
 
     let output_dir = PathBuf::from(&obsidian_path);
     std::fs::create_dir_all(&output_dir)
@@ -834,9 +918,9 @@ pub async fn generate_weekly_report() -> Result<String, String> {
 
     let path_str = output_path.to_string_lossy().to_string();
 
-    // Save last weekly report path to settings
+    // Save last weekly report path to settings (separate from daily summary path)
     let mut updated_settings = settings.clone();
-    updated_settings.last_summary_path = Some(path_str.clone());
+    updated_settings.last_weekly_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 

@@ -95,7 +95,7 @@
             <div class="flex items-center gap-2">
               <span class="text-2xl">📊</span>
               <h2 class="font-medium">今日工作流</h2>
-              <button 
+              <button
                 v-if="screenshotCount > 0"
                 @click="showScreenshotGallery = true"
                 class="ml-2 text-xs text-primary hover:underline"
@@ -103,27 +103,29 @@
                 (📷 {{ screenshotCount }} 张截图)
               </button>
             </div>
-            <button
-              @click="generateSummary"
-              :disabled="isGenerating"
-              class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            >
-              {{ isGenerating ? '生成中...' : '生成日报' }}
-            </button>
-            <button
-              @click="generateWeeklyReport"
-              :disabled="isGeneratingWeekly"
-              class="ml-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            >
-              {{ isGeneratingWeekly ? '生成中...' : '生成周报' }}
-            </button>
-            <button
-              @click="generateMonthlyReport"
-              :disabled="isGeneratingMonthly"
-              class="ml-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            >
-              {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                @click="generateSummary"
+                :disabled="isGenerating"
+                class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                {{ isGenerating ? '生成中...' : '生成日报' }}
+              </button>
+              <button
+                @click="generateWeeklyReport"
+                :disabled="isGeneratingWeekly"
+                class="bg-green-600 hover:bg-green-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                {{ isGeneratingWeekly ? '生成中...' : '生成周报' }}
+              </button>
+              <button
+                @click="generateMonthlyReport"
+                :disabled="isGeneratingMonthly"
+                class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
+              </button>
+            </div>
           </div>
           <!-- AI-004: Tag filter -->
           <div v-if="Object.keys(tagCounts).length > 0" class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-gray-700">
@@ -574,6 +576,7 @@ const loadSettings = async () => {
     const settings = await invoke('get_settings')
     autoCaptureEnabled.value = settings.auto_capture_enabled || false
     summaryPath.value = settings.last_summary_path || ''
+    weeklyReportPath.value = settings.last_weekly_report_path || ''
   } catch (err) {
     console.error('Failed to load settings:', err)
   }
