@@ -225,6 +225,52 @@ fn capture_screen_with_mode(
     Ok((image, monitor_info))
 }
 
+// ─── SMART-004: Multi-monitor capture support (macOS/Linux) ──────────────────
+
+/// Capture screen with specified mode (macOS/Linux)
+/// Returns (base64_image, monitor_info)
+#[cfg(not(target_os = "windows"))]
+fn capture_screen_with_mode(
+    mode: CaptureMode,
+    selected_index: usize,
+) -> Result<(String, MonitorInfo), String> {
+    let monitor_details = get_monitor_list()?;
+    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+
+    if monitors.is_empty() {
+        return Err("No monitors found".to_string());
+    }
+
+    let monitor_info = MonitorInfo {
+        count: monitor_details.len(),
+        monitors: monitor_details.clone(),
+    };
+
+    let image = match mode {
+        CaptureMode::Primary => {
+            let primary_index = monitor_details
+                .iter()
+                .position(|m| m.is_primary)
+                .unwrap_or(0);
+            capture_single_monitor_xcap(&monitors, primary_index)?
+        }
+        CaptureMode::Secondary => {
+            let index = if selected_index < monitors.len() {
+                selected_index
+            } else {
+                monitor_details
+                    .iter()
+                    .position(|m| !m.is_primary)
+                    .unwrap_or(0)
+            };
+            capture_single_monitor_xcap(&monitors, index)?
+        }
+        CaptureMode::All => stitch_monitors_xcap(&monitors, &monitor_details)?,
+    };
+
+    Ok((image, monitor_info))
+}
+
 /// Capture a single monitor by index (Windows version - using xcap)
 #[cfg(target_os = "windows")]
 fn capture_single_monitor_windows(
