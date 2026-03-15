@@ -1,25 +1,31 @@
 {
   "task_id": "SMART-001",
-  "title": "Task 3: 实现窗口过滤逻辑 (AC: 2, 3)",
+  "title": "Task 4: 集成到捕获流程 (AC: 1, 2, 3)",
   "verdict": "pass",
-  "score": 95,
-  "summary": "实现正确完成了 AC2 和 AC3 的所有要求。代码质量高，测试覆盖全面（32个测试全部通过），无安全漏洞，符合项目规范。仅发现一个微小的测试函数命名拼写错误。",
+  "score": 92,
+  "summary": "The implementation correctly integrates window filtering into the capture flow, satisfying all three acceptance criteria (AC1, AC2, AC3). The code is well-structured with good test coverage for the new functionality. The window filtering is applied before expensive operations (screenshot, AI analysis), which is an efficient design. The use of skip_serializing_if for backward compatibility and the graceful degradation in parse_window_patterns show attention to robustness.",
   "issues": [
     {
+      "severity": "medium",
+      "description": "auto_perception module tests are gated behind 'screenshot' feature, not run in CI",
+      "location": "src-tauri/src/lib.rs:1-2",
+      "recommendation": "Consider adding a CI job that runs tests with screenshot feature on a platform that supports it, or move parse_window_patterns and CaptureSettings tests to a module that's always compiled"
+    },
+    {
       "severity": "low",
-      "file": "src-tauri/src/window_info/mod.rs",
-      "line": 447,
-      "description": "测试函数名拼写错误：'should_capture_by_window_whitelist_allls_all_when_empty' 中 'allls' 应为 'allows'",
-      "suggestion": "重命名为 'should_capture_by_window_whitelist_allows_all_when_empty'"
+      "description": "Pre-existing test failure in memory_storage::tests::finds_record_saved_near_local_midnight unrelated to SMART-001",
+      "location": "src-tauri/src/memory_storage/mod.rs:518",
+      "recommendation": "Fix timezone test separately as part of technical debt cleanup"
     }
   ],
   "strengths": [
-    "代码注释清晰，明确标注了 AC2/AC3 对应关系",
-    "测试覆盖全面，包含边界测试（空标题、空进程名、unicode、大小写）",
-    "函数设计简洁，符合单一职责原则",
-    "matches_any 函数正确处理空文本和空模式列表的边界情况",
-    "should_capture_by_window 正确实现白名单优先级逻辑（AC3）",
-    "32个测试全部通过，clippy 无警告，格式检查通过"
+    "Correct implementation of all three ACs with clear code-to-requirement traceability",
+    "Efficient design: window filtering applied before screenshot/AI analysis",
+    "Good test coverage: 12 new tests for parse_window_patterns, ScreenAnalysis, and CaptureSettings",
+    "Backward compatibility via skip_serializing_if on active_window field",
+    "Graceful degradation in parse_window_patterns (returns empty Vec on parse failure)",
+    "Clear code comments linking implementation to specific ACs",
+    "Follows project conventions: snake_case, Chinese error messages, params![] for SQL"
   ],
   "recommendation": "approve"
 }
