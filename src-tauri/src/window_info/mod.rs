@@ -185,6 +185,69 @@ pub fn get_active_window() -> ActiveWindow {
     ActiveWindow::default()
 }
 
+// ── Window filtering logic (SMART-001 Task 3) ──
+
+/// Check if any pattern matches the given text (case-insensitive partial match).
+///
+/// Returns `true` if any pattern is found as a substring in the text,
+/// ignoring case differences.
+pub fn matches_any(text: &str, patterns: &[String]) -> bool {
+    if text.is_empty() || patterns.is_empty() {
+        return false;
+    }
+    let text_lower = text.to_lowercase();
+    patterns
+        .iter()
+        .any(|p| text_lower.contains(&p.to_lowercase()))
+}
+
+/// Determine whether a capture should proceed based on window filtering rules.
+///
+/// # Arguments
+///
+/// * `window` - The currently active window information
+/// * `whitelist` - List of patterns for allowed windows (partial match, case-insensitive)
+/// * `blacklist` - List of patterns for blocked windows (partial match, case-insensitive)
+/// * `use_whitelist_only` - If true, only windows matching whitelist are captured;
+///   if false, blacklist is applied (allow all if blacklist is empty)
+///
+/// # Returns
+///
+/// * `true` - Capture should proceed
+/// * `false` - Capture should be skipped
+///
+/// # Logic (per AC2 and AC3)
+///
+/// 1. If `use_whitelist_only` is true and whitelist is non-empty:
+///    - Allow capture only if window matches whitelist (title or process_name)
+/// 2. Otherwise, apply blacklist:
+///    - Block capture if window matches blacklist (title or process_name)
+///    - Allow capture otherwise
+pub fn should_capture_by_window(
+    window: &ActiveWindow,
+    whitelist: &[String],
+    blacklist: &[String],
+    use_whitelist_only: bool,
+) -> bool {
+    // AC3: 白名单模式优先
+    // If whitelist-only mode is enabled and whitelist is not empty
+    if use_whitelist_only && !whitelist.is_empty() {
+        return matches_any(&window.title, whitelist)
+            || matches_any(&window.process_name, whitelist);
+    }
+
+    // AC2: 黑名单模式
+    // If blacklist is not empty, check if window should be blocked
+    if !blacklist.is_empty()
+        && (matches_any(&window.title, blacklist) || matches_any(&window.process_name, blacklist))
+    {
+        return false;
+    }
+
+    // Default: allow capture
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -255,5 +318,261 @@ mod tests {
         let w2 = get_active_window();
         // Both calls should succeed without panicking
         let _ = (w1.title, w2.title);
+    }
+
+    // ── Window filtering logic tests (SMART-001 Task 3) ──
+
+    #[test]
+    fn matches_any_returns_true_for_exact_match() {
+        let patterns = vec!["VS Code".to_string(), "IntelliJ IDEA".to_string()];
+        assert!(matches_any("VS Code", &patterns));
+        assert!(matches_any("IntelliJ IDEA", &patterns));
+    }
+
+    #[test]
+    fn matches_any_returns_true_for_partial_match() {
+        let patterns = vec!["VS Code".to_string()];
+        // Title contains the pattern
+        assert!(matches_any("VS Code - main.rs", &patterns));
+        assert!(matches_any("Project - VS Code", &patterns));
+    }
+
+    #[test]
+    fn matches_any_is_case_insensitive() {
+        let patterns = vec!["vs code".to_string()];
+        assert!(matches_any("VS Code", &patterns));
+        assert!(matches_any("vs CODE", &patterns));
+        assert!(matches_any("Vs code", &patterns));
+    }
+
+    #[test]
+    fn matches_any_returns_false_for_no_match() {
+        let patterns = vec!["VS Code".to_string(), "IntelliJ IDEA".to_string()];
+        assert!(!matches_any("Chrome", &patterns));
+        assert!(!matches_any("Firefox", &patterns));
+    }
+
+    #[test]
+    fn matches_any_returns_false_for_empty_patterns() {
+        let patterns: Vec<String> = vec![];
+        assert!(!matches_any("VS Code", &patterns));
+    }
+
+    #[test]
+    fn matches_any_handles_empty_text() {
+        let patterns = vec!["VS Code".to_string()];
+        assert!(!matches_any("", &patterns));
+    }
+
+    #[test]
+    fn matches_any_handles_special_characters() {
+        let patterns = vec!["Chrome - 工作".to_string()];
+        assert!(matches_any("Chrome - 工作 - 标签页", &patterns));
+    }
+
+    #[test]
+    fn matches_any_handles_unicode() {
+        let patterns = vec!["微信".to_string(), "企业微信".to_string()];
+        assert!(matches_any("微信 - 聊天", &patterns));
+        assert!(matches_any("企业微信 - 消息", &patterns));
+    }
+
+    // ── should_capture_by_window tests ──
+
+    #[test]
+    fn should_capture_by_window_allows_when_no_filters() {
+        let window = ActiveWindow {
+            title: "Random App".to_string(),
+            process_name: "random".to_string(),
+        };
+        // Empty whitelist and blacklist, use_whitelist_only = false
+        assert!(should_capture_by_window(&window, &[], &[], false));
+    }
+
+    #[test]
+    fn should_capture_by_window_allows_when_blacklist_empty() {
+        let window = ActiveWindow {
+            title: "VS Code".to_string(),
+            process_name: "Code".to_string(),
+        };
+        // Empty blacklist, no whitelist mode
+        assert!(should_capture_by_window(&window, &[], &[], false));
+    }
+
+    // AC2: 白名单模式
+    #[test]
+    fn should_capture_by_window_whitelist_allows_matching_title() {
+        let window = ActiveWindow {
+            title: "VS Code - main.rs".to_string(),
+            process_name: "Code".to_string(),
+        };
+        let whitelist = vec!["VS Code".to_string(), "IntelliJ IDEA".to_string()];
+        // use_whitelist_only = true, whitelist not empty
+        assert!(should_capture_by_window(&window, &whitelist, &[], true));
+    }
+
+    #[test]
+    fn should_capture_by_window_whitelist_allows_matching_process_name() {
+        let window = ActiveWindow {
+            title: "My Project".to_string(),
+            process_name: "Code".to_string(), // Match by process name
+        };
+        let whitelist = vec!["Code".to_string()];
+        assert!(should_capture_by_window(&window, &whitelist, &[], true));
+    }
+
+    #[test]
+    fn should_capture_by_window_whitelist_blocks_non_matching() {
+        let window = ActiveWindow {
+            title: "Chrome".to_string(),
+            process_name: "chrome".to_string(),
+        };
+        let whitelist = vec!["VS Code".to_string(), "IntelliJ IDEA".to_string()];
+        // Window not in whitelist, use_whitelist_only = true
+        assert!(!should_capture_by_window(&window, &whitelist, &[], true));
+    }
+
+    #[test]
+    fn should_capture_by_window_whitelist_ignored_when_disabled() {
+        let window = ActiveWindow {
+            title: "Chrome".to_string(),
+            process_name: "chrome".to_string(),
+        };
+        let whitelist = vec!["VS Code".to_string()];
+        // use_whitelist_only = false, so whitelist is ignored
+        assert!(should_capture_by_window(&window, &whitelist, &[], false));
+    }
+
+    #[test]
+    fn should_capture_by_window_whitelist_allls_all_when_empty() {
+        let window = ActiveWindow {
+            title: "Chrome".to_string(),
+            process_name: "chrome".to_string(),
+        };
+        // Empty whitelist, use_whitelist_only = true but empty whitelist means allow all
+        assert!(should_capture_by_window(&window, &[], &[], true));
+    }
+
+    // AC2: 黑名单模式
+    #[test]
+    fn should_capture_by_window_blacklist_blocks_matching_title() {
+        let window = ActiveWindow {
+            title: "Chrome - Google".to_string(),
+            process_name: "chrome".to_string(),
+        };
+        let blacklist = vec!["浏览器".to_string(), "Chrome".to_string()];
+        // Window in blacklist, should be blocked
+        assert!(!should_capture_by_window(&window, &[], &blacklist, false));
+    }
+
+    #[test]
+    fn should_capture_by_window_blacklist_blocks_matching_process_name() {
+        let window = ActiveWindow {
+            title: "Google Search".to_string(),
+            process_name: "chrome".to_string(),
+        };
+        let blacklist = vec!["chrome".to_string()];
+        // Process name matches blacklist
+        assert!(!should_capture_by_window(&window, &[], &blacklist, false));
+    }
+
+    #[test]
+    fn should_capture_by_window_blacklist_allows_non_matching() {
+        let window = ActiveWindow {
+            title: "VS Code - main.rs".to_string(),
+            process_name: "Code".to_string(),
+        };
+        let blacklist = vec!["浏览器".to_string(), "Slack".to_string()];
+        // Window not in blacklist
+        assert!(should_capture_by_window(&window, &[], &blacklist, false));
+    }
+
+    #[test]
+    fn should_capture_by_window_blacklist_ignored_when_empty() {
+        let window = ActiveWindow {
+            title: "Chrome".to_string(),
+            process_name: "chrome".to_string(),
+        };
+        // Empty blacklist
+        assert!(should_capture_by_window(&window, &[], &[], false));
+    }
+
+    // AC3: 白名单优先级逻辑
+    #[test]
+    fn should_capture_by_window_whitelist_takes_priority_when_enabled() {
+        let window = ActiveWindow {
+            title: "VS Code".to_string(),
+            process_name: "Code".to_string(),
+        };
+        let whitelist = vec!["VS Code".to_string()];
+        let blacklist = vec!["Code".to_string()]; // Process name in blacklist
+                                                  // use_whitelist_only = true, so whitelist mode applies, blacklist ignored
+        assert!(should_capture_by_window(
+            &window, &whitelist, &blacklist, true
+        ));
+    }
+
+    #[test]
+    fn should_capture_by_window_blacklist_applies_when_whitelist_disabled() {
+        let window = ActiveWindow {
+            title: "VS Code".to_string(),
+            process_name: "Code".to_string(),
+        };
+        let whitelist = vec!["VS Code".to_string()];
+        let blacklist = vec!["Code".to_string()]; // Process name in blacklist
+                                                  // use_whitelist_only = false, so blacklist applies
+        assert!(!should_capture_by_window(
+            &window, &whitelist, &blacklist, false
+        ));
+    }
+
+    // 边界测试
+    #[test]
+    fn should_capture_by_window_handles_empty_title() {
+        let window = ActiveWindow {
+            title: "".to_string(),
+            process_name: "chrome".to_string(),
+        };
+        let blacklist = vec!["chrome".to_string()];
+        // Process name still matches
+        assert!(!should_capture_by_window(&window, &[], &blacklist, false));
+    }
+
+    #[test]
+    fn should_capture_by_window_handles_empty_process_name() {
+        let window = ActiveWindow {
+            title: "Chrome".to_string(),
+            process_name: "".to_string(),
+        };
+        let blacklist = vec!["Chrome".to_string()];
+        // Title still matches
+        assert!(!should_capture_by_window(&window, &[], &blacklist, false));
+    }
+
+    #[test]
+    fn should_capture_by_window_handles_both_empty() {
+        let window = ActiveWindow {
+            title: "".to_string(),
+            process_name: "".to_string(),
+        };
+        // Empty strings don't match any pattern
+        let blacklist = vec!["Chrome".to_string()];
+        assert!(should_capture_by_window(&window, &[], &blacklist, false));
+
+        let whitelist = vec!["VS Code".to_string()];
+        assert!(!should_capture_by_window(&window, &whitelist, &[], true));
+    }
+
+    #[test]
+    fn should_capture_by_window_matches_case_insensitive() {
+        let window = ActiveWindow {
+            title: "VS CODE".to_string(),
+            process_name: "code".to_string(),
+        };
+        let whitelist = vec!["vs code".to_string()];
+        assert!(should_capture_by_window(&window, &whitelist, &[], true));
+
+        let blacklist = vec!["CODE".to_string()];
+        assert!(!should_capture_by_window(&window, &[], &blacklist, false));
     }
 }
