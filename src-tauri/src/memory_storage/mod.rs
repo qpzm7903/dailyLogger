@@ -99,6 +99,15 @@ pub fn init_database() -> Result<(), String> {
         "ALTER TABLE settings ADD COLUMN use_whitelist_only INTEGER DEFAULT 0",
         [],
     );
+    // SMART-002: 自动调整静默阈值配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN auto_adjust_silent INTEGER DEFAULT 1",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN silent_adjustment_paused_until TEXT DEFAULT NULL",
+        [],
+    );
 
     let mut db = DB_CONNECTION
         .lock()
@@ -141,6 +150,9 @@ pub struct Settings {
     pub window_whitelist: Option<String>,
     pub window_blacklist: Option<String>,
     pub use_whitelist_only: Option<bool>,
+    // SMART-002: 自动调整静默阈值配置
+    pub auto_adjust_silent: Option<bool>,
+    pub silent_adjustment_paused_until: Option<String>,
 }
 
 pub fn add_record(
@@ -303,7 +315,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 summary_time, obsidian_path, auto_capture_enabled, last_summary_path,
                 summary_model_name, analysis_prompt, summary_prompt,
                 change_threshold, max_silent_minutes, summary_title_format,
-                include_manual_records, window_whitelist, window_blacklist, use_whitelist_only
+                include_manual_records, window_whitelist, window_blacklist, use_whitelist_only,
+                auto_adjust_silent, silent_adjustment_paused_until
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -329,6 +342,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 window_whitelist: row.get(15)?,
                 window_blacklist: row.get(16)?,
                 use_whitelist_only: row.get::<_, Option<i32>>(17)?.map(|v| v != 0),
+                auto_adjust_silent: row.get::<_, Option<i32>>(18)?.map(|v| v != 0),
+                silent_adjustment_paused_until: row.get(19)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -361,7 +376,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             include_manual_records = ?15,
             window_whitelist = ?16,
             window_blacklist = ?17,
-            use_whitelist_only = ?18
+            use_whitelist_only = ?18,
+            auto_adjust_silent = ?19,
+            silent_adjustment_paused_until = ?20
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -384,6 +401,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.window_whitelist,
             settings.window_blacklist,
             settings.use_whitelist_only.map(|v| if v { 1 } else { 0 }),
+            settings.auto_adjust_silent.map(|v| if v { 1 } else { 0 }),
+            settings.silent_adjustment_paused_until,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -471,7 +490,9 @@ mod tests {
                 include_manual_records INTEGER DEFAULT 1,
                 window_whitelist TEXT DEFAULT '[]',
                 window_blacklist TEXT DEFAULT '[]',
-                use_whitelist_only INTEGER DEFAULT 0
+                use_whitelist_only INTEGER DEFAULT 0,
+                auto_adjust_silent INTEGER DEFAULT 1,
+                silent_adjustment_paused_until TEXT DEFAULT NULL
             )",
             [],
         )
@@ -1049,5 +1070,133 @@ mod tests {
             count, 1,
             "Should only count today's records, not yesterday's"
         );
+    }
+
+    // ── Tests for auto_adjust_silent and silent_adjustment_paused_until (SMART-002 Task 3) ──
+
+    #[test]
+    fn get_settings_returns_default_auto_adjust_silent() {
+        setup_test_db_with_settings();
+
+        let settings = get_settings_sync().unwrap();
+        assert_eq!(
+            settings.auto_adjust_silent,
+            Some(true),
+            "Default auto_adjust_silent should be true"
+        );
+    }
+
+    #[test]
+    fn get_settings_returns_default_silent_adjustment_paused_until() {
+        setup_test_db_with_settings();
+
+        let settings = get_settings_sync().unwrap();
+        assert_eq!(
+            settings.silent_adjustment_paused_until,
+            None,
+            "Default silent_adjustment_paused_until should be None"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_auto_adjust_silent_false() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.auto_adjust_silent = Some(false);
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.auto_adjust_silent,
+            Some(false),
+            "Saved auto_adjust_silent=false should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_auto_adjust_silent_true() {
+        setup_test_db_with_settings();
+
+        // First set to false, then to true
+        let mut settings = get_settings_sync().unwrap();
+        settings.auto_adjust_silent = Some(false);
+        save_settings_sync(&settings).unwrap();
+
+        let mut settings = get_settings_sync().unwrap();
+        settings.auto_adjust_silent = Some(true);
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.auto_adjust_silent,
+            Some(true),
+            "Saved auto_adjust_silent=true should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_persists_silent_adjustment_paused_until() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        let paused_until = "2026-03-16T18:00:00+08:00".to_string();
+        settings.silent_adjustment_paused_until = Some(paused_until.clone());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.silent_adjustment_paused_until,
+            Some(paused_until),
+            "Saved silent_adjustment_paused_until should be persisted"
+        );
+    }
+
+    #[test]
+    fn save_settings_clears_silent_adjustment_paused_until() {
+        setup_test_db_with_settings();
+
+        // First set a value
+        let mut settings = get_settings_sync().unwrap();
+        settings.silent_adjustment_paused_until = Some("2026-03-16T18:00:00+08:00".to_string());
+        save_settings_sync(&settings).unwrap();
+
+        // Then clear it
+        let mut settings = get_settings_sync().unwrap();
+        settings.silent_adjustment_paused_until = None;
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.silent_adjustment_paused_until,
+            None,
+            "Cleared silent_adjustment_paused_until should be None"
+        );
+    }
+
+    #[test]
+    fn silent_adjustment_paused_until_accepts_rfc3339_format() {
+        setup_test_db_with_settings();
+
+        let mut settings = get_settings_sync().unwrap();
+        // Test various RFC3339 formats
+        let test_cases = vec![
+            "2026-03-15T12:00:00Z",
+            "2026-03-15T12:00:00+08:00",
+            "2026-03-15T12:00:00-05:00",
+        ];
+
+        for ts in test_cases {
+            settings.silent_adjustment_paused_until = Some(ts.to_string());
+            save_settings_sync(&settings).unwrap();
+
+            let reloaded = get_settings_sync().unwrap();
+            assert_eq!(
+                reloaded.silent_adjustment_paused_until,
+                Some(ts.to_string()),
+                "silent_adjustment_paused_until should accept RFC3339 format: {}",
+                ts
+            );
+        }
     }
 }

@@ -4,6 +4,32 @@ Key technical decisions, problems encountered, and conventions from story implem
 
 ---
 
+## SMART-002 Task 3 - 2026-03-15
+
+### 技术决策
+
+1. **数据库字段设计**：`auto_adjust_silent INTEGER DEFAULT 1`（默认开启），`silent_adjustment_paused_until TEXT DEFAULT NULL`（暂停截止时间）。理由：符合 AC3 手动覆盖需求，用户可关闭自动调整或临时暂停。
+
+2. **幂等迁移模式**：使用 `let _ = conn.execute("ALTER TABLE ...")` 忽略列已存在错误。理由：与项目现有迁移模式一致，支持增量升级和首次安装。
+
+3. **Settings 结构体字段类型**：`auto_adjust_silent: Option<bool>` 和 `silent_adjustment_paused_until: Option<String>`。理由：与现有字段类型保持一致，支持 NULL 值表示未配置状态。
+
+4. **静默模式历史表**：选择不创建独立 `silent_patterns` 表，复用 Task 1 的内存存储方案。理由：Task 1 已实现 `SilentPatternTracker` 内存滑动窗口，无需额外持久化。
+
+5. **测试覆盖**：添加 8 个测试用例覆盖默认值、读写持久化、RFC3339 格式验证。理由：确保数据库迁移正确性和 API 稳定性。
+
+### 遇到问题
+
+**多测试文件同步问题**：`manual_entry/mod.rs` 和 `synthesis/mod.rs` 中有独立的测试辅助函数创建 settings 表，未包含新字段导致测试失败。解决：同步更新所有测试辅助函数。
+
+### 后续约定
+
+- **新增 Settings 字段清单**：1) ALTER TABLE 迁移 2) Settings 结构体字段 3) get_settings_sync SELECT 列 4) save_settings_sync UPDATE 参数 5) 所有测试模块的 setup_test_db_with_settings
+- **布尔字段默认值**：自动调整类功能默认开启（DEFAULT 1），用户主动关闭后可暂停
+- **RFC3339 时间存储**：使用 TEXT 类型存储时间戳字符串，便于跨时区处理
+
+---
+
 ## SMART-002 Task 2 - 2026-03-15
 
 ### 技术决策

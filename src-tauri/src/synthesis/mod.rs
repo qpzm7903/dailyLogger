@@ -277,6 +277,8 @@ mod tests {
             window_whitelist: None,
             window_blacklist: None,
             use_whitelist_only: None,
+            auto_adjust_silent: None,
+            silent_adjustment_paused_until: None,
         }
     }
 

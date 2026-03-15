@@ -436,7 +436,9 @@ mod tests {
                 include_manual_records INTEGER DEFAULT 1,
                 window_whitelist TEXT DEFAULT '[]',
                 window_blacklist TEXT DEFAULT '[]',
-                use_whitelist_only INTEGER DEFAULT 0
+                use_whitelist_only INTEGER DEFAULT 0,
+                auto_adjust_silent INTEGER DEFAULT 1,
+                silent_adjustment_paused_until TEXT DEFAULT NULL
             )",
             [],
         )
