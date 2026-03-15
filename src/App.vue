@@ -129,7 +129,7 @@
                 {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
               </button>
               <button
-                @click="showCustomReportModal = true"
+                @click="showCustomReport = true"
                 class="bg-orange-600 hover:bg-orange-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
               >
                 自定义报告
@@ -264,12 +264,7 @@
     <DailySummaryViewer v-if="showWeeklyReportViewer" :summaryPath="weeklyReportPath" @close="showWeeklyReportViewer = false" />
     <DailySummaryViewer v-if="showMonthlyReportViewer" :summaryPath="monthlyReportPath" @close="showMonthlyReportViewer = false" />
     <DailySummaryViewer v-if="showCustomReportViewer" :summaryPath="customReportPath" @close="showCustomReportViewer = false" />
-    <CustomReportModal
-      v-if="showCustomReportModal"
-      :show="showCustomReportModal"
-      @close="showCustomReportModal = false"
-      @generate="(data) => generateCustomReport(data.startDate, data.endDate, data.reportName)"
-    />
+    <CustomReportModal v-if="showCustomReport" @close="showCustomReport = false" @generated="handleCustomReportGenerated" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
     <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
@@ -306,13 +301,10 @@ const todayRecords = ref([])
 const isGenerating = ref(false)
 const isGeneratingWeekly = ref(false)
 const isGeneratingMonthly = ref(false)
-const isGeneratingCustom = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
 const weeklyReportPath = ref('')
 const monthlyReportPath = ref('')
-const customReportPath = ref('')
-const showCustomReportModal = ref(false)
 const showSettings = ref(false)
 const showBackup = ref(false)
 const showQuickNote = ref(false)
@@ -321,6 +313,8 @@ const showScreenshotGallery = ref(false)
 const showSummaryViewer = ref(false)
 const showWeeklyReportViewer = ref(false)
 const showMonthlyReportViewer = ref(false)
+const showCustomReport = ref(false)
+const customReportPath = ref('')
 const showCustomReportViewer = ref(false)
 const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
@@ -592,25 +586,8 @@ const generateMonthlyReport = async () => {
   }
 }
 
-// REPORT-003: 自定义报告生成
-const generateCustomReport = async (startDate, endDate, reportName) => {
-  if (isGeneratingCustom.value) return
-  isGeneratingCustom.value = true
-  try {
-    const result = await invoke('generate_custom_report', {
-      startDate,
-      endDate,
-      reportName: reportName || undefined
-    })
-    customReportPath.value = result
-    showCustomReportModal.value = false
-    showSuccess('自定义报告生成成功')
-  } catch (err) {
-    console.error('Failed to generate custom report:', err)
-    showError(err, () => generateCustomReport(startDate, endDate, reportName))
-  } finally {
-    isGeneratingCustom.value = false
-  }
+const handleCustomReportGenerated = (path) => {
+  customReportPath.value = path
 }
 
 const loadTodayRecords = async () => {
@@ -629,6 +606,7 @@ const loadSettings = async () => {
     autoCaptureEnabled.value = settings.auto_capture_enabled || false
     summaryPath.value = settings.last_summary_path || ''
     weeklyReportPath.value = settings.last_weekly_report_path || ''
+    customReportPath.value = settings.last_custom_report_path || ''
   } catch (err) {
     console.error('Failed to load settings:', err)
   }

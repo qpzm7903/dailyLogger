@@ -179,7 +179,11 @@ pub fn init_database() -> Result<(), String> {
 
     // REPORT-003: 自定义报告周期配置
     let _ = conn.execute(
-        "ALTER TABLE settings ADD COLUMN custom_report_templates TEXT DEFAULT '{\"presets\":[],\"custom\":[]}'",
+        "ALTER TABLE settings ADD COLUMN custom_report_prompt TEXT",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN last_custom_report_path TEXT",
         [],
     );
 
@@ -376,7 +380,8 @@ pub struct Settings {
     // REPORT-002: 月报生成配置
     pub monthly_report_prompt: Option<String>,
     // REPORT-003: 自定义报告周期配置
-    pub custom_report_templates: Option<String>, // JSON: {"presets":[],"custom":[]}
+    pub custom_report_prompt: Option<String>,
+    pub last_custom_report_path: Option<String>,
 }
 
 // DATA-003: 手动标签系统
@@ -996,7 +1001,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 custom_work_time_start, custom_work_time_end, learned_work_time,
                 capture_mode, selected_monitor_index, tag_categories, is_ollama,
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
-                monthly_report_prompt, custom_report_templates
+                monthly_report_prompt, custom_report_prompt, last_custom_report_path
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -1037,7 +1042,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 weekly_report_day: row.get(30)?,
                 last_weekly_report_path: row.get(31)?,
                 monthly_report_prompt: row.get(32)?,
-                custom_report_templates: row.get(33)?,
+                custom_report_prompt: row.get(33)?,
+                last_custom_report_path: row.get(34)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -1123,7 +1129,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             weekly_report_day = ?31,
             last_weekly_report_path = ?32,
             monthly_report_prompt = ?33,
-            custom_report_templates = ?34
+            custom_report_prompt = ?34,
+            last_custom_report_path = ?35
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -1163,7 +1170,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.weekly_report_day,
             settings.last_weekly_report_path,
             settings.monthly_report_prompt,
-            settings.custom_report_templates,
+            settings.custom_report_prompt,
+            settings.last_custom_report_path,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1891,7 +1899,9 @@ mod tests {
                 is_ollama INTEGER DEFAULT 0,
                 weekly_report_prompt TEXT,
                 weekly_report_day INTEGER DEFAULT 0,
-                monthly_report_prompt TEXT
+                monthly_report_prompt TEXT,
+                custom_report_prompt TEXT,
+                last_custom_report_path TEXT
             )",
             [],
         )
@@ -1976,7 +1986,8 @@ mod tests {
                 weekly_report_day INTEGER DEFAULT 0,
                 last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT,
-                custom_report_templates TEXT DEFAULT '{\"presets\":[],\"custom\":[]}'
+                custom_report_prompt TEXT,
+                last_custom_report_path TEXT
             )",
             [],
         )

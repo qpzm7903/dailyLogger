@@ -1,4 +1,4 @@
-use chrono::{Datelike, NaiveDate};
+use chrono::Datelike;
 use std::path::PathBuf;
 use tauri::command;
 
@@ -55,6 +55,22 @@ const DEFAULT_MONTHLY_REPORT_PROMPT: &str = r#"你是一个工作日志助手。
 {records}
 
 请生成月报："#;
+
+/// Default prompt template for custom period reports - REPORT-003
+const DEFAULT_CUSTOM_REPORT_PROMPT: &str = r#"你是一个工作日志助手。请根据以下指定时间段的工作记录，生成一份结构化的 Markdown 格式报告。
+
+要求：
+1. 按日期分组展示工作内容
+2. 提取该时间段的关键成果和技术亮点
+3. 总结遇到的问题和解决方案
+4. 列出后续待跟进事项
+5. 输出纯 Markdown 格式，不要有其他说明文字
+
+时间段：{start_date} 至 {end_date}
+记录：
+{records}
+
+请生成报告："#;
 
 /// Get the default monthly report prompt
 pub fn get_default_monthly_report_prompt() -> String {
@@ -400,7 +416,8 @@ mod tests {
             tag_categories: None,
             is_ollama: None,
             monthly_report_prompt: None,
-            custom_report_templates: None,
+            custom_report_prompt: None,
+            last_custom_report_path: None,
         }
     }
 
@@ -717,6 +734,124 @@ mod tests {
         assert!(filename.ends_with(".md"));
         // Should contain YYYY-MM format
         assert!(filename.contains("-"));
+    }
+
+    // ── REPORT-003: Tests for custom report functions ──
+
+    #[test]
+    fn get_default_custom_report_prompt_returns_expected_content() {
+        let prompt = get_default_custom_report_prompt();
+        assert!(prompt.contains("{records}"));
+        assert!(prompt.contains("{start_date}"));
+        assert!(prompt.contains("{end_date}"));
+        assert!(prompt.contains("工作日志助手"));
+    }
+
+    #[test]
+    fn get_default_custom_report_prompt_is_not_empty() {
+        let prompt = get_default_custom_report_prompt();
+        assert!(!prompt.is_empty());
+    }
+
+    #[test]
+    fn custom_report_filename_default_name() {
+        let filename = generate_custom_report_filename("自定义报告", "2026-03-01", "2026-03-14");
+        assert_eq!(filename, "自定义报告-2026-03-01-to-2026-03-14.md");
+    }
+
+    #[test]
+    fn custom_report_filename_with_custom_name() {
+        let filename = generate_custom_report_filename("双周报", "2026-03-01", "2026-03-14");
+        assert_eq!(filename, "双周报-2026-03-01-to-2026-03-14.md");
+    }
+
+    #[test]
+    fn custom_report_filename_quarter() {
+        let filename = generate_custom_report_filename("季度报", "2026-01-01", "2026-03-31");
+        assert_eq!(filename, "季度报-2026-01-01-to-2026-03-31.md");
+    }
+
+    #[test]
+    fn biweekly_range_returns_14_day_span() {
+        let (start, end) = get_biweekly_range();
+        let start_date =
+            chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d").expect("valid start");
+        let end_date = chrono::NaiveDate::parse_from_str(&end, "%Y-%m-%d").expect("valid end");
+        let diff = (end_date - start_date).num_days();
+        assert_eq!(
+            diff, 13,
+            "Biweekly range should be 13 days (14 days inclusive)"
+        );
+    }
+
+    #[test]
+    fn biweekly_range_end_is_today() {
+        let (_start, end) = get_biweekly_range();
+        let today = chrono::Local::now()
+            .date_naive()
+            .format("%Y-%m-%d")
+            .to_string();
+        assert_eq!(end, today, "Biweekly range should end today");
+    }
+
+    #[test]
+    fn quarter_range_q1() {
+        // Test Q1: January 1 - March 31
+        let start = chrono::NaiveDate::from_ymd_opt(2026, 2, 15).unwrap();
+        let month = start.month();
+        let quarter_start_month = (month - 1) / 3 * 3 + 1;
+        assert_eq!(quarter_start_month, 1);
+
+        let q_start = chrono::NaiveDate::from_ymd_opt(2026, quarter_start_month, 1).unwrap();
+        let q_end = chrono::NaiveDate::from_ymd_opt(2026, quarter_start_month + 3, 1).unwrap()
+            - chrono::Duration::days(1);
+        assert_eq!(q_start.format("%Y-%m-%d").to_string(), "2026-01-01");
+        assert_eq!(q_end.format("%Y-%m-%d").to_string(), "2026-03-31");
+    }
+
+    #[test]
+    fn quarter_range_q4() {
+        // Test Q4: October 1 - December 31
+        let start = chrono::NaiveDate::from_ymd_opt(2026, 11, 15).unwrap();
+        let month = start.month();
+        let quarter_start_month = (month - 1) / 3 * 3 + 1;
+        assert_eq!(quarter_start_month, 10);
+
+        let q_start = chrono::NaiveDate::from_ymd_opt(2026, quarter_start_month, 1).unwrap();
+        // Q4: quarter_start_month + 3 = 13 > 12
+        let q_end =
+            chrono::NaiveDate::from_ymd_opt(2026 + 1, 1, 1).unwrap() - chrono::Duration::days(1);
+        assert_eq!(q_start.format("%Y-%m-%d").to_string(), "2026-10-01");
+        assert_eq!(q_end.format("%Y-%m-%d").to_string(), "2026-12-31");
+    }
+
+    #[test]
+    fn quarter_range_returns_valid_dates() {
+        let (start, end) = get_quarter_range();
+        let start_date =
+            chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d").expect("valid start");
+        let end_date = chrono::NaiveDate::parse_from_str(&end, "%Y-%m-%d").expect("valid end");
+        assert!(end_date >= start_date, "Quarter end must be >= start");
+
+        // Quarter should be roughly 90 days
+        let diff = (end_date - start_date).num_days();
+        assert!(
+            diff >= 89 && diff <= 92,
+            "Quarter should be 89-92 days, got {}",
+            diff
+        );
+    }
+
+    #[test]
+    fn quarter_range_start_is_first_of_quarter() {
+        let (start, _end) = get_quarter_range();
+        let start_date =
+            chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d").expect("valid start");
+        assert_eq!(start_date.day(), 1, "Quarter should start on day 1");
+        assert!(
+            [1, 4, 7, 10].contains(&start_date.month()),
+            "Quarter should start in Jan/Apr/Jul/Oct"
+        );
     }
 }
 
@@ -1107,83 +1242,69 @@ pub async fn generate_monthly_report() -> Result<String, String> {
     Ok(path_str)
 }
 
-// REPORT-003: 自定义报告周期生成
-
-const DEFAULT_CUSTOM_REPORT_PROMPT: &str = r#"你是一个工作日志助手。请根据以下指定时间段的工作记录，生成一份结构化的 Markdown 格式报告。
-
-要求：
-1. 按日期分组展示工作内容
-2. 提取该时间段的关键成果和技术亮点
-3. 总结遇到的问题和解决方案
-4. 列出后续待跟进事项
-5. 输出纯 Markdown 格式，不要有其他说明文字
-
-时间段：{start_date} 至 {end_date}
-记录：
-{records}
-
-请生成报告："#;
-
+/// Get the default custom report prompt - REPORT-003
 pub fn get_default_custom_report_prompt() -> String {
     DEFAULT_CUSTOM_REPORT_PROMPT.to_string()
 }
 
-/// Calculate biweekly range (last 14 days)
-pub fn get_biweekly_range() -> (NaiveDate, NaiveDate) {
-    let today = chrono::Local::now().date_naive();
-    let end = today;
-    let start = today - chrono::Duration::days(13);
-    (start, end)
-}
-
-/// Calculate current quarter range
-pub fn get_quarter_range() -> (NaiveDate, NaiveDate) {
-    let today = chrono::Local::now().date_naive();
-    let month = today.month();
-    let quarter = (month - 1) / 3; // 0, 1, 2, 3
-    let start_month = quarter * 3 + 1;
-
-    let start = NaiveDate::from_ymd_opt(today.year(), start_month, 1).unwrap();
-    let end = if quarter == 3 {
-        NaiveDate::from_ymd_opt(today.year() + 1, 1, 1).unwrap() - chrono::Duration::days(1)
-    } else {
-        NaiveDate::from_ymd_opt(today.year(), start_month + 3, 1).unwrap()
-            - chrono::Duration::days(1)
-    };
-    (start, end)
-}
-
-/// Generate custom report filename
+/// Generate filename for custom period report
+/// Format: {report_name}-{start_date}-to-{end_date}.md
 pub fn generate_custom_report_filename(
     report_name: &str,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
+    start_date: &str,
+    end_date: &str,
 ) -> String {
-    format!(
-        "{}-{}-to-{}.md",
-        report_name,
-        start_date.format("%Y-%m-%d"),
-        end_date.format("%Y-%m-%d")
+    format!("{}-{}-to-{}.md", report_name, start_date, end_date)
+}
+
+/// Calculate biweekly date range (last 14 days including today)
+pub fn get_biweekly_range() -> (String, String) {
+    let today = chrono::Local::now().date_naive();
+    let start = today - chrono::Duration::days(13);
+    (
+        start.format("%Y-%m-%d").to_string(),
+        today.format("%Y-%m-%d").to_string(),
     )
 }
 
-/// Get records by custom date range - convert NaiveDate to String and call memory_storage
-pub fn get_records_by_custom_range_sync(
-    start_date: NaiveDate,
-    end_date: NaiveDate,
-) -> Result<Vec<Record>, String> {
-    let start_str = start_date.format("%Y-%m-%d").to_string();
-    let end_str = end_date.format("%Y-%m-%d").to_string();
-    memory_storage::get_records_by_date_range_sync(start_str, end_str)
+/// Calculate current quarter date range
+pub fn get_quarter_range() -> (String, String) {
+    let today = chrono::Local::now().date_naive();
+    let month = today.month();
+    let quarter_start_month = (month - 1) / 3 * 3 + 1;
+
+    let start = chrono::NaiveDate::from_ymd_opt(today.year(), quarter_start_month, 1).unwrap();
+    let end = if quarter_start_month + 3 > 12 {
+        chrono::NaiveDate::from_ymd_opt(today.year() + 1, 1, 1).unwrap() - chrono::Duration::days(1)
+    } else {
+        chrono::NaiveDate::from_ymd_opt(today.year(), quarter_start_month + 3, 1).unwrap()
+            - chrono::Duration::days(1)
+    };
+
+    (
+        start.format("%Y-%m-%d").to_string(),
+        end.format("%Y-%m-%d").to_string(),
+    )
 }
 
-/// Generate custom report - REPORT-003
+/// Generate custom period report - REPORT-003
 #[command]
 pub async fn generate_custom_report(
     start_date: String,
     end_date: String,
     report_name: Option<String>,
 ) -> Result<String, String> {
+    // Validate date format
+    chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+        .map_err(|e| format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
+    let parsed_end = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+        .map_err(|e| format!("无效的结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
+    let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").unwrap();
+
+    if parsed_end < parsed_start {
+        return Err("结束日期不能早于起始日期".to_string());
+    }
+
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
@@ -1202,7 +1323,6 @@ pub async fn generate_custom_report(
         .ok_or("API Base URL not configured")?;
     let api_key = settings.api_key.clone().unwrap_or_default();
 
-    // Use summary_model_name, fallback to model_name
     let model_name = settings
         .summary_model_name
         .clone()
@@ -1210,52 +1330,41 @@ pub async fn generate_custom_report(
         .or_else(|| settings.model_name.clone())
         .unwrap_or_else(|| "gpt-4o".to_string());
 
-    // Check if this is an Ollama endpoint
     let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
 
     if !is_ollama && api_key.is_empty() {
         return Err("API Key is required for non-Ollama endpoints".to_string());
     }
 
-    // Parse date strings
-    let date_start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start date format: {}", e))?;
-    let date_end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end date format: {}", e))?;
+    // Get records for the specified date range
+    let all_records =
+        memory_storage::get_records_by_date_range_sync(start_date.clone(), end_date.clone())
+            .map_err(|e| format!("Failed to get records: {}", e))?;
 
-    if date_end < date_start {
-        return Err("End date cannot be earlier than start date".to_string());
-    }
-
-    // Get records in the date range
-    let all_records = get_records_by_custom_range_sync(date_start, date_end)
-        .map_err(|e| format!("Failed to get records: {}", e))?;
-
-    // Filter records based on include_manual_records setting
     let records = filter_records_by_settings(all_records, &settings);
 
     if records.is_empty() {
         return Err("所选时间范围内无记录".to_string());
     }
 
-    // Format records for summary
-    let records_text = format_records_for_summary(&records);
+    // Format records (use week-grouped format for longer periods, simple format for shorter)
+    let day_count = (parsed_end - parsed_start).num_days() + 1;
+    let records_text = if day_count > 14 {
+        format_records_by_week(&records)
+    } else {
+        format_records_for_summary(&records)
+    };
 
     let prompt_template = settings
-        .custom_report_templates
+        .custom_report_prompt
         .as_deref()
         .filter(|s| !s.is_empty())
-        .map(|_| {
-            // If custom_report_templates is set, extract prompt from it
-            // For now, use default prompt (can be enhanced to parse custom templates)
-            DEFAULT_CUSTOM_REPORT_PROMPT
-        })
         .unwrap_or(DEFAULT_CUSTOM_REPORT_PROMPT);
 
-    let mut prompt = prompt_template.to_string();
-    prompt = prompt.replace("{start_date}", &start_date);
-    prompt = prompt.replace("{end_date}", &end_date);
-    prompt = prompt.replace("{records}", &records_text);
+    let prompt = prompt_template
+        .replace("{records}", &records_text)
+        .replace("{start_date}", &start_date)
+        .replace("{end_date}", &end_date);
 
     let client = reqwest::Client::new();
 
@@ -1284,7 +1393,6 @@ pub async fn generate_custom_report(
             "has_image": false,
             "prompt": prompt,
             "records_count": records.len(),
-            "date_range": format!("{} to {}", start_date, end_date),
         })
     );
 
@@ -1353,9 +1461,8 @@ pub async fn generate_custom_report(
         })
     );
 
-    // Generate filename
-    let name = report_name.unwrap_or_else(|| "自定义报告".to_string());
-    let filename = generate_custom_report_filename(&name, date_start, date_end);
+    let name = report_name.as_deref().unwrap_or("自定义报告");
+    let filename = generate_custom_report_filename(name, &start_date, &end_date);
 
     let output_dir = PathBuf::from(&obsidian_path);
     std::fs::create_dir_all(&output_dir)
@@ -1369,7 +1476,7 @@ pub async fn generate_custom_report(
 
     // Save last custom report path to settings
     let mut updated_settings = settings.clone();
-    updated_settings.last_summary_path = Some(path_str.clone());
+    updated_settings.last_custom_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
