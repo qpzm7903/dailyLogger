@@ -103,12 +103,19 @@
                 (📷 {{ screenshotCount }} 张截图)
               </button>
             </div>
-            <button 
+            <button
               @click="generateSummary"
               :disabled="isGenerating"
               class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
             >
               {{ isGenerating ? '生成中...' : '生成日报' }}
+            </button>
+            <button
+              @click="generateWeeklyReport"
+              :disabled="isGeneratingWeekly"
+              class="ml-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            >
+              {{ isGeneratingWeekly ? '生成中...' : '生成周报' }}
             </button>
           </div>
           <!-- AI-004: Tag filter -->
@@ -189,7 +196,8 @@
             <span class="text-2xl">📁</span>
             <h2 class="font-medium">输出文件</h2>
           </div>
-          <div v-if="summaryPath" class="bg-darker rounded-lg p-3 border border-gray-700">
+          <div v-if="summaryPath" class="bg-darker rounded-lg p-3 border border-gray-700 mb-3">
+            <p class="text-xs text-gray-500 mb-1">日报</p>
             <p
               @click="showSummaryViewer = true"
               class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
@@ -197,6 +205,16 @@
           </div>
           <div v-else class="text-center py-4 text-gray-500 text-sm">
             尚未生成日报
+          </div>
+          <div v-if="weeklyReportPath" class="bg-darker rounded-lg p-3 border border-gray-700">
+            <p class="text-xs text-gray-500 mb-1">周报</p>
+            <p
+              @click="showWeeklyReportViewer = true"
+              class="text-sm text-gray-300 cursor-pointer hover:text-green-400 hover:underline"
+            >{{ weeklyReportPath }}</p>
+          </div>
+          <div v-if="!weeklyReportPath && summaryPath" class="text-center py-2 text-gray-500 text-sm">
+            尚未生成周报
           </div>
         </div>
       </div>
@@ -207,6 +225,7 @@
     <ScreenshotModal v-if="showScreenshot" :record="selectedScreenshot" @close="showScreenshot = false" />
     <ScreenshotGallery v-if="showScreenshotGallery" @close="showScreenshotGallery = false" />
     <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
+    <DailySummaryViewer v-if="showWeeklyReportViewer" :summaryPath="weeklyReportPath" @close="showWeeklyReportViewer = false" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
     <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
@@ -239,13 +258,16 @@ const autoCaptureEnabled = ref(false)
 const quickNotesCount = ref(0)
 const todayRecords = ref([])
 const isGenerating = ref(false)
+const isGeneratingWeekly = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
+const weeklyReportPath = ref('')
 const showSettings = ref(false)
 const showQuickNote = ref(false)
 const showScreenshot = ref(false)
 const showScreenshotGallery = ref(false)
 const showSummaryViewer = ref(false)
+const showWeeklyReportViewer = ref(false)
 const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
 const showSearch = ref(false)
@@ -483,6 +505,21 @@ const generateSummary = async () => {
     showError(err, generateSummary)
   } finally {
     isGenerating.value = false
+  }
+}
+
+const generateWeeklyReport = async () => {
+  if (isGeneratingWeekly.value) return
+  isGeneratingWeekly.value = true
+  try {
+    const result = await invoke('generate_weekly_report')
+    weeklyReportPath.value = result
+    showSuccess('周报生成成功')
+  } catch (err) {
+    console.error('Failed to generate weekly report:', err)
+    showError(err, generateWeeklyReport)
+  } finally {
+    isGeneratingWeekly.value = false
   }
 }
 

@@ -1,6 +1,6 @@
 # Story 5.1: REPORT-001 - 周报生成
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -19,33 +19,33 @@ so that I can have a comprehensive overview of my work across multiple days for 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 数据库扩展 - 周报配置字段 (AC: #4, #5)
-  - [ ] 1.1 在 Settings 表添加 `weekly_report_prompt` 字段 (TEXT, 可为空)
-  - [ ] 1.2 在 Settings 表添加 `weekly_report_day` 字段 (INTEGER, 默认 0=周一, 0-6)
-  - [ ] 1.3 更新 Settings struct 和相关 CRUD 函数
-  - [ ] 1.4 添加数据库迁移逻辑
+- [x] Task 1: 数据库扩展 - 周报配置字段 (AC: #4, #5)
+  - [x] 1.1 在 Settings 表添加 `weekly_report_prompt` 字段 (TEXT, 可为空)
+  - [x] 1.2 在 Settings 表添加 `weekly_report_day` 字段 (INTEGER, 默认 0=周一, 0-6)
+  - [x] 1.3 更新 Settings struct 和相关 CRUD 函数
+  - [x] 1.4 添加数据库迁移逻辑
 
-- [ ] Task 2: Rust 后端 - 周报生成核心逻辑 (AC: #1, #3, #4)
-  - [ ] 2.1 在 memory_storage/mod.rs 添加 `get_week_records_sync()` 函数
+- [x] Task 2: Rust 后端 - 周报生成核心逻辑 (AC: #1, #3, #4)
+  - [x] 2.1 在 memory_storage/mod.rs 添加 `get_week_records_sync()` 函数
     - 获取本周一 00:00:00 到本周日 23:59:59 的记录
     - 支持自定义周起始日（默认周一）
-  - [ ] 2.2 在 synthesis/mod.rs 添加 `generate_weekly_report()` Tauri command
+  - [x] 2.2 在 synthesis/mod.rs 添加 `generate_weekly_report()` Tauri command
     - 复用 `format_records_for_summary()` 格式化记录
     - 复用 LLM 调用模式 (reqwest + OpenAI API)
     - 生成文件名: `周报-{start_date}-to-{end-date}.md`
-  - [ ] 2.3 添加 `get_default_weekly_report_prompt()` 函数
-  - [ ] 2.4 在 main.rs 的 `generate_handler![]` 中注册新命令
+  - [x] 2.3 添加 `get_default_weekly_report_prompt()` 函数
+  - [x] 2.4 在 main.rs 的 `generate_handler![]` 中注册新命令
   - [ ] 2.5 编写单元测试
     - 测试时间边界（周一 00:00, 周日 23:59）
     - 测试空记录处理
     - 测试自定义周起始日
 
-- [ ] Task 3: 前端 - 周报生成 UI (AC: #1, #2, #5, #6)
-  - [ ] 3.1 在 App.vue 添加"生成周报"按钮
-  - [ ] 3.2 创建 `WeeklyReportViewer.vue` 组件或复用 `DailySummaryViewer.vue`
-  - [ ] 3.3 添加周报生成 loading 状态和成功/错误提示
-  - [ ] 3.4 显示最近周报路径和打开按钮
-  - [ ] 3.5 在 SettingsModal.vue 添加周报模板配置入口（可选）
+- [x] Task 3: 前端 - 周报生成 UI (AC: #1, #2, #5, #6)
+  - [x] 3.1 在 App.vue 添加"生成周报"按钮
+  - [x] 3.2 创建 `WeeklyReportViewer.vue` 组件或复用 `DailySummaryViewer.vue`
+  - [x] 3.3 添加周报生成 loading 状态和成功/错误提示
+  - [x] 3.4 显示最近周报路径和打开按钮
+  - [x] 3.5 在 SettingsModal.vue 添加周报模板配置入口（可选）
 
 - [ ] Task 4: 端到端测试 (AC: All)
   - [ ] 4.1 前端 Vitest 测试: 周报生成按钮交互

@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use std::path::PathBuf;
 use tauri::command;
 
@@ -18,6 +19,26 @@ const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个工作日志助手。请根�
 
 /// Default title format for daily summaries
 pub const DEFAULT_TITLE_FORMAT: &str = "工作日报 - {date}";
+
+/// Default prompt template for weekly reports
+const DEFAULT_WEEKLY_REPORT_PROMPT: &str = r#"你是一个工作日志助手。请根据以下本周工作记录，生成一份结构化的 Markdown 格式周报。
+
+要求：
+1. 按日期分组展示工作内容
+2. 提取本周关键成果和技术亮点
+3. 总结遇到的问题和解决方案
+4. 列出下周待跟进事项
+5. 输出纯 Markdown 格式，不要有其他说明文字
+
+本周记录：
+{records}
+
+请生成周报："#;
+
+/// Get the default weekly report prompt
+pub fn get_default_weekly_report_prompt() -> String {
+    DEFAULT_WEEKLY_REPORT_PROMPT.to_string()
+}
 
 /// Format the summary title by replacing placeholders.
 /// Supports: {date} - replaced with YYYY-MM-DD format
@@ -270,6 +291,8 @@ mod tests {
     fn create_settings_with_include_manual(include: bool) -> Settings {
         Settings {
             include_manual_records: Some(include),
+            weekly_report_prompt: None,
+            weekly_report_day: None,
             summary_title_format: None,
             api_base_url: None,
             api_key: None,
@@ -485,4 +508,206 @@ mod tests {
 #[command]
 pub fn get_default_summary_prompt() -> String {
     DEFAULT_SUMMARY_PROMPT.to_string()
+}
+
+/// Get the week boundaries for filename generation.
+/// Returns (week_start_date, week_end_date) as strings in YYYY-MM-DD format.
+fn get_week_dates_for_filename(week_start_day: i32) -> (String, String) {
+    let today = chrono::Local::now().date_naive();
+    let weekday = today.weekday().num_days_from_monday() as i32;
+    let days_since_week_start = (weekday - week_start_day + 7) % 7;
+
+    let week_start_date = today - chrono::Duration::days(days_since_week_start as i64);
+    let week_end_date = week_start_date + chrono::Duration::days(6);
+
+    (
+        week_start_date.format("%Y-%m-%d").to_string(),
+        week_end_date.format("%Y-%m-%d").to_string(),
+    )
+}
+
+/// Generate the filename for weekly report.
+pub fn generate_weekly_report_filename() -> String {
+    let (start_date, end_date) = get_week_dates_for_filename(0);
+    format!("周报-{}-to-{}.md", start_date, end_date)
+}
+
+/// Generate weekly report - REPORT-001
+#[command]
+pub async fn generate_weekly_report() -> Result<String, String> {
+    let settings = memory_storage::get_settings_sync()
+        .map_err(|e| format!("Failed to get settings: {}", e))?;
+
+    let obsidian_path = settings
+        .obsidian_path
+        .clone()
+        .ok_or("Obsidian path not configured")?;
+
+    if obsidian_path.is_empty() {
+        return Err("Obsidian path is empty".to_string());
+    }
+
+    let api_base_url = settings
+        .api_base_url
+        .clone()
+        .ok_or("API Base URL not configured")?;
+    let api_key = settings.api_key.clone().unwrap_or_default();
+
+    // Use summary_model_name for weekly report, fallback to model_name
+    let model_name = settings
+        .summary_model_name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .or_else(|| settings.model_name.clone())
+        .unwrap_or_else(|| "gpt-4o".to_string());
+
+    // Check if this is an Ollama endpoint
+    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
+
+    if !is_ollama && api_key.is_empty() {
+        return Err("API Key is required for non-Ollama endpoints".to_string());
+    }
+
+    // Get week start day from settings (0=Monday by default)
+    let week_start_day = settings.weekly_report_day.unwrap_or(0);
+
+    // Get all records for this week
+    let all_records = memory_storage::get_week_records_sync(week_start_day)
+        .map_err(|e| format!("Failed to get week records: {}", e))?;
+
+    // Filter records based on include_manual_records setting
+    let records = filter_records_by_settings(all_records, &settings);
+
+    if records.is_empty() {
+        return Err("本周无记录".to_string());
+    }
+
+    // Format records for summary
+    let records_text = format_records_for_summary(&records);
+
+    let prompt_template = settings
+        .weekly_report_prompt
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_WEEKLY_REPORT_PROMPT);
+
+    let prompt = prompt_template.replace("{records}", &records_text);
+
+    let client = reqwest::Client::new();
+
+    let request_body = serde_json::json!({
+        "model": model_name,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 3000
+    });
+
+    let masked_key = crate::mask_api_key(&api_key);
+    let endpoint = format!("{}/chat/completions", api_base_url);
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_request",
+            "caller": "generate_weekly_report",
+            "endpoint": endpoint,
+            "model": model_name,
+            "max_tokens": 3000,
+            "api_key_masked": masked_key,
+            "has_image": false,
+            "prompt": prompt,
+            "records_count": records.len(),
+        })
+    );
+
+    let start = std::time::Instant::now();
+    let mut request = client
+        .post(&endpoint)
+        .header("Content-Type", "application/json")
+        .json(&request_body);
+
+    if !api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {}", api_key));
+    }
+
+    let response = request.send().await.map_err(|e| {
+        let elapsed_ms = start.elapsed().as_millis();
+        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_weekly_report",
+                "error": error_msg,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        error_msg
+    })?;
+    let elapsed_ms = start.elapsed().as_millis();
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "generate_weekly_report",
+                "status": status.as_u16(),
+                "response_body": body,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        return Err(format!("API error ({}): {}", status, body));
+    }
+
+    let response_json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let summary = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("No content in response")?;
+
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_response",
+            "caller": "generate_weekly_report",
+            "status": 200,
+            "elapsed_ms": elapsed_ms,
+            "usage": response_json.get("usage"),
+            "model": response_json.get("model"),
+            "response_id": response_json.get("id"),
+            "content": summary,
+        })
+    );
+
+    // Generate filename based on week dates
+    let filename = generate_weekly_report_filename();
+
+    let output_dir = PathBuf::from(&obsidian_path);
+    std::fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    let output_path = output_dir.join(&filename);
+    std::fs::write(&output_path, summary)
+        .map_err(|e| format!("Failed to write weekly report: {}", e))?;
+
+    let path_str = output_path.to_string_lossy().to_string();
+
+    // Save last weekly report path to settings
+    let mut updated_settings = settings.clone();
+    updated_settings.last_summary_path = Some(path_str.clone());
+    memory_storage::save_settings_sync(&updated_settings)
+        .map_err(|e| format!("Failed to update settings: {}", e))?;
+
+    tracing::info!("Weekly report generated: {}", path_str);
+
+    Ok(path_str)
 }

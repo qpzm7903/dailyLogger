@@ -116,6 +116,7 @@ fn main() {
             daily_logger_lib::memory_storage::get_records_by_manual_tags,
             daily_logger_lib::synthesis::generate_daily_summary,
             daily_logger_lib::synthesis::get_default_summary_prompt,
+            daily_logger_lib::synthesis::generate_weekly_report,
             // DATA-004: 数据导出
             daily_logger_lib::export::export_records,
             daily_logger_lib::ollama::get_ollama_models,

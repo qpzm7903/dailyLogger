@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -153,6 +154,16 @@ pub fn init_database() -> Result<(), String> {
     // AI-005: Ollama 本地模型支持
     let _ = conn.execute(
         "ALTER TABLE settings ADD COLUMN is_ollama INTEGER DEFAULT 0",
+        [],
+    );
+
+    // REPORT-001: 周报生成配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN weekly_report_prompt TEXT",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN weekly_report_day INTEGER DEFAULT 0",
         [],
     );
 
@@ -342,6 +353,9 @@ pub struct Settings {
     pub tag_categories: Option<String>, // JSON: Vec<String> of custom tag categories
     // AI-005: Ollama 本地模型支持
     pub is_ollama: Option<bool>,
+    // REPORT-001: 周报生成配置
+    pub weekly_report_prompt: Option<String>,
+    pub weekly_report_day: Option<i32>, // 0=周一, 6=周日
 }
 
 // DATA-003: 手动标签系统
@@ -410,6 +424,65 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
 
     let records = stmt
         .query_map(params![today_start], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(2)?,
+                content: row.get(3)?,
+                screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
+                tags: row.get(6)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect records: {}", e))?;
+
+    Ok(records)
+}
+
+/// Get records for the current week (Monday to Sunday)
+/// week_start_day: 0=Monday, 6=Sunday (default is Monday)
+pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Calculate week boundaries based on local time
+    let today = chrono::Local::now().date_naive();
+    let weekday = today.weekday().num_days_from_monday() as i32;
+    let days_since_week_start = (weekday - week_start_day + 7) % 7;
+
+    let week_start_date = today - chrono::Duration::days(days_since_week_start as i64);
+    let week_end_date = week_start_date + chrono::Duration::days(6);
+
+    // Convert to UTC boundaries
+    let week_start = week_start_date
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let week_end = week_end_date
+        .and_hms_opt(23, 59, 59)
+        .unwrap()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+         WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let records = stmt
+        .query_map(params![week_start, week_end], |row| {
             Ok(Record {
                 id: row.get(0)?,
                 timestamp: row.get(1)?,
@@ -837,7 +910,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 auto_adjust_silent, silent_adjustment_paused_until,
                 auto_detect_work_time, use_custom_work_time,
                 custom_work_time_start, custom_work_time_end, learned_work_time,
-                capture_mode, selected_monitor_index, tag_categories, is_ollama
+                capture_mode, selected_monitor_index, tag_categories, is_ollama,
+                weekly_report_prompt, weekly_report_day
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -874,6 +948,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 selected_monitor_index: row.get(26)?,
                 tag_categories: row.get(27)?,
                 is_ollama: row.get::<_, Option<i32>>(28)?.map(|v| v != 0),
+                weekly_report_prompt: row.get(29)?,
+                weekly_report_day: row.get(30)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -954,7 +1030,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             capture_mode = ?26,
             selected_monitor_index = ?27,
             tag_categories = ?28,
-            is_ollama = ?29
+            is_ollama = ?29,
+            weekly_report_prompt = ?30,
+            weekly_report_day = ?31
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -990,6 +1068,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.selected_monitor_index,
             settings.tag_categories,
             Some(if is_ollama { 1 } else { 0 }),
+            settings.weekly_report_prompt,
+            settings.weekly_report_day,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1794,7 +1874,9 @@ mod tests {
                 capture_mode TEXT DEFAULT 'primary',
                 selected_monitor_index INTEGER DEFAULT 0,
                 tag_categories TEXT DEFAULT '[]',
-                is_ollama INTEGER DEFAULT 0
+                is_ollama INTEGER DEFAULT 0,
+                weekly_report_prompt TEXT,
+                weekly_report_day INTEGER DEFAULT 0
             )",
             [],
         )
