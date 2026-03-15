@@ -394,6 +394,19 @@ stories:
       - 支持钉钉机器人
       - 可配置发送时间
 
+# Epic Retrospectives
+retrospectives:
+  - epic: 周报月报功能
+    prefix: REPORT
+    status: done
+    date: "2026-03-15"
+    file: "REPORT-retrospective.md"
+  - epic: 数据管理与检索
+    prefix: DATA
+    status: done
+    date: "2026-03-15"
+    file: "DATA-retrospective.md"
+
 # Velocity tracking
 velocityHistory: []
 
