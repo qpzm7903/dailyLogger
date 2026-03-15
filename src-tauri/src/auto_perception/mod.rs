@@ -184,7 +184,19 @@ fn capture_screen_with_mode(
     use windows_capture::monitor::Monitor;
 
     let monitor_details = get_monitor_list()?;
-    let monitors = Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+
+    // Enumerate monitors by trying indexes until we get an error
+    let mut monitors = Vec::new();
+    let mut idx = 0;
+    loop {
+        match Monitor::from_index(idx) {
+            Ok(m) => {
+                monitors.push(m);
+                idx += 1;
+            }
+            Err(_) => break, // No more monitors
+        }
+    }
 
     if monitors.is_empty() {
         return Err("No monitors found".to_string());

@@ -35,7 +35,7 @@ pub fn get_active_window() -> ActiveWindow {
     };
 
     let hwnd = unsafe { GetForegroundWindow() };
-    if hwnd.0 == 0 {
+    if hwnd.0.is_null() {
         return ActiveWindow::default();
     }
 

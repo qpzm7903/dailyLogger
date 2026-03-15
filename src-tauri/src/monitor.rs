@@ -58,7 +58,18 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
 pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
     use windows_capture::monitor::Monitor;
 
-    let monitors = Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+    // Enumerate monitors by trying indexes until we get an error
+    let mut monitors = Vec::new();
+    let mut index = 0;
+    loop {
+        match Monitor::from_index(index) {
+            Ok(m) => {
+                monitors.push(m);
+                index += 1;
+            }
+            Err(_) => break, // No more monitors
+        }
+    }
 
     if monitors.is_empty() {
         return Err("No monitors found".to_string());
@@ -70,9 +81,9 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
     let result: Vec<MonitorDetail> = monitors
         .iter()
         .enumerate()
-        .map(|(index, m)| MonitorDetail {
-            index,
-            name: format!("Monitor {}", index + 1),
+        .map(|(idx, m)| MonitorDetail {
+            index: idx,
+            name: format!("Monitor {}", idx + 1),
             width: m.width().unwrap_or(0),
             height: m.height().unwrap_or(0),
             x: m.position().unwrap_or((0, 0)).0,
