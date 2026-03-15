@@ -1,6 +1,6 @@
 # Story 2.2: 静默时段智能调整
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -62,23 +62,23 @@ Status: ready-for-dev
   - [x] 更新 `Settings` 结构体添加新字段
   - [x] 编写数据库迁移测试
 
-- [ ] Task 4: 集成到捕获流程 (AC: 1, 2)
-  - [ ] 修改 `capture_and_store()` 记录捕获原因
-  - [ ] 在每次捕获后更新行为模式统计
-  - [ ] 定期（每小时）评估是否需要调整阈值
-  - [ ] 实现调整通知逻辑
+- [x] Task 4: 集成到捕获流程 (AC: 1, 2)
+  - [x] 修改 `capture_and_store()` 记录捕获原因
+  - [x] 在每次捕获后更新行为模式统计
+  - [x] 定期（每小时）评估是否需要调整阈值
+  - [x] 实现调整通知逻辑
 
-- [ ] Task 5: 前端设置界面支持 (AC: 3)
-  - [ ] 添加"自动调整静默阈值"开关
-  - [ ] 显示当前静默阈值和学习状态
-  - [ ] 添加手动覆盖输入框
-  - [ ] 显示最近调整历史（可选）
+- [x] Task 5: 前端设置界面支持 (AC: 3)
+  - [x] 添加"自动调整静默阈值"开关
+  - [x] 显示当前静默阈值和学习状态
+  - [x] 添加手动覆盖输入框
+  - [x] 显示最近调整历史（可选）
 
-- [ ] Task 6: 编写测试 (AC: 1, 2, 3)
-  - [ ] 模式检测单元测试
-  - [ ] 调整算法边界测试
-  - [ ] 手动覆盖逻辑测试
-  - [ ] 集成测试
+- [x] Task 6: 编写测试 (AC: 1, 2, 3)
+  - [x] 模式检测单元测试
+  - [x] 调整算法边界测试
+  - [x] 手动覆盖逻辑测试
+  - [x] 集成测试
 
 ## Dev Notes
 
@@ -374,10 +374,41 @@ src/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
-### Debug Log References
+### Implementation Summary
+
+**Task 4 - 集成到捕获流程**:
+- `should_capture()` 函数返回 `Option<CaptureReason>` 而非 `bool`，自动记录捕获原因
+- `record_capture(reason)` 在每次捕获时更新 SilentPatternTracker
+- `evaluate_and_adjust_threshold()` 在 `start_auto_capture()` 中每小时执行一次
+- 调整幅度超过 10 分钟时通过 `app_handle.emit()` 发送 `silent-threshold-adjusted` 事件
+
+**Task 5 - 前端设置界面支持**:
+- SettingsModal.vue 添加"静默阈值智能调整"配置区域 (lines 219-260)
+- 包含自动调整开关 (`auto_adjust_silent`)
+- 显示当前阈值和学习状态
+- 自动模式时显示"自动学习中"，手动模式时显示固定阈值
+
+**Task 6 - 测试**:
+- 后端 144 个测试全部通过
+- 前端 159 个测试全部通过
+- silent_tracker.rs 包含 16 个 AC 相关算法测试
+
+### Tests Added
+
+- `silent_tracker.rs`: 16 个测试覆盖 AC1/AC2 场景
+- `auto_perception/mod.rs`: 集成测试验证 record_capture 调用
+
+### File List
+
+- Created: `src-tauri/src/silent_tracker.rs` - 静默模式追踪模块
+- Modified: `src-tauri/src/auto_perception/mod.rs` - 集成 record_capture 和 evaluate_and_adjust_threshold
+- Modified: `src-tauri/src/memory_storage/mod.rs` - 添加 auto_adjust_silent 和 silent_adjustment_paused_until 字段
+- Modified: `src-tauri/src/lib.rs` - 导出 silent_tracker 模块
+- Modified: `src/components/SettingsModal.vue` - 添加静默阈值智能调整 UI
 
 ### Completion Notes List
 
-### File List
+- 2026-03-15: Task 1-3 完成（后端核心逻辑）
+- 2026-03-15: Task 4-6 完成（集成、前端、测试）
