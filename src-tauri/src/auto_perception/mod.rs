@@ -470,8 +470,8 @@ fn stitch_monitors_windows(
     let mut canvas = image::RgbaImage::new(total_width, total_height);
 
     for (monitor, img) in &captured_images {
-        let offset_x = (monitor.x - min_x) as u64;
-        let offset_y = (monitor.y - min_y) as u64;
+        let offset_x = (monitor.x - min_x) as i64;
+        let offset_y = (monitor.y - min_y) as i64;
         image::imageops::overlay(&mut canvas, img, offset_x, offset_y);
     }
 
@@ -635,8 +635,8 @@ fn stitch_monitors_xcap(
     let mut canvas = image::RgbaImage::new(total_width, total_height);
 
     for (monitor, img) in &captured_images {
-        let offset_x = (monitor.x - min_x) as u64;
-        let offset_y = (monitor.y - min_y) as u64;
+        let offset_x = (monitor.x - min_x) as i64;
+        let offset_y = (monitor.y - min_y) as i64;
         image::imageops::overlay(&mut canvas, img, offset_x, offset_y);
     }
 

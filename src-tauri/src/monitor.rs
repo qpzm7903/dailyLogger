@@ -2,7 +2,6 @@
 //!
 //! Provides monitor enumeration and capture functionality for multi-display environments.
 
-use crate::monitor_types::{CaptureMode, MonitorDetail, MonitorInfo, MonitorSummary};
 use tauri::command;
 
 // Re-export types for convenience
