@@ -1,6 +1,6 @@
 # Story 1.8: 跨平台兼容性测试 (含性能基准)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

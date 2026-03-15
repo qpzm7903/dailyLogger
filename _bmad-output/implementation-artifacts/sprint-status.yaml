@@ -69,7 +69,7 @@ development_status:
   CORE-005: done        # 系统托盘菜单完善 [2pts]
   CORE-006: done        # API Key 加密存储 [3pts]
   CORE-007: done           # 离线模式支持 [5pts]
-  CORE-008: review          # 跨平台兼容性测试 [3pts] — all ACs implemented, ready for review
+  CORE-008: done          # 跨平台兼容性测试 [3pts]
   epic-1-retrospective: done
 
   # ========================================
