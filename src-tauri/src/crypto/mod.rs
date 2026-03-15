@@ -73,8 +73,8 @@ pub fn get_or_create_encryption_key() -> Result<[u8; 32], String> {
 
     let key = if key_path.exists() {
         // Load existing key
-        let key_bytes = std::fs::read(&key_path)
-            .map_err(|e| format!("Failed to read key file: {}", e))?;
+        let key_bytes =
+            std::fs::read(&key_path).map_err(|e| format!("Failed to read key file: {}", e))?;
 
         if key_bytes.len() != 32 {
             return Err("Invalid key file: expected 32 bytes".to_string());
@@ -86,8 +86,7 @@ pub fn get_or_create_encryption_key() -> Result<[u8; 32], String> {
     } else {
         // Generate new key
         let key = generate_key();
-        std::fs::write(&key_path, key)
-            .map_err(|e| format!("Failed to write key file: {}", e))?;
+        std::fs::write(&key_path, key).map_err(|e| format!("Failed to write key file: {}", e))?;
 
         set_secure_permissions(&key_path)?;
         tracing::info!("Generated new encryption key at {:?}", key_path);

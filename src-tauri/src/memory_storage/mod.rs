@@ -265,9 +265,9 @@ pub struct Settings {
     // SMART-003: 工作时间自动识别配置
     pub auto_detect_work_time: Option<bool>,
     pub use_custom_work_time: Option<bool>,
-    pub custom_work_time_start: Option<String>,    // "HH:MM" format
+    pub custom_work_time_start: Option<String>, // "HH:MM" format
     pub custom_work_time_end: Option<String>,
-    pub learned_work_time: Option<String>,         // JSON: {"periods": [{"start": 9, "end": 12}, ...]}
+    pub learned_work_time: Option<String>, // JSON: {"periods": [{"start": 9, "end": 12}, ...]}
 }
 
 pub fn add_record(
@@ -713,9 +713,10 @@ pub fn get_settings_sync() -> Result<Settings, String> {
     let settings = if let Some(ref api_key) = settings.api_key {
         if !api_key.is_empty() {
             let mut decrypted_settings = settings.clone();
-            decrypted_settings.api_key = Some(crypto::decrypt_api_key(api_key).map_err(|e| {
-                format!("Failed to decrypt API key: {}", e)
-            })?);
+            decrypted_settings.api_key = Some(
+                crypto::decrypt_api_key(api_key)
+                    .map_err(|e| format!("Failed to decrypt API key: {}", e))?,
+            );
             decrypted_settings
         } else {
             settings
@@ -731,9 +732,10 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
     // Encrypt API key before saving
     let encrypted_api_key = if let Some(ref api_key) = settings.api_key {
         if !api_key.is_empty() && !crypto::is_encrypted(api_key) {
-            Some(crypto::encrypt_api_key(api_key).map_err(|e| {
-                format!("Failed to encrypt API key: {}", e)
-            })?)
+            Some(
+                crypto::encrypt_api_key(api_key)
+                    .map_err(|e| format!("Failed to encrypt API key: {}", e))?,
+            )
         } else {
             settings.api_key.clone()
         }
@@ -797,7 +799,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.use_whitelist_only.map(|v| if v { 1 } else { 0 }),
             settings.auto_adjust_silent.map(|v| if v { 1 } else { 0 }),
             settings.silent_adjustment_paused_until,
-            settings.auto_detect_work_time.map(|v| if v { 1 } else { 0 }),
+            settings
+                .auto_detect_work_time
+                .map(|v| if v { 1 } else { 0 }),
             settings.use_custom_work_time.map(|v| if v { 1 } else { 0 }),
             settings.custom_work_time_start,
             settings.custom_work_time_end,
@@ -916,13 +920,11 @@ pub async fn test_api_connection(
         .await;
 
     match response {
-        Ok(resp) if resp.status().is_success() => {
-            Ok(ConnectionTestResult {
-                success: true,
-                message: "连接成功".to_string(),
-                latency_ms: Some(start.elapsed().as_millis() as u64),
-            })
-        }
+        Ok(resp) if resp.status().is_success() => Ok(ConnectionTestResult {
+            success: true,
+            message: "连接成功".to_string(),
+            latency_ms: Some(start.elapsed().as_millis() as u64),
+        }),
         Ok(resp) => {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
@@ -1011,13 +1013,11 @@ pub async fn get_model_info(
                 error: Some(format!("无法获取模型信息 (状态: {})", status)),
             })
         }
-        Err(e) => {
-            Ok(ModelInfo {
-                model_id: model_name,
-                context_window: None,
-                error: Some(format!("请求失败: {}", e)),
-            })
-        }
+        Err(e) => Ok(ModelInfo {
+            model_id: model_name,
+            context_window: None,
+            error: Some(format!("请求失败: {}", e)),
+        }),
     }
 }
 
@@ -1877,11 +1877,17 @@ mod tests {
 
         // Get the id of the record to delete
         let records = get_today_records_sync().unwrap();
-        let record_to_delete = records.iter().find(|r| r.content == "record to delete").unwrap();
+        let record_to_delete = records
+            .iter()
+            .find(|r| r.content == "record to delete")
+            .unwrap();
 
         // Delete it
         let result = delete_record_sync(record_to_delete.id);
-        assert!(result.is_ok(), "delete_record should succeed for existing record");
+        assert!(
+            result.is_ok(),
+            "delete_record should succeed for existing record"
+        );
 
         // Verify it's deleted
         let remaining = get_today_records_sync().unwrap();
@@ -1901,7 +1907,10 @@ mod tests {
         setup_test_db();
 
         let result = delete_record_sync(999999);
-        assert!(result.is_err(), "delete_record should return error for nonexistent id");
+        assert!(
+            result.is_err(),
+            "delete_record should return error for nonexistent id"
+        );
         assert!(
             result.unwrap_err().contains("not found"),
             "Error message should mention record not found"
@@ -1937,9 +1946,14 @@ mod tests {
         let date_str = today.format("%Y-%m-%d").to_string();
 
         // Test filter by auto
-        let auto_records =
-            get_history_records_sync(date_str.clone(), date_str.clone(), Some("auto".to_string()), 0, 50)
-                .unwrap();
+        let auto_records = get_history_records_sync(
+            date_str.clone(),
+            date_str.clone(),
+            Some("auto".to_string()),
+            0,
+            50,
+        )
+        .unwrap();
         assert!(
             auto_records.iter().any(|r| r.content == "auto record"),
             "Should find auto record"
@@ -1950,9 +1964,14 @@ mod tests {
         );
 
         // Test filter by manual
-        let manual_records =
-            get_history_records_sync(date_str.clone(), date_str.clone(), Some("manual".to_string()), 0, 50)
-                .unwrap();
+        let manual_records = get_history_records_sync(
+            date_str.clone(),
+            date_str.clone(),
+            Some("manual".to_string()),
+            0,
+            50,
+        )
+        .unwrap();
         assert!(
             manual_records.iter().any(|r| r.content == "manual record"),
             "Should find manual record"
@@ -1987,8 +2006,7 @@ mod tests {
         }
 
         let date_str = today.format("%Y-%m-%d").to_string();
-        let records =
-            get_history_records_sync(date_str.clone(), date_str, None, 0, 50).unwrap();
+        let records = get_history_records_sync(date_str.clone(), date_str, None, 0, 50).unwrap();
 
         assert!(
             records.iter().any(|r| r.content == "auto record"),
@@ -2023,42 +2041,27 @@ mod tests {
         }
 
         // First page (2 records)
-        let page1 = get_history_records_sync(
-            date_str.clone(),
-            date_str.clone(),
-            None,
-            0,
-            2,
-        )
-        .unwrap();
+        let page1 =
+            get_history_records_sync(date_str.clone(), date_str.clone(), None, 0, 2).unwrap();
         assert_eq!(page1.len(), 2, "First page should have 2 records");
 
         // Second page (2 records)
-        let page2 = get_history_records_sync(
-            date_str.clone(),
-            date_str.clone(),
-            None,
-            1,
-            2,
-        )
-        .unwrap();
+        let page2 =
+            get_history_records_sync(date_str.clone(), date_str.clone(), None, 1, 2).unwrap();
         assert_eq!(page2.len(), 2, "Second page should have 2 records");
 
         // Third page (1 record)
-        let page3 = get_history_records_sync(
-            date_str.clone(),
-            date_str.clone(),
-            None,
-            2,
-            2,
-        )
-        .unwrap();
+        let page3 =
+            get_history_records_sync(date_str.clone(), date_str.clone(), None, 2, 2).unwrap();
         assert_eq!(page3.len(), 1, "Third page should have 1 record");
 
         // Verify no overlap between pages
-        let page1_contents: std::collections::HashSet<_> = page1.iter().map(|r| r.content.clone()).collect();
-        let page2_contents: std::collections::HashSet<_> = page2.iter().map(|r| r.content.clone()).collect();
-        let page3_contents: std::collections::HashSet<_> = page3.iter().map(|r| r.content.clone()).collect();
+        let page1_contents: std::collections::HashSet<_> =
+            page1.iter().map(|r| r.content.clone()).collect();
+        let page2_contents: std::collections::HashSet<_> =
+            page2.iter().map(|r| r.content.clone()).collect();
+        let page3_contents: std::collections::HashSet<_> =
+            page3.iter().map(|r| r.content.clone()).collect();
 
         assert!(
             page1_contents.is_disjoint(&page2_contents),
@@ -2344,10 +2347,7 @@ mod tests {
         insert_record_with_ts(&ts, "Working on Rust project with Cargo");
 
         let results = search_records_sync("Rust", "rank", 50).unwrap();
-        assert!(
-            !results.is_empty(),
-            "Should find matching record"
-        );
+        assert!(!results.is_empty(), "Should find matching record");
 
         let snippet = &results[0].snippet;
         assert!(

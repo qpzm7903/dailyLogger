@@ -13,7 +13,7 @@ use std::sync::Mutex;
 #[derive(Debug, Clone)]
 pub struct HourlyActivity {
     pub date: NaiveDate,
-    pub hour: u8,        // 0-23
+    pub hour: u8, // 0-23
     pub capture_count: u32,
 }
 
@@ -21,15 +21,15 @@ pub struct HourlyActivity {
 #[derive(Debug, Clone, Default)]
 pub struct HourlyActivitySummary {
     pub hour: u8,
-    pub active_days: u32,   // Days with at least one capture in this hour
-    pub total_days: u32,    // Total days in the sliding window
+    pub active_days: u32, // Days with at least one capture in this hour
+    pub total_days: u32,  // Total days in the sliding window
 }
 
 /// A detected work time period
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimePeriod {
-    pub start: u8,  // Start hour 0-23
-    pub end: u8,    // End hour 0-24 (exclusive)
+    pub start: u8, // Start hour 0-23
+    pub end: u8,   // End hour 0-24 (exclusive)
 }
 
 /// Work time pattern learner
@@ -65,9 +65,11 @@ impl WorkTimePatternLearner {
         let hour = datetime.hour() as u8;
 
         // Find or create entry for this date/hour
-        if let Some(entry) = self.hourly_activities.iter_mut().find(|e| {
-            e.date == date && e.hour == hour
-        }) {
+        if let Some(entry) = self
+            .hourly_activities
+            .iter_mut()
+            .find(|e| e.date == date && e.hour == hour)
+        {
             entry.capture_count += 1;
         } else {
             self.hourly_activities.push(HourlyActivity {
@@ -107,11 +109,14 @@ impl WorkTimePatternLearner {
         // Build summaries
         for hour in 0..24u8 {
             let days = days_by_hour.get(&hour).map(|s| s.len() as u32).unwrap_or(0);
-            summaries.insert(hour, HourlyActivitySummary {
+            summaries.insert(
                 hour,
-                active_days: days,
-                total_days,
-            });
+                HourlyActivitySummary {
+                    hour,
+                    active_days: days,
+                    total_days,
+                },
+            );
         }
 
         let mut result: Vec<_> = summaries.into_values().collect();
@@ -125,11 +130,8 @@ impl WorkTimePatternLearner {
             return 0;
         }
 
-        let dates: std::collections::HashSet<_> = self
-            .hourly_activities
-            .iter()
-            .map(|e| e.date)
-            .collect();
+        let dates: std::collections::HashSet<_> =
+            self.hourly_activities.iter().map(|e| e.date).collect();
 
         dates.len() as u32
     }
@@ -399,8 +401,10 @@ pub fn get_work_time_status(settings: &WorkTimeSettings) -> WorkTimeStatus {
 
     let current_periods = if settings.use_custom_work_time {
         // Parse custom time to periods
-        let start_hour = parse_time_to_minutes(settings.custom_work_time_start.as_deref(), 9 * 60) / 60;
-        let end_hour = parse_time_to_minutes(settings.custom_work_time_end.as_deref(), 18 * 60) / 60;
+        let start_hour =
+            parse_time_to_minutes(settings.custom_work_time_start.as_deref(), 9 * 60) / 60;
+        let end_hour =
+            parse_time_to_minutes(settings.custom_work_time_end.as_deref(), 18 * 60) / 60;
         vec![TimePeriod {
             start: start_hour as u8,
             end: end_hour as u8,
@@ -476,7 +480,9 @@ mod tests {
         learner.prune_old_entries();
 
         assert_eq!(learner.hourly_activities.len(), 1);
-        assert!(learner.hourly_activities[0].date >= Local::now().date_naive() - Duration::days(14));
+        assert!(
+            learner.hourly_activities[0].date >= Local::now().date_naive() - Duration::days(14)
+        );
     }
 
     #[test]
@@ -514,7 +520,7 @@ mod tests {
         // Non-work hours
         assert!(!learner.is_work_hour(0, 0.6));
         assert!(!learner.is_work_hour(8, 0.6));
-        assert!(!learner.is_work_hour(13, 0.6));  // Lunch break
+        assert!(!learner.is_work_hour(13, 0.6)); // Lunch break
         assert!(!learner.is_work_hour(22, 0.6));
     }
 
@@ -647,14 +653,14 @@ mod tests {
         let end = 18 * 60;
 
         // Inside work hours
-        assert!(is_in_custom_time_period(9 * 60, start, end));    // 09:00
-        assert!(is_in_custom_time_period(12 * 60, start, end));   // 12:00
+        assert!(is_in_custom_time_period(9 * 60, start, end)); // 09:00
+        assert!(is_in_custom_time_period(12 * 60, start, end)); // 12:00
         assert!(is_in_custom_time_period(17 * 60 + 59, start, end)); // 17:59
 
         // Outside work hours
         assert!(!is_in_custom_time_period(8 * 60 + 59, start, end)); // 08:59
-        assert!(!is_in_custom_time_period(18 * 60, start, end));     // 18:00
-        assert!(!is_in_custom_time_period(22 * 60, start, end));     // 22:00
+        assert!(!is_in_custom_time_period(18 * 60, start, end)); // 18:00
+        assert!(!is_in_custom_time_period(22 * 60, start, end)); // 22:00
     }
 
     #[test]
@@ -664,14 +670,14 @@ mod tests {
         let end = 6 * 60;
 
         // Inside work hours
-        assert!(is_in_custom_time_period(22 * 60, start, end));     // 22:00
-        assert!(is_in_custom_time_period(23 * 60, start, end));     // 23:00
-        assert!(is_in_custom_time_period(0, start, end));           // 00:00
+        assert!(is_in_custom_time_period(22 * 60, start, end)); // 22:00
+        assert!(is_in_custom_time_period(23 * 60, start, end)); // 23:00
+        assert!(is_in_custom_time_period(0, start, end)); // 00:00
         assert!(is_in_custom_time_period(5 * 60 + 59, start, end)); // 05:59
 
         // Outside work hours
-        assert!(!is_in_custom_time_period(6 * 60, start, end));     // 06:00
-        assert!(!is_in_custom_time_period(12 * 60, start, end));    // 12:00
+        assert!(!is_in_custom_time_period(6 * 60, start, end)); // 06:00
+        assert!(!is_in_custom_time_period(12 * 60, start, end)); // 12:00
         assert!(!is_in_custom_time_period(21 * 60 + 59, start, end)); // 21:59
     }
 
@@ -737,21 +743,21 @@ mod tests {
         ];
 
         // Inside first period
-        assert!(is_in_learned_periods(9 * 60, &periods));      // 09:00
-        assert!(is_in_learned_periods(10 * 60, &periods));     // 10:00
+        assert!(is_in_learned_periods(9 * 60, &periods)); // 09:00
+        assert!(is_in_learned_periods(10 * 60, &periods)); // 10:00
         assert!(is_in_learned_periods(11 * 60 + 59, &periods)); // 11:59
 
         // Between periods (lunch)
-        assert!(!is_in_learned_periods(12 * 60, &periods));    // 12:00
-        assert!(!is_in_learned_periods(13 * 60, &periods));    // 13:00
+        assert!(!is_in_learned_periods(12 * 60, &periods)); // 12:00
+        assert!(!is_in_learned_periods(13 * 60, &periods)); // 13:00
 
         // Inside second period
-        assert!(is_in_learned_periods(14 * 60, &periods));     // 14:00
-        assert!(is_in_learned_periods(17 * 60, &periods));     // 17:00
+        assert!(is_in_learned_periods(14 * 60, &periods)); // 14:00
+        assert!(is_in_learned_periods(17 * 60, &periods)); // 17:00
 
         // Outside
-        assert!(!is_in_learned_periods(18 * 60, &periods));    // 18:00
-        assert!(!is_in_learned_periods(22 * 60, &periods));    // 22:00
+        assert!(!is_in_learned_periods(18 * 60, &periods)); // 18:00
+        assert!(!is_in_learned_periods(22 * 60, &periods)); // 22:00
     }
 
     #[test]

@@ -9,9 +9,7 @@ use crate::silent_tracker::{
     calculate_optimal_silent_minutes, current_threshold, has_sufficient_data, record_capture,
     set_threshold, CaptureReason,
 };
-use crate::work_time::{
-    is_in_work_time, record_work_time_capture, WorkTimeSettings,
-};
+use crate::work_time::{is_in_work_time, record_work_time_capture, WorkTimeSettings};
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -1217,7 +1215,10 @@ mod tests {
         crate::memory_storage::save_settings_sync(&settings).unwrap();
 
         let loaded = load_work_time_settings();
-        assert!(loaded.use_custom_work_time, "use_custom_work_time should be true");
+        assert!(
+            loaded.use_custom_work_time,
+            "use_custom_work_time should be true"
+        );
         assert_eq!(
             loaded.custom_work_time_start,
             Some("08:00".to_string()),

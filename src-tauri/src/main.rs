@@ -148,8 +148,13 @@ fn main() {
                         MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
                     let quick_note =
                         MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
-                    let open_obsidian =
-                        MenuItem::with_id(app, "open_obsidian", "打开 Obsidian 文件夹", true, None::<&str>)?;
+                    let open_obsidian = MenuItem::with_id(
+                        app,
+                        "open_obsidian",
+                        "打开 Obsidian 文件夹",
+                        true,
+                        None::<&str>,
+                    )?;
                     let settings =
                         MenuItem::with_id(app, "settings", "设置...", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
@@ -184,8 +189,13 @@ fn main() {
                         MenuItem::with_id(app, "generate_summary", "生成日报", true, None::<&str>)?;
                     let quick_note =
                         MenuItem::with_id(app, "quick_note", "快速记录...", true, None::<&str>)?;
-                    let open_obsidian =
-                        MenuItem::with_id(app, "open_obsidian", "打开 Obsidian 文件夹", true, None::<&str>)?;
+                    let open_obsidian = MenuItem::with_id(
+                        app,
+                        "open_obsidian",
+                        "打开 Obsidian 文件夹",
+                        true,
+                        None::<&str>,
+                    )?;
                     let settings =
                         MenuItem::with_id(app, "settings", "设置...", true, None::<&str>)?;
                     let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
@@ -196,7 +206,16 @@ fn main() {
                     // Menu order: 生成日报 → 快速记录 → 打开Obsidian → 分隔线 → 设置 → 显示窗口 → 分隔线 → 退出
                     Menu::with_items(
                         app,
-                        &[&generate_summary, &quick_note, &open_obsidian, &separator1, &settings, &show, &separator2, &quit],
+                        &[
+                            &generate_summary,
+                            &quick_note,
+                            &open_obsidian,
+                            &separator1,
+                            &settings,
+                            &show,
+                            &separator2,
+                            &quit,
+                        ],
                     )
                     .map_err(Into::into)
                 }
