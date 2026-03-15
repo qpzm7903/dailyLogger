@@ -54,43 +54,38 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
 }
 
 /// Get list of all connected monitors (Windows)
+/// Uses xcap for cross-platform compatibility
 #[cfg(target_os = "windows")]
 pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
-    use windows_capture::monitor::Monitor;
-
-    // Enumerate monitors by trying indexes until we get an error
-    let mut monitors = Vec::new();
-    let mut index = 0;
-    loop {
-        match Monitor::from_index(index) {
-            Ok(m) => {
-                monitors.push(m);
-                index += 1;
-            }
-            Err(_) => break, // No more monitors
-        }
-    }
+    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
     if monitors.is_empty() {
         return Err("No monitors found".to_string());
     }
 
-    // Get primary monitor info
-    let primary = Monitor::primary().ok();
-
     let result: Vec<MonitorDetail> = monitors
         .iter()
         .enumerate()
-        .map(|(idx, m)| MonitorDetail {
-            index: idx,
-            name: format!("Monitor {}", idx + 1),
-            width: m.width().unwrap_or(0),
-            height: m.height().unwrap_or(0),
-            x: m.position().unwrap_or((0, 0)).0,
-            y: m.position().unwrap_or((0, 0)).1,
-            is_primary: primary.as_ref().map_or(false, |p| {
-                m.width() == p.width() && m.height() == p.height()
-            }),
+        .map(|(index, m)| {
+            let name = m
+                .name()
+                .unwrap_or_else(|_| format!("Monitor {}", index + 1));
+
+            let x = m.x().unwrap_or(0);
+            let y = m.y().unwrap_or(0);
+            let width = m.width().unwrap_or(0);
+            let height = m.height().unwrap_or(0);
+            let is_primary = m.is_primary().unwrap_or(index == 0);
+
+            MonitorDetail {
+                index,
+                name,
+                width,
+                height,
+                x,
+                y,
+                is_primary,
+            }
         })
         .collect();
 

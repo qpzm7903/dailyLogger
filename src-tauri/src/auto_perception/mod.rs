@@ -174,29 +174,16 @@ impl Default for CaptureSettings {
 
 // ─── SMART-004: Multi-monitor capture support (Windows) ──────────────────────
 
-/// Capture screen with specified mode (Windows)
+/// Capture screen with specified mode (Windows) - uses xcap for compatibility
 /// Returns (base64_image, monitor_info)
 #[cfg(target_os = "windows")]
 fn capture_screen_with_mode(
     mode: CaptureMode,
     selected_index: usize,
 ) -> Result<(String, MonitorInfo), String> {
-    use windows_capture::monitor::Monitor;
-
     let monitor_details = get_monitor_list()?;
 
-    // Enumerate monitors by trying indexes until we get an error
-    let mut monitors = Vec::new();
-    let mut idx = 0;
-    loop {
-        match Monitor::from_index(idx) {
-            Ok(m) => {
-                monitors.push(m);
-                idx += 1;
-            }
-            Err(_) => break, // No more monitors
-        }
-    }
+    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
     if monitors.is_empty() {
         return Err("No monitors found".to_string());
@@ -209,12 +196,12 @@ fn capture_screen_with_mode(
 
     let image = match mode {
         CaptureMode::Primary => {
-            // Find primary monitor
+            // Find primary monitor (usually at position 0,0)
             let primary_index = monitor_details
                 .iter()
                 .position(|m| m.is_primary)
                 .unwrap_or(0);
-            capture_single_monitor_windows(&monitors, primary_index)?
+            capture_single_monitor_xcap(&monitors, primary_index)?
         }
         CaptureMode::Secondary => {
             // Use selected_index, fallback to first non-primary if out of bounds
@@ -227,122 +214,31 @@ fn capture_screen_with_mode(
                     .position(|m| !m.is_primary)
                     .unwrap_or(0)
             };
-            capture_single_monitor_windows(&monitors, index)?
+            capture_single_monitor_xcap(&monitors, index)?
         }
         CaptureMode::All => {
             // Stitch all monitors together
-            stitch_monitors_windows(&monitors, &monitor_details)?
+            stitch_monitors_xcap(&monitors, &monitor_details)?
         }
     };
 
     Ok((image, monitor_info))
 }
 
-/// Capture a single monitor by index (Windows version)
+/// Capture a single monitor by index (Windows version - using xcap)
 #[cfg(target_os = "windows")]
 fn capture_single_monitor_windows(
-    monitors: &[windows_capture::monitor::Monitor],
+    monitors: &[xcap::Monitor],
     index: usize,
 ) -> Result<String, String> {
-    use std::sync::mpsc;
-    use windows_capture::{
-        capture::{Context, GraphicsCaptureApiHandler},
-        frame::Frame,
-        graphics_capture_api::InternalCaptureControl,
-        settings::{
-            ColorFormat, CursorCaptureSettings, DirtyRegionSettings, DrawBorderSettings,
-            MinimumUpdateIntervalSettings, SecondaryWindowSettings, Settings,
-        },
-    };
-
-    if index >= monitors.len() {
-        return Err(format!(
-            "Monitor index {} out of bounds ({} monitors)",
-            index,
-            monitors.len()
-        ));
-    }
-
-    type FrameResult = Result<(u32, u32, Vec<u8>), String>;
-
-    struct OneShot {
-        tx: mpsc::SyncSender<FrameResult>,
-    }
-
-    impl GraphicsCaptureApiHandler for OneShot {
-        type Flags = mpsc::SyncSender<FrameResult>;
-        type Error = Box<dyn std::error::Error + Send + Sync>;
-
-        fn new(ctx: Context<Self::Flags>) -> Result<Self, Self::Error> {
-            Ok(Self { tx: ctx.flags })
-        }
-
-        fn on_frame_arrived(
-            &mut self,
-            frame: &mut Frame,
-            capture_control: InternalCaptureControl,
-        ) -> Result<(), Self::Error> {
-            let width = frame.width();
-            let height = frame.height();
-            let mut buffer = frame.buffer()?;
-            let row_pitch = buffer.row_pitch() as usize;
-            let raw = buffer.as_raw_buffer();
-            let row_bytes = width as usize * 4;
-
-            let mut rgba_data = Vec::with_capacity(row_bytes * height as usize);
-            for y in 0..(height as usize) {
-                let start = y * row_pitch;
-                rgba_data.extend_from_slice(&raw[start..start + row_bytes]);
-            }
-
-            let _ = self.tx.send(Ok((width, height, rgba_data)));
-            capture_control.stop();
-            Ok(())
-        }
-
-        fn on_closed(&mut self) -> Result<(), Self::Error> {
-            Ok(())
-        }
-    }
-
-    let (tx, rx) = mpsc::sync_channel(1);
-    let settings = Settings::new(
-        monitors[index].clone(),
-        CursorCaptureSettings::Default,
-        DrawBorderSettings::Default,
-        SecondaryWindowSettings::Default,
-        MinimumUpdateIntervalSettings::Default,
-        DirtyRegionSettings::Default,
-        ColorFormat::Rgba8,
-        tx,
-    );
-
-    let _control = OneShot::start_free_threaded(settings)
-        .map_err(|e| format!("Failed to start screen capture: {e}"))?;
-
-    let (width, height, rgba_data) = rx
-        .recv_timeout(std::time::Duration::from_secs(5))
-        .map_err(|_| "Screen capture timed out after 5s".to_string())?
-        .map_err(|e| e)?;
-
-    let image = image::RgbaImage::from_raw(width, height, rgba_data)
-        .ok_or_else(|| "Failed to construct image from frame data".to_string())?;
-
-    let mut buf = Vec::new();
-    image::DynamicImage::ImageRgba8(image)
-        .write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode PNG: {e}"))?;
-
-    Ok(base64::Engine::encode(
-        &base64::engine::general_purpose::STANDARD,
-        &buf,
-    ))
+    // Use the xcap implementation for Windows
+    return capture_single_monitor_xcap(monitors, index);
 }
 
-/// Stitch all monitors into a single image (Windows version)
+/// Stitch all monitors into a single image (Windows version - using xcap)
 #[cfg(target_os = "windows")]
 fn stitch_monitors_windows(
-    monitors: &[windows_capture::monitor::Monitor],
+    monitors: &[xcap::Monitor],
     monitor_details: &[crate::monitor_types::MonitorDetail],
 ) -> Result<String, String> {
     if monitors.is_empty() {
@@ -354,8 +250,8 @@ fn stitch_monitors_windows(
         Vec::new();
 
     for (index, _monitor) in monitors.iter().enumerate() {
-        // Capture each monitor
-        let image_base64 = capture_single_monitor_windows(monitors, index)?;
+        // Capture each monitor using xcap
+        let image_base64 = capture_single_monitor_xcap(monitors, index)?;
 
         // Decode base64 to image
         let image_data =
