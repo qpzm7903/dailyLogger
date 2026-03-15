@@ -1295,11 +1295,10 @@ pub async fn generate_custom_report(
     report_name: Option<String>,
 ) -> Result<String, String> {
     // Validate date format
-    chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+    let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
         .map_err(|e| format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
     let parsed_end = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
         .map_err(|e| format!("无效的结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
-    let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").unwrap();
 
     if parsed_end < parsed_start {
         return Err("结束日期不能早于起始日期".to_string());
