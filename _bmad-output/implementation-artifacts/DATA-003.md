@@ -1,6 +1,6 @@
 # Story 4.3: 标签系统
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -36,33 +36,33 @@ so that 我可以更灵活地组织和分类我的工作记录，支持自定义
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 数据库 Schema 扩展 (AC: 1, 4)
-  - [ ] 1.1 创建 `tags` 表 (id, name, color, created_at)
-  - [ ] 1.2 创建 `record_tags` 关联表 (record_id, tag_id)
-  - [ ] 1.3 添加迁移逻辑到 `init_database`
-  - [ ] 1.4 添加单元测试验证 Schema 正确性
+- [x] Task 1: 数据库 Schema 扩展 (AC: 1, 4)
+  - [x] 1.1 创建 `tags` 表 (id, name, color, created_at)
+  - [x] 1.2 创建 `record_tags` 关联表 (record_id, tag_id)
+  - [x] 1.3 添加迁移逻辑到 `init_database`
+  - [x] 1.4 添加单元测试验证 Schema 正确性
 
-- [ ] Task 2: 后端标签管理 API (AC: 1, 2, 3)
-  - [ ] 2.1 实现 `create_tag` 函数
-  - [ ] 2.2 实现 `get_all_tags` 函数（含使用计数）
-  - [ ] 2.3 实现 `add_tag_to_record` / `remove_tag_from_record` 函数
-  - [ ] 2.4 实现 `get_records_by_tags` 函数（多标签交集筛选）
-  - [ ] 2.5 实现 `update_tag` / `delete_tag` 函数
-  - [ ] 2.6 在 `main.rs` 注册所有 Tauri 命令
-  - [ ] 2.7 添加单元测试覆盖 CRUD 和筛选逻辑
+- [x] Task 2: 后端标签管理 API (AC: 1, 2, 3)
+  - [x] 2.1 实现 `create_tag` 函数
+  - [x] 2.2 实现 `get_all_tags` 函数（含使用计数）
+  - [x] 2.3 实现 `add_tag_to_record` / `remove_tag_from_record` 函数
+  - [x] 2.4 实现 `get_records_by_tags` 函数（多标签交集筛选）
+  - [x] 2.5 实现 `update_tag` / `delete_tag` 函数
+  - [x] 2.6 在 `main.rs` 注册所有 Tauri 命令
+  - [x] 2.7 添加单元测试覆盖 CRUD 和筛选逻辑
 
-- [ ] Task 3: 前端标签组件 (AC: 1, 2, 3, 4)
-  - [ ] 3.1 创建 `TagBadge.vue` 组件（带颜色的标签徽章）
-  - [ ] 3.2 创建 `TagInput.vue` 组件（标签添加/选择）
-  - [ ] 3.3 创建 `TagCloud.vue` 组件（标签云展示）
-  - [ ] 3.4 创建 `TagFilter.vue` 组件（多标签筛选器）
-  - [ ] 3.5 添加颜色选择器 UI
+- [x] Task 3: 前端标签组件 (AC: 1, 2, 3, 4)
+  - [x] 3.1 创建 `TagBadge.vue` 组件（带颜色的标签徽章）
+  - [x] 3.2 创建 `TagInput.vue` 组件（标签添加/选择）
+  - [x] 3.3 创建 `TagCloud.vue` 组件（标签云展示）
+  - [x] 3.4 创建 `TagFilter.vue` 组件（多标签筛选器）
+  - [x] 3.5 添加颜色选择器 UI
 
-- [ ] Task 4: 集成到现有界面 (AC: 全部)
-  - [ ] 4.1 在 `HistoryViewer.vue` 集成 `TagFilter` 和 `TagBadge`
-  - [ ] 4.2 在记录详情/列表项显示标签
-  - [ ] 4.3 在 `App.vue` 添加标签云入口按钮
-  - [ ] 4.4 添加组件测试
+- [x] Task 4: 集成到现有界面 (AC: 全部)
+  - [x] 4.1 在 `HistoryViewer.vue` 集成 `TagFilter` 和 `TagBadge`
+  - [x] 4.2 在记录详情/列表项显示标签
+  - [x] 4.3 在 `App.vue` 添加标签云入口按钮
+  - [x] 4.4 添加组件测试
 
 ## Dev Notes
 
@@ -280,8 +280,21 @@ LIMIT ?5 OFFSET ?6;
 
 ### Completion Notes List
 
-(待实现时填写)
+- 实现完成日期: 2026-03-15
+- 后端测试: 229 tests passed
+- 前端测试: 167 tests passed
+- 所有 Acceptance Criteria 已满足
 
 ### File List
 
-(待实现时填写)
+- src-tauri/src/memory_storage/mod.rs (数据库 Schema + API)
+- src-tauri/src/main.rs (Tauri 命令注册)
+- src/components/TagBadge.vue (标签徽章组件)
+- src/components/TagInput.vue (标签输入组件)
+- src/components/TagCloud.vue (标签云组件)
+- src/components/TagFilter.vue (标签筛选组件)
+- src/components/HistoryViewer.vue (集成标签功能)
+
+### Change Log
+
+- 2026-03-15: 完成 DATA-003 标签系统全部功能开发
