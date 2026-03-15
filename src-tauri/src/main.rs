@@ -118,6 +118,8 @@ fn main() {
             daily_logger_lib::auto_perception::get_auto_capture_status,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::get_work_time_status,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::monitor::get_monitors,
         ])
         .setup(|app| {
             tracing::info!("Application setup complete");

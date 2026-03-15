@@ -131,6 +131,17 @@ pub fn init_database() -> Result<(), String> {
         "ALTER TABLE settings ADD COLUMN learned_work_time TEXT DEFAULT NULL",
         [],
     );
+    // SMART-004: 多显示器支持配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN capture_mode TEXT DEFAULT 'primary'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN selected_monitor_index INTEGER DEFAULT 0",
+        [],
+    );
+    // SMART-004: records表添加monitor_info字段
+    let _ = conn.execute("ALTER TABLE records ADD COLUMN monitor_info TEXT", []);
 
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
@@ -224,6 +235,8 @@ pub struct Record {
     pub source_type: String,
     pub content: String,
     pub screenshot_path: Option<String>,
+    // SMART-004: 多显示器配置信息
+    pub monitor_info: Option<String>, // JSON: MonitorInfo serialized
 }
 
 /// Full-text search result with highlighting
@@ -268,12 +281,16 @@ pub struct Settings {
     pub custom_work_time_start: Option<String>, // "HH:MM" format
     pub custom_work_time_end: Option<String>,
     pub learned_work_time: Option<String>, // JSON: {"periods": [{"start": 9, "end": 12}, ...]}
+    // SMART-004: 多显示器支持配置
+    pub capture_mode: Option<String>, // "primary" | "secondary" | "all"
+    pub selected_monitor_index: Option<i32>, // For "secondary" mode
 }
 
 pub fn add_record(
     source_type: &str,
     content: &str,
     screenshot_path: Option<&str>,
+    monitor_info: Option<&str>,
 ) -> Result<i64, String> {
     let db = DB_CONNECTION
         .lock()
@@ -283,8 +300,8 @@ pub fn add_record(
     let timestamp = chrono::Utc::now().to_rfc3339();
 
     conn.execute(
-        "INSERT INTO records (timestamp, source_type, content, screenshot_path) VALUES (?1, ?2, ?3, ?4)",
-        params![timestamp, source_type, content, screenshot_path],
+        "INSERT INTO records (timestamp, source_type, content, screenshot_path, monitor_info) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![timestamp, source_type, content, screenshot_path, monitor_info],
     ).map_err(|e| format!("Failed to insert record: {}", e))?;
 
     Ok(conn.last_insert_rowid())
@@ -307,7 +324,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path FROM records 
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
          WHERE timestamp >= ?1 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -320,6 +337,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
                 source_type: row.get(2)?,
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -396,7 +414,7 @@ pub fn get_records_by_date_range_sync(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -409,6 +427,7 @@ pub fn get_records_by_date_range_sync(
                 source_type: row.get(2)?,
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -488,11 +507,11 @@ pub fn get_history_records_sync(
                 st
             ));
         }
-        "SELECT id, timestamp, source_type, content, screenshot_path FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
          ORDER BY timestamp DESC LIMIT ?4 OFFSET ?5"
     } else {
-        "SELECT id, timestamp, source_type, content, screenshot_path FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2
          ORDER BY timestamp DESC LIMIT ?3 OFFSET ?4"
     };
@@ -509,6 +528,7 @@ pub fn get_history_records_sync(
                 source_type: row.get(2)?,
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -522,6 +542,7 @@ pub fn get_history_records_sync(
                 source_type: row.get(2)?,
                 content: row.get(3)?,
                 screenshot_path: row.get(4)?,
+                monitor_info: row.get(5)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -568,7 +589,7 @@ pub fn search_records_sync(
         // Use LIKE search for CJK queries
         // Note: Both time and rank order use the same SQL since LIKE doesn't have relevance score
         let sql = "SELECT
-                id, timestamp, source_type, content, screenshot_path
+                id, timestamp, source_type, content, screenshot_path, monitor_info
             FROM records
             WHERE content LIKE ?1
             ORDER BY timestamp DESC
@@ -592,6 +613,7 @@ pub fn search_records_sync(
                         source_type: row.get(2)?,
                         content,
                         screenshot_path: row.get(4)?,
+                        monitor_info: row.get(5)?,
                     },
                     snippet,
                     rank: 0.0, // LIKE search doesn't have relevance score
@@ -608,7 +630,7 @@ pub fn search_records_sync(
 
         let sql = if order_by == "time" {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -618,7 +640,7 @@ pub fn search_records_sync(
             LIMIT ?2"
         } else {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -644,9 +666,10 @@ pub fn search_records_sync(
                         source_type: row.get(2)?,
                         content: row.get(3)?,
                         screenshot_path: row.get(4)?,
+                        monitor_info: row.get(5)?,
                     },
-                    snippet: row.get(5)?,
-                    rank: row.get(6)?,
+                    snippet: row.get(6)?,
+                    rank: row.get(7)?,
                 })
             })
             .map_err(|e| format!("Failed to search records: {}", e))?
@@ -672,7 +695,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 include_manual_records, window_whitelist, window_blacklist, use_whitelist_only,
                 auto_adjust_silent, silent_adjustment_paused_until,
                 auto_detect_work_time, use_custom_work_time,
-                custom_work_time_start, custom_work_time_end, learned_work_time
+                custom_work_time_start, custom_work_time_end, learned_work_time,
+                capture_mode, selected_monitor_index
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -705,6 +729,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 custom_work_time_start: row.get(22)?,
                 custom_work_time_end: row.get(23)?,
                 learned_work_time: row.get(24)?,
+                capture_mode: row.get(25)?,
+                selected_monitor_index: row.get(26)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -774,7 +800,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             use_custom_work_time = ?22,
             custom_work_time_start = ?23,
             custom_work_time_end = ?24,
-            learned_work_time = ?25
+            learned_work_time = ?25,
+            capture_mode = ?26,
+            selected_monitor_index = ?27
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -806,6 +834,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.custom_work_time_start,
             settings.custom_work_time_end,
             settings.learned_work_time,
+            settings.capture_mode,
+            settings.selected_monitor_index,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1035,7 +1065,8 @@ mod tests {
                 timestamp TEXT NOT NULL,
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
-                screenshot_path TEXT
+                screenshot_path TEXT,
+                monitor_info TEXT
             )",
             [],
         )
@@ -1067,7 +1098,9 @@ mod tests {
                 use_custom_work_time INTEGER DEFAULT 0,
                 custom_work_time_start TEXT DEFAULT '09:00',
                 custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0
             )",
             [],
         )
@@ -1087,7 +1120,8 @@ mod tests {
                 timestamp TEXT NOT NULL,
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
-                screenshot_path TEXT
+                screenshot_path TEXT,
+                monitor_info TEXT
             )",
             [],
         )
@@ -1119,7 +1153,9 @@ mod tests {
                 use_custom_work_time INTEGER DEFAULT 0,
                 custom_work_time_start TEXT DEFAULT '09:00',
                 custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0
             )",
             [],
         )
@@ -1232,7 +1268,7 @@ mod tests {
     fn add_record_then_query_returns_it() {
         setup_test_db();
 
-        let id = add_record("manual", "e2e test note", None).unwrap();
+        let id = add_record("manual", "e2e test note", None, None).unwrap();
         assert!(id > 0);
 
         let records = get_today_records_sync().unwrap();
@@ -1247,7 +1283,7 @@ mod tests {
     fn add_record_with_screenshot_path_persists() {
         setup_test_db();
 
-        let id = add_record("auto", "screenshot analysis", Some("/tmp/shot.png")).unwrap();
+        let id = add_record("auto", "screenshot analysis", Some("/tmp/shot.png"), None).unwrap();
         assert!(id > 0);
 
         let records = get_today_records_sync().unwrap();
@@ -2107,7 +2143,8 @@ mod tests {
                 timestamp TEXT NOT NULL,
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
-                screenshot_path TEXT
+                screenshot_path TEXT,
+                monitor_info TEXT
             )",
             [],
         )
@@ -2141,7 +2178,9 @@ mod tests {
                 use_custom_work_time INTEGER DEFAULT 0,
                 custom_work_time_start TEXT DEFAULT '09:00',
                 custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0
             )",
             [],
         )

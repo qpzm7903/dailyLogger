@@ -254,6 +254,7 @@ mod tests {
             source_type: source_type.to_string(),
             content: content.to_string(),
             screenshot_path: None,
+            monitor_info: None,
         }
     }
 
@@ -284,6 +285,8 @@ mod tests {
             custom_work_time_start: None,
             custom_work_time_end: None,
             learned_work_time: None,
+            capture_mode: None,
+            selected_monitor_index: None,
         }
     }
 

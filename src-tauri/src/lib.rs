@@ -3,6 +3,9 @@ pub mod auto_perception;
 pub mod crypto;
 pub mod manual_entry;
 pub mod memory_storage;
+#[cfg(feature = "screenshot")]
+pub mod monitor;
+pub mod monitor_types;
 pub mod silent_tracker;
 pub mod synthesis;
 pub mod window_info;

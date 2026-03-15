@@ -7,7 +7,8 @@ pub fn add_quick_note_sync(content: &str) -> Result<i64, String> {
         return Err("内容不能为空".to_string());
     }
 
-    memory_storage::add_record("manual", content, None).map_err(|e| format!("保存记录失败: {}", e))
+    memory_storage::add_record("manual", content, None, None)
+        .map_err(|e| format!("保存记录失败: {}", e))
 }
 
 /// Save a quick note from the tray menu.
@@ -79,7 +80,7 @@ pub async fn add_quick_note(content: String) -> Result<(), String> {
         return Err("Content cannot be empty".to_string());
     }
 
-    memory_storage::add_record("manual", &content, None)
+    memory_storage::add_record("manual", &content, None, None)
         .map_err(|e| format!("Failed to save note: {}", e))?;
 
     tracing::info!("Quick note added: {}...", &content[..content.len().min(50)]);
@@ -175,7 +176,8 @@ mod tests {
                 timestamp TEXT NOT NULL,
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
-                screenshot_path TEXT
+                screenshot_path TEXT,
+                monitor_info TEXT
             )",
             [],
         )
@@ -207,7 +209,9 @@ mod tests {
                 use_custom_work_time INTEGER DEFAULT 0,
                 custom_work_time_start TEXT DEFAULT '09:00',
                 custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0
             )",
             [],
         )
@@ -468,7 +472,8 @@ mod tests {
                 timestamp TEXT NOT NULL,
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
-                screenshot_path TEXT
+                screenshot_path TEXT,
+                monitor_info TEXT
             )",
             [],
         )
@@ -500,7 +505,9 @@ mod tests {
                 use_custom_work_time INTEGER DEFAULT 0,
                 custom_work_time_start TEXT DEFAULT '09:00',
                 custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL
+                learned_work_time TEXT DEFAULT NULL,
+                capture_mode TEXT DEFAULT 'primary',
+                selected_monitor_index INTEGER DEFAULT 0
             )",
             [],
         )

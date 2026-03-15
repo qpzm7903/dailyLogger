@@ -624,7 +624,7 @@ async fn capture_and_store() -> Result<(), String> {
     })
     .to_string();
 
-    memory_storage::add_record("auto", &content, screenshot_path.as_deref())
+    memory_storage::add_record("auto", &content, screenshot_path.as_deref(), None)
         .map_err(|e| format!("Failed to store capture: {}", e))?;
 
     tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
