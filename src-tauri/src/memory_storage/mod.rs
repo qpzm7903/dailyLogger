@@ -1975,7 +1975,8 @@ mod tests {
                 weekly_report_prompt TEXT,
                 weekly_report_day INTEGER DEFAULT 0,
                 last_weekly_report_path TEXT,
-                monthly_report_prompt TEXT
+                monthly_report_prompt TEXT,
+                custom_report_templates TEXT DEFAULT '{\"presets\":[],\"custom\":[]}'
             )",
             [],
         )
