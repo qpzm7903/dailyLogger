@@ -187,6 +187,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // FIX-001: 月报路径独立存储（不再覆盖日报路径）
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN last_monthly_report_path TEXT",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
     conn.execute(
@@ -382,6 +388,7 @@ pub struct Settings {
     pub last_weekly_report_path: Option<String>,
     // REPORT-002: 月报生成配置
     pub monthly_report_prompt: Option<String>,
+    pub last_monthly_report_path: Option<String>,
     // REPORT-003: 自定义报告周期配置
     pub custom_report_prompt: Option<String>,
     pub last_custom_report_path: Option<String>,
@@ -1004,7 +1011,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 custom_work_time_start, custom_work_time_end, learned_work_time,
                 capture_mode, selected_monitor_index, tag_categories, is_ollama,
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
-                monthly_report_prompt, custom_report_prompt, last_custom_report_path
+                monthly_report_prompt, custom_report_prompt, last_custom_report_path,
+                last_monthly_report_path
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -1045,6 +1053,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 weekly_report_day: row.get(30)?,
                 last_weekly_report_path: row.get(31)?,
                 monthly_report_prompt: row.get(32)?,
+                last_monthly_report_path: row.get(35)?,
                 custom_report_prompt: row.get(33)?,
                 last_custom_report_path: row.get(34)?,
             })
@@ -1133,7 +1142,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             last_weekly_report_path = ?32,
             monthly_report_prompt = ?33,
             custom_report_prompt = ?34,
-            last_custom_report_path = ?35
+            last_custom_report_path = ?35,
+            last_monthly_report_path = ?36
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -1175,6 +1185,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.monthly_report_prompt,
             settings.custom_report_prompt,
             settings.last_custom_report_path,
+            settings.last_monthly_report_path,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1905,7 +1916,8 @@ mod tests {
                 last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
-                last_custom_report_path TEXT
+                last_custom_report_path TEXT,
+                last_monthly_report_path TEXT
             )",
             [],
         )
@@ -1991,7 +2003,8 @@ mod tests {
                 last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
-                last_custom_report_path TEXT
+                last_custom_report_path TEXT,
+                last_monthly_report_path TEXT
             )",
             [],
         )
@@ -3772,6 +3785,45 @@ mod tests {
         );
     }
 
+    /// FIX-001 regression test: last_monthly_report_path must be stored independently
+    /// from last_summary_path in the database
+    #[test]
+    #[serial]
+    fn save_settings_persists_last_monthly_report_path_independently() {
+        setup_test_db_with_settings();
+
+        // Set both daily summary path and monthly report path
+        let mut settings = get_settings_sync().unwrap();
+        settings.last_summary_path = Some("/obsidian/工作日报 - 2026-03-16.md".to_string());
+        settings.last_monthly_report_path = Some("/obsidian/月报-2026-03.md".to_string());
+        save_settings_sync(&settings).unwrap();
+
+        // Reload and verify both paths are independent
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.last_summary_path,
+            Some("/obsidian/工作日报 - 2026-03-16.md".to_string()),
+            "FIX-001: last_summary_path must not be affected by monthly report path"
+        );
+        assert_eq!(
+            reloaded.last_monthly_report_path,
+            Some("/obsidian/月报-2026-03.md".to_string()),
+            "FIX-001: last_monthly_report_path must be persisted independently"
+        );
+
+        // Update only monthly path, verify daily path unchanged
+        let mut settings = get_settings_sync().unwrap();
+        settings.last_monthly_report_path = Some("/obsidian/月报-2026-02.md".to_string());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.last_summary_path,
+            Some("/obsidian/工作日报 - 2026-03-16.md".to_string()),
+            "FIX-001: updating monthly path must not change daily summary path"
+        );
+    }
+
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)
 }
 
@@ -3835,7 +3887,8 @@ mod benchmarks {
                 last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
-                last_custom_report_path TEXT
+                last_custom_report_path TEXT,
+                last_monthly_report_path TEXT
             )",
             [],
         )

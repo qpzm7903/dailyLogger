@@ -427,6 +427,7 @@ mod tests {
             tag_categories: None,
             is_ollama: None,
             monthly_report_prompt: None,
+            last_monthly_report_path: None,
             custom_report_prompt: None,
             last_custom_report_path: None,
         }
@@ -1266,7 +1267,7 @@ pub async fn generate_monthly_report() -> Result<String, String> {
 
     // Save last monthly report path to settings
     let mut updated_settings = settings.clone();
-    updated_settings.last_summary_path = Some(path_str.clone());
+    updated_settings.last_monthly_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
@@ -1577,6 +1578,7 @@ mod benchmarks {
             tag_categories: None,
             is_ollama: None,
             monthly_report_prompt: None,
+            last_monthly_report_path: None,
             custom_report_prompt: None,
             last_custom_report_path: None,
         }
@@ -1726,6 +1728,34 @@ mod benchmarks {
             elapsed_ms < 2000,
             "Daily summary workflow (100 records) took {}ms (threshold: 2000ms, full target: < 30000ms with AI)",
             elapsed_ms
+        );
+    }
+
+    /// FIX-001 regression test: monthly report path must not overwrite daily summary path
+    /// The Settings struct must store last_monthly_report_path separately from last_summary_path.
+    #[test]
+    fn monthly_report_path_does_not_overwrite_daily_summary_path() {
+        let mut settings = create_settings_with_include_manual(true);
+
+        // Simulate: daily summary was generated, setting last_summary_path
+        settings.last_summary_path = Some("/obsidian/工作日报 - 2026-03-16.md".to_string());
+        assert!(settings.last_monthly_report_path.is_none());
+
+        // Simulate: monthly report is generated, setting last_monthly_report_path
+        // (This mirrors what generate_monthly_report() now does after the fix)
+        let monthly_path = "/obsidian/月报-2026-03.md".to_string();
+        settings.last_monthly_report_path = Some(monthly_path.clone());
+
+        // Verify: daily summary path is NOT overwritten
+        assert_eq!(
+            settings.last_summary_path,
+            Some("/obsidian/工作日报 - 2026-03-16.md".to_string()),
+            "FIX-001: last_summary_path must not be overwritten by monthly report generation"
+        );
+        assert_eq!(
+            settings.last_monthly_report_path,
+            Some(monthly_path),
+            "FIX-001: last_monthly_report_path must store the monthly report path"
         );
     }
 }

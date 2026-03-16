@@ -630,6 +630,7 @@ const loadSettings = async () => {
     autoCaptureEnabled.value = settings.auto_capture_enabled || false
     summaryPath.value = settings.last_summary_path || ''
     weeklyReportPath.value = settings.last_weekly_report_path || ''
+    monthlyReportPath.value = settings.last_monthly_report_path || ''
     customReportPath.value = settings.last_custom_report_path || ''
   } catch (err) {
     console.error('Failed to load settings:', err)

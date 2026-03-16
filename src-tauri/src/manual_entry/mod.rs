@@ -247,7 +247,8 @@ mod tests {
                 last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
-                last_custom_report_path TEXT
+                last_custom_report_path TEXT,
+                last_monthly_report_path TEXT
             )",
             [],
         )
@@ -633,7 +634,8 @@ mod tests {
                 last_weekly_report_path TEXT,
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
-                last_custom_report_path TEXT
+                last_custom_report_path TEXT,
+                last_monthly_report_path TEXT
             )",
             [],
         )
