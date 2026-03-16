@@ -556,6 +556,7 @@ mod tests {
     // ── Global Tracker Tests ──
 
     #[test]
+    #[serial]
     fn global_record_capture_works() {
         // Clear any existing state
         {
@@ -571,6 +572,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn global_threshold_operations() {
         set_threshold(45);
         assert_eq!(current_threshold(), 45);
