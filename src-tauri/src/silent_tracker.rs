@@ -373,6 +373,7 @@ pub fn has_sufficient_data() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     fn create_test_tracker() -> SilentPatternTracker {
         SilentPatternTracker::new(30)
@@ -579,6 +580,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn global_consecutive_captures() {
         // Clear state
         {
