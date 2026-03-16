@@ -101,8 +101,37 @@ prompt.md 要求的命名规范：
 | INT-003 | GitHub 工时统计 | 8pts | Backlog |
 | INT-004 | Slack/钉钉通知 | 5pts | Backlog |
 
-**P3 远期功能**:
+**远期功能**:
 - 时间线可视化（图形化展示一天工作流）
+- 多语言支持 (i18n)
+- 插件系统架构
+- 移动端适配（Tauri Mobile）
+- 团队协作模式
+- 本地 AI 模型深度集成（模型管理、微调）
+
+---
+
+## 技术债务追踪
+
+| ID | 描述 | 来源 | 优先级 | 状态 |
+|----|------|------|--------|------|
+| DEBT-001 | 数据库 Schema 版本化迁移（settings 表已 25+ 字段） | CORE/DATA/AI 回顾 | HIGH | 待开发 |
+| DEBT-002 | 离线队列 ScreenshotAnalysis 重试为空操作 | 代码审查 | MEDIUM | 待开发 |
+| DEBT-003 | 统一测试数据库 Schema 初始化 | AI 回顾 | MEDIUM | 待开发 |
+| DEBT-004 | 前端组件测试覆盖率 | 多 Epic 回顾 | MEDIUM | 待开发 |
+| DEBT-005 | 学习数据持久化（SilentPatternTracker / WorkTimePatternLearner） | SMART 回顾 | MEDIUM | 待开发 |
+| DEBT-006 | 硬件抽象层（窗口/显示器/截图 API） | SMART 回顾 | LOW | 待开发 |
+
+---
+
+## 已知问题
+
+| 问题 | 影响 | 关联版本 |
+|------|------|----------|
+| 所有 GitHub Release 均为 Draft 未发布 | 用户无法下载任何版本 | v1.0.0 ~ v1.9.0 |
+| Release 产物缺少 Linux 构建 | Linux 用户无法使用 | 全版本 |
+| Release 产物命名不规范 | 不符合开源社区惯例 | 全版本 |
+| Rust CI 测试不含 Linux runner | Linux 兼容性无保证 | 全版本 |
 
 ---
 
