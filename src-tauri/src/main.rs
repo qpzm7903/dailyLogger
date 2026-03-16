@@ -38,32 +38,47 @@ fn build_tray_tooltip() -> String {
     format!("DailyLogger\n今日记录: {} 条", record_count)
 }
 
-fn setup_logging() -> WorkerGuard {
+fn setup_logging() -> Option<WorkerGuard> {
     let log_dir = get_app_data_dir().join("logs");
-    std::fs::create_dir_all(&log_dir).ok();
+    if let Err(e) = std::fs::create_dir_all(&log_dir) {
+        eprintln!("Warning: cannot create log directory {:?}: {}", log_dir, e);
+    }
 
     // Daily rotation: creates files like daily-logger.2026-03-16.log
     // Keeps at most 7 days of logs, older files are automatically deleted.
-    let file_appender = RollingFileAppender::builder()
+    match RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("daily-logger")
         .filename_suffix("log")
         .max_log_files(7)
         .build(&log_dir)
-        .expect("Failed to create log file appender");
+    {
+        Ok(file_appender) => {
+            let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
-    let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+            tracing_subscriber::registry()
+                .with(EnvFilter::new("info"))
+                .with(fmt::layer().with_writer(non_blocking))
+                .with(fmt::layer().with_writer(std::io::stdout))
+                .init();
 
-    tracing_subscriber::registry()
-        .with(EnvFilter::new("info"))
-        .with(fmt::layer().with_writer(non_blocking))
-        .with(fmt::layer().with_writer(std::io::stdout))
-        .init();
+            Some(guard)
+        }
+        Err(e) => {
+            // Fall back to stdout-only logging if file appender fails
+            eprintln!(
+                "Warning: cannot create log file appender in {:?}: {}. Logging to stdout only.",
+                log_dir, e
+            );
 
-    // Return guard so it stays alive until main() exits.
-    // If dropped early, the background logging thread terminates and all log
-    // messages are silently discarded.
-    guard
+            tracing_subscriber::registry()
+                .with(EnvFilter::new("info"))
+                .with(fmt::layer().with_writer(std::io::stdout))
+                .init();
+
+            None
+        }
+    }
 }
 
 fn get_app_data_dir() -> PathBuf {
@@ -73,17 +88,21 @@ fn get_app_data_dir() -> PathBuf {
 }
 
 fn main() {
+    // Set panic hook FIRST so any panic during initialization is logged.
+    // With `panic = "abort"` in release, the hook runs before process termination.
+    std::panic::set_hook(Box::new(|panic_info| {
+        eprintln!("Application panic: {}", panic_info);
+    }));
+
     // _log_guard must live until main() returns; dropping it early stops the
     // background logging thread and discards all subsequent log messages.
     let _log_guard = setup_logging();
 
     if let Err(e) = init_app() {
         tracing::error!("Failed to initialize app: {}", e);
+        eprintln!("Fatal: Failed to initialize app: {}", e);
+        return;
     }
-
-    std::panic::set_hook(Box::new(|panic_info| {
-        tracing::error!("Application panic: {}", panic_info);
-    }));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
