@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-16
-> 当前版本: v1.9.0
-> 下一版本: v1.10.0
+> 当前版本: v1.10.0
+> 下一版本: v1.11.0
 
 ---
 
@@ -34,48 +34,18 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 - 日志系统 (tracing + 文件输出)
 - 397 个 Rust 测试 + 16 个前端测试
 
----
-
-## 当前版本: v1.10.0（CI/CD 完善与基础设施改进）
+### v1.10.0（CI/CD 完善与基础设施改进）✅ 已发布
 
 **目标**: 完善 CI/CD 发布流水线，补齐 Linux 构建，规范发布产物命名，改进日志系统。
 
-**版本类型**: MINOR（新增 Linux 平台支持）
-
-### 需求清单
-
-| ID | 需求 | 优先级 | 来源 | 状态 |
-|----|------|--------|------|------|
-| INFRA-001 | 发布流水线补齐 Linux x64 构建 | High | prompt.md 构建矩阵要求 | 待开发 |
-| INFRA-002 | 规范发布产物命名格式 | High | prompt.md 文件命名规范 | 待开发 |
-| INFRA-003 | Release 自动发布（当前仅 draft） | Medium | 发布流程完善 | 待开发 |
-| INFRA-004 | 日志文件轮转（当前 Rotation::NEVER） | Medium | 生产可靠性 | 待开发 |
-
-### 详细说明
-
-#### INFRA-001: 补齐 Linux x64 构建
-
-当前 build.yml 的 Release 构建仅覆盖 macOS arm64 和 Windows x64，缺少 Linux x64。prompt.md 明确要求三平台构建矩阵：
-- Windows x64 (windows-latest) ✅ 已有
-- macOS arm64 (macos-latest) ✅ 已有
-- Linux x64 (ubuntu-latest) ❌ **缺失**
-
-需要添加 `build-linux` job，安装 Tauri 系统依赖后构建 `.tar.gz` 产物。
-
-#### INFRA-002: 规范发布产物命名
-
-prompt.md 要求的命名规范：
-- Windows: `DailyLogger-vX.Y.Z-windows-x64.exe` （当前是 `DailyLogger-vX.Y.Z-windows-portable.zip`）
-- Linux: `DailyLogger-vX.Y.Z-linux-x64.tar.gz`
-- macOS: `DailyLogger-vX.Y.Z-macos-arm64.dmg` （当前由 tauri-action 自动命名）
-
-#### INFRA-003: Release 自动发布
-
-当前 create-release job 创建 draft release，但没有后续步骤将其发布。需要在所有平台构建完成后自动 publish release。
-
-#### INFRA-004: 日志文件轮转
-
-当前 `setup_logging()` 使用 `Rotation::NEVER`，日志文件会无限增长。改为按日轮转 (`Rotation::DAILY`)，保留最近 7 天日志。
+| ID | 需求 | 状态 |
+|----|------|------|
+| INFRA-001 | 发布流水线补齐 Linux x64 构建 | ✅ 完成 |
+| INFRA-002 | 规范发布产物命名格式 | ✅ 完成 |
+| INFRA-003 | Release 自动发布（不再仅 draft） | ✅ 完成 |
+| INFRA-004 | 日志文件按日轮转（保留 7 天） | ✅ 完成 |
+| 额外 | CI 测试矩阵补齐 Linux runner | ✅ 完成 |
+| 额外 | 修复 silent_tracker 全局测试隔离 | ✅ 完成 |
 
 ---
 
@@ -128,10 +98,7 @@ prompt.md 要求的命名规范：
 
 | 问题 | 影响 | 关联版本 |
 |------|------|----------|
-| 所有 GitHub Release 均为 Draft 未发布 | 用户无法下载任何版本 | v1.0.0 ~ v1.9.0 |
-| Release 产物缺少 Linux 构建 | Linux 用户无法使用 | 全版本 |
-| Release 产物命名不规范 | 不符合开源社区惯例 | 全版本 |
-| Rust CI 测试不含 Linux runner | Linux 兼容性无保证 | 全版本 |
+| 历史 GitHub Release (v1.0.0~v1.9.0) 均为 Draft 未发布 | 用户无法下载旧版本 | v1.0.0 ~ v1.9.0 |
 
 ---
 
