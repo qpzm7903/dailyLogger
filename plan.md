@@ -2,7 +2,7 @@
 
 > 最后更新: 2026-03-16
 > 当前版本: v1.11.0 ✅ 已发布
-> 下一版本: v1.12.0
+> 下一版本: v1.12.0（代码质量与 Bug 修复）— 规划中
 
 ---
 
@@ -111,6 +111,78 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
+## 下一迭代: v1.12.0（代码质量与 Bug 修复）
+
+**目标**: 消除 synthesis 模块大量重复代码，修复前端 Bug（内存泄漏、标签选择失效、N+1 查询），提升代码可维护性。
+
+**版本类型**: MINOR（包含用户可感知的行为改进）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| REFACTOR-001 | Synthesis 模块 LLM API 调用去重 | 5pts | HIGH | 待开发 |
+| FIX-002 | App.vue 自动刷新定时器内存泄漏 | 1pt | HIGH | 待开发 |
+| FIX-003 | TagCloud 标签选择无法传递到 HistoryViewer | 2pts | MEDIUM | 待开发 |
+| PERF-001 | HistoryViewer 标签加载 N+1 查询优化 | 3pts | MEDIUM | 待开发 |
+
+### REFACTOR-001: Synthesis 模块 LLM API 调用去重
+
+**问题**: `synthesis/mod.rs`（2,014 行）中 5 个报告生成函数（`generate_daily_summary`、`generate_weekly_report`、`generate_monthly_report`、`generate_custom_report`、`compare_reports`）共享几乎相同的流程：加载设置 → 提取 API 配置 → 构建 reqwest 请求 → 发送 → 解析响应 → 写入文件。`reqwest::Client::new()` 被调用 5 次，HTTP 请求/响应/错误处理代码复制粘贴 5 次，约 800 行重复代码。
+
+**方案**:
+- 提取 `call_llm_api(api_url, api_key, model, prompt, caller_name)` 通用函数
+- 提取 `load_api_config(settings)` 配置提取函数
+- 提取 `resolve_obsidian_path(settings, vault_name)` 路径解析函数
+- 每个报告函数只保留自身特有逻辑（查询记录、格式化 prompt、写入文件）
+- 预计减少 ~600 行重复代码
+
+**验收条件**:
+- 所有 50 个 synthesis 测试通过
+- 5 个报告生成函数行为不变
+- 无新的 clippy 警告
+
+### FIX-002: App.vue 自动刷新定时器内存泄漏
+
+**问题**: `App.vue:668` 中 `setInterval(loadTodayRecords, 30000)` 的返回值未存储到变量，导致 `onUnmounted` 中无法清除该定时器。对比同文件中 `timeInterval`（665 行）和 `networkCheckInterval`（691 行）均正确存储并在 `onUnmounted` 中清理。
+
+**修复**:
+- 将 `setInterval` 返回值存入 `recordsRefreshInterval` 变量
+- 在 `onUnmounted` 中调用 `clearInterval(recordsRefreshInterval)`
+
+**验收条件**:
+- 定时器在组件卸载时被正确清理
+- 现有前端测试全部通过
+
+### FIX-003: TagCloud 标签选择无法传递到 HistoryViewer
+
+**问题**: `App.vue:567-573` 中 `handleTagSelected(tag)` 接收 tag 参数后仅打开 HistoryViewer，未将选中的 tag 传递过去。代码注释承认此功能未完成（"the user can select it in the HistoryViewer's TagFilter"）。
+
+**修复**:
+- 在 App.vue 中添加 `initialFilterTag` ref
+- `handleTagSelected` 设置 `initialFilterTag` 后打开 HistoryViewer
+- HistoryViewer 接收 `initialTag` prop，挂载时自动应用为过滤条件
+- 过滤完成后清除 `initialFilterTag`
+
+**验收条件**:
+- 在 TagCloud 中点击标签后，HistoryViewer 自动展示该标签的记录
+- 手动打开 HistoryViewer 时不受影响
+- 前端测试覆盖此交互流程
+
+### PERF-001: HistoryViewer 标签加载 N+1 查询优化
+
+**问题**: `HistoryViewer.vue:255-265` 中 `loadRecordTags()` 对每条记录逐个调用 `invoke('get_tags_for_record')`，产生 N+1 查询问题。页面加载 20 条记录时会发出 20 次 IPC 调用。
+
+**修复**:
+- **后端**: 新增 `get_tags_for_records(record_ids: Vec<i64>)` 批量查询命令，一次 SQL 查询返回所有记录的标签
+- **前端**: `loadRecordTags()` 改用批量接口，单次调用获取所有标签
+- **注册命令**: 在 `main.rs` 的 `generate_handler![]` 中注册新命令
+
+**验收条件**:
+- 加载记录列表时只发出 1 次标签查询（替代 N 次）
+- 现有标签相关测试全部通过
+- 新增后端单元测试验证批量查询正确性
+
+---
+
 ## 长期规划: v2.0.0+（集成与扩展）
 
 **目标**: 与第三方工具集成，扩展应用场景。
@@ -136,7 +208,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 | ID | 描述 | 来源 | 优先级 | 状态 |
 |----|------|------|--------|------|
-| DEBT-001 | 数据库 Schema 版本化迁移（settings 表已 33 字段，ALTER TABLE 链已 21 条） | CORE/DATA/AI 回顾 | HIGH | 待开发 |
+| DEBT-001 | 数据库 Schema 版本化迁移（settings 表已 38 字段，ALTER TABLE 链已 33 条，get/save_settings 使用脆弱的位置索引） | CORE/DATA/AI 回顾 | HIGH | 待开发 |
 | DEBT-002 | 离线队列 ScreenshotAnalysis 重试为空操作 | 代码审查 | MEDIUM | 待开发 |
 | DEBT-003 | 统一测试数据库 Schema 初始化 | AI 回顾 | MEDIUM | 待开发 |
 | DEBT-004 | 前端组件测试覆盖率 | 多 Epic 回顾 | MEDIUM | 待开发 |
@@ -152,6 +224,9 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | ~~历史 GitHub Release (v1.0.0~v1.9.0) 均为 Draft 未发布~~ | ~~用户无法下载旧版本~~ | v1.0.0 ~ v1.9.0 | ✅ 已修复（v1.4.0~v1.9.0 已发布，重复 Draft 已清理） |
 | 月报生成覆盖日报路径（`last_summary_path`） | 生成月报后日报路径丢失 | v1.8.0+ | ✅ 已修复 (v1.11.0 FIX-001) |
 | Windows/macOS 构建产物无法打开 (#15) | 用户下载后无法启动应用 | v1.10.0 | ✅ 已修复 (v1.11.0 NSIS 安装程序) |
+| App.vue 自动刷新定时器未清理（内存泄漏） | 组件卸载后定时器继续运行 | v1.0.0+ | 🔧 计划修复 (v1.12.0 FIX-002) |
+| TagCloud 标签选择未传递到 HistoryViewer | 点击标签后需手动重新选择过滤条件 | v1.5.0+ | 🔧 计划修复 (v1.12.0 FIX-003) |
+| HistoryViewer 标签加载 N+1 查询 | 每条记录单独查询标签，页面加载慢 | v1.5.0+ | 🔧 计划修复 (v1.12.0 PERF-001) |
 
 ---
 
