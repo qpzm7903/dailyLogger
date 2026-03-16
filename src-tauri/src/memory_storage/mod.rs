@@ -199,6 +199,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // REPORT-004: 对比报告配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN comparison_report_prompt TEXT",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
     conn.execute(
@@ -400,6 +406,8 @@ pub struct Settings {
     pub last_custom_report_path: Option<String>,
     // DATA-006: 多 Obsidian Vault 支持
     pub obsidian_vaults: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
+    // REPORT-004: 对比报告配置
+    pub comparison_report_prompt: Option<String>,
 }
 
 /// DATA-006: Vault entry for multi-vault support
@@ -1057,7 +1065,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 capture_mode, selected_monitor_index, tag_categories, is_ollama,
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
-                last_monthly_report_path, obsidian_vaults
+                last_monthly_report_path, obsidian_vaults,
+                comparison_report_prompt
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -1102,6 +1111,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 custom_report_prompt: row.get(33)?,
                 last_custom_report_path: row.get(34)?,
                 obsidian_vaults: row.get(36)?,
+                comparison_report_prompt: row.get(37)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -1190,7 +1200,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             custom_report_prompt = ?34,
             last_custom_report_path = ?35,
             last_monthly_report_path = ?36,
-            obsidian_vaults = ?37
+            obsidian_vaults = ?37,
+            comparison_report_prompt = ?38
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -1234,6 +1245,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.last_custom_report_path,
             settings.last_monthly_report_path,
             settings.obsidian_vaults,
+            settings.comparison_report_prompt,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1966,7 +1978,8 @@ mod tests {
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
                 last_monthly_report_path TEXT,
-                obsidian_vaults TEXT DEFAULT '[]'
+                obsidian_vaults TEXT DEFAULT '[]',
+                comparison_report_prompt TEXT
             )",
             [],
         )
@@ -2054,7 +2067,8 @@ mod tests {
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
                 last_monthly_report_path TEXT,
-                obsidian_vaults TEXT DEFAULT '[]'
+                obsidian_vaults TEXT DEFAULT '[]',
+                comparison_report_prompt TEXT
             )",
             [],
         )
@@ -3976,6 +3990,7 @@ mod tests {
             custom_report_prompt: None,
             last_custom_report_path: None,
             obsidian_vaults: None,
+            comparison_report_prompt: None,
         }
     }
 
@@ -4044,7 +4059,8 @@ mod benchmarks {
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
                 last_monthly_report_path TEXT,
-                obsidian_vaults TEXT DEFAULT '[]'
+                obsidian_vaults TEXT DEFAULT '[]',
+                comparison_report_prompt TEXT
             )",
             [],
         )

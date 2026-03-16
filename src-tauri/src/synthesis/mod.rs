@@ -77,6 +77,40 @@ pub fn get_default_monthly_report_prompt() -> String {
     DEFAULT_MONTHLY_REPORT_PROMPT.to_string()
 }
 
+/// Default prompt template for comparison reports - REPORT-004
+const DEFAULT_COMPARISON_REPORT_PROMPT: &str = r#"你是一个工作日志分析助手。请对比以下两个时间段的工作记录，生成一份结构化的 Markdown 格式对比分析报告。
+
+要求：
+1. 概述两个时间段各自的工作重点
+2. 对比分析工作量变化（记录数量、涉及领域）
+3. 分析工作重心转移（哪些方面增加/减少了投入）
+4. 评估效率趋势和工作模式变化
+5. 提出改进建议
+6. 输出纯 Markdown 格式，不要有其他说明文字
+
+时间段 A ({start_date_a} 至 {end_date_a})：
+{records_a}
+
+时间段 B ({start_date_b} 至 {end_date_b})：
+{records_b}
+
+请生成对比分析报告："#;
+
+/// Get the default comparison report prompt - REPORT-004
+pub fn get_default_comparison_report_prompt() -> String {
+    DEFAULT_COMPARISON_REPORT_PROMPT.to_string()
+}
+
+/// Generate comparison report filename - REPORT-004
+pub fn generate_comparison_report_filename(
+    start_a: &str,
+    end_a: &str,
+    start_b: &str,
+    end_b: &str,
+) -> String {
+    format!("对比分析-{}~{}-vs-{}~{}.md", start_a, end_a, start_b, end_b)
+}
+
 /// Format records grouped by week for monthly trend analysis
 pub fn format_records_by_week(records: &[Record]) -> String {
     use chrono::Datelike;
@@ -424,6 +458,7 @@ mod tests {
             custom_report_prompt: None,
             last_custom_report_path: None,
             obsidian_vaults: None,
+            comparison_report_prompt: None,
         }
     }
 
@@ -1496,6 +1531,213 @@ pub async fn generate_custom_report(
     Ok(path_str)
 }
 
+/// Generate comparison report between two time periods - REPORT-004
+#[command]
+pub async fn compare_reports(
+    start_date_a: String,
+    end_date_a: String,
+    start_date_b: String,
+    end_date_b: String,
+) -> Result<String, String> {
+    if !crate::network_status::is_online() {
+        return Err("当前处于离线状态，报告生成需要网络连接。请检查网络连接后重试。".to_string());
+    }
+
+    // Validate date formats
+    let parsed_start_a = chrono::NaiveDate::parse_from_str(&start_date_a, "%Y-%m-%d")
+        .map_err(|e| format!("无效的时段A起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
+    let parsed_end_a = chrono::NaiveDate::parse_from_str(&end_date_a, "%Y-%m-%d")
+        .map_err(|e| format!("无效的时段A结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
+    let parsed_start_b = chrono::NaiveDate::parse_from_str(&start_date_b, "%Y-%m-%d")
+        .map_err(|e| format!("无效的时段B起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
+    let parsed_end_b = chrono::NaiveDate::parse_from_str(&end_date_b, "%Y-%m-%d")
+        .map_err(|e| format!("无效的时段B结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
+
+    if parsed_end_a < parsed_start_a {
+        return Err("时段A的结束日期不能早于起始日期".to_string());
+    }
+    if parsed_end_b < parsed_start_b {
+        return Err("时段B的结束日期不能早于起始日期".to_string());
+    }
+
+    let settings = memory_storage::get_settings_sync()
+        .map_err(|e| format!("Failed to get settings: {}", e))?;
+
+    let obsidian_path = settings.get_obsidian_output_path()?;
+
+    let api_base_url = settings
+        .api_base_url
+        .clone()
+        .ok_or("API Base URL not configured")?;
+    let api_key = settings.api_key.clone().unwrap_or_default();
+
+    let model_name = settings
+        .summary_model_name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .or_else(|| settings.model_name.clone())
+        .unwrap_or_else(|| "gpt-4o".to_string());
+
+    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
+
+    if !is_ollama && api_key.is_empty() {
+        return Err("API Key is required for non-Ollama endpoints".to_string());
+    }
+
+    // Get records for both time periods
+    let all_records_a =
+        memory_storage::get_records_by_date_range_sync(start_date_a.clone(), end_date_a.clone())
+            .map_err(|e| format!("Failed to get period A records: {}", e))?;
+    let all_records_b =
+        memory_storage::get_records_by_date_range_sync(start_date_b.clone(), end_date_b.clone())
+            .map_err(|e| format!("Failed to get period B records: {}", e))?;
+
+    let records_a = filter_records_by_settings(all_records_a, &settings);
+    let records_b = filter_records_by_settings(all_records_b, &settings);
+
+    if records_a.is_empty() && records_b.is_empty() {
+        return Err("两个时间段内均无记录".to_string());
+    }
+
+    // Format records
+    let day_count_a = (parsed_end_a - parsed_start_a).num_days() + 1;
+    let records_text_a = if day_count_a > 14 {
+        format_records_by_week(&records_a)
+    } else {
+        format_records_for_summary(&records_a)
+    };
+
+    let day_count_b = (parsed_end_b - parsed_start_b).num_days() + 1;
+    let records_text_b = if day_count_b > 14 {
+        format_records_by_week(&records_b)
+    } else {
+        format_records_for_summary(&records_b)
+    };
+
+    let prompt_template = settings
+        .comparison_report_prompt
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_COMPARISON_REPORT_PROMPT);
+
+    let prompt = prompt_template
+        .replace("{records_a}", &records_text_a)
+        .replace("{records_b}", &records_text_b)
+        .replace("{start_date_a}", &start_date_a)
+        .replace("{end_date_a}", &end_date_a)
+        .replace("{start_date_b}", &start_date_b)
+        .replace("{end_date_b}", &end_date_b);
+
+    let client = reqwest::Client::new();
+
+    let request_body = serde_json::json!({
+        "model": model_name,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 4000
+    });
+
+    let masked_key = crate::mask_api_key(&api_key);
+    let endpoint = format!("{}/chat/completions", api_base_url);
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_request",
+            "caller": "compare_reports",
+            "endpoint": endpoint,
+            "model": model_name,
+            "max_tokens": 4000,
+            "api_key_masked": masked_key,
+            "has_image": false,
+            "records_count_a": records_a.len(),
+            "records_count_b": records_b.len(),
+        })
+    );
+
+    let start = std::time::Instant::now();
+    let mut request = client
+        .post(&endpoint)
+        .header("Content-Type", "application/json")
+        .json(&request_body);
+
+    if !api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {}", api_key));
+    }
+
+    let response = request.send().await.map_err(|e| {
+        let elapsed_ms = start.elapsed().as_millis();
+        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "compare_reports",
+                "error": error_msg,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        error_msg
+    })?;
+    let elapsed_ms = start.elapsed().as_millis();
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": "compare_reports",
+                "status": status.as_u16(),
+                "response_body": body,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        return Err(format!("API error ({}): {}", status, body));
+    }
+
+    let response_json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("JSON parse: {}", e))?;
+
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_response",
+            "caller": "compare_reports",
+            "elapsed_ms": elapsed_ms,
+            "response": response_json,
+        })
+    );
+
+    let summary = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("AI response missing content")?
+        .to_string();
+
+    let filename =
+        generate_comparison_report_filename(&start_date_a, &end_date_a, &start_date_b, &end_date_b);
+
+    let output_dir = PathBuf::from(&obsidian_path);
+    std::fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    let output_path = output_dir.join(&filename);
+    std::fs::write(&output_path, summary)
+        .map_err(|e| format!("Failed to write comparison report: {}", e))?;
+
+    let path_str = output_path.to_string_lossy().to_string();
+
+    tracing::info!("Comparison report generated: {}", path_str);
+
+    Ok(path_str)
+}
+
 // ── Performance benchmark tests (CORE-008 AC#3) ──
 
 #[cfg(test)]
@@ -1555,6 +1797,7 @@ mod benchmarks {
             custom_report_prompt: None,
             last_custom_report_path: None,
             obsidian_vaults: None,
+            comparison_report_prompt: None,
         }
     }
 
@@ -1752,5 +1995,20 @@ mod benchmarks {
         settings.obsidian_vaults = Some("[]".to_string());
         settings.obsidian_path = None;
         assert!(settings.get_obsidian_output_path().is_err());
+    }
+
+    /// REPORT-004: comparison report filename generation
+    #[test]
+    fn comparison_report_filename_format() {
+        let filename = generate_comparison_report_filename(
+            "2026-01-01",
+            "2026-01-31",
+            "2026-02-01",
+            "2026-02-28",
+        );
+        assert_eq!(
+            filename,
+            "对比分析-2026-01-01~2026-01-31-vs-2026-02-01~2026-02-28.md"
+        );
     }
 }

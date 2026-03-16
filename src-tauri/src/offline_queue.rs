@@ -459,7 +459,8 @@ mod tests {
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
                 last_monthly_report_path TEXT,
-                obsidian_vaults TEXT DEFAULT '[]'
+                obsidian_vaults TEXT DEFAULT '[]',
+                comparison_report_prompt TEXT
             )",
             [],
         )

@@ -141,6 +141,12 @@
               >
                 自定义报告
               </button>
+              <button
+                @click="showComparisonReport = true"
+                class="bg-teal-600 hover:bg-teal-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                对比分析
+              </button>
             </div>
           </div>
           <!-- AI-004: Tag filter -->
@@ -258,6 +264,13 @@
               class="text-sm text-gray-300 cursor-pointer hover:text-orange-400 hover:underline"
             >{{ customReportPath }}</p>
           </div>
+          <div v-if="comparisonReportPath" class="bg-darker rounded-lg p-3 border border-gray-700">
+            <p class="text-xs text-gray-500 mb-1">对比分析报告</p>
+            <p
+              @click="showComparisonReportViewer = true"
+              class="text-sm text-gray-300 cursor-pointer hover:text-teal-400 hover:underline"
+            >{{ comparisonReportPath }}</p>
+          </div>
         </div>
       </div>
     </main>
@@ -272,6 +285,8 @@
     <DailySummaryViewer v-if="showMonthlyReportViewer" :summaryPath="monthlyReportPath" @close="showMonthlyReportViewer = false" />
     <DailySummaryViewer v-if="showCustomReportViewer" :summaryPath="customReportPath" @close="showCustomReportViewer = false" />
     <CustomReportModal v-if="showCustomReport" @close="showCustomReport = false" @generated="handleCustomReportGenerated" />
+    <ReportComparisonModal v-if="showComparisonReport" @close="showComparisonReport = false" @generated="handleComparisonReportGenerated" />
+    <DailySummaryViewer v-if="showComparisonReportViewer" :summaryPath="comparisonReportPath" @close="showComparisonReportViewer = false" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
     <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
@@ -297,6 +312,7 @@ import SearchPanel from './components/SearchPanel.vue'
 import TagCloud from './components/TagCloud.vue'
 import ExportModal from './components/ExportModal.vue'
 import CustomReportModal from './components/CustomReportModal.vue'
+import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import Toast from './components/Toast.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
@@ -325,6 +341,9 @@ const showMonthlyReportViewer = ref(false)
 const showCustomReport = ref(false)
 const customReportPath = ref('')
 const showCustomReportViewer = ref(false)
+const showComparisonReport = ref(false)
+const comparisonReportPath = ref('')
+const showComparisonReportViewer = ref(false)
 const showLogViewer = ref(false)
 const showHistoryViewer = ref(false)
 const showSearch = ref(false)
@@ -600,6 +619,10 @@ const generateMonthlyReport = async () => {
 
 const handleCustomReportGenerated = (path) => {
   customReportPath.value = path
+}
+
+const handleComparisonReportGenerated = (path) => {
+  comparisonReportPath.value = path
 }
 
 const loadTodayRecords = async () => {

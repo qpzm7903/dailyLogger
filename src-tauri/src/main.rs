@@ -125,6 +125,7 @@ fn main() {
             daily_logger_lib::synthesis::generate_weekly_report,
             daily_logger_lib::synthesis::generate_monthly_report,
             daily_logger_lib::synthesis::generate_custom_report,
+            daily_logger_lib::synthesis::compare_reports,
             // DATA-004: 数据导出
             daily_logger_lib::export::export_records,
             daily_logger_lib::export::open_export_dir,
