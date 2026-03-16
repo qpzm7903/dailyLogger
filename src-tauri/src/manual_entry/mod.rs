@@ -102,20 +102,41 @@ pub async fn read_file(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
 }
 
+/// Find all log files in the given directory, sorted by name (oldest first).
+/// Matches files with prefix "daily-logger" (e.g. daily-logger.2026-03-16.log).
+fn find_log_files(log_dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut files: Vec<std::path::PathBuf> = std::fs::read_dir(log_dir)
+        .into_iter()
+        .flatten()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| n.starts_with("daily-logger"))
+                .unwrap_or(false)
+        })
+        .collect();
+    files.sort();
+    files
+}
+
 #[command]
 pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
-    let log_path = dirs::data_dir()
+    let log_dir = dirs::data_dir()
         .ok_or_else(|| "Cannot determine data directory".to_string())?
         .join("DailyLogger")
-        .join("logs")
-        .join("daily-logger.log");
+        .join("logs");
 
-    if !log_path.exists() {
+    let log_files = find_log_files(&log_dir);
+    if log_files.is_empty() {
         return Ok(String::new());
     }
 
-    let content = std::fs::read_to_string(&log_path)
-        .map_err(|e| format!("Failed to read log file: {}", e))?;
+    // Read from the most recent log file
+    let latest = log_files.last().unwrap();
+    let content =
+        std::fs::read_to_string(latest).map_err(|e| format!("Failed to read log file: {}", e))?;
 
     let n = lines.unwrap_or(300);
     let recent: Vec<&str> = content
@@ -130,35 +151,41 @@ pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
     Ok(recent.join("\n"))
 }
 
-/// Get the log file content for export
+/// Get the log file content for export (all log files concatenated)
 #[command]
 pub async fn get_logs_for_export() -> Result<String, String> {
-    let log_path = dirs::data_dir()
+    let log_dir = dirs::data_dir()
         .ok_or_else(|| "Cannot determine data directory".to_string())?
         .join("DailyLogger")
-        .join("logs")
-        .join("daily-logger.log");
+        .join("logs");
 
-    if !log_path.exists() {
+    let log_files = find_log_files(&log_dir);
+    if log_files.is_empty() {
         return Err("Log file does not exist".to_string());
     }
 
-    std::fs::read_to_string(&log_path).map_err(|e| format!("Failed to read log file: {}", e))
+    let mut content = String::new();
+    for file in &log_files {
+        let file_content =
+            std::fs::read_to_string(file).map_err(|e| format!("Failed to read log file: {}", e))?;
+        content.push_str(&file_content);
+    }
+
+    Ok(content)
 }
 
-/// Get the log file path for export
+/// Get the log directory path
 #[command]
 pub async fn get_log_file_path() -> Result<String, String> {
-    let log_path = dirs::data_dir()
+    let log_dir = dirs::data_dir()
         .ok_or_else(|| "Cannot determine data directory".to_string())?
         .join("DailyLogger")
-        .join("logs")
-        .join("daily-logger.log");
+        .join("logs");
 
-    log_path
+    log_dir
         .to_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| "Invalid log file path".to_string())
+        .ok_or_else(|| "Invalid log directory path".to_string())
 }
 
 #[cfg(test)]
@@ -244,14 +271,13 @@ mod tests {
     #[test]
     #[serial]
     fn test_get_log_file_path() {
-        // Test that get_log_file_path returns a valid path
+        // Test that get_log_file_path returns the logs directory
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(get_log_file_path());
         assert!(result.is_ok());
         let path = result.unwrap();
         assert!(path.contains("DailyLogger"));
-        assert!(path.contains("logs"));
-        assert!(path.ends_with("daily-logger.log"));
+        assert!(path.ends_with("logs"));
     }
 
     #[test]
@@ -732,15 +758,14 @@ mod tests {
         assert!(result.is_ok());
         let path = result.unwrap();
 
-        // Should contain DailyLogger and logs directory
+        // Should contain DailyLogger and end with logs directory
         assert!(
             path.contains("DailyLogger"),
             "Path should contain DailyLogger"
         );
-        assert!(path.contains("logs"), "Path should contain logs");
         assert!(
-            path.ends_with("daily-logger.log"),
-            "Path should end with daily-logger.log"
+            path.ends_with("logs"),
+            "Path should end with logs directory"
         );
     }
 

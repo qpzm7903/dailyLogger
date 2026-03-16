@@ -42,9 +42,15 @@ fn setup_logging() -> WorkerGuard {
     let log_dir = get_app_data_dir().join("logs");
     std::fs::create_dir_all(&log_dir).ok();
 
-    // Rotation::NEVER keeps filename as "daily-logger.log" (no date suffix),
-    // which matches what get_recent_logs() reads.
-    let file_appender = RollingFileAppender::new(Rotation::NEVER, log_dir, "daily-logger.log");
+    // Daily rotation: creates files like daily-logger.2026-03-16.log
+    // Keeps at most 7 days of logs, older files are automatically deleted.
+    let file_appender = RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_prefix("daily-logger")
+        .filename_suffix("log")
+        .max_log_files(7)
+        .build(&log_dir)
+        .expect("Failed to create log file appender");
 
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 

@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 jobs:
-  # ── PR 构建：验证两平台均可编译 ──────────────────────────────────────────────
+  # ── PR 构建：验证三平台均可编译 ──────────────────────────────────────────────
   build-pr:
     name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}
@@ -20,6 +20,7 @@ jobs:
         include:
           - platform: 'macos-latest'
           - platform: 'windows-latest'
+          - platform: 'ubuntu-22.04'
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +31,12 @@ jobs:
           cache: 'npm'
 
       - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev
 
       - run: npm ci
 
@@ -44,12 +51,9 @@ jobs:
           '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
           npm run tauri build -- --config nobundle.json
 
-      - name: Package Windows portable zip
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          Copy-Item "src-tauri\target\release\daily-logger.exe" "DailyLogger.exe"
-          Compress-Archive -Path "DailyLogger.exe" -DestinationPath "DailyLogger-windows-portable.zip"
+      - name: Build (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: npm run tauri build
 
       - name: Upload macOS artifact
         if: matrix.platform == 'macos-latest'
@@ -62,10 +66,17 @@ jobs:
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: app-windows-portable
-          path: DailyLogger-windows-portable.zip
+          name: app-windows
+          path: src-tauri/target/release/daily-logger.exe
 
-  # ── Tag 推送：先建 Release，再并行构建两平台 ──────────────────────────────────
+      - name: Upload Linux artifact
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-linux
+          path: src-tauri/target/release/daily-logger
+
+  # ── Tag 推送：先建 Release，再并行构建三平台，最后发布 ──────────────────────────
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
@@ -112,15 +123,19 @@ jobs:
 
       - run: npm ci
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Build macOS app
+        run: npm run tauri build -- --target aarch64-apple-darwin
+
+      - name: Upload DMG to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: '--target aarch64-apple-darwin'
+        run: |
+          DMG=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+          cp "$DMG" "DailyLogger-${{ github.ref_name }}-macos-arm64.dmg"
+          gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-macos-arm64.dmg"
 
   build-windows:
-    name: Build Windows (Portable)
+    name: Build Windows
     needs: create-release
     runs-on: windows-latest
     permissions:
@@ -135,10 +150,9 @@ jobs:
           cache: 'npm'
 
       - uses: dtolnay/rust-toolchain@stable
-      - name: Set Rust environment
-        env:
-          RUST_BACKTRACE: "full"
-        run: npm ci
+
+      - run: npm ci
+
       - name: Build Windows app (no installer)
         env:
           RUST_BACKTRACE: "full"
@@ -147,14 +161,61 @@ jobs:
           '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
           npm run tauri build -- --config nobundle.json
 
-      - name: Package as portable zip
-        shell: pwsh
-        run: |
-          Copy-Item "src-tauri\target\release\daily-logger.exe" "DailyLogger.exe"
-          Compress-Archive -Path "DailyLogger.exe" `
-            -DestinationPath "DailyLogger-${{ github.ref_name }}-windows-portable.zip"
-
-      - name: Upload to release
+      - name: Upload exe to release
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-windows-portable.zip"
+        run: |
+          cp "src-tauri/target/release/daily-logger.exe" "DailyLogger-${{ github.ref_name }}-windows-x64.exe"
+          gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-windows-x64.exe"
+
+  build-linux:
+    name: Build Linux
+    needs: create-release
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - run: npm ci
+
+      - name: Build Linux app
+        run: npm run tauri build
+
+      - name: Upload tar.gz to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp src-tauri/target/release/daily-logger DailyLogger
+          tar czf "DailyLogger-${{ github.ref_name }}-linux-x64.tar.gz" DailyLogger
+          gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-linux-x64.tar.gz"
+
+  publish-release:
+    name: Publish Release
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false
