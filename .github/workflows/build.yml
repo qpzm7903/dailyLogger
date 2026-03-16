@@ -44,12 +44,12 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: npm run tauri build
 
-      - name: Build Windows app (no installer)
+      - name: Build Windows app
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
-          npm run tauri build -- --config nobundle.json
+          '{"bundle":{"targets":["nsis"]}}' | Out-File -FilePath nsis-only.json -Encoding utf8 -NoNewline
+          npm run tauri build -- --config nsis-only.json
 
       - name: Build (Linux)
         if: matrix.platform == 'ubuntu-24.04'
@@ -67,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-windows
-          path: src-tauri/target/release/daily-logger.exe
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
 
       - name: Upload Linux artifact
         if: matrix.platform == 'ubuntu-24.04'
@@ -94,10 +94,33 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          RELEASE_BODY=$(cat <<'BODY'
+          ## Installation
+
+          ### Windows
+          Download the `.exe` installer and run it. The installer will automatically set up WebView2 if needed.
+          > Windows SmartScreen may show a warning for unsigned apps. Click **"More info"** → **"Run anyway"** to proceed.
+
+          ### macOS
+          Download the `.dmg`, open it, and drag DailyLogger to Applications.
+          > macOS Gatekeeper may block unsigned apps. Right-click the app → **"Open"** → **"Open"** to bypass. Alternatively, run in Terminal:
+          > ```
+          > xattr -cr /Applications/DailyLogger.app
+          > ```
+
+          ### Linux
+          Download the `.tar.gz`, extract it, and run the binary:
+          ```bash
+          tar xzf DailyLogger-*.tar.gz
+          chmod +x DailyLogger
+          ./DailyLogger
+          ```
+          BODY
+          )
           RELEASE_ID=$(gh api repos/${{ github.repository }}/releases \
             -f tag_name="${{ github.ref_name }}" \
             -f name="DailyLogger ${{ github.ref_name }}" \
-            -f body="See the assets to download this version." \
+            -f body="$RELEASE_BODY" \
             -F draft=true \
             --jq .id)
           echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
@@ -153,20 +176,19 @@ jobs:
 
       - run: npm ci
 
-      - name: Build Windows app (no installer)
-        env:
-          RUST_BACKTRACE: "full"
+      - name: Build Windows app
         shell: pwsh
         run: |
-          '{"bundle":{"active":false}}' | Out-File -FilePath nobundle.json -Encoding utf8 -NoNewline
-          npm run tauri build -- --config nobundle.json
+          '{"bundle":{"targets":["nsis"]}}' | Out-File -FilePath nsis-only.json -Encoding utf8 -NoNewline
+          npm run tauri build -- --config nsis-only.json
 
-      - name: Upload exe to release
+      - name: Upload installer to release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cp "src-tauri/target/release/daily-logger.exe" "DailyLogger-${{ github.ref_name }}-windows-x64.exe"
+          NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*-setup.exe" | head -1)
+          cp "$NSIS_EXE" "DailyLogger-${{ github.ref_name }}-windows-x64.exe"
           gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-windows-x64.exe"
 
   build-linux:
