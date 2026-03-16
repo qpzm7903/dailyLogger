@@ -46,6 +46,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | INFRA-004 | 日志文件按日轮转（保留 7 天） | ✅ 完成 |
 | 额外 | CI 测试矩阵补齐 Linux runner | ✅ 完成 |
 | 额外 | 修复 silent_tracker 全局测试隔离 | ✅ 完成 |
+| 额外 | 修复 Linux 构建：升级 ubuntu-24.04 + 补齐 libgbm/libegl 依赖 | ✅ 完成 |
 
 ---
 
