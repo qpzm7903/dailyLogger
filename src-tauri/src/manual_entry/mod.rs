@@ -32,9 +32,8 @@ pub fn open_obsidian_folder_sync() -> Result<(), String> {
     let settings = get_settings_sync().map_err(|e| format!("获取设置失败: {}", e))?;
 
     let path_str = settings
-        .obsidian_path
-        .filter(|p| !p.trim().is_empty())
-        .ok_or_else(|| "请先在设置中配置 Obsidian 路径".to_string())?;
+        .get_obsidian_output_path()
+        .map_err(|_| "请先在设置中配置 Obsidian 路径".to_string())?;
 
     let path = Path::new(&path_str);
     if !path.exists() {
@@ -248,7 +247,8 @@ mod tests {
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
-                last_monthly_report_path TEXT
+                last_monthly_report_path TEXT,
+                obsidian_vaults TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -635,7 +635,8 @@ mod tests {
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
-                last_monthly_report_path TEXT
+                last_monthly_report_path TEXT,
+                obsidian_vaults TEXT DEFAULT '[]'
             )",
             [],
         )

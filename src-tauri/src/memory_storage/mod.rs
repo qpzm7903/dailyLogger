@@ -193,6 +193,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // DATA-006: 多 Obsidian Vault 支持
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN obsidian_vaults TEXT DEFAULT '[]'",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenchars 选项支持中文字符
     conn.execute(
@@ -392,6 +398,45 @@ pub struct Settings {
     // REPORT-003: 自定义报告周期配置
     pub custom_report_prompt: Option<String>,
     pub last_custom_report_path: Option<String>,
+    // DATA-006: 多 Obsidian Vault 支持
+    pub obsidian_vaults: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
+}
+
+/// DATA-006: Vault entry for multi-vault support
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ObsidianVault {
+    pub name: String,
+    pub path: String,
+    pub is_default: bool,
+}
+
+impl Settings {
+    /// Get the effective Obsidian output path.
+    /// Checks `obsidian_vaults` for the default vault first, falls back to `obsidian_path`.
+    pub fn get_obsidian_output_path(&self) -> Result<String, String> {
+        // Try obsidian_vaults first
+        if let Some(ref vaults_json) = self.obsidian_vaults {
+            if let Ok(vaults) = serde_json::from_str::<Vec<ObsidianVault>>(vaults_json) {
+                if let Some(default_vault) = vaults.iter().find(|v| v.is_default) {
+                    if !default_vault.path.trim().is_empty() {
+                        return Ok(default_vault.path.clone());
+                    }
+                }
+                // If no default, use the first vault
+                if let Some(first_vault) = vaults.first() {
+                    if !first_vault.path.trim().is_empty() {
+                        return Ok(first_vault.path.clone());
+                    }
+                }
+            }
+        }
+
+        // Fall back to legacy obsidian_path
+        self.obsidian_path
+            .clone()
+            .filter(|p| !p.trim().is_empty())
+            .ok_or_else(|| "Obsidian path not configured".to_string())
+    }
 }
 
 // DATA-003: 手动标签系统
@@ -1012,7 +1057,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 capture_mode, selected_monitor_index, tag_categories, is_ollama,
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
-                last_monthly_report_path
+                last_monthly_report_path, obsidian_vaults
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -1056,6 +1101,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 last_monthly_report_path: row.get(35)?,
                 custom_report_prompt: row.get(33)?,
                 last_custom_report_path: row.get(34)?,
+                obsidian_vaults: row.get(36)?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -1143,7 +1189,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             monthly_report_prompt = ?33,
             custom_report_prompt = ?34,
             last_custom_report_path = ?35,
-            last_monthly_report_path = ?36
+            last_monthly_report_path = ?36,
+            obsidian_vaults = ?37
          WHERE id = 1",
         params![
             settings.api_base_url,
@@ -1186,6 +1233,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             settings.custom_report_prompt,
             settings.last_custom_report_path,
             settings.last_monthly_report_path,
+            settings.obsidian_vaults,
         ],
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
@@ -1917,7 +1965,8 @@ mod tests {
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
-                last_monthly_report_path TEXT
+                last_monthly_report_path TEXT,
+                obsidian_vaults TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -2004,7 +2053,8 @@ mod tests {
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
-                last_monthly_report_path TEXT
+                last_monthly_report_path TEXT,
+                obsidian_vaults TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -3824,6 +3874,111 @@ mod tests {
         );
     }
 
+    /// DATA-006: get_obsidian_output_path returns default vault from obsidian_vaults
+    #[test]
+    fn get_obsidian_output_path_uses_default_vault() {
+        let mut settings = get_default_settings();
+        settings.obsidian_vaults = Some(
+            r#"[{"name":"Work","path":"/vaults/work","is_default":false},{"name":"Personal","path":"/vaults/personal","is_default":true}]"#.to_string()
+        );
+        assert_eq!(
+            settings.get_obsidian_output_path().unwrap(),
+            "/vaults/personal"
+        );
+    }
+
+    /// DATA-006: get_obsidian_output_path falls back to first vault if no default
+    #[test]
+    fn get_obsidian_output_path_falls_back_to_first_vault() {
+        let mut settings = get_default_settings();
+        settings.obsidian_vaults = Some(
+            r#"[{"name":"Work","path":"/vaults/work","is_default":false},{"name":"Personal","path":"/vaults/personal","is_default":false}]"#.to_string()
+        );
+        assert_eq!(settings.get_obsidian_output_path().unwrap(), "/vaults/work");
+    }
+
+    /// DATA-006: get_obsidian_output_path falls back to obsidian_path when vaults empty
+    #[test]
+    fn get_obsidian_output_path_falls_back_to_legacy_path() {
+        let mut settings = get_default_settings();
+        settings.obsidian_vaults = Some("[]".to_string());
+        settings.obsidian_path = Some("/legacy/vault".to_string());
+        assert_eq!(
+            settings.get_obsidian_output_path().unwrap(),
+            "/legacy/vault"
+        );
+    }
+
+    /// DATA-006: get_obsidian_output_path returns error when no path configured
+    #[test]
+    fn get_obsidian_output_path_returns_error_when_no_path() {
+        let mut settings = get_default_settings();
+        settings.obsidian_vaults = Some("[]".to_string());
+        settings.obsidian_path = None;
+        assert!(settings.get_obsidian_output_path().is_err());
+    }
+
+    /// DATA-006: obsidian_vaults field persists through save/load cycle
+    #[test]
+    #[serial]
+    fn save_settings_persists_obsidian_vaults() {
+        setup_test_db_with_settings();
+
+        let vaults_json = r#"[{"name":"Work","path":"/vaults/work","is_default":true}]"#;
+        let mut settings = get_settings_sync().unwrap();
+        settings.obsidian_vaults = Some(vaults_json.to_string());
+        save_settings_sync(&settings).unwrap();
+
+        let reloaded = get_settings_sync().unwrap();
+        assert_eq!(
+            reloaded.obsidian_vaults,
+            Some(vaults_json.to_string()),
+            "DATA-006: obsidian_vaults must be persisted"
+        );
+    }
+
+    fn get_default_settings() -> Settings {
+        Settings {
+            api_base_url: None,
+            api_key: None,
+            model_name: None,
+            screenshot_interval: None,
+            summary_time: None,
+            obsidian_path: None,
+            auto_capture_enabled: None,
+            last_summary_path: None,
+            summary_model_name: None,
+            analysis_prompt: None,
+            summary_prompt: None,
+            change_threshold: None,
+            max_silent_minutes: None,
+            summary_title_format: None,
+            include_manual_records: None,
+            window_whitelist: None,
+            window_blacklist: None,
+            use_whitelist_only: None,
+            auto_adjust_silent: None,
+            silent_adjustment_paused_until: None,
+            auto_detect_work_time: None,
+            use_custom_work_time: None,
+            custom_work_time_start: None,
+            custom_work_time_end: None,
+            learned_work_time: None,
+            capture_mode: None,
+            selected_monitor_index: None,
+            tag_categories: None,
+            is_ollama: None,
+            weekly_report_prompt: None,
+            weekly_report_day: None,
+            last_weekly_report_path: None,
+            monthly_report_prompt: None,
+            last_monthly_report_path: None,
+            custom_report_prompt: None,
+            last_custom_report_path: None,
+            obsidian_vaults: None,
+        }
+    }
+
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)
 }
 
@@ -3888,7 +4043,8 @@ mod benchmarks {
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
-                last_monthly_report_path TEXT
+                last_monthly_report_path TEXT,
+                obsidian_vaults TEXT DEFAULT '[]'
             )",
             [],
         )

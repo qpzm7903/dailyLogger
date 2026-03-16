@@ -205,14 +205,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
-    let obsidian_path = settings
-        .obsidian_path
-        .clone()
-        .ok_or("Obsidian path not configured")?;
-
-    if obsidian_path.is_empty() {
-        return Err("Obsidian path is empty".to_string());
-    }
+    let obsidian_path = settings.get_obsidian_output_path()?;
 
     let api_base_url = settings
         .api_base_url
@@ -430,6 +423,7 @@ mod tests {
             last_monthly_report_path: None,
             custom_report_prompt: None,
             last_custom_report_path: None,
+            obsidian_vaults: None,
         }
     }
 
@@ -915,14 +909,7 @@ pub async fn generate_weekly_report() -> Result<String, String> {
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
-    let obsidian_path = settings
-        .obsidian_path
-        .clone()
-        .ok_or("Obsidian path not configured")?;
-
-    if obsidian_path.is_empty() {
-        return Err("Obsidian path is empty".to_string());
-    }
+    let obsidian_path = settings.get_obsidian_output_path()?;
 
     let api_base_url = settings
         .api_base_url
@@ -1105,14 +1092,7 @@ pub async fn generate_monthly_report() -> Result<String, String> {
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
-    let obsidian_path = settings
-        .obsidian_path
-        .clone()
-        .ok_or("Obsidian path not configured")?;
-
-    if obsidian_path.is_empty() {
-        return Err("Obsidian path is empty".to_string());
-    }
+    let obsidian_path = settings.get_obsidian_output_path()?;
 
     let api_base_url = settings
         .api_base_url
@@ -1346,14 +1326,7 @@ pub async fn generate_custom_report(
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
 
-    let obsidian_path = settings
-        .obsidian_path
-        .clone()
-        .ok_or("Obsidian path not configured")?;
-
-    if obsidian_path.is_empty() {
-        return Err("Obsidian path is empty".to_string());
-    }
+    let obsidian_path = settings.get_obsidian_output_path()?;
 
     let api_base_url = settings
         .api_base_url
@@ -1581,6 +1554,7 @@ mod benchmarks {
             last_monthly_report_path: None,
             custom_report_prompt: None,
             last_custom_report_path: None,
+            obsidian_vaults: None,
         }
     }
 
@@ -1757,5 +1731,26 @@ mod benchmarks {
             Some(monthly_path),
             "FIX-001: last_monthly_report_path must store the monthly report path"
         );
+    }
+
+    /// DATA-006: get_obsidian_output_path resolves vault path for report generation
+    #[test]
+    fn get_obsidian_output_path_resolves_vault_for_reports() {
+        let mut settings = create_settings_with_include_manual(true);
+
+        // With vaults configured, should use default vault
+        settings.obsidian_vaults =
+            Some(r#"[{"name":"Work","path":"/vaults/work","is_default":true}]"#.to_string());
+        assert_eq!(settings.get_obsidian_output_path().unwrap(), "/vaults/work");
+
+        // With legacy path only, should fall back
+        settings.obsidian_vaults = Some("[]".to_string());
+        settings.obsidian_path = Some("/legacy/path".to_string());
+        assert_eq!(settings.get_obsidian_output_path().unwrap(), "/legacy/path");
+
+        // With neither, should error
+        settings.obsidian_vaults = Some("[]".to_string());
+        settings.obsidian_path = None;
+        assert!(settings.get_obsidian_output_path().is_err());
     }
 }

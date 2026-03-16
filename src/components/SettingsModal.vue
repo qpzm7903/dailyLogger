@@ -619,14 +619,35 @@
 
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">输出配置</h3>
-          <div>
-            <label class="text-xs text-gray-300 block mb-1">Obsidian Vault 路径</label>
-            <input
-              v-model="settings.obsidian_path"
-              type="text"
-              placeholder="/Users/你的名字/Documents/Obsidian Vault"
-              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
-            />
+          <div class="space-y-3">
+            <label class="text-xs text-gray-300 block">Obsidian Vaults</label>
+            <!-- Vault list -->
+            <div v-for="(vault, index) in vaults" :key="index"
+              class="flex items-center gap-2 bg-darker border border-gray-700 rounded-lg px-3 py-2">
+              <button @click="setDefaultVault(index)" class="text-xs shrink-0"
+                :class="vault.is_default ? 'text-primary font-bold' : 'text-gray-500 hover:text-gray-300'">
+                {{ vault.is_default ? '★' : '☆' }}
+              </button>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-gray-100 truncate">{{ vault.name }}</div>
+                <div class="text-xs text-gray-500 truncate">{{ vault.path }}</div>
+              </div>
+              <button @click="removeVault(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
+            </div>
+            <div v-if="vaults.length === 0" class="text-xs text-gray-500 py-2">
+              尚未配置 Vault，请添加
+            </div>
+            <!-- Add vault form -->
+            <div class="flex gap-2">
+              <input v-model="newVaultName" type="text" placeholder="名称"
+                class="w-1/3 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+              <input v-model="newVaultPath" type="text" placeholder="路径 (如 /Users/.../Obsidian Vault)"
+                class="flex-1 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+              <button @click="addVault" :disabled="!newVaultName.trim() || !newVaultPath.trim()"
+                class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
+                添加
+              </button>
+            </div>
           </div>
         </div>
 
@@ -923,7 +944,9 @@ const settings = ref({
   // AI-004: Tag categories
   tag_categories: '',
   // AI-005: Ollama support
-  is_ollama: false
+  is_ollama: false,
+  // DATA-006: Multi Obsidian Vault support
+  obsidian_vaults: '[]'
 })
 
 // SMART-003: Work time status for learning progress display
@@ -935,10 +958,30 @@ const isLoadingMonitors = ref(false)
 const monitorError = ref('')
 const isScreenshotEnabled = ref(true) // Will be set based on backend capability
 
+// DATA-006: Multi Obsidian Vault support
+const vaults = ref([])
+const newVaultName = ref('')
+const newVaultPath = ref('')
+
 const loadSettings = async () => {
   try {
     const loaded = await invoke('get_settings')
     settings.value = { ...settings.value, ...loaded }
+    // DATA-006: Parse obsidian_vaults JSON
+    try {
+      const parsed = JSON.parse(settings.value.obsidian_vaults || '[]')
+      vaults.value = Array.isArray(parsed) ? parsed : []
+    } catch {
+      vaults.value = []
+    }
+    // Auto-migrate legacy obsidian_path to vaults
+    if (vaults.value.length === 0 && settings.value.obsidian_path) {
+      vaults.value = [{
+        name: 'Default',
+        path: settings.value.obsidian_path,
+        is_default: true
+      }]
+    }
     // Parse window whitelist/blacklist JSON arrays into tag arrays
     try {
       whitelistTags.value = JSON.parse(settings.value.window_whitelist || '[]')
@@ -1084,7 +1127,10 @@ const saveSettings = async () => {
           .split('\n')
           .map(t => t.trim())
           .filter(t => t.length > 0)
-      )
+      ),
+      // DATA-006: Serialize vaults to JSON and sync legacy obsidian_path
+      obsidian_vaults: JSON.stringify(vaults.value),
+      obsidian_path: vaults.value.find(v => v.is_default)?.path || vaults.value[0]?.path || settings.value.obsidian_path || ''
     }
     await invoke('save_settings', { settings: settingsToSave })
     saveStatus.value = 'ok'
@@ -1098,6 +1144,29 @@ const saveSettings = async () => {
   } finally {
     isSaving.value = false
   }
+}
+
+// DATA-006: Vault management methods
+const addVault = () => {
+  const name = newVaultName.value.trim()
+  const path = newVaultPath.value.trim()
+  if (!name || !path) return
+  const isFirst = vaults.value.length === 0
+  vaults.value.push({ name, path, is_default: isFirst })
+  newVaultName.value = ''
+  newVaultPath.value = ''
+}
+
+const removeVault = (index) => {
+  const wasDefault = vaults.value[index].is_default
+  vaults.value.splice(index, 1)
+  if (wasDefault && vaults.value.length > 0) {
+    vaults.value[0].is_default = true
+  }
+}
+
+const setDefaultVault = (index) => {
+  vaults.value.forEach((v, i) => { v.is_default = i === index })
 }
 
 const exportLogs = async () => {

@@ -1515,7 +1515,8 @@ mod tests {
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
-                last_monthly_report_path TEXT
+                last_monthly_report_path TEXT,
+                obsidian_vaults TEXT DEFAULT '[]'
             )",
             [],
         )
@@ -1814,7 +1815,8 @@ mod tests {
                 monthly_report_prompt TEXT,
                 custom_report_prompt TEXT,
                 last_custom_report_path TEXT,
-                last_monthly_report_path TEXT
+                last_monthly_report_path TEXT,
+                obsidian_vaults TEXT DEFAULT '[]'
             )",
             [],
         )
