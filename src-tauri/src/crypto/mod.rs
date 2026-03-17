@@ -20,14 +20,8 @@ const NONCE_LEN: usize = 12;
 /// Global encryption key storage
 static ENCRYPTION_KEY: Lazy<Mutex<Option<[u8; 32]>>> = Lazy::new(|| Mutex::new(None));
 
-fn get_app_data_dir() -> PathBuf {
-    dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("DailyLogger")
-}
-
 fn get_key_path() -> PathBuf {
-    get_app_data_dir().join(KEY_FILE)
+    crate::get_app_data_dir().join(KEY_FILE)
 }
 
 /// Generate a new random 32-byte encryption key

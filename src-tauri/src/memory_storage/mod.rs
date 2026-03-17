@@ -10,18 +10,12 @@ use crate::crypto;
 
 pub static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 
-fn get_app_data_dir() -> PathBuf {
-    dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("DailyLogger")
-}
-
 fn get_db_path() -> PathBuf {
-    get_app_data_dir().join("data").join("local.db")
+    crate::get_app_data_dir().join("data").join("local.db")
 }
 
 pub fn init_database() -> Result<(), String> {
-    let db_dir = get_app_data_dir().join("data");
+    let db_dir = crate::get_app_data_dir().join("data");
     std::fs::create_dir_all(&db_dir)
         .map_err(|e| format!("Failed to create data directory: {}", e))?;
 

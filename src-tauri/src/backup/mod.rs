@@ -42,18 +42,12 @@ struct BackupManifest {
     screenshot_count: usize,
 }
 
-fn get_app_data_dir() -> PathBuf {
-    dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("DailyLogger")
-}
-
 fn get_db_path() -> PathBuf {
-    get_app_data_dir().join("data").join("local.db")
+    crate::get_app_data_dir().join("data").join("local.db")
 }
 
 fn get_screenshots_dir() -> PathBuf {
-    get_app_data_dir().join("screenshots")
+    crate::get_app_data_dir().join("screenshots")
 }
 
 fn get_default_backup_dir() -> PathBuf {
@@ -330,7 +324,7 @@ fn rollback_from(rollback_dir: &Path) -> Result<(), String> {
 
     // Restore database
     if rollback_db.exists() {
-        let target_data_dir = get_app_data_dir().join("data");
+        let target_data_dir = crate::get_app_data_dir().join("data");
         fs::create_dir_all(&target_data_dir).map_err(|e| e.to_string())?;
         fs::copy(&rollback_db, &target_db)
             .map_err(|e| format!("Rollback: failed to restore database: {}", e))?;
@@ -358,7 +352,7 @@ fn perform_restore_inner(archive: &mut ZipArchive<fs::File>) -> Result<(), Strin
     let extracted_screenshots_dir = temp_extract.path().join("screenshots");
 
     // Restore database
-    let target_data_dir = get_app_data_dir().join("data");
+    let target_data_dir = crate::get_app_data_dir().join("data");
     fs::create_dir_all(&target_data_dir).map_err(|e| e.to_string())?;
 
     if extracted_data_dir.join("local.db").exists() {
@@ -395,7 +389,7 @@ pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String
     let manifest = read_manifest_from_archive(&mut archive)?;
 
     // 创建临时备份目录（用于恢复失败时回滚）
-    let rollback_dir = get_app_data_dir().join("temp-rollback");
+    let rollback_dir = crate::get_app_data_dir().join("temp-rollback");
     let current_db = get_db_path();
     let current_screenshots = get_screenshots_dir();
 
@@ -470,7 +464,7 @@ mod tests {
 
     #[test]
     fn test_get_app_data_dir() {
-        let dir = get_app_data_dir();
+        let dir = crate::get_app_data_dir();
         assert!(dir.to_string_lossy().contains("DailyLogger"));
     }
 

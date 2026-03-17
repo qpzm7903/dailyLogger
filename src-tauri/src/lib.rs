@@ -18,9 +18,18 @@ pub mod window_info;
 pub mod work_time;
 
 use once_cell::sync::Lazy;
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 pub static APP_STATE: Lazy<Mutex<AppState>> = Lazy::new(|| Mutex::new(AppState::default()));
+
+/// Returns the application data directory: `<system_data_dir>/DailyLogger`.
+/// Used by all modules that need access to the app's persistent data.
+pub fn get_app_data_dir() -> PathBuf {
+    dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("DailyLogger")
+}
 
 #[derive(Default)]
 pub struct AppState {
@@ -42,11 +51,6 @@ pub fn mask_api_key(key: &str) -> String {
     // Show prefix (first 5 chars or less) + "..." + "****"
     let prefix_len = key.len().min(5);
     format!("{}...****", &key[..prefix_len])
-}
-
-/// Add two i32 values and return their sum.
-pub fn add(a: i32, b: i32) -> i32 {
-    a + b
 }
 
 pub fn init_app() -> tauri::Result<()> {
@@ -86,17 +90,8 @@ mod tests {
     }
 
     #[test]
-    fn add_positive_numbers() {
-        assert_eq!(add(2, 3), 5);
-    }
-
-    #[test]
-    fn add_negative_and_positive() {
-        assert_eq!(add(-1, 1), 0);
-    }
-
-    #[test]
-    fn add_zeros() {
-        assert_eq!(add(0, 0), 0);
+    fn get_app_data_dir_returns_dailylogger_subdir() {
+        let dir = get_app_data_dir();
+        assert!(dir.ends_with("DailyLogger"));
     }
 }

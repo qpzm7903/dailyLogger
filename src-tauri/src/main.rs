@@ -3,8 +3,8 @@
     windows_subsystem = "windows"
 )]
 
+use daily_logger_lib::get_app_data_dir;
 use daily_logger_lib::init_app;
-use std::path::PathBuf;
 use tauri::{Emitter, Manager};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -79,12 +79,6 @@ fn setup_logging() -> Option<WorkerGuard> {
             None
         }
     }
-}
-
-fn get_app_data_dir() -> PathBuf {
-    dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("DailyLogger")
 }
 
 fn main() {
