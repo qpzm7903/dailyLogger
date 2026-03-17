@@ -1305,20 +1305,7 @@ pub async fn compare_reports(
 #[cfg(test)]
 mod benchmarks {
     use super::*;
-    use crate::memory_storage::Record;
     use std::time::Instant;
-
-    fn create_test_record(source_type: &str, content: &str) -> Record {
-        Record {
-            id: 1,
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            source_type: source_type.to_string(),
-            content: content.to_string(),
-            screenshot_path: None,
-            monitor_info: None,
-            tags: None,
-        }
-    }
 
     fn create_settings_with_include_manual(include: bool) -> Settings {
         Settings {

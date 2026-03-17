@@ -1311,93 +1311,12 @@ pub async fn search_records(
     search_records_sync(&query, &order_by, limit)
 }
 
-/// Result of testing API connection
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConnectionTestResult {
-    pub success: bool,
-    pub message: String,
-    pub latency_ms: Option<u64>,
-}
-
 /// Model information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelInfo {
     pub model_id: String,
     pub context_window: Option<u64>,
     pub error: Option<String>,
-}
-
-/// Test API connection by sending a simple request
-#[command]
-pub async fn test_api_connection(
-    api_base_url: String,
-    api_key: String,
-    model_name: String,
-) -> Result<ConnectionTestResult, String> {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
-    let start = std::time::Instant::now();
-
-    // Send a simple "Say 'ok'" request
-    let request_body = serde_json::json!({
-        "model": model_name,
-        "messages": [{"role": "user", "content": "Say 'ok'"}],
-        "max_tokens": 5
-    });
-
-    let url = if api_base_url.ends_with('/') {
-        format!("{}chat/completions", api_base_url)
-    } else {
-        format!("{}/chat/completions", api_base_url)
-    };
-
-    let response = client
-        .post(&url)
-        .header("Authorization", format!("Bearer {}", api_key))
-        .json(&request_body)
-        .send()
-        .await;
-
-    match response {
-        Ok(resp) if resp.status().is_success() => Ok(ConnectionTestResult {
-            success: true,
-            message: "连接成功".to_string(),
-            latency_ms: Some(start.elapsed().as_millis() as u64),
-        }),
-        Ok(resp) => {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            let message = if status.as_u16() == 401 {
-                "API Key 无效".to_string()
-            } else if status.as_u16() == 404 {
-                "API 端点不存在或模型不支持".to_string()
-            } else {
-                format!("API 错误 ({}): {}", status, body)
-            };
-            Ok(ConnectionTestResult {
-                success: false,
-                message,
-                latency_ms: Some(start.elapsed().as_millis() as u64),
-            })
-        }
-        Err(e) => {
-            let message = if e.is_timeout() {
-                "连接超时，请检查网络或 API 地址".to_string()
-            } else if e.is_connect() {
-                format!("无法连接到服务器: {}", e)
-            } else {
-                format!("连接失败: {}", e)
-            };
-            Ok(ConnectionTestResult {
-                success: false,
-                message,
-                latency_ms: None,
-            })
-        }
-    }
 }
 
 /// Get model information including context window

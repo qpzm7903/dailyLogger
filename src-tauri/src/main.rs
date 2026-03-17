@@ -116,7 +116,7 @@ fn main() {
             daily_logger_lib::memory_storage::get_records_by_date_range,
             daily_logger_lib::memory_storage::get_settings,
             daily_logger_lib::memory_storage::save_settings,
-            daily_logger_lib::memory_storage::test_api_connection,
+            daily_logger_lib::ollama::test_api_connection_with_ollama,
             daily_logger_lib::memory_storage::get_model_info,
             daily_logger_lib::memory_storage::delete_record,
             daily_logger_lib::memory_storage::get_history_records,
