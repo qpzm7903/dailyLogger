@@ -195,13 +195,13 @@ pub fn init_database() -> Result<(), String> {
     );
 
     // DATA-002: FTS5 全文搜索虚拟表
-    // 使用 unicode61 tokenchars 选项支持中文字符
+    // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     conn.execute(
         "CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5(
             content,
             content='records',
             content_rowid='id',
-            tokenize='unicode61 tokenchars \"-_\"'
+            tokenize='unicode61'
         )",
         [],
     )
