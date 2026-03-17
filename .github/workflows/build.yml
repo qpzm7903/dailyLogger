@@ -72,7 +72,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-windows
-          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/daily-logger.exe
 
       - name: Upload Linux artifact
         if: matrix.platform == 'ubuntu-24.04'
@@ -103,8 +105,10 @@ jobs:
           ## Installation
 
           ### Windows
-          Download the `.exe` installer and run it. The installer will automatically set up WebView2 if needed.
+          **Installer** (recommended): Download `*-setup.exe` and run it. The installer will automatically set up WebView2 if needed.
           > Windows SmartScreen may show a warning for unsigned apps. Click **"More info"** → **"Run anyway"** to proceed.
+
+          **Portable** (no install): Download `*-portable.exe` and run directly. Requires Windows 10/11 with WebView2 runtime pre-installed.
 
           ### macOS
           Download the `.dmg`, open it, and drag DailyLogger to Applications.
@@ -197,14 +201,16 @@ jobs:
           '{"bundle":{"targets":["nsis"]}}' | Out-File -FilePath nsis-only.json -Encoding utf8 -NoNewline
           npm run tauri build -- --config nsis-only.json
 
-      - name: Upload installer to release
+      - name: Upload installer and portable to release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*-setup.exe" | head -1)
-          cp "$NSIS_EXE" "DailyLogger-${{ github.ref_name }}-windows-x64.exe"
-          gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-windows-x64.exe"
+          cp "$NSIS_EXE" "DailyLogger-${{ github.ref_name }}-windows-x64-setup.exe"
+          gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-windows-x64-setup.exe"
+          cp src-tauri/target/release/daily-logger.exe "DailyLogger-${{ github.ref_name }}-windows-x64-portable.exe"
+          gh release upload "${{ github.ref_name }}" "DailyLogger-${{ github.ref_name }}-windows-x64-portable.exe"
 
   build-linux:
     name: Build Linux

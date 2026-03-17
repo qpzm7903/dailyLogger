@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-17
-> 当前版本: v1.13.0 ✅ 已发布
+> 当前版本: v1.13.1 ✅ 已发布
 > 下一版本: v1.14.0（待规划）
 
 ---
@@ -243,6 +243,21 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 **修复**:
 - build.yml 添加 Rust 缓存（`Swatinem/rust-cache@v2`）
 - 统一 Ubuntu runner 版本
+
+---
+
+## v1.13.1（Windows 免安装版本）✅ 已发布
+
+**目标**: 提供 Windows 免安装（portable）版本，用户无需安装即可直接运行。
+
+| ID | 需求 | 状态 |
+|----|------|------|
+| ISSUE-017 | Windows 免安装版本（portable exe） | ✅ 完成 |
+
+**变更**:
+- Release 构建新增 `*-portable.exe`（无需安装，直接运行）
+- 保留原有 `*-setup.exe` 安装版（推荐，自动安装 WebView2）
+- Release 说明更新为区分安装版和免安装版
 
 ---
 
