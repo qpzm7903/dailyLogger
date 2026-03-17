@@ -138,6 +138,7 @@ fn main() {
             daily_logger_lib::memory_storage::add_tag_to_record,
             daily_logger_lib::memory_storage::remove_tag_from_record,
             daily_logger_lib::memory_storage::get_tags_for_record,
+            daily_logger_lib::memory_storage::get_tags_for_records,
             daily_logger_lib::memory_storage::get_records_by_manual_tags,
             daily_logger_lib::synthesis::generate_daily_summary,
             daily_logger_lib::synthesis::get_default_summary_prompt,

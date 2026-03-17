@@ -1846,6 +1846,68 @@ pub fn get_tags_for_record(record_id: i64) -> Result<Vec<ManualTag>, String> {
     Ok(tags)
 }
 
+/// 批量获取多条记录的手动标签 (PERF-001: 替代 N+1 查询)
+#[command]
+pub fn get_tags_for_records(
+    record_ids: Vec<i64>,
+) -> Result<std::collections::HashMap<i64, Vec<ManualTag>>, String> {
+    if record_ids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+
+    let db_guard = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+
+    let placeholders: Vec<String> = record_ids.iter().map(|_| "?".to_string()).collect();
+    let placeholders_str = placeholders.join(",");
+
+    let sql = format!(
+        "SELECT rmt.record_id, t.id, t.name, t.color, t.created_at
+         FROM manual_tags t
+         INNER JOIN record_manual_tags rmt ON t.id = rmt.tag_id
+         WHERE rmt.record_id IN ({})
+         ORDER BY rmt.record_id, t.name",
+        placeholders_str
+    );
+
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let params: Vec<Box<dyn rusqlite::types::ToSql>> = record_ids
+        .iter()
+        .map(|id| Box::new(*id) as Box<dyn rusqlite::types::ToSql>)
+        .collect();
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
+    let rows = stmt
+        .query_map(param_refs.as_slice(), |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                ManualTag {
+                    id: row.get(1)?,
+                    name: row.get(2)?,
+                    color: row.get(3)?,
+                    created_at: row.get(4)?,
+                    usage_count: None,
+                },
+            ))
+        })
+        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+
+    let mut result: std::collections::HashMap<i64, Vec<ManualTag>> =
+        std::collections::HashMap::new();
+    for (record_id, tag) in rows {
+        result.entry(record_id).or_default().push(tag);
+    }
+
+    Ok(result)
+}
+
 /// 按多个标签筛选记录（交集 AND 逻辑）
 #[command]
 pub fn get_records_by_manual_tags(
@@ -3992,6 +4054,92 @@ mod tests {
             obsidian_vaults: None,
             comparison_report_prompt: None,
         }
+    }
+
+    // ── PERF-001: Batch tag query tests ──
+
+    #[test]
+    #[serial]
+    fn get_tags_for_records_returns_empty_for_empty_input() {
+        setup_test_db();
+        let result = get_tags_for_records(vec![]).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    #[serial]
+    fn get_tags_for_records_returns_tags_grouped_by_record() {
+        setup_test_db();
+
+        // Insert two records
+        let ts = chrono::Utc::now().to_rfc3339();
+        {
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, 'manual', 'rec1')",
+                params![ts],
+            ).unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, 'manual', 'rec2')",
+                params![ts],
+            ).unwrap();
+
+            // Insert tags
+            conn.execute(
+                "INSERT INTO manual_tags (name, color, created_at) VALUES ('tag-a', 'blue', ?1)",
+                params![ts],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO manual_tags (name, color, created_at) VALUES ('tag-b', 'red', ?1)",
+                params![ts],
+            )
+            .unwrap();
+
+            // Link: record 1 -> tag-a, tag-b; record 2 -> tag-a
+            conn.execute(
+                "INSERT INTO record_manual_tags (record_id, tag_id) VALUES (1, 1)",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO record_manual_tags (record_id, tag_id) VALUES (1, 2)",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO record_manual_tags (record_id, tag_id) VALUES (2, 1)",
+                [],
+            )
+            .unwrap();
+        }
+
+        let result = get_tags_for_records(vec![1, 2]).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.get(&1).unwrap().len(), 2);
+        assert_eq!(result.get(&2).unwrap().len(), 1);
+        assert_eq!(result.get(&2).unwrap()[0].name, "tag-a");
+    }
+
+    #[test]
+    #[serial]
+    fn get_tags_for_records_skips_records_without_tags() {
+        setup_test_db();
+
+        let ts = chrono::Utc::now().to_rfc3339();
+        {
+            let db = DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content) VALUES (?1, 'manual', 'rec1')",
+                params![ts],
+            ).unwrap();
+        }
+
+        let result = get_tags_for_records(vec![1]).unwrap();
+        // Record exists but has no tags — should not appear in map
+        assert!(!result.contains_key(&1));
     }
 
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)
