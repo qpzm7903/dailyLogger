@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-17
-> 当前版本: v1.12.0 ✅ 已发布
-> 下一版本: v1.13.0（技术债务清理与代码架构改善）
+> 当前版本: v1.13.0 ✅ 已发布
+> 下一版本: v1.14.0（待规划）
 
 ---
 
@@ -183,7 +183,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
-## 当前迭代: v1.13.0（技术债务清理与代码架构改善）
+## 当前迭代: v1.13.0（技术债务清理与代码架构改善）✅ 已发布
 
 **目标**: 消除高风险技术债务（Settings 位置索引脆弱性）、清理死代码和重复代码、改善模块结构、增强 CI 覆盖。
 
@@ -191,11 +191,11 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
-| CLEAN-001 | 清理死代码和未使用依赖 | 2pts | HIGH | 待开发 |
-| DEBT-001a | Settings 读写改用命名列访问替代位置索引 | 5pts | HIGH | 待开发 |
-| CLEAN-002 | 合并 test_api_connection 与 Ollama 版本 | 2pts | MEDIUM | 待开发 |
-| REFACTOR-002 | 拆分 memory_storage/mod.rs 为子模块 | 5pts | MEDIUM | 待开发 |
-| CI-001 | CI 工作流改进（Rust 缓存、一致性） | 1pt | LOW | 待开发 |
+| CLEAN-001 | 清理死代码和未使用依赖 | 2pts | HIGH | ✅ 完成 |
+| DEBT-001a | Settings 读写改用命名列访问替代位置索引 | 5pts | HIGH | ✅ 完成 |
+| CLEAN-002 | 合并 test_api_connection 与 Ollama 版本（修复连接测试 Bug） | 2pts | MEDIUM | ✅ 完成 |
+| REFACTOR-002 | 拆分 memory_storage/mod.rs 为子模块 | 5pts | MEDIUM | ✅ 完成 |
+| CI-001 | CI 工作流改进（Rust 缓存、一致性） | 1pt | LOW | ✅ 完成 |
 
 ### CLEAN-001: 清理死代码和未使用依赖
 
@@ -271,9 +271,9 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 | ID | 描述 | 来源 | 优先级 | 状态 |
 |----|------|------|--------|------|
-| DEBT-001 | 数据库 Schema 版本化迁移（settings 表已 38 字段，ALTER TABLE 链已 33 条，get/save_settings 使用脆弱的位置索引） | CORE/DATA/AI 回顾 | HIGH | v1.13.0 DEBT-001a |
+| DEBT-001 | 数据库 Schema 版本化迁移（settings 表已 38 字段，ALTER TABLE 链已 33 条，get/save_settings 使用脆弱的位置索引） | CORE/DATA/AI 回顾 | HIGH | ✅ 部分解决 (v1.13.0 DEBT-001a: 命名列访问) |
 | DEBT-002 | 离线队列 ScreenshotAnalysis 重试为空操作 | 代码审查 | MEDIUM | 待开发 |
-| DEBT-003 | 统一测试数据库 Schema 初始化 | AI 回顾 | MEDIUM | v1.13.0 CLEAN-001 |
+| DEBT-003 | 统一测试数据库 Schema 初始化 | AI 回顾 | MEDIUM | 待开发 |
 | DEBT-004 | 前端组件测试覆盖率 | 多 Epic 回顾 | MEDIUM | 待开发 |
 | DEBT-005 | 学习数据持久化（SilentPatternTracker / WorkTimePatternLearner） | SMART 回顾 | MEDIUM | 待开发 |
 | DEBT-006 | 硬件抽象层（窗口/显示器/截图 API） | SMART 回顾 | LOW | 待开发 |
