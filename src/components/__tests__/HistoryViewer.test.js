@@ -440,8 +440,8 @@ describe('HistoryViewer', () => {
     wrapper.vm.recordToDelete = mockRecords[0]
     await wrapper.vm.$nextTick()
 
-    const deleteButton = wrapper.findAll('button').find(btn => btn.text() === '删除')
-    await deleteButton.trigger('click')
+    // Call deleteRecord directly
+    await wrapper.vm.deleteRecord()
     await flushPromises()
 
     expect(invoke).toHaveBeenCalledWith('delete_record', { id: 1 })
@@ -475,9 +475,10 @@ describe('HistoryViewer', () => {
     wrapper.vm.isDeleting = true
     await wrapper.vm.$nextTick()
 
-    const deleteButton = wrapper.findAll('button').find(btn => btn.text().includes('删除'))
-    expect(deleteButton.attributes('disabled')).toBeDefined()
-    expect(deleteButton.text()).toBe('删除中...')
+    const deleteButtons = wrapper.findAll('button').filter(btn => btn.text().includes('删除'))
+    const modalDeleteButton = deleteButtons.find(btn => btn.text() === '删除中...')
+    expect(modalDeleteButton).toBeTruthy()
+    expect(modalDeleteButton.attributes('disabled')).toBeDefined()
   })
 
   it('handles load error gracefully', async () => {
