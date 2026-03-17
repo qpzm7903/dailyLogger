@@ -146,6 +146,13 @@ import TagBadge from './TagBadge.vue'
 
 const emit = defineEmits(['close'])
 
+const props = defineProps({
+  initialTag: {
+    type: Object,
+    default: null
+  }
+})
+
 // State
 const startDate = ref('')
 const endDate = ref('')
@@ -171,6 +178,11 @@ onMounted(() => {
 
   endDate.value = formatDate(end)
   startDate.value = formatDate(start)
+
+  // Apply initial tag filter from TagCloud selection (FIX-003)
+  if (props.initialTag) {
+    selectedTags.value = [props.initialTag]
+  }
 
   loadRecords()
 })
@@ -251,16 +263,17 @@ async function loadRecords() {
   }
 }
 
-// Load tags for all displayed records
+// Load tags for all displayed records (batch query - PERF-001)
 async function loadRecordTags() {
-  for (const record of records.value) {
-    try {
-      const tags = await invoke('get_tags_for_record', { recordId: record.id })
-      recordTags.value[record.id] = tags
-    } catch (e) {
-      console.error(`Failed to load tags for record ${record.id}:`, e)
-      recordTags.value[record.id] = []
-    }
+  const ids = records.value.map(r => r.id)
+  if (ids.length === 0) return
+
+  try {
+    const tagsMap = await invoke('get_tags_for_records', { recordIds: ids })
+    recordTags.value = tagsMap
+  } catch (e) {
+    console.error('Failed to load tags for records:', e)
+    recordTags.value = {}
   }
 }
 
@@ -288,14 +301,14 @@ async function loadMoreRecords() {
     records.value.push(...result)
     hasMore.value = result.length === pageSize
 
-    // Load tags for new records
-    for (const record of result) {
+    // Load tags for new records (batch)
+    const newIds = result.map(r => r.id)
+    if (newIds.length > 0) {
       try {
-        const tags = await invoke('get_tags_for_record', { recordId: record.id })
-        recordTags.value[record.id] = tags
+        const tagsMap = await invoke('get_tags_for_records', { recordIds: newIds })
+        Object.assign(recordTags.value, tagsMap)
       } catch (e) {
-        console.error(`Failed to load tags for record ${record.id}:`, e)
-        recordTags.value[record.id] = []
+        console.error('Failed to load tags for new records:', e)
       }
     }
   } catch (error) {
