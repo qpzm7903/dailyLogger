@@ -4,6 +4,158 @@ use tauri::command;
 
 use crate::memory_storage::{self, Record, Settings};
 
+/// API configuration extracted from Settings for LLM calls.
+#[derive(Debug)]
+struct ApiConfig {
+    api_base_url: String,
+    api_key: String,
+    model_name: String,
+    is_ollama: bool,
+}
+
+/// Extract API configuration from settings (shared by all report generators).
+fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
+    let api_base_url = settings
+        .api_base_url
+        .clone()
+        .ok_or("API Base URL not configured")?;
+    let api_key = settings.api_key.clone().unwrap_or_default();
+    let model_name = settings
+        .summary_model_name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .or_else(|| settings.model_name.clone())
+        .unwrap_or_else(|| "gpt-4o".to_string());
+    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
+
+    if !is_ollama && api_key.is_empty() {
+        return Err("API Key is required for non-Ollama endpoints".to_string());
+    }
+
+    Ok(ApiConfig {
+        api_base_url,
+        api_key,
+        model_name,
+        is_ollama,
+    })
+}
+
+/// Send a prompt to the LLM API and return the response content (shared by all report generators).
+async fn call_llm_api(
+    config: &ApiConfig,
+    prompt: &str,
+    max_tokens: u32,
+    caller: &str,
+) -> Result<String, String> {
+    let client = reqwest::Client::new();
+
+    let request_body = serde_json::json!({
+        "model": config.model_name,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens
+    });
+
+    let masked_key = crate::mask_api_key(&config.api_key);
+    let endpoint = format!("{}/chat/completions", config.api_base_url);
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_request",
+            "caller": caller,
+            "endpoint": endpoint,
+            "model": config.model_name,
+            "max_tokens": max_tokens,
+            "api_key_masked": masked_key,
+            "has_image": false,
+            "prompt": prompt,
+        })
+    );
+
+    let start = std::time::Instant::now();
+    let mut request = client
+        .post(&endpoint)
+        .header("Content-Type", "application/json")
+        .json(&request_body);
+
+    if !config.api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {}", config.api_key));
+    }
+
+    let response = request.send().await.map_err(|e| {
+        let elapsed_ms = start.elapsed().as_millis();
+        let error_msg = crate::ollama::format_connection_error(&e.to_string(), config.is_ollama);
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": caller,
+                "error": error_msg,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        error_msg
+    })?;
+    let elapsed_ms = start.elapsed().as_millis();
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            "{}",
+            serde_json::json!({
+                "event": "llm_error",
+                "caller": caller,
+                "status": status.as_u16(),
+                "response_body": body,
+                "elapsed_ms": elapsed_ms,
+            })
+        );
+        return Err(format!("API error ({}): {}", status, body));
+    }
+
+    let response_json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let content = response_json["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or("No content in response")?
+        .to_string();
+
+    tracing::info!(
+        "{}",
+        serde_json::json!({
+            "event": "llm_response",
+            "caller": caller,
+            "status": 200,
+            "elapsed_ms": elapsed_ms,
+            "usage": response_json.get("usage"),
+            "model": response_json.get("model"),
+            "response_id": response_json.get("id"),
+            "content": content,
+        })
+    );
+
+    Ok(content)
+}
+
+/// Write report content to the Obsidian output directory and return the full path.
+fn write_report_to_obsidian(
+    obsidian_path: &str,
+    filename: &str,
+    content: &str,
+) -> Result<String, String> {
+    let output_dir = PathBuf::from(obsidian_path);
+    std::fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    let output_path = output_dir.join(filename);
+    std::fs::write(&output_path, content).map_err(|e| format!("Failed to write report: {}", e))?;
+
+    Ok(output_path.to_string_lossy().to_string())
+}
+
 const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个工作日志助手。请根据以下今日工作记录，生成一份结构化的 Markdown 格式日报。
 
 要求：
@@ -225,9 +377,7 @@ pub fn generate_summary_filename(settings: &Settings) -> String {
 
 #[command]
 pub async fn generate_daily_summary() -> Result<String, String> {
-    // CORE-007: Check network status before attempting API call
     if !crate::network_status::is_online() {
-        // Queue the task for later processing
         let _ = crate::offline_queue::enqueue_task(
             &crate::offline_queue::OfflineTaskType::DailySummary,
             "{}",
@@ -238,159 +388,28 @@ pub async fn generate_daily_summary() -> Result<String, String> {
 
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
-
     let obsidian_path = settings.get_obsidian_output_path()?;
+    let api_config = load_api_config(&settings)?;
 
-    let api_base_url = settings
-        .api_base_url
-        .clone()
-        .ok_or("API Base URL not configured")?;
-    let api_key = settings.api_key.clone().unwrap_or_default();
-    // 日报生成优先使用 summary_model_name，未配置时回退到 model_name
-    let model_name = settings
-        .summary_model_name
-        .clone()
-        .filter(|s| !s.is_empty())
-        .or_else(|| settings.model_name.clone())
-        .unwrap_or_else(|| "gpt-4o".to_string());
-
-    // Check if this is an Ollama endpoint (doesn't require API Key)
-    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
-
-    // For non-Ollama endpoints, API Key is required
-    if !is_ollama && api_key.is_empty() {
-        return Err("API Key is required for non-Ollama endpoints".to_string());
-    }
-
-    // Get all today's records
     let all_records = memory_storage::get_all_today_records_for_summary()
         .map_err(|e| format!("Failed to get records: {}", e))?;
-
-    // Filter records based on include_manual_records setting
     let records = filter_records_by_settings(all_records, &settings);
-
     if records.is_empty() {
         return Err("No records for today after filtering".to_string());
     }
 
-    // Format records for summary
     let records_text = format_records_for_summary(&records);
-
     let prompt_template = settings
         .summary_prompt
         .as_deref()
         .filter(|s| !s.is_empty())
         .unwrap_or(DEFAULT_SUMMARY_PROMPT);
-
     let prompt = prompt_template.replace("{records}", &records_text);
 
-    let client = reqwest::Client::new();
+    let summary = call_llm_api(&api_config, &prompt, 2000, "generate_daily_summary").await?;
 
-    let request_body = serde_json::json!({
-        "model": model_name,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "max_tokens": 2000
-    });
-
-    let masked_key = crate::mask_api_key(&api_key);
-    let endpoint = format!("{}/chat/completions", api_base_url);
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_request",
-            "caller": "generate_daily_summary",
-            "endpoint": endpoint,
-            "model": model_name,
-            "max_tokens": 2000,
-            "api_key_masked": masked_key,
-            "has_image": false,
-            "prompt": prompt,
-            "records_count": records.len(),
-        })
-    );
-
-    let start = std::time::Instant::now();
-    let mut request = client
-        .post(&endpoint)
-        .header("Content-Type", "application/json")
-        .json(&request_body);
-
-    // Only add Authorization header if API key is provided (not required for Ollama)
-    if !api_key.is_empty() {
-        request = request.header("Authorization", format!("Bearer {}", api_key));
-    }
-
-    let response = request.send().await.map_err(|e| {
-        let elapsed_ms = start.elapsed().as_millis();
-        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_daily_summary",
-                "error": error_msg,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        error_msg
-    })?;
-    let elapsed_ms = start.elapsed().as_millis();
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_daily_summary",
-                "status": status.as_u16(),
-                "response_body": body,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        return Err(format!("API error ({}): {}", status, body));
-    }
-
-    let response_json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    let summary = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
-
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_response",
-            "caller": "generate_daily_summary",
-            "status": 200,
-            "elapsed_ms": elapsed_ms,
-            "usage": response_json.get("usage"),
-            "model": response_json.get("model"),
-            "response_id": response_json.get("id"),
-            "content": summary,
-        })
-    );
-
-    // Generate filename based on title format setting
     let filename = generate_summary_filename(&settings);
-
-    let output_dir = PathBuf::from(&obsidian_path);
-    std::fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create output directory: {}", e))?;
-
-    let output_path = output_dir.join(&filename);
-    std::fs::write(&output_path, summary).map_err(|e| format!("Failed to write summary: {}", e))?;
-
-    let path_str = output_path.to_string_lossy().to_string();
+    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
 
     let mut updated_settings = settings.clone();
     updated_settings.last_summary_path = Some(path_str.clone());
@@ -398,7 +417,6 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
     tracing::info!("Daily summary generated: {}", path_str);
-
     Ok(path_str)
 }
 
@@ -895,6 +913,74 @@ mod tests {
         );
     }
 
+    // ── Tests for load_api_config ──
+
+    #[test]
+    fn load_api_config_returns_error_when_no_api_url() {
+        let settings = create_settings_with_include_manual(true);
+        let result = load_api_config(&settings);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("API Base URL not configured"));
+    }
+
+    #[test]
+    fn load_api_config_returns_error_when_no_api_key_non_ollama() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = None;
+        let result = load_api_config(&settings);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("API Key is required"));
+    }
+
+    #[test]
+    fn load_api_config_uses_summary_model_name_over_model_name() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = Some("test-key".to_string());
+        settings.model_name = Some("gpt-3.5".to_string());
+        settings.summary_model_name = Some("gpt-4o".to_string());
+        let config = load_api_config(&settings).unwrap();
+        assert_eq!(config.model_name, "gpt-4o");
+    }
+
+    #[test]
+    fn load_api_config_falls_back_to_model_name() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = Some("test-key".to_string());
+        settings.model_name = Some("gpt-3.5".to_string());
+        settings.summary_model_name = None;
+        let config = load_api_config(&settings).unwrap();
+        assert_eq!(config.model_name, "gpt-3.5");
+    }
+
+    #[test]
+    fn load_api_config_defaults_to_gpt4o() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = Some("test-key".to_string());
+        settings.model_name = None;
+        settings.summary_model_name = None;
+        let config = load_api_config(&settings).unwrap();
+        assert_eq!(config.model_name, "gpt-4o");
+    }
+
+    // ── Tests for write_report_to_obsidian ──
+
+    #[test]
+    fn write_report_to_obsidian_creates_file() {
+        let dir = std::env::temp_dir().join("dailylogger_test_write_report");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path =
+            write_report_to_obsidian(dir.to_str().unwrap(), "test-report.md", "# Report\nContent")
+                .unwrap();
+        assert!(std::path::Path::new(&path).exists());
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(content, "# Report\nContent");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)
 }
 
@@ -931,7 +1017,6 @@ pub fn generate_weekly_report_filename(week_start_day: i32) -> String {
 /// Generate weekly report - REPORT-001
 #[command]
 pub async fn generate_weekly_report() -> Result<String, String> {
-    // CORE-007: Check network status before attempting API call
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
             &crate::offline_queue::OfflineTaskType::WeeklyReport,
@@ -943,178 +1028,42 @@ pub async fn generate_weekly_report() -> Result<String, String> {
 
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
-
     let obsidian_path = settings.get_obsidian_output_path()?;
+    let api_config = load_api_config(&settings)?;
 
-    let api_base_url = settings
-        .api_base_url
-        .clone()
-        .ok_or("API Base URL not configured")?;
-    let api_key = settings.api_key.clone().unwrap_or_default();
-
-    // Use summary_model_name for weekly report, fallback to model_name
-    let model_name = settings
-        .summary_model_name
-        .clone()
-        .filter(|s| !s.is_empty())
-        .or_else(|| settings.model_name.clone())
-        .unwrap_or_else(|| "gpt-4o".to_string());
-
-    // Check if this is an Ollama endpoint
-    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
-
-    if !is_ollama && api_key.is_empty() {
-        return Err("API Key is required for non-Ollama endpoints".to_string());
-    }
-
-    // Get week start day from settings (0=Monday by default)
     let week_start_day = settings.weekly_report_day.unwrap_or(0);
-
-    // Get all records for this week
     let all_records = memory_storage::get_week_records_sync(week_start_day)
         .map_err(|e| format!("Failed to get week records: {}", e))?;
-
-    // Filter records based on include_manual_records setting
     let records = filter_records_by_settings(all_records, &settings);
-
     if records.is_empty() {
         return Err("本周无记录".to_string());
     }
 
-    // Format records for summary
     let records_text = format_records_for_summary(&records);
-
     let prompt_template = settings
         .weekly_report_prompt
         .as_deref()
         .filter(|s| !s.is_empty())
         .unwrap_or(DEFAULT_WEEKLY_REPORT_PROMPT);
-
     let prompt = prompt_template.replace("{records}", &records_text);
 
-    let client = reqwest::Client::new();
+    let summary = call_llm_api(&api_config, &prompt, 3000, "generate_weekly_report").await?;
 
-    let request_body = serde_json::json!({
-        "model": model_name,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "max_tokens": 3000
-    });
-
-    let masked_key = crate::mask_api_key(&api_key);
-    let endpoint = format!("{}/chat/completions", api_base_url);
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_request",
-            "caller": "generate_weekly_report",
-            "endpoint": endpoint,
-            "model": model_name,
-            "max_tokens": 3000,
-            "api_key_masked": masked_key,
-            "has_image": false,
-            "prompt": prompt,
-            "records_count": records.len(),
-        })
-    );
-
-    let start = std::time::Instant::now();
-    let mut request = client
-        .post(&endpoint)
-        .header("Content-Type", "application/json")
-        .json(&request_body);
-
-    if !api_key.is_empty() {
-        request = request.header("Authorization", format!("Bearer {}", api_key));
-    }
-
-    let response = request.send().await.map_err(|e| {
-        let elapsed_ms = start.elapsed().as_millis();
-        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_weekly_report",
-                "error": error_msg,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        error_msg
-    })?;
-    let elapsed_ms = start.elapsed().as_millis();
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_weekly_report",
-                "status": status.as_u16(),
-                "response_body": body,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        return Err(format!("API error ({}): {}", status, body));
-    }
-
-    let response_json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    let summary = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
-
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_response",
-            "caller": "generate_weekly_report",
-            "status": 200,
-            "elapsed_ms": elapsed_ms,
-            "usage": response_json.get("usage"),
-            "model": response_json.get("model"),
-            "response_id": response_json.get("id"),
-            "content": summary,
-        })
-    );
-
-    // Generate filename based on week dates (use same week_start_day as data query)
     let filename = generate_weekly_report_filename(week_start_day);
+    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
 
-    let output_dir = PathBuf::from(&obsidian_path);
-    std::fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create output directory: {}", e))?;
-
-    let output_path = output_dir.join(&filename);
-    std::fs::write(&output_path, summary)
-        .map_err(|e| format!("Failed to write weekly report: {}", e))?;
-
-    let path_str = output_path.to_string_lossy().to_string();
-
-    // Save last weekly report path to settings (separate from daily summary path)
     let mut updated_settings = settings.clone();
     updated_settings.last_weekly_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
     tracing::info!("Weekly report generated: {}", path_str);
-
     Ok(path_str)
 }
 
 /// Generate monthly report - REPORT-002
 #[command]
 pub async fn generate_monthly_report() -> Result<String, String> {
-    // CORE-007: Check network status before attempting API call
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
             &crate::offline_queue::OfflineTaskType::MonthlyReport,
@@ -1126,168 +1075,35 @@ pub async fn generate_monthly_report() -> Result<String, String> {
 
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
-
     let obsidian_path = settings.get_obsidian_output_path()?;
+    let api_config = load_api_config(&settings)?;
 
-    let api_base_url = settings
-        .api_base_url
-        .clone()
-        .ok_or("API Base URL not configured")?;
-    let api_key = settings.api_key.clone().unwrap_or_default();
-
-    // Use summary_model_name for monthly report, fallback to model_name
-    let model_name = settings
-        .summary_model_name
-        .clone()
-        .filter(|s| !s.is_empty())
-        .or_else(|| settings.model_name.clone())
-        .unwrap_or_else(|| "gpt-4o".to_string());
-
-    // Check if this is an Ollama endpoint
-    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
-
-    if !is_ollama && api_key.is_empty() {
-        return Err("API Key is required for non-Ollama endpoints".to_string());
-    }
-
-    // Get all records for this month
     let all_records = memory_storage::get_month_records_sync()
         .map_err(|e| format!("Failed to get month records: {}", e))?;
-
-    // Filter records based on include_manual_records setting
     let records = filter_records_by_settings(all_records, &settings);
-
     if records.is_empty() {
         return Err("本月无记录".to_string());
     }
 
-    // Format records for summary (use the week-grouped format for trend analysis)
     let records_text = format_records_by_week(&records);
-
     let prompt_template = settings
         .monthly_report_prompt
         .as_deref()
         .filter(|s| !s.is_empty())
         .unwrap_or(DEFAULT_MONTHLY_REPORT_PROMPT);
-
     let prompt = prompt_template.replace("{records}", &records_text);
 
-    let client = reqwest::Client::new();
+    let summary = call_llm_api(&api_config, &prompt, 4000, "generate_monthly_report").await?;
 
-    let request_body = serde_json::json!({
-        "model": model_name,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "max_tokens": 4000
-    });
-
-    let masked_key = crate::mask_api_key(&api_key);
-    let endpoint = format!("{}/chat/completions", api_base_url);
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_request",
-            "caller": "generate_monthly_report",
-            "endpoint": endpoint,
-            "model": model_name,
-            "max_tokens": 4000,
-            "api_key_masked": masked_key,
-            "has_image": false,
-            "prompt": prompt,
-            "records_count": records.len(),
-        })
-    );
-
-    let start = std::time::Instant::now();
-    let mut request = client
-        .post(&endpoint)
-        .header("Content-Type", "application/json")
-        .json(&request_body);
-
-    if !api_key.is_empty() {
-        request = request.header("Authorization", format!("Bearer {}", api_key));
-    }
-
-    let response = request.send().await.map_err(|e| {
-        let elapsed_ms = start.elapsed().as_millis();
-        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_monthly_report",
-                "error": error_msg,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        error_msg
-    })?;
-    let elapsed_ms = start.elapsed().as_millis();
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_monthly_report",
-                "status": status.as_u16(),
-                "response_body": body,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        return Err(format!("API error ({}): {}", status, body));
-    }
-
-    let response_json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    let summary = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
-
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_response",
-            "caller": "generate_monthly_report",
-            "status": 200,
-            "elapsed_ms": elapsed_ms,
-            "usage": response_json.get("usage"),
-            "model": response_json.get("model"),
-            "response_id": response_json.get("id"),
-            "content": summary,
-        })
-    );
-
-    // Generate filename based on month
     let filename = generate_monthly_report_filename();
+    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
 
-    let output_dir = PathBuf::from(&obsidian_path);
-    std::fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create output directory: {}", e))?;
-
-    let output_path = output_dir.join(&filename);
-    std::fs::write(&output_path, summary)
-        .map_err(|e| format!("Failed to write monthly report: {}", e))?;
-
-    let path_str = output_path.to_string_lossy().to_string();
-
-    // Save last monthly report path to settings
     let mut updated_settings = settings.clone();
     updated_settings.last_monthly_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
     tracing::info!("Monthly report generated: {}", path_str);
-
     Ok(path_str)
 }
 
@@ -1343,57 +1159,31 @@ pub async fn generate_custom_report(
     end_date: String,
     report_name: Option<String>,
 ) -> Result<String, String> {
-    // CORE-007: Check network status before attempting API call
     if !crate::network_status::is_online() {
         return Err("当前处于离线状态，报告生成需要网络连接。请检查网络连接后重试。".to_string());
     }
 
-    // Validate date format
     let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
         .map_err(|e| format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
     let parsed_end = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
         .map_err(|e| format!("无效的结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
-
     if parsed_end < parsed_start {
         return Err("结束日期不能早于起始日期".to_string());
     }
 
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
-
     let obsidian_path = settings.get_obsidian_output_path()?;
+    let api_config = load_api_config(&settings)?;
 
-    let api_base_url = settings
-        .api_base_url
-        .clone()
-        .ok_or("API Base URL not configured")?;
-    let api_key = settings.api_key.clone().unwrap_or_default();
-
-    let model_name = settings
-        .summary_model_name
-        .clone()
-        .filter(|s| !s.is_empty())
-        .or_else(|| settings.model_name.clone())
-        .unwrap_or_else(|| "gpt-4o".to_string());
-
-    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
-
-    if !is_ollama && api_key.is_empty() {
-        return Err("API Key is required for non-Ollama endpoints".to_string());
-    }
-
-    // Get records for the specified date range
     let all_records =
         memory_storage::get_records_by_date_range_sync(start_date.clone(), end_date.clone())
             .map_err(|e| format!("Failed to get records: {}", e))?;
-
     let records = filter_records_by_settings(all_records, &settings);
-
     if records.is_empty() {
         return Err("所选时间范围内无记录".to_string());
     }
 
-    // Format records (use week-grouped format for longer periods, simple format for shorter)
     let day_count = (parsed_end - parsed_start).num_days() + 1;
     let records_text = if day_count > 14 {
         format_records_by_week(&records)
@@ -1406,128 +1196,23 @@ pub async fn generate_custom_report(
         .as_deref()
         .filter(|s| !s.is_empty())
         .unwrap_or(DEFAULT_CUSTOM_REPORT_PROMPT);
-
     let prompt = prompt_template
         .replace("{records}", &records_text)
         .replace("{start_date}", &start_date)
         .replace("{end_date}", &end_date);
 
-    let client = reqwest::Client::new();
-
-    let request_body = serde_json::json!({
-        "model": model_name,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "max_tokens": 4000
-    });
-
-    let masked_key = crate::mask_api_key(&api_key);
-    let endpoint = format!("{}/chat/completions", api_base_url);
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_request",
-            "caller": "generate_custom_report",
-            "endpoint": endpoint,
-            "model": model_name,
-            "max_tokens": 4000,
-            "api_key_masked": masked_key,
-            "has_image": false,
-            "prompt": prompt,
-            "records_count": records.len(),
-        })
-    );
-
-    let start = std::time::Instant::now();
-    let mut request = client
-        .post(&endpoint)
-        .header("Content-Type", "application/json")
-        .json(&request_body);
-
-    if !api_key.is_empty() {
-        request = request.header("Authorization", format!("Bearer {}", api_key));
-    }
-
-    let response = request.send().await.map_err(|e| {
-        let elapsed_ms = start.elapsed().as_millis();
-        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_custom_report",
-                "error": error_msg,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        error_msg
-    })?;
-    let elapsed_ms = start.elapsed().as_millis();
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "generate_custom_report",
-                "status": status.as_u16(),
-                "response_body": body,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        return Err(format!("API error ({}): {}", status, body));
-    }
-
-    let response_json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    let summary = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
-
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_response",
-            "caller": "generate_custom_report",
-            "status": 200,
-            "elapsed_ms": elapsed_ms,
-            "usage": response_json.get("usage"),
-            "model": response_json.get("model"),
-            "response_id": response_json.get("id"),
-            "content": summary,
-        })
-    );
+    let summary = call_llm_api(&api_config, &prompt, 4000, "generate_custom_report").await?;
 
     let name = report_name.as_deref().unwrap_or("自定义报告");
     let filename = generate_custom_report_filename(name, &start_date, &end_date);
+    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
 
-    let output_dir = PathBuf::from(&obsidian_path);
-    std::fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create output directory: {}", e))?;
-
-    let output_path = output_dir.join(&filename);
-    std::fs::write(&output_path, summary)
-        .map_err(|e| format!("Failed to write custom report: {}", e))?;
-
-    let path_str = output_path.to_string_lossy().to_string();
-
-    // Save last custom report path to settings
     let mut updated_settings = settings.clone();
     updated_settings.last_custom_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
         .map_err(|e| format!("Failed to update settings: {}", e))?;
 
     tracing::info!("Custom report generated: {}", path_str);
-
     Ok(path_str)
 }
 
@@ -1543,7 +1228,6 @@ pub async fn compare_reports(
         return Err("当前处于离线状态，报告生成需要网络连接。请检查网络连接后重试。".to_string());
     }
 
-    // Validate date formats
     let parsed_start_a = chrono::NaiveDate::parse_from_str(&start_date_a, "%Y-%m-%d")
         .map_err(|e| format!("无效的时段A起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
     let parsed_end_a = chrono::NaiveDate::parse_from_str(&end_date_a, "%Y-%m-%d")
@@ -1562,29 +1246,9 @@ pub async fn compare_reports(
 
     let settings = memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
-
     let obsidian_path = settings.get_obsidian_output_path()?;
+    let api_config = load_api_config(&settings)?;
 
-    let api_base_url = settings
-        .api_base_url
-        .clone()
-        .ok_or("API Base URL not configured")?;
-    let api_key = settings.api_key.clone().unwrap_or_default();
-
-    let model_name = settings
-        .summary_model_name
-        .clone()
-        .filter(|s| !s.is_empty())
-        .or_else(|| settings.model_name.clone())
-        .unwrap_or_else(|| "gpt-4o".to_string());
-
-    let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
-
-    if !is_ollama && api_key.is_empty() {
-        return Err("API Key is required for non-Ollama endpoints".to_string());
-    }
-
-    // Get records for both time periods
     let all_records_a =
         memory_storage::get_records_by_date_range_sync(start_date_a.clone(), end_date_a.clone())
             .map_err(|e| format!("Failed to get period A records: {}", e))?;
@@ -1599,7 +1263,6 @@ pub async fn compare_reports(
         return Err("两个时间段内均无记录".to_string());
     }
 
-    // Format records
     let day_count_a = (parsed_end_a - parsed_start_a).num_days() + 1;
     let records_text_a = if day_count_a > 14 {
         format_records_by_week(&records_a)
@@ -1619,7 +1282,6 @@ pub async fn compare_reports(
         .as_deref()
         .filter(|s| !s.is_empty())
         .unwrap_or(DEFAULT_COMPARISON_REPORT_PROMPT);
-
     let prompt = prompt_template
         .replace("{records_a}", &records_text_a)
         .replace("{records_b}", &records_text_b)
@@ -1628,113 +1290,13 @@ pub async fn compare_reports(
         .replace("{start_date_b}", &start_date_b)
         .replace("{end_date_b}", &end_date_b);
 
-    let client = reqwest::Client::new();
-
-    let request_body = serde_json::json!({
-        "model": model_name,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "max_tokens": 4000
-    });
-
-    let masked_key = crate::mask_api_key(&api_key);
-    let endpoint = format!("{}/chat/completions", api_base_url);
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_request",
-            "caller": "compare_reports",
-            "endpoint": endpoint,
-            "model": model_name,
-            "max_tokens": 4000,
-            "api_key_masked": masked_key,
-            "has_image": false,
-            "records_count_a": records_a.len(),
-            "records_count_b": records_b.len(),
-        })
-    );
-
-    let start = std::time::Instant::now();
-    let mut request = client
-        .post(&endpoint)
-        .header("Content-Type", "application/json")
-        .json(&request_body);
-
-    if !api_key.is_empty() {
-        request = request.header("Authorization", format!("Bearer {}", api_key));
-    }
-
-    let response = request.send().await.map_err(|e| {
-        let elapsed_ms = start.elapsed().as_millis();
-        let error_msg = crate::ollama::format_connection_error(&e.to_string(), is_ollama);
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "compare_reports",
-                "error": error_msg,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        error_msg
-    })?;
-    let elapsed_ms = start.elapsed().as_millis();
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "llm_error",
-                "caller": "compare_reports",
-                "status": status.as_u16(),
-                "response_body": body,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        return Err(format!("API error ({}): {}", status, body));
-    }
-
-    let response_json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("JSON parse: {}", e))?;
-
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "llm_response",
-            "caller": "compare_reports",
-            "elapsed_ms": elapsed_ms,
-            "response": response_json,
-        })
-    );
-
-    let summary = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("AI response missing content")?
-        .to_string();
+    let summary = call_llm_api(&api_config, &prompt, 4000, "compare_reports").await?;
 
     let filename =
         generate_comparison_report_filename(&start_date_a, &end_date_a, &start_date_b, &end_date_b);
-
-    let output_dir = PathBuf::from(&obsidian_path);
-    std::fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create output directory: {}", e))?;
-
-    let output_path = output_dir.join(&filename);
-    std::fs::write(&output_path, summary)
-        .map_err(|e| format!("Failed to write comparison report: {}", e))?;
-
-    let path_str = output_path.to_string_lossy().to_string();
+    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
 
     tracing::info!("Comparison report generated: {}", path_str);
-
     Ok(path_str)
 }
 
