@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-17
-> 当前版本: v1.13.1 ✅ 已发布
+> 当前版本: v1.13.2 ✅ 已发布
 > 下一版本: v1.14.0（待规划）
 
 ---
@@ -258,6 +258,21 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 - Release 构建新增 `*-portable.exe`（无需安装，直接运行）
 - 保留原有 `*-setup.exe` 安装版（推荐，自动安装 WebView2）
 - Release 说明更新为区分安装版和免安装版
+
+---
+
+## v1.13.2（Windows 启动崩溃修复）✅ 已发布
+
+**目标**: 修复 Windows 版本启动时 FTS5 tokenize 解析错误导致的崩溃问题。
+
+| ID | 需求 | 状态 |
+|----|------|------|
+| ISSUE-018 | Windows 版本启动崩溃（FTS5 parse error） | ✅ 完成 |
+
+**变更**:
+- 移除 FTS5 tokenize 指令中的 `tokenchars "-_"` 参数（Windows SQLite 无法解析）
+- 简化为 `tokenize='unicode61'` 以确保跨平台兼容性
+- 所有 349 个测试通过
 
 ---
 
