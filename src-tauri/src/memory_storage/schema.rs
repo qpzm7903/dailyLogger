@@ -320,3 +320,152 @@ fn migrate_plain_api_key() -> Result<(), String> {
 
     Ok(())
 }
+
+#[cfg(test)]
+pub fn init_test_database(conn: &Connection) -> Result<(), String> {
+    // Create records table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            source_type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            screenshot_path TEXT,
+            monitor_info TEXT,
+            tags TEXT
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create records table: {}", e))?;
+
+    // Create settings table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            api_base_url TEXT,
+            api_key TEXT,
+            model_name TEXT,
+            screenshot_interval INTEGER DEFAULT 5,
+            summary_time TEXT DEFAULT '18:00',
+            obsidian_path TEXT,
+            auto_capture_enabled INTEGER DEFAULT 0,
+            last_summary_path TEXT,
+            summary_model_name TEXT,
+            analysis_prompt TEXT,
+            summary_prompt TEXT,
+            change_threshold INTEGER DEFAULT 3,
+            max_silent_minutes INTEGER DEFAULT 30,
+            summary_title_format TEXT DEFAULT '工作日报 - {date}',
+            include_manual_records INTEGER DEFAULT 1,
+            window_whitelist TEXT DEFAULT '[]',
+            window_blacklist TEXT DEFAULT '[]',
+            use_whitelist_only INTEGER DEFAULT 0,
+            auto_adjust_silent INTEGER DEFAULT 1,
+            silent_adjustment_paused_until TEXT DEFAULT NULL,
+            auto_detect_work_time INTEGER DEFAULT 1,
+            use_custom_work_time INTEGER DEFAULT 0,
+            custom_work_time_start TEXT DEFAULT '09:00',
+            custom_work_time_end TEXT DEFAULT '18:00',
+            learned_work_time TEXT DEFAULT NULL,
+            capture_mode TEXT DEFAULT 'primary',
+            selected_monitor_index INTEGER DEFAULT 0,
+            tag_categories TEXT DEFAULT '[]',
+            is_ollama INTEGER DEFAULT 0,
+            weekly_report_prompt TEXT,
+            weekly_report_day INTEGER DEFAULT 0,
+            last_weekly_report_path TEXT,
+            monthly_report_prompt TEXT,
+            last_monthly_report_path TEXT,
+            custom_report_prompt TEXT,
+            last_custom_report_path TEXT,
+            obsidian_vaults TEXT DEFAULT '[]',
+            comparison_report_prompt TEXT
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create settings table: {}", e))?;
+
+    conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
+        .map_err(|e| format!("Failed to initialize settings: {}", e))?;
+
+    // Create FTS5 table
+    conn.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5(
+            content,
+            content='records',
+            content_rowid='id',
+            tokenize='unicode61'
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 table: {}", e))?;
+
+    // FTS5 triggers
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS records_ai AFTER INSERT ON records BEGIN
+            INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
+        END",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 insert trigger: {}", e))?;
+
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS records_ad AFTER DELETE ON records BEGIN
+            INSERT INTO records_fts(records_fts, rowid, content)
+            VALUES ('delete', old.id, old.content);
+        END",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 delete trigger: {}", e))?;
+
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS records_au AFTER UPDATE ON records BEGIN
+            INSERT INTO records_fts(records_fts, rowid, content)
+            VALUES ('delete', old.id, old.content);
+            INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
+        END",
+        [],
+    )
+    .map_err(|e| format!("Failed to create FTS5 update trigger: {}", e))?;
+
+    // Create manual tags tables
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS manual_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            color TEXT NOT NULL DEFAULT 'blue',
+            created_at TEXT NOT NULL
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create manual_tags table: {}", e))?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS record_manual_tags (
+            record_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (record_id, tag_id),
+            FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES manual_tags(id) ON DELETE CASCADE
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create record_manual_tags table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_record_manual_tags_tag_id ON record_manual_tags(tag_id)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_manual_tags_name ON manual_tags(name)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create index: {}", e))?;
+
+    // Create offline queue table
+    crate::offline_queue::create_offline_queue_table(conn)?;
+
+    Ok(())
+}

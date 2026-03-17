@@ -12,6 +12,9 @@ use tauri::command;
 pub use schema::init_database;
 pub use settings::{get_settings_sync, save_settings_sync};
 
+#[cfg(test)]
+pub use schema::init_test_database;
+
 pub static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

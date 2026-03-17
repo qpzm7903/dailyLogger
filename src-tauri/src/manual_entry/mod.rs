@@ -196,66 +196,7 @@ mod tests {
     /// Initializes an in-memory database for testing.
     fn setup_test_db() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute(
-            "CREATE TABLE records (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
-                source_type TEXT NOT NULL,
-                content TEXT NOT NULL,
-                screenshot_path TEXT,
-                monitor_info TEXT,
-                tags TEXT
-            )",
-            [],
-        )
-        .unwrap();
-        conn.execute(
-            "CREATE TABLE settings (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                api_base_url TEXT,
-                api_key TEXT,
-                model_name TEXT,
-                screenshot_interval INTEGER DEFAULT 5,
-                summary_time TEXT DEFAULT '18:00',
-                obsidian_path TEXT,
-                auto_capture_enabled INTEGER DEFAULT 0,
-                last_summary_path TEXT,
-                summary_model_name TEXT,
-                analysis_prompt TEXT,
-                summary_prompt TEXT,
-                change_threshold INTEGER DEFAULT 3,
-                max_silent_minutes INTEGER DEFAULT 30,
-                summary_title_format TEXT DEFAULT '工作日报 - {date}',
-                include_manual_records INTEGER DEFAULT 1,
-                window_whitelist TEXT DEFAULT '[]',
-                window_blacklist TEXT DEFAULT '[]',
-                use_whitelist_only INTEGER DEFAULT 0,
-                auto_adjust_silent INTEGER DEFAULT 1,
-                silent_adjustment_paused_until TEXT DEFAULT NULL,
-                auto_detect_work_time INTEGER DEFAULT 1,
-                use_custom_work_time INTEGER DEFAULT 0,
-                custom_work_time_start TEXT DEFAULT '09:00',
-                custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL,
-                capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0,
-                tag_categories TEXT DEFAULT '[]',
-                is_ollama INTEGER DEFAULT 0,
-                weekly_report_prompt TEXT,
-                weekly_report_day INTEGER DEFAULT 0,
-                last_weekly_report_path TEXT,
-                monthly_report_prompt TEXT,
-                custom_report_prompt TEXT,
-                last_custom_report_path TEXT,
-                last_monthly_report_path TEXT,
-                obsidian_vaults TEXT DEFAULT '[]',
-                comparison_report_prompt TEXT
-            )",
-            [],
-        )
-        .unwrap();
-        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
-            .unwrap();
+        crate::memory_storage::init_test_database(&conn).unwrap();
         let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
         *db = Some(conn);
     }
@@ -585,66 +526,7 @@ mod tests {
     // Helper function to set up test database with settings table
     fn setup_test_db_with_settings() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute(
-            "CREATE TABLE records (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
-                source_type TEXT NOT NULL,
-                content TEXT NOT NULL,
-                screenshot_path TEXT,
-                monitor_info TEXT,
-                tags TEXT
-            )",
-            [],
-        )
-        .unwrap();
-        conn.execute(
-            "CREATE TABLE settings (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                api_base_url TEXT,
-                api_key TEXT,
-                model_name TEXT,
-                screenshot_interval INTEGER DEFAULT 5,
-                summary_time TEXT DEFAULT '18:00',
-                obsidian_path TEXT,
-                auto_capture_enabled INTEGER DEFAULT 0,
-                last_summary_path TEXT,
-                summary_model_name TEXT,
-                analysis_prompt TEXT,
-                summary_prompt TEXT,
-                change_threshold INTEGER DEFAULT 3,
-                max_silent_minutes INTEGER DEFAULT 30,
-                summary_title_format TEXT DEFAULT '工作日报 - {date}',
-                include_manual_records INTEGER DEFAULT 1,
-                window_whitelist TEXT DEFAULT '[]',
-                window_blacklist TEXT DEFAULT '[]',
-                use_whitelist_only INTEGER DEFAULT 0,
-                auto_adjust_silent INTEGER DEFAULT 1,
-                silent_adjustment_paused_until TEXT DEFAULT NULL,
-                auto_detect_work_time INTEGER DEFAULT 1,
-                use_custom_work_time INTEGER DEFAULT 0,
-                custom_work_time_start TEXT DEFAULT '09:00',
-                custom_work_time_end TEXT DEFAULT '18:00',
-                learned_work_time TEXT DEFAULT NULL,
-                capture_mode TEXT DEFAULT 'primary',
-                selected_monitor_index INTEGER DEFAULT 0,
-                tag_categories TEXT DEFAULT '[]',
-                is_ollama INTEGER DEFAULT 0,
-                weekly_report_prompt TEXT,
-                weekly_report_day INTEGER DEFAULT 0,
-                last_weekly_report_path TEXT,
-                monthly_report_prompt TEXT,
-                custom_report_prompt TEXT,
-                last_custom_report_path TEXT,
-                last_monthly_report_path TEXT,
-                obsidian_vaults TEXT DEFAULT '[]',
-                comparison_report_prompt TEXT
-            )",
-            [],
-        )
-        .unwrap();
-        conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
-            .unwrap();
+        crate::memory_storage::init_test_database(&conn).unwrap();
         let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
         *db = Some(conn);
     }
