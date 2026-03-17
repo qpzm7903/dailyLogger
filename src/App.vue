@@ -288,7 +288,7 @@
     <ReportComparisonModal v-if="showComparisonReport" @close="showComparisonReport = false" @generated="handleComparisonReportGenerated" />
     <DailySummaryViewer v-if="showComparisonReportViewer" :summaryPath="comparisonReportPath" @close="showComparisonReportViewer = false" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
-    <HistoryViewer v-if="showHistoryViewer" @close="showHistoryViewer = false" />
+    <HistoryViewer v-if="showHistoryViewer" :initialTag="initialFilterTag" @close="showHistoryViewer = false; initialFilterTag = null" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
     <TagCloud v-if="showTagCloud" @close="showTagCloud = false" @tagSelected="handleTagSelected" />
     <ExportModal v-if="showExport" @close="showExport = false" />
@@ -350,6 +350,7 @@ const showSearch = ref(false)
 const showTagCloud = ref(false)
 const showExport = ref(false)
 const selectedScreenshot = ref(null)
+const initialFilterTag = ref(null)
 
 // AI-004: Tag filtering state
 const selectedTagFilter = ref('')
@@ -384,6 +385,7 @@ const tagCounts = computed(() => {
 })
 
 let timeInterval = null
+let recordsRefreshInterval = null
 let unlistenTrayOpenSettings = null
 let unlistenTrayOpenQuickNote = null
 let unlistenNetworkStatus = null
@@ -566,10 +568,8 @@ const handleQuickNote = async (content) => {
 // Handle tag selection from TagCloud
 const handleTagSelected = (tag) => {
   showTagCloud.value = false
+  initialFilterTag.value = tag
   showHistoryViewer.value = true
-  // The HistoryViewer will handle the tag filtering
-  // We could emit an event to pass the selected tag, but for now
-  // the user can select it in the HistoryViewer's TagFilter
 }
 
 const generateSummary = async () => {
@@ -665,7 +665,7 @@ onMounted(async () => {
   timeInterval = setInterval(updateTime, 1000)
 
   // Auto-refresh records every 30 seconds
-  setInterval(loadTodayRecords, 30000)
+  recordsRefreshInterval = setInterval(loadTodayRecords, 30000)
 
   // CORE-007: Network status monitoring
   try {
@@ -712,6 +712,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
+  if (recordsRefreshInterval) clearInterval(recordsRefreshInterval)
   if (networkCheckInterval) clearInterval(networkCheckInterval)
   if (unlistenTrayOpenSettings) unlistenTrayOpenSettings()
   if (unlistenTrayOpenQuickNote) unlistenTrayOpenQuickNote()
