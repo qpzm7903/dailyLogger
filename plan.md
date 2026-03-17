@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
-> 最后更新: 2026-03-16
+> 最后更新: 2026-03-17
 > 当前版本: v1.11.0 ✅ 已发布
-> 下一版本: v1.12.0（代码质量与 Bug 修复）— 规划中
+> 下一版本: v1.12.0（代码质量与 Bug 修复）— 开发完成，待发布
 
 ---
 
@@ -111,7 +111,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
-## 下一迭代: v1.12.0（代码质量与 Bug 修复）
+## 当前迭代: v1.12.0（代码质量与 Bug 修复）— 开发完成
 
 **目标**: 消除 synthesis 模块大量重复代码，修复前端 Bug（内存泄漏、标签选择失效、N+1 查询），提升代码可维护性。
 
@@ -119,10 +119,10 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
-| REFACTOR-001 | Synthesis 模块 LLM API 调用去重 | 5pts | HIGH | 待开发 |
-| FIX-002 | App.vue 自动刷新定时器内存泄漏 | 1pt | HIGH | 待开发 |
-| FIX-003 | TagCloud 标签选择无法传递到 HistoryViewer | 2pts | MEDIUM | 待开发 |
-| PERF-001 | HistoryViewer 标签加载 N+1 查询优化 | 3pts | MEDIUM | 待开发 |
+| REFACTOR-001 | Synthesis 模块 LLM API 调用去重 | 5pts | HIGH | ✅ 完成 |
+| FIX-002 | App.vue 自动刷新定时器内存泄漏 | 1pt | HIGH | ✅ 完成 |
+| FIX-003 | TagCloud 标签选择无法传递到 HistoryViewer | 2pts | MEDIUM | ✅ 完成 |
+| PERF-001 | HistoryViewer 标签加载 N+1 查询优化 | 3pts | MEDIUM | ✅ 完成 |
 
 ### REFACTOR-001: Synthesis 模块 LLM API 调用去重
 
@@ -224,9 +224,9 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | ~~历史 GitHub Release (v1.0.0~v1.9.0) 均为 Draft 未发布~~ | ~~用户无法下载旧版本~~ | v1.0.0 ~ v1.9.0 | ✅ 已修复（v1.4.0~v1.9.0 已发布，重复 Draft 已清理） |
 | 月报生成覆盖日报路径（`last_summary_path`） | 生成月报后日报路径丢失 | v1.8.0+ | ✅ 已修复 (v1.11.0 FIX-001) |
 | Windows/macOS 构建产物无法打开 (#15) | 用户下载后无法启动应用 | v1.10.0 | ✅ 已修复 (v1.11.0 NSIS 安装程序) |
-| App.vue 自动刷新定时器未清理（内存泄漏） | 组件卸载后定时器继续运行 | v1.0.0+ | 🔧 计划修复 (v1.12.0 FIX-002) |
-| TagCloud 标签选择未传递到 HistoryViewer | 点击标签后需手动重新选择过滤条件 | v1.5.0+ | 🔧 计划修复 (v1.12.0 FIX-003) |
-| HistoryViewer 标签加载 N+1 查询 | 每条记录单独查询标签，页面加载慢 | v1.5.0+ | 🔧 计划修复 (v1.12.0 PERF-001) |
+| App.vue 自动刷新定时器未清理（内存泄漏） | 组件卸载后定时器继续运行 | v1.0.0+ | ✅ 已修复 (v1.12.0 FIX-002) |
+| TagCloud 标签选择未传递到 HistoryViewer | 点击标签后需手动重新选择过滤条件 | v1.5.0+ | ✅ 已修复 (v1.12.0 FIX-003) |
+| HistoryViewer 标签加载 N+1 查询 | 每条记录单独查询标签，页面加载慢 | v1.5.0+ | ✅ 已修复 (v1.12.0 PERF-001) |
 
 ---
 
