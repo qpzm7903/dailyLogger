@@ -156,6 +156,25 @@ fn write_report_to_obsidian(
     Ok(output_path.to_string_lossy().to_string())
 }
 
+/// INT-002: Write report content to a Logseq graph's pages directory.
+/// Logseq stores user-created pages in the `pages` folder inside the graph root.
+#[allow(dead_code)] // Will be integrated with report generation commands in next sub-step
+fn write_report_to_logseq(
+    logseq_graph_path: &str,
+    filename: &str,
+    content: &str,
+) -> Result<String, String> {
+    let output_dir = PathBuf::from(logseq_graph_path).join("pages");
+    std::fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create Logseq pages directory: {}", e))?;
+
+    let output_path = output_dir.join(filename);
+    std::fs::write(&output_path, content)
+        .map_err(|e| format!("Failed to write report to Logseq: {}", e))?;
+
+    Ok(output_path.to_string_lossy().to_string())
+}
+
 const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个工作日志助手。请根据以下今日工作记录，生成一份结构化的 Markdown 格式日报。
 
 要求：
@@ -979,6 +998,37 @@ mod tests {
         assert!(std::path::Path::new(&path).exists());
         let content = std::fs::read_to_string(&path).unwrap();
         assert_eq!(content, "# Report\nContent");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // ── Tests for write_report_to_logseq (INT-002) ──
+
+    #[test]
+    fn write_report_to_logseq_creates_file_in_pages_folder() {
+        let dir = std::env::temp_dir().join("dailylogger_test_write_logseq");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path =
+            write_report_to_logseq(dir.to_str().unwrap(), "test-report.md", "# Report\nContent")
+                .unwrap();
+        // File should be in pages subdirectory
+        assert!(path.contains("pages"));
+        assert!(std::path::Path::new(&path).exists());
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(content, "# Report\nContent");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn write_report_to_logseq_creates_pages_directory() {
+        let dir = std::env::temp_dir().join("dailylogger_test_logseq_pages");
+        let _ = std::fs::remove_dir_all(&dir);
+        // Don't create pages folder manually - function should create it
+        let path =
+            write_report_to_logseq(dir.to_str().unwrap(), "daily-report.md", "# Daily\n").unwrap();
+        // Verify pages folder was created
+        let pages_dir = std::path::Path::new(&dir).join("pages");
+        assert!(pages_dir.exists());
+        assert!(std::path::Path::new(&path).exists());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
