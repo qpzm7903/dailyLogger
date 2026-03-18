@@ -682,6 +682,36 @@
           </div>
         </div>
 
+        <!-- INT-001: Notion Integration -->
+        <div>
+          <label class="text-xs text-gray-300 block mb-2">Notion Integration</label>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">API Key (Integration Token)</label>
+              <input v-model="settings.notion_api_key" type="password" placeholder="secret_xxx..."
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">Database ID</label>
+              <input v-model="settings.notion_database_id" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            </div>
+            <div class="flex gap-2">
+              <button @click="testNotionConnection" :disabled="isTestingNotionConnection"
+                class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
+                {{ isTestingNotionConnection ? 'Testing...' : 'Test Connection' }}
+              </button>
+              <span v-if="notionConnectionStatus" class="text-xs"
+                :class="notionConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
+                {{ notionConnectionStatus === 'success' ? '✓ Connected' : '✗ Failed' }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500">
+              报告将自动同步到 Notion 数据库。需要先在 Notion 创建 Integration 并分享数据库。
+            </p>
+          </div>
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">快捷键</h3>
           <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
@@ -979,7 +1009,10 @@ const settings = ref({
   // DATA-006: Multi Obsidian Vault support
   obsidian_vaults: '[]',
   // INT-002: Logseq graph support
-  logseq_graphs: '[]'
+  logseq_graphs: '[]',
+  // INT-001: Notion integration
+  notion_api_key: null,
+  notion_database_id: null
 })
 
 // SMART-003: Work time status for learning progress display
@@ -1000,6 +1033,10 @@ const newVaultPath = ref('')
 const graphs = ref([])
 const newGraphName = ref('')
 const newGraphPath = ref('')
+
+// INT-001: Notion integration
+const isTestingNotionConnection = ref(false)
+const notionConnectionStatus = ref('')
 
 const loadSettings = async () => {
   try {
@@ -1146,6 +1183,21 @@ const validateSettings = () => {
   }
 
   return null
+}
+
+// INT-001: Test Notion connection
+const testNotionConnection = async () => {
+  isTestingNotionConnection.value = true
+  notionConnectionStatus.value = ''
+  try {
+    const result = await invoke('test_notion_connection')
+    notionConnectionStatus.value = result ? 'success' : 'failed'
+  } catch (error) {
+    console.error('Notion connection test failed:', error)
+    notionConnectionStatus.value = 'failed'
+  } finally {
+    isTestingNotionConnection.value = false
+  }
 }
 
 const saveSettings = async () => {
