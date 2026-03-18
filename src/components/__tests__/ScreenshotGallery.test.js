@@ -77,8 +77,8 @@ describe('ScreenshotGallery - Date Filtering', () => {
     await nextTick()
 
     const buttons = wrapper.findAll('button')
-    const filterButton = buttons.find(btn => btn.text().includes('筛选'))
-    const resetButton = buttons.find(btn => btn.text().includes('重置'))
+    const filterButton = buttons.find(btn => btn.text().includes('Filter'))
+    const resetButton = buttons.find(btn => btn.text().includes('Reset'))
 
     expect(filterButton).toBeDefined()
     expect(resetButton).toBeDefined()
@@ -114,7 +114,7 @@ describe('ScreenshotGallery - Date Filtering', () => {
 
     // Click filter button
     const buttons = wrapper.findAll('button')
-    const filterButton = buttons.find(btn => btn.text().includes('筛选'))
+    const filterButton = buttons.find(btn => btn.text().includes('Filter'))
     await filterButton.trigger('click')
 
     await nextTick()
@@ -155,7 +155,7 @@ describe('ScreenshotGallery - Date Filtering', () => {
 
     // Click filter button
     const buttons = wrapper.findAll('button')
-    const filterButton = buttons.find(btn => btn.text().includes('筛选'))
+    const filterButton = buttons.find(btn => btn.text().includes('Filter'))
     await filterButton.trigger('click')
 
     await nextTick()
@@ -163,7 +163,7 @@ describe('ScreenshotGallery - Date Filtering', () => {
 
     // Should display count
     const countText = wrapper.text()
-    expect(countText).toMatch(/共.*条/)
+    expect(countText).toMatch(/Total.*records/)
   })
 
   it('resets to today records when reset is clicked', async () => {
@@ -196,7 +196,7 @@ describe('ScreenshotGallery - Date Filtering', () => {
 
     // Click reset button
     const buttons = wrapper.findAll('button')
-    const resetButton = buttons.find(btn => btn.text().includes('重置'))
+    const resetButton = buttons.find(btn => btn.text().includes('Reset'))
     await resetButton.trigger('click')
 
     await nextTick()
@@ -233,14 +233,14 @@ describe('ScreenshotGallery - Date Filtering', () => {
 
     // Click filter button
     const buttons = wrapper.findAll('button')
-    const filterButton = buttons.find(btn => btn.text().includes('筛选'))
+    const filterButton = buttons.find(btn => btn.text().includes('Filter'))
     await filterButton.trigger('click')
 
     await nextTick()
     await nextTick()
 
     // Should show empty state
-    expect(wrapper.text()).toContain('暂无截图记录')
+    expect(wrapper.text()).toContain('No screenshots')
   })
 
   it('clears date inputs on reset', async () => {
@@ -273,7 +273,7 @@ describe('ScreenshotGallery - Date Filtering', () => {
 
     // Click reset button
     const buttons = wrapper.findAll('button')
-    const resetButton = buttons.find(btn => btn.text().includes('重置'))
+    const resetButton = buttons.find(btn => btn.text().includes('Reset'))
     await resetButton.trigger('click')
 
     await nextTick()

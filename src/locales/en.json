@@ -376,5 +376,38 @@
     "debugTools": "Debug Tools",
     "exportLogs": "Export Logs",
     "exporting": "Exporting…"
+  },
+  "screenshotGallery": {
+    "title": "Screenshot Gallery",
+    "gridView": "Grid",
+    "listView": "List",
+    "startDate": "Start Date:",
+    "endDate": "End Date:",
+    "filter": "Filter",
+    "reset": "Reset",
+    "total": "Total {count} records",
+    "noScreenshots": "No screenshots",
+    "loading": "Loading...",
+    "unknown": "Unknown",
+    "view": "View",
+    "loadMore": "Load More ({count} remaining)",
+    "loadingMore": "Loading..."
+  },
+  "tagFilter": {
+    "title": "Tag Filter:",
+    "clearAll": "Clear All",
+    "addMoreTags": "Add more tags...",
+    "selectTagToFilter": "Select tag to filter...",
+    "times": "{count} times",
+    "andLogic": "Show records with all selected tags",
+    "loadFailed": "Failed to load tags"
+  },
+  "tagInput": {
+    "placeholder": "Enter tag name...",
+    "times": "{count} times",
+    "add": "Add",
+    "limitReached": "Tag limit reached (10)",
+    "maxTagsError": "Maximum 10 tags per record",
+    "tagCreated": "Tag created"
   }
 }

@@ -2,24 +2,24 @@
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
     <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden border border-gray-700 flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">📷 截图画廊</h2>
+        <h2 class="text-lg font-semibold">📷 {{ t('screenshotGallery.title') }}</h2>
         <div class="flex items-center gap-2">
           <!-- View toggle buttons -->
           <button
             @click="viewMode = 'grid'"
             :class="viewMode === 'grid' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
-            aria-label="网格视图"
+            :aria-label="t('screenshotGallery.gridView')"
           >
-            网格
+            {{ t('screenshotGallery.gridView') }}
           </button>
           <button
             @click="viewMode = 'list'"
             :class="viewMode === 'list' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
-            aria-label="列表视图"
+            :aria-label="t('screenshotGallery.listView')"
           >
-            列表
+            {{ t('screenshotGallery.listView') }}
           </button>
           <button @click="$emit('close')" class="text-gray-400 hover:text-white ml-2">✕</button>
         </div>
@@ -28,7 +28,7 @@
       <!-- Date Filter Section -->
       <div class="px-6 py-3 border-b border-gray-700 flex items-center gap-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">开始日期:</label>
+          <label class="text-sm text-gray-400">{{ t('screenshotGallery.startDate') }}</label>
           <input
             type="date"
             v-model="startDate"
@@ -36,7 +36,7 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">结束日期:</label>
+          <label class="text-sm text-gray-400">{{ t('screenshotGallery.endDate') }}</label>
           <input
             type="date"
             v-model="endDate"
@@ -47,22 +47,22 @@
           @click="applyFilter"
           class="px-4 py-1 bg-primary text-white rounded text-sm hover:bg-primary/80 transition-colors"
         >
-          筛选
+          {{ t('screenshotGallery.filter') }}
         </button>
         <button
           @click="resetFilter"
           class="px-4 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
         >
-          重置
+          {{ t('screenshotGallery.reset') }}
         </button>
         <span v-if="screenshots.length > 0" class="text-sm text-gray-400 ml-auto">
-          共 {{ screenshots.length }} 条
+          {{ t('screenshotGallery.total', { count: screenshots.length }) }}
         </span>
       </div>
 
       <div class="flex-1 overflow-auto p-6" ref="scrollContainer" @scroll="handleScroll">
         <div v-if="screenshots.length === 0" class="text-center py-8 text-gray-500">
-          暂无截图记录
+          {{ t('screenshotGallery.noScreenshots') }}
         </div>
 
         <template v-else>
@@ -82,7 +82,7 @@
                   class="w-full h-full object-cover"
                 />
                 <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
-                  加载中...
+                  {{ t('screenshotGallery.loading') }}
                 </div>
               </div>
               <div class="p-2">
@@ -119,7 +119,7 @@
               </div>
               <!-- Action -->
               <div class="flex-shrink-0 ml-4">
-                <span class="text-xs text-primary hover:underline">查看</span>
+                <span class="text-xs text-primary hover:underline">{{ t('screenshotGallery.view') }}</span>
               </div>
             </div>
           </div>
@@ -127,14 +127,14 @@
           <!-- Load More Button / Loading Indicator for AC4 -->
           <div v-if="hasMorePages || isLoadingMore" class="text-center mt-6">
             <div v-if="isLoadingMore" class="text-gray-400 text-sm py-2">
-              <span class="animate-pulse">加载中...</span>
+              <span class="animate-pulse">{{ t('screenshotGallery.loadingMore') }}</span>
             </div>
             <button
               v-else
               @click="loadMore"
               class="px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
             >
-              加载更多 ({{ remainingCount }} 条剩余)
+              {{ t('screenshotGallery.loadMore', { count: remainingCount }) }}
             </button>
           </div>
         </template>
@@ -149,8 +149,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
 import ScreenshotModal from './ScreenshotModal.vue'
 
+const { t } = useI18n()
 const emit = defineEmits(['close'])
 
 const screenshots = ref([])
@@ -191,7 +193,7 @@ const formatTimeShort = (timestamp) => {
 const parseContent = (content) => {
   try {
     const parsed = JSON.parse(content)
-    const text = parsed.current_focus || parsed.active_software || '未知'
+    const text = parsed.current_focus || parsed.active_software || t('screenshotGallery.unknown')
     return text.length > 50 ? text.substring(0, 50) + '...' : text
   } catch {
     return content.length > 50 ? content.substring(0, 50) + '...' : content

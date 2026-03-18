@@ -19,7 +19,7 @@
           @focus="showDropdown = true"
           @keydown.enter.prevent="createOrSelectTag"
           @keydown.escape="showDropdown = false"
-          :placeholder="placeholder"
+          :placeholder="placeholder || t('tagInput.placeholder')"
           class="w-full bg-darker border border-gray-600 rounded px-3 py-1.5 text-sm text-white focus:border-primary focus:outline-none"
         />
 
@@ -38,7 +38,7 @@
               <span :class="getDotClass(tag.color)"></span>
               <span>{{ tag.name }}</span>
             </div>
-            <span class="text-xs text-gray-500">{{ tag.usage_count || 0 }}次</span>
+            <span class="text-xs text-gray-500">{{ t('tagInput.times', { count: tag.usage_count || 0 }) }}</span>
           </button>
         </div>
       </div>
@@ -63,13 +63,13 @@
         :disabled="!searchQuery.trim() || isCreating"
         class="px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"
       >
-        {{ isCreating ? '...' : '添加' }}
+        {{ isCreating ? '...' : t('tagInput.add') }}
       </button>
     </div>
 
     <!-- Tag limit hint -->
     <p v-if="modelValue.length >= 10" class="text-xs text-yellow-500">
-      已达标签上限 (10个)
+      {{ t('tagInput.limitReached') }}
     </p>
   </div>
 </template>
@@ -77,8 +77,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
 import TagBadge from './TagBadge.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {
@@ -91,7 +94,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: '输入标签名...'
+    default: ''
   }
 })
 
@@ -146,7 +149,7 @@ async function loadAllTags() {
 // Select existing tag
 async function selectTag(tag) {
   if (props.modelValue.length >= 10) {
-    showError('每条记录最多只能添加 10 个标签')
+    showError(t('tagInput.maxTagsError'))
     return
   }
 
@@ -166,7 +169,7 @@ async function createOrSelectTag() {
   if (!name) return
 
   if (props.modelValue.length >= 10) {
-    showError('每条记录最多只能添加 10 个标签')
+    showError(t('tagInput.maxTagsError'))
     return
   }
 
@@ -200,7 +203,7 @@ async function createOrSelectTag() {
 
     searchQuery.value = ''
     showDropdown.value = false
-    showSuccess('标签已创建')
+    showSuccess(t('tagInput.tagCreated'))
   } catch (e) {
     showError(e)
   } finally {

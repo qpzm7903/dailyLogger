@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-col gap-2">
     <div class="flex items-center gap-2">
-      <span class="text-sm text-gray-400">标签筛选:</span>
+      <span class="text-sm text-gray-400">{{ t('tagFilter.title') }}</span>
       <button
         v-if="selectedTags.length > 0"
         @click="clearAll"
         class="text-xs text-gray-500 hover:text-white"
       >
-        清除全部
+        {{ t('tagFilter.clearAll') }}
       </button>
     </div>
 
@@ -28,7 +28,7 @@
         @click="showDropdown = !showDropdown"
         class="w-full bg-darker border border-gray-600 rounded px-3 py-1.5 text-sm text-left text-gray-400 hover:border-gray-500 transition-colors"
       >
-        {{ selectedTags.length > 0 ? '添加更多标签...' : '选择标签筛选...' }}
+        {{ selectedTags.length > 0 ? t('tagFilter.addMoreTags') : t('tagFilter.selectTagToFilter') }}
       </button>
 
       <div
@@ -45,14 +45,14 @@
             <span :class="getDotClass(tag.color)"></span>
             <span>{{ tag.name }}</span>
           </div>
-          <span class="text-xs text-gray-500">{{ tag.usage_count || 0 }}次</span>
+          <span class="text-xs text-gray-500">{{ t('tagFilter.times', { count: tag.usage_count || 0 }) }}</span>
         </button>
       </div>
     </div>
 
     <!-- Logic hint -->
     <p v-if="selectedTags.length > 1" class="text-xs text-gray-500">
-      显示同时包含所有选中标签的记录
+      {{ t('tagFilter.andLogic') }}
     </p>
   </div>
 </template>
@@ -60,8 +60,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
 import { showError } from '../stores/toast'
 import TagBadge from './TagBadge.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {
@@ -106,7 +109,7 @@ async function loadTags() {
   try {
     allTags.value = await invoke('get_all_manual_tags')
   } catch (e) {
-    showError('加载标签失败')
+    showError(t('tagFilter.loadFailed'))
   }
 }
 

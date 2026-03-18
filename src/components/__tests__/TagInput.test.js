@@ -28,7 +28,7 @@ describe('TagInput', () => {
   const defaultProps = {
     modelValue: [],
     recordId: 123,
-    placeholder: '输入标签名...'
+    placeholder: ''
   }
 
   beforeEach(() => {
@@ -48,7 +48,7 @@ describe('TagInput', () => {
 
       const input = wrapper.find('input')
       expect(input.exists()).toBe(true)
-      expect(input.attributes('placeholder')).toBe('输入标签名...')
+      expect(input.attributes('placeholder')).toBe('Enter tag name...')
     })
 
     it('renders with custom placeholder', async () => {
@@ -76,7 +76,7 @@ describe('TagInput', () => {
       const wrapper = mount(TagInput, { props: defaultProps })
       await flushPromises()
 
-      const addButton = wrapper.findAll('button').find(b => b.text() === '添加')
+      const addButton = wrapper.findAll('button').find(b => b.text() === 'Add')
       expect(addButton?.exists()).toBe(true)
     })
 
@@ -114,7 +114,7 @@ describe('TagInput', () => {
 
       const warning = wrapper.find('p.text-yellow-500')
       expect(warning.exists()).toBe(true)
-      expect(warning.text()).toContain('已达标签上限')
+      expect(warning.text()).toContain('Tag limit reached')
     })
   })
 
@@ -265,7 +265,7 @@ describe('TagInput', () => {
 
       await wrapper.vm.selectTag(tags[0])
 
-      expect(showError).toHaveBeenCalledWith('每条记录最多只能添加 10 个标签')
+      expect(showError).toHaveBeenCalledWith('Maximum 10 tags per record')
     })
   })
 
@@ -323,7 +323,7 @@ describe('TagInput', () => {
       await input.trigger('keydown.enter')
       await flushPromises()
 
-      expect(showSuccess).toHaveBeenCalledWith('标签已创建')
+      expect(showSuccess).toHaveBeenCalledWith('Tag created')
     })
 
     it('selects existing tag if name matches', async () => {
@@ -379,7 +379,7 @@ describe('TagInput', () => {
       await input.trigger('keydown.enter')
       await flushPromises()
 
-      expect(showError).toHaveBeenCalledWith('每条记录最多只能添加 10 个标签')
+      expect(showError).toHaveBeenCalledWith('Maximum 10 tags per record')
     })
 
     it('shows loading state while creating', async () => {
@@ -414,7 +414,7 @@ describe('TagInput', () => {
       const wrapper = mount(TagInput, { props: defaultProps })
       await flushPromises()
 
-      const addButton = wrapper.findAll('button').find(b => b.text() === '添加')
+      const addButton = wrapper.findAll('button').find(b => b.text() === 'Add')
       expect(addButton?.element.disabled).toBe(true)
     })
 
@@ -427,7 +427,7 @@ describe('TagInput', () => {
       await input.setValue('新标签')
       await wrapper.vm.$nextTick()
 
-      const addButton = wrapper.findAll('button').find(b => b.text() === '添加')
+      const addButton = wrapper.findAll('button').find(b => b.text() === 'Add')
       expect(addButton?.element.disabled).toBe(false)
     })
   })

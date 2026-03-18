@@ -62,7 +62,7 @@ describe('TagFilter', () => {
       await wrapper.vm.$nextTick()
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      expect(wrapper.text()).toContain('标签筛选:')
+      expect(wrapper.text()).toContain('Tag Filter:')
     })
 
     it('renders dropdown button with placeholder when no tags selected', async () => {
@@ -71,7 +71,7 @@ describe('TagFilter', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
 
       const button = wrapper.find('button')
-      expect(button.text()).toContain('选择标签筛选...')
+      expect(button.text()).toContain('Select tag to filter...')
     })
 
     it('renders dropdown button with different text when tags selected', async () => {
@@ -84,7 +84,7 @@ describe('TagFilter', () => {
       // Find the dropdown toggle button by its class
       const buttons = wrapper.findAll('button')
       const dropdownButton = buttons.find(btn => btn.classes().includes('w-full'))
-      expect(dropdownButton.text()).toContain('添加更多标签...')
+      expect(dropdownButton.text()).toContain('Add more tags...')
     })
 
     it('does not show clear all button when no tags selected', async () => {
@@ -92,7 +92,7 @@ describe('TagFilter', () => {
       await wrapper.vm.$nextTick()
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      expect(wrapper.text()).not.toContain('清除全部')
+      expect(wrapper.text()).not.toContain('Clear All')
     })
 
     it('shows clear all button when tags are selected', async () => {
@@ -102,7 +102,7 @@ describe('TagFilter', () => {
       await wrapper.vm.$nextTick()
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      expect(wrapper.text()).toContain('清除全部')
+      expect(wrapper.text()).toContain('Clear All')
     })
 
     it('shows logic hint when multiple tags selected', async () => {
@@ -112,7 +112,7 @@ describe('TagFilter', () => {
       await wrapper.vm.$nextTick()
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      expect(wrapper.text()).toContain('显示同时包含所有选中标签的记录')
+      expect(wrapper.text()).toContain('Show records with all selected tags')
     })
 
     it('does not show logic hint when single tag selected', async () => {
@@ -122,7 +122,7 @@ describe('TagFilter', () => {
       await wrapper.vm.$nextTick()
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      expect(wrapper.text()).not.toContain('显示同时包含所有选中标签的记录')
+      expect(wrapper.text()).not.toContain('Show records with all selected tags')
     })
   })
 
@@ -149,7 +149,7 @@ describe('TagFilter', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
       await wrapper.vm.$nextTick()
 
-      expect(showError).toHaveBeenCalledWith('加载标签失败')
+      expect(showError).toHaveBeenCalledWith('Failed to load tags')
     })
 
     it('exposes loadTags method for parent components', async () => {
@@ -214,7 +214,7 @@ describe('TagFilter', () => {
 
       // Find the dropdown toggle button (the one with placeholder text)
       const buttons = wrapper.findAll('button')
-      const dropdownButton = buttons.find(btn => btn.text().includes('添加更多标签'))
+      const dropdownButton = buttons.find(btn => btn.text().includes('Add more tags'))
       await dropdownButton.trigger('click')
       await wrapper.vm.$nextTick()
 
@@ -299,7 +299,7 @@ describe('TagFilter', () => {
       await wrapper.vm.$nextTick()
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      const clearButton = wrapper.findAll('button').find(btn => btn.text() === '清除全部')
+      const clearButton = wrapper.findAll('button').find(btn => btn.text() === 'Clear All')
       await clearButton.trigger('click')
 
       expect(wrapper.emitted('update:modelValue')).toBeTruthy()
@@ -383,9 +383,9 @@ describe('TagFilter', () => {
       const text = dropdown.text()
 
       // Check that usage counts are shown
-      expect(text).toContain('10次')
-      expect(text).toContain('5次')
-      expect(text).toContain('3次')
+      expect(text).toContain('10 times')
+      expect(text).toContain('5 times')
+      expect(text).toContain('3 times')
     })
   })
 
@@ -432,7 +432,7 @@ describe('TagFilter', () => {
 
       // Should show 0 for missing usage_count
       const dropdown = wrapper.find('.absolute.top-full')
-      expect(dropdown.text()).toContain('0次')
+      expect(dropdown.text()).toContain('0 times')
     })
   })
 

@@ -107,7 +107,7 @@ describe('ScreenshotGallery', () => {
       // Find view toggle buttons - looking for buttons with grid/list text
       const buttons = wrapper.findAll('button')
       const toggleButtons = buttons.filter(btn =>
-        btn.text().includes('网格') || btn.text().includes('列表')
+        btn.text().includes('Grid') || btn.text().includes('List')
       )
 
       expect(toggleButtons.length).toBeGreaterThanOrEqual(2)
@@ -126,7 +126,7 @@ describe('ScreenshotGallery', () => {
 
       // Find list view toggle button
       const buttons = wrapper.findAll('button')
-      const listButton = buttons.find(btn => btn.text().includes('列表'))
+      const listButton = buttons.find(btn => btn.text().includes('List'))
 
       expect(listButton).toBeDefined()
       await listButton.trigger('click')
@@ -146,13 +146,13 @@ describe('ScreenshotGallery', () => {
 
       // First switch to list view
       const buttons = wrapper.findAll('button')
-      const listButton = buttons.find(btn => btn.text().includes('列表'))
+      const listButton = buttons.find(btn => btn.text().includes('List'))
 
       await listButton.trigger('click')
       await nextTick()
 
       // Then switch back to grid
-      const gridButton = buttons.find(btn => btn.text().includes('网格'))
+      const gridButton = buttons.find(btn => btn.text().includes('Grid'))
 
       await gridButton.trigger('click')
       await nextTick()
@@ -184,7 +184,7 @@ describe('ScreenshotGallery', () => {
 
       // Switch to list view
       const buttons = wrapper.findAll('button')
-      const listButton = buttons.find(btn => btn.text().includes('列表'))
+      const listButton = buttons.find(btn => btn.text().includes('List'))
 
       await listButton.trigger('click')
       await nextTick()
@@ -204,7 +204,7 @@ describe('ScreenshotGallery', () => {
 
       // Find the grid button and check it's highlighted (active state)
       const buttons = wrapper.findAll('button')
-      const gridButton = buttons.find(btn => btn.text().includes('网格'))
+      const gridButton = buttons.find(btn => btn.text().includes('Grid'))
 
       expect(gridButton).toBeDefined()
       // Grid should be active by default (bg-primary class)
@@ -284,7 +284,7 @@ describe('ScreenshotGallery', () => {
 
       // Switch to list view
       const buttons = wrapper.findAll('button')
-      const listButton = buttons.find(btn => btn.text().includes('列表'))
+      const listButton = buttons.find(btn => btn.text().includes('List'))
       await listButton.trigger('click')
       await nextTick()
 
@@ -415,7 +415,7 @@ describe('ScreenshotGallery', () => {
       // Should show remaining count text
       expect(wrapper.vm.hasMorePages).toBe(true)
       const html = wrapper.html()
-      expect(html.includes('剩余') || html.includes('加载更多')).toBe(true)
+      expect(html.includes('remaining') || html.includes('Load More')).toBe(true)
     })
 
     it('hides remaining indicator when all records are shown', async () => {
@@ -470,7 +470,7 @@ describe('ScreenshotGallery', () => {
       await dateInputs[0].setValue('2026-03-10')
       await dateInputs[1].setValue('2026-03-11')
 
-      const filterButton = wrapper.findAll('button').find(btn => btn.text().includes('筛选'))
+      const filterButton = wrapper.findAll('button').find(btn => btn.text().includes('Filter'))
       await filterButton.trigger('click')
 
       // Wait for the async applyFilter to complete
@@ -487,7 +487,7 @@ describe('ScreenshotGallery', () => {
       await nextTick()
 
       // Should show loading indicator
-      expect(wrapper.html()).toContain('加载中')
+      expect(wrapper.html()).toContain('Loading...')
     })
 
     it('calculates correct remaining count', async () => {
@@ -612,7 +612,7 @@ describe('ScreenshotGallery', () => {
 
       // Switch to list view
       const buttons = wrapper.findAll('button')
-      const listButton = buttons.find(btn => btn.text().includes('列表'))
+      const listButton = buttons.find(btn => btn.text().includes('List'))
       await listButton.trigger('click')
       await nextTick()
 
