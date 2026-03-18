@@ -218,6 +218,23 @@
     "export": "Export",
     "exportFailed": "Export failed"
   },
+  "reportComparison": {
+    "title": "Comparison Report",
+    "periodA": "Period A",
+    "periodB": "Period B",
+    "to": "to",
+    "days": "{count} days",
+    "presets": "Quick Presets",
+    "thisWeekVsLastWeek": "This Week vs Last Week",
+    "thisMonthVsLastMonth": "This Month vs Last Month",
+    "reportSuccess": "Comparison report generated successfully",
+    "close": "Close",
+    "generating": "Generating...",
+    "generate": "Generate Comparison Report",
+    "periodAEndBeforeStart": "Period A end date cannot be before start date",
+    "periodBEndBeforeStart": "Period B end date cannot be before start date",
+    "generateSuccess": "Comparison report generated successfully"
+  },
   "customReport": {
     "title": "Custom Report",
     "presets": "Quick Presets",

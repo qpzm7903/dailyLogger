@@ -45,7 +45,7 @@ describe('ReportComparisonModal', () => {
   describe('Rendering', () => {
     it('renders modal with title', () => {
       wrapper = mountComponent()
-      expect(wrapper.find('h2').text()).toBe('对比分析报告')
+      expect(wrapper.find('h2').text()).toBe('Comparison Report')
     })
 
     it('renders close button', () => {
@@ -57,18 +57,18 @@ describe('ReportComparisonModal', () => {
       wrapper = mountComponent()
       const inputs = wrapper.findAll('input[type="date"]')
       expect(inputs.length).toBe(4) // 2 for each period
-      expect(wrapper.findAll('label')[0].text()).toBe('时段 A')
+      expect(wrapper.findAll('label')[0].text()).toBe('Period A')
     })
 
     it('renders period B inputs', () => {
       wrapper = mountComponent()
-      expect(wrapper.findAll('label')[1].text()).toBe('时段 B')
+      expect(wrapper.findAll('label')[1].text()).toBe('Period B')
     })
 
     it('renders preset buttons', () => {
       wrapper = mountComponent()
       const presetButtons = wrapper.findAll('button').filter(btn =>
-        btn.text().includes('本周 vs 上周') || btn.text().includes('本月 vs 上月')
+        btn.text().includes('This Week vs Last Week') || btn.text().includes('This Month vs Last Month')
       )
       expect(presetButtons.length).toBe(2)
     })
@@ -76,12 +76,12 @@ describe('ReportComparisonModal', () => {
     it('renders generate button', () => {
       wrapper = mountComponent()
       const generateBtn = wrapper.find('button.bg-primary')
-      expect(generateBtn.text()).toContain('生成对比报告')
+      expect(generateBtn.text()).toContain('Generate Comparison Report')
     })
 
     it('renders close button in footer', () => {
       wrapper = mountComponent()
-      const closeBtn = wrapper.findAll('button').find(btn => btn.text() === '关闭')
+      const closeBtn = wrapper.findAll('button').find(btn => btn.text() === 'Close')
       expect(closeBtn.exists()).toBe(true)
     })
   })
@@ -96,7 +96,7 @@ describe('ReportComparisonModal', () => {
 
     it('emits close when footer close button clicked', async () => {
       wrapper = mountComponent()
-      const closeBtn = wrapper.findAll('button').find(btn => btn.text() === '关闭')
+      const closeBtn = wrapper.findAll('button').find(btn => btn.text() === 'Close')
       await closeBtn.trigger('click')
       expect(wrapper.emitted('close')).toBeTruthy()
     })
@@ -148,7 +148,7 @@ describe('ReportComparisonModal', () => {
 
       // 7 days (Mar 1-7 inclusive)
       const dayCountText = wrapper.findAll('p.text-xs.text-gray-500')[0]
-      expect(dayCountText.text()).toBe('7 天')
+      expect(dayCountText.text()).toBe('7 days')
     })
 
     it('calculates day count for period B correctly', async () => {
@@ -163,18 +163,18 @@ describe('ReportComparisonModal', () => {
 
       // Find the day count text elements
       const allSmallText = wrapper.findAll('p.text-xs.text-gray-500')
-      const dayCountElements = allSmallText.filter(p => p.text().includes('天'))
+      const dayCountElements = allSmallText.filter(p => p.text().includes('days'))
 
       // Since only period B dates are set, there should be one day count
       expect(dayCountElements.length).toBe(1)
-      expect(dayCountElements[0].text()).toBe('7 天')
+      expect(dayCountElements[0].text()).toBe('7 days')
     })
 
     it('does not show day count when dates not set', () => {
       wrapper = mountComponent()
       const dayCountTexts = wrapper.findAll('p.text-xs.text-gray-500')
       // Only the day count elements, not error messages
-      const dayCounts = dayCountTexts.filter(p => p.text().includes('天'))
+      const dayCounts = dayCountTexts.filter(p => p.text().includes('days'))
       expect(dayCounts.length).toBe(0)
     })
 
@@ -186,7 +186,7 @@ describe('ReportComparisonModal', () => {
 
       // Should show 0 days (or no display)
       const dayCountTexts = wrapper.findAll('p.text-xs.text-gray-500')
-      const dayCounts = dayCountTexts.filter(p => p.text().includes('天'))
+      const dayCounts = dayCountTexts.filter(p => p.text().includes('days'))
       expect(dayCounts.length).toBe(0)
     })
   })
@@ -199,7 +199,7 @@ describe('ReportComparisonModal', () => {
       await inputs[1].setValue('2026-03-01')
 
       const errorEl = wrapper.find('p.text-red-400.text-xs')
-      expect(errorEl.text()).toBe('时段A的结束日期不能早于起始日期')
+      expect(errorEl.text()).toBe('Period A end date cannot be before start date')
     })
 
     it('shows error when period B end date is before start date', async () => {
@@ -209,7 +209,7 @@ describe('ReportComparisonModal', () => {
       await inputs[3].setValue('2026-03-08')
 
       const errorEl = wrapper.find('p.text-red-400.text-xs')
-      expect(errorEl.text()).toBe('时段B的结束日期不能早于起始日期')
+      expect(errorEl.text()).toBe('Period B end date cannot be before start date')
     })
 
     it('clears error when dates are valid', async () => {
@@ -282,7 +282,7 @@ describe('ReportComparisonModal', () => {
     it('sets correct dates for week preset', async () => {
       wrapper = mountComponent()
       // Date is mocked to Wednesday, March 18, 2026
-      const weekBtn = wrapper.findAll('button').find(btn => btn.text().includes('本周 vs 上周'))
+      const weekBtn = wrapper.findAll('button').find(btn => btn.text().includes('This Week vs Last Week'))
       await weekBtn.trigger('click')
 
       // Week 12 of 2026: Mar 16-22 (this week), Mar 9-15 (last week)
@@ -297,7 +297,7 @@ describe('ReportComparisonModal', () => {
       wrapper.vm.errorMsg = 'Previous error'
       wrapper.vm.resultPath = '/some/path'
 
-      const weekBtn = wrapper.findAll('button').find(btn => btn.text().includes('本周 vs 上周'))
+      const weekBtn = wrapper.findAll('button').find(btn => btn.text().includes('This Week vs Last Week'))
       await weekBtn.trigger('click')
 
       expect(wrapper.vm.errorMsg).toBe('')
@@ -309,7 +309,7 @@ describe('ReportComparisonModal', () => {
     it('sets correct dates for month preset', async () => {
       wrapper = mountComponent()
       // Date is mocked to March 18, 2026
-      const monthBtn = wrapper.findAll('button').find(btn => btn.text().includes('本月 vs 上月'))
+      const monthBtn = wrapper.findAll('button').find(btn => btn.text().includes('This Month vs Last Month'))
       await monthBtn.trigger('click')
 
       // March 2026 and February 2026
@@ -382,7 +382,7 @@ describe('ReportComparisonModal', () => {
       await generateBtn.trigger('click')
 
       expect(wrapper.vm.resultPath).toBe('/path/to/comparison-report.md')
-      expect(showSuccess).toHaveBeenCalledWith('对比报告生成成功')
+      expect(showSuccess).toHaveBeenCalledWith('Comparison report generated successfully')
     })
 
     it('emits generated event with path', async () => {
@@ -417,7 +417,7 @@ describe('ReportComparisonModal', () => {
 
       const successBox = wrapper.find('.border-green-700\\/50')
       expect(successBox.exists()).toBe(true)
-      expect(successBox.text()).toContain('对比报告生成成功')
+      expect(successBox.text()).toContain('Comparison report generated successfully')
       expect(successBox.text()).toContain('/path/to/report.md')
     })
 
@@ -584,8 +584,8 @@ describe('ReportComparisonModal', () => {
 
       // Should show 1 day
       const dayCountTexts = wrapper.findAll('p.text-xs.text-gray-500')
-      expect(dayCountTexts[0].text()).toBe('1 天')
-      expect(dayCountTexts[1].text()).toBe('1 天')
+      expect(dayCountTexts[0].text()).toBe('1 days')
+      expect(dayCountTexts[1].text()).toBe('1 days')
     })
 
     it('week preset works on Sunday', async () => {
@@ -593,7 +593,7 @@ describe('ReportComparisonModal', () => {
       vi.setSystemTime(new Date('2026-03-22T12:00:00Z'))
 
       wrapper = mountComponent()
-      const weekBtn = wrapper.findAll('button').find(btn => btn.text().includes('本周 vs 上周'))
+      const weekBtn = wrapper.findAll('button').find(btn => btn.text().includes('This Week vs Last Week'))
       await weekBtn.trigger('click')
 
       // Still should work correctly (Sunday is day 7, treated as end of week)
@@ -606,7 +606,7 @@ describe('ReportComparisonModal', () => {
       vi.setSystemTime(new Date('2026-01-15T12:00:00Z'))
 
       wrapper = mountComponent()
-      const monthBtn = wrapper.findAll('button').find(btn => btn.text().includes('本月 vs 上月'))
+      const monthBtn = wrapper.findAll('button').find(btn => btn.text().includes('This Month vs Last Month'))
       await monthBtn.trigger('click')
 
       // Should show December 2025 for last month

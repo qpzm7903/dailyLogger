@@ -218,6 +218,23 @@
     "export": "导出",
     "exportFailed": "导出失败"
   },
+  "reportComparison": {
+    "title": "对比分析报告",
+    "periodA": "时段 A",
+    "periodB": "时段 B",
+    "to": "至",
+    "days": "{count} 天",
+    "presets": "快捷预设",
+    "thisWeekVsLastWeek": "本周 vs 上周",
+    "thisMonthVsLastMonth": "本月 vs 上月",
+    "reportSuccess": "对比报告生成成功",
+    "close": "关闭",
+    "generating": "生成中...",
+    "generate": "生成对比报告",
+    "periodAEndBeforeStart": "时段A的结束日期不能早于起始日期",
+    "periodBEndBeforeStart": "时段B的结束日期不能早于起始日期",
+    "generateSuccess": "对比报告生成成功"
+  },
   "customReport": {
     "title": "自定义报告",
     "presets": "快捷预设",

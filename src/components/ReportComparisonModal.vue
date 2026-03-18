@@ -3,7 +3,7 @@
     <div class="bg-dark rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-gray-700 flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">对比分析报告</h2>
+        <h2 class="text-lg font-semibold">{{ t('reportComparison.title') }}</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
@@ -11,57 +11,57 @@
       <div class="p-6 space-y-5">
         <!-- Period A -->
         <div class="space-y-2">
-          <label class="text-sm text-gray-400 block">时段 A</label>
+          <label class="text-sm text-gray-400 block">{{ t('reportComparison.periodA') }}</label>
           <div class="flex items-center gap-3">
             <input
               type="date"
               v-model="startDateA"
               class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">至</span>
+            <span class="text-gray-500">{{ t('reportComparison.to') }}</span>
             <input
               type="date"
               v-model="endDateA"
               class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
             />
           </div>
-          <p v-if="dayCountA > 0" class="text-xs text-gray-500">{{ dayCountA }} 天</p>
+          <p v-if="dayCountA > 0" class="text-xs text-gray-500">{{ t('reportComparison.days', { count: dayCountA }) }}</p>
         </div>
 
         <!-- Period B -->
         <div class="space-y-2">
-          <label class="text-sm text-gray-400 block">时段 B</label>
+          <label class="text-sm text-gray-400 block">{{ t('reportComparison.periodB') }}</label>
           <div class="flex items-center gap-3">
             <input
               type="date"
               v-model="startDateB"
               class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">至</span>
+            <span class="text-gray-500">{{ t('reportComparison.to') }}</span>
             <input
               type="date"
               v-model="endDateB"
               class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
             />
           </div>
-          <p v-if="dayCountB > 0" class="text-xs text-gray-500">{{ dayCountB }} 天</p>
+          <p v-if="dayCountB > 0" class="text-xs text-gray-500">{{ t('reportComparison.days', { count: dayCountB }) }}</p>
         </div>
 
         <!-- Preset buttons -->
         <div class="space-y-2">
-          <label class="text-sm text-gray-400 block">快捷预设</label>
+          <label class="text-sm text-gray-400 block">{{ t('reportComparison.presets') }}</label>
           <div class="flex gap-3">
             <button
               @click="applyPreset('week')"
               class="flex-1 border border-gray-600 text-gray-400 hover:border-gray-500 rounded-lg px-3 py-2 text-sm transition-colors text-center"
             >
-              <div class="font-medium">本周 vs 上周</div>
+              <div class="font-medium">{{ t('reportComparison.thisWeekVsLastWeek') }}</div>
             </button>
             <button
               @click="applyPreset('month')"
               class="flex-1 border border-gray-600 text-gray-400 hover:border-gray-500 rounded-lg px-3 py-2 text-sm transition-colors text-center"
             >
-              <div class="font-medium">本月 vs 上月</div>
+              <div class="font-medium">{{ t('reportComparison.thisMonthVsLastMonth') }}</div>
             </button>
           </div>
         </div>
@@ -71,7 +71,7 @@
         <!-- Result -->
         <div v-if="resultPath" class="bg-darker rounded-lg p-4 space-y-2 border border-green-700/50">
           <div class="flex items-center gap-2 text-green-400 text-sm">
-            <span>对比报告生成成功</span>
+            <span>{{ t('reportComparison.reportSuccess') }}</span>
           </div>
           <p class="text-xs text-gray-400 break-all">{{ resultPath }}</p>
         </div>
@@ -88,14 +88,14 @@
           @click="$emit('close')"
           class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
         >
-          关闭
+          {{ t('reportComparison.close') }}
         </button>
         <button
           @click="generateComparison"
           :disabled="isGenerating || !!dateError || !startDateA || !endDateA || !startDateB || !endDateB"
           class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-5 py-2 rounded-lg text-sm font-medium transition-colors"
         >
-          {{ isGenerating ? '生成中...' : '生成对比报告' }}
+          {{ isGenerating ? t('reportComparison.generating') : t('reportComparison.generate') }}
         </button>
       </div>
     </div>
@@ -104,8 +104,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { showError, showSuccess } from '../stores/toast.js'
+
+const { t } = useI18n()
 
 const emit = defineEmits(['close', 'generated'])
 
@@ -131,10 +134,10 @@ const dayCountB = computed(() => calcDays(startDateB.value, endDateB.value))
 
 const dateError = computed(() => {
   if (startDateA.value && endDateA.value && new Date(endDateA.value) < new Date(startDateA.value)) {
-    return '时段A的结束日期不能早于起始日期'
+    return t('reportComparison.periodAEndBeforeStart')
   }
   if (startDateB.value && endDateB.value && new Date(endDateB.value) < new Date(startDateB.value)) {
-    return '时段B的结束日期不能早于起始日期'
+    return t('reportComparison.periodBEndBeforeStart')
   }
   return ''
 })
@@ -188,7 +191,7 @@ const generateComparison = async () => {
       endDateB: endDateB.value,
     })
     resultPath.value = result
-    showSuccess('对比报告生成成功')
+    showSuccess(t('reportComparison.generateSuccess'))
     emit('generated', result)
   } catch (err) {
     console.error('Failed to generate comparison report:', err)
