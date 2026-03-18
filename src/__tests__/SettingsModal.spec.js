@@ -120,17 +120,17 @@ describe('SettingsModal.vue - API Key 可见性', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('[title="显示"]').trigger('click')
+    await wrapper.find('[title="Show"]').trigger('click')
 
     expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('text')
   })
 
-  it('再次点击"隐藏"按钮恢复为 password 类型', async () => {
+  it('再次点击"Hide"按钮恢复为 password 类型', async () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('[title="显示"]').trigger('click')
-    await wrapper.find('[title="隐藏"]').trigger('click')
+    await wrapper.find('[title="Show"]').trigger('click')
+    await wrapper.find('[title="Hide"]').trigger('click')
 
     expect(wrapper.find('input[placeholder="sk-..."]').attributes('type')).toBe('password')
   })
@@ -228,7 +228,8 @@ describe('SettingsModal.vue - AC2 按钮交互反馈', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const toggleBtn = wrapper.find('[title="显示"]')
+    // The show/hide button has title "Show" or "Hide" (English locale in tests)
+    const toggleBtn = wrapper.find('[title="Show"], [title="Hide"]')
     expect(toggleBtn.classes()).toContain('hover:text-gray-300')
   })
 })

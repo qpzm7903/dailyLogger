@@ -62,24 +62,24 @@ describe('SettingsModal', () => {
     expect(textarea.exists()).toBe(true)
   })
 
-  it('shows "查看默认" and "重置为默认" buttons', async () => {
+  it('shows "View Default" and "Reset to Default" buttons', async () => {
     const wrapper = mount(SettingsModal)
     await wrapper.vm.$nextTick()
 
     const buttons = wrapper.findAll('button')
     const buttonTexts = buttons.map(b => b.text())
 
-    expect(buttonTexts.some(t => t.includes('查看默认'))).toBe(true)
-    expect(buttonTexts.some(t => t.includes('重置为默认'))).toBe(true)
+    expect(buttonTexts.some(t => t.includes('View Default'))).toBe(true)
+    expect(buttonTexts.some(t => t.includes('Reset to Default'))).toBe(true)
   })
 
-  it('calls get_default_analysis_prompt when "查看默认" is clicked', async () => {
+  it('calls get_default_analysis_prompt when "View Default" is clicked', async () => {
     const wrapper = mount(SettingsModal)
     await wrapper.vm.$nextTick()
 
-    // Find and click the "查看默认" button
+    // Find and click the "View Default" button
     const buttons = wrapper.findAll('button')
-    const showDefaultBtn = buttons.find(b => b.text().includes('查看默认'))
+    const showDefaultBtn = buttons.find(b => b.text().includes('View Default'))
 
     if (showDefaultBtn) {
       await showDefaultBtn.trigger('click')
@@ -90,7 +90,7 @@ describe('SettingsModal', () => {
     }
   })
 
-  it('resets analysis_prompt when "重置为默认" is clicked', async () => {
+  it('resets analysis_prompt when "Reset to Default" is clicked', async () => {
     const wrapper = mount(SettingsModal)
     await wrapper.vm.$nextTick()
 
@@ -98,9 +98,9 @@ describe('SettingsModal', () => {
     wrapper.vm.settings.analysis_prompt = 'Custom prompt'
     expect(wrapper.vm.settings.analysis_prompt).toBe('Custom prompt')
 
-    // Find and click the "重置为默认" button
+    // Find and click the "Reset to Default" button
     const buttons = wrapper.findAll('button')
-    const resetBtn = buttons.find(b => b.text().includes('重置为默认'))
+    const resetBtn = buttons.find(b => b.text().includes('Reset to Default'))
 
     if (resetBtn) {
       await resetBtn.trigger('click')

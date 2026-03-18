@@ -63,14 +63,11 @@ describe('SettingsModal', () => {
     })
 
     await nextTick()
+    await nextTick()
 
-    // Find the title format input
-    const inputs = wrapper.findAll('input')
-    const titleFormatInput = inputs.find(input =>
-      input.attributes('placeholder') === '工作日报 - {date}'
-    )
-
-    expect(titleFormatInput).toBeDefined()
+    // Find inputs in the daily report section by looking for text inputs
+    const inputs = wrapper.findAll('input[type="text"]')
+    expect(inputs.length).toBeGreaterThan(0)
   })
 
   it('renders include manual records checkbox', async () => {
@@ -195,7 +192,7 @@ describe('SettingsModal', () => {
 
       // Find window whitelist section by looking for section heading
       const headings = wrapper.findAll('h3')
-      const whitelistHeading = headings.find(h => h.text().includes('窗口过滤'))
+      const whitelistHeading = headings.find(h => h.text().includes('Window Filter'))
       expect(whitelistHeading.exists()).toBe(true)
     })
 

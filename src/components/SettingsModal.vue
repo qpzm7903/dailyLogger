@@ -2,13 +2,13 @@
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
     <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-y-auto border border-gray-700">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">设置</h2>
+        <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
-      
+
       <div class="p-6 space-y-6">
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">API 配置</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.apiConfig') }}</h3>
           <div class="space-y-3">
             <div>
               <label class="text-xs text-gray-300 block mb-1">Base URL</label>
@@ -23,13 +23,13 @@
                 <span v-if="isOllama" class="text-xs text-green-400 whitespace-nowrap">🦙 Ollama</span>
               </div>
               <span class="text-xs text-gray-500 mt-1 block">
-                Ollama 用户请填写 http://localhost:11434/v1
+                {{ $t('settings.baseUrlOllamaHint') }}
               </span>
             </div>
             <div>
               <label class="text-xs text-gray-300 block mb-1">
-                API Key
-                <span v-if="isOllama" class="text-gray-500">(Ollama 可留空)</span>
+                {{ $t('settings.apiKey') }}
+                <span v-if="isOllama" class="text-gray-500">{{ $t('settings.apiKeyOllamaHint') }}</span>
               </label>
               <div class="relative">
                 <input
@@ -42,8 +42,8 @@
                   @click="showApiKey = !showApiKey"
                   type="button"
                   class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors text-xs px-2 py-1 rounded hover:bg-gray-700"
-                  :title="showApiKey ? '隐藏' : '显示'"
-                >{{ showApiKey ? '隐藏' : '显示' }}</button>
+                  :title="showApiKey ? $t('common.hide') : $t('common.show')"
+                >{{ showApiKey ? $t('common.hide') : $t('common.show') }}</button>
               </div>
             </div>
             <!-- Test Connection Button -->
@@ -54,7 +54,7 @@
                   :disabled="isTestingConnection || !settings.api_base_url || !settings.model_name || (!isOllama && !settings.api_key)"
                   class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
                 >
-                  {{ isTestingConnection ? '测试中...' : '测试连接' }}
+                  {{ isTestingConnection ? $t('settings.testing') : $t('settings.testConnection') }}
                 </button>
                 <!-- Ollama model fetch button -->
                 <button
@@ -63,7 +63,7 @@
                   :disabled="isLoadingOllamaModels || !settings.api_base_url"
                   class="px-3 py-1.5 text-sm bg-purple-700 hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
                 >
-                  {{ isLoadingOllamaModels ? '获取中...' : '获取模型列表' }}
+                  {{ isLoadingOllamaModels ? $t('settings.fetching') : $t('settings.fetchModels') }}
                 </button>
               </div>
               <span v-if="connectionTestResult" :class="connectionTestResult.success ? 'text-green-400' : 'text-red-400'" class="ml-2 text-xs">
@@ -72,7 +72,7 @@
               </span>
               <!-- Ollama model list -->
               <div v-if="isOllama && ollamaModels.length > 0" class="mt-3">
-                <label class="text-xs text-gray-300 block mb-1">选择模型</label>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.selectModel') }}</label>
                 <div class="flex flex-wrap gap-2">
                   <button
                     v-for="model in ollamaModels"
@@ -91,10 +91,10 @@
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">截图分析 (Vision)</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.screenshotAnalysis') }}</h3>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">分析模型</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.analysisModel') }}</label>
               <div class="flex items-center gap-2">
                 <input
                   v-model="settings.model_name"
@@ -107,20 +107,20 @@
                   :disabled="isLoadingModelInfo || !settings.model_name"
                   type="button"
                   class="text-gray-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
-                  title="查看模型上下文窗口"
+                  :title="$t('settings.contextWindow', { size: '' })"
                 >ℹ️</button>
               </div>
               <span v-if="analysisModelInfo?.context_window" class="text-xs text-gray-500 mt-1 block">
-                上下文窗口: {{ analysisModelInfo.context_window / 1000 }}K tokens
+                {{ $t('settings.contextWindow', { size: analysisModelInfo.context_window / 1000 }) }}
               </span>
-              <span v-else class="text-xs text-gray-500 mt-1 block">需要支持 Vision 能力的模型</span>
+              <span v-else class="text-xs text-gray-500 mt-1 block">{{ $t('settings.visionRequired') }}</span>
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">分析 Prompt</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.analysisPrompt') }}</label>
               <textarea
                 v-model="settings.analysis_prompt"
                 rows="4"
-                placeholder="留空使用默认 Prompt"
+                :placeholder="$t('settings.analysisPromptPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
               />
               <div class="flex gap-3 mt-2">
@@ -129,14 +129,14 @@
                   @click="showDefaultPrompt"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  查看默认
+                  {{ $t('common.viewDefault') }}
                 </button>
                 <button
                   type="button"
                   @click="resetPrompt"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  重置为默认
+                  {{ $t('common.resetDefault') }}
                 </button>
               </div>
             </div>
@@ -144,25 +144,25 @@
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">日报生成</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.dailyReport') }}</h3>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">日报标题格式</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportTitleFormat') }}</label>
               <input
                 v-model="settings.summary_title_format"
                 type="text"
-                placeholder="工作日报 - {date}"
+                :placeholder="$t('settings.reportTitlePlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
               />
-              <span class="text-xs text-gray-500 mt-1 block">使用 {date} 作为日期占位符，留空使用默认格式</span>
+              <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.reportTitleHint') }}</span>
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">日报模型</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportModel') }}</label>
               <div class="flex items-center gap-2">
                 <input
                   v-model="settings.summary_model_name"
                   type="text"
-                  placeholder="留空则使用分析模型"
+                  :placeholder="$t('settings.reportModelPlaceholder')"
                   class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
                 />
                 <button
@@ -170,20 +170,20 @@
                   :disabled="isLoadingModelInfo || !settings.summary_model_name"
                   type="button"
                   class="text-gray-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
-                  title="查看模型上下文窗口"
+                  :title="$t('settings.contextWindow', { size: '' })"
                 >ℹ️</button>
               </div>
               <span v-if="summaryModelInfo?.context_window" class="text-xs text-gray-500 mt-1 block">
-                上下文窗口: {{ summaryModelInfo.context_window / 1000 }}K tokens
+                {{ $t('settings.contextWindow', { size: summaryModelInfo.context_window / 1000 }) }}
               </span>
-              <span v-else class="text-xs text-gray-500 mt-1 block">纯文本模型即可，不需要 Vision</span>
+              <span v-else class="text-xs text-gray-500 mt-1 block">{{ $t('settings.textModelHint') }}</span>
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">日报 Prompt</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportPrompt') }}</label>
               <textarea
                 v-model="settings.summary_prompt"
                 rows="4"
-                placeholder="留空使用默认 Prompt。用 {records} 表示今日记录的插入位置"
+                :placeholder="$t('settings.reportPromptPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
               />
               <div class="flex gap-3 mt-2">
@@ -192,35 +192,35 @@
                   @click="showDefaultSummaryPrompt"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  查看默认
+                  {{ $t('common.viewDefault') }}
                 </button>
                 <button
                   type="button"
                   @click="resetSummaryPrompt"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  重置为默认
+                  {{ $t('common.resetDefault') }}
                 </button>
                 <button
                   type="button"
                   @click="showTemplateLibrary"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  模板库
+                  {{ $t('common.templateLibrary') }}
                 </button>
                 <button
                   type="button"
                   @click="exportTemplate"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  导出模板
+                  {{ $t('common.exportTemplate') }}
                 </button>
                 <button
                   type="button"
                   @click="importTemplate"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  导入模板
+                  {{ $t('common.importTemplate') }}
                 </button>
               </div>
             </div>
@@ -232,40 +232,40 @@
                 class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
               />
               <label for="include_manual_records" class="text-xs text-gray-300 cursor-pointer">
-                包含闪念胶囊记录
+                {{ $t('settings.includeQuickNotes') }}
               </label>
-              <span class="text-xs text-gray-500">（取消勾选则仅使用自动截图分析）</span>
+              <span class="text-xs text-gray-500">{{ $t('settings.includeQuickNotesHint') }}</span>
             </div>
           </div>
         </div>
 
         <!-- AI-004: 标签分类配置 -->
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">标签分类</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.tagCategories') }}</h3>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">自定义标签分类</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.customTagCategories') }}</label>
               <textarea
                 v-model="tagCategoriesText"
                 rows="4"
-                placeholder="每行一个标签，留空使用默认分类"
+                :placeholder="$t('settings.tagCategoriesPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y font-mono"
               />
-              <span class="text-xs text-gray-500 mt-1 block">AI 分析时将从这些标签中选择最匹配的分类</span>
+              <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.tagCategoriesHint') }}</span>
               <div class="flex gap-3 mt-2">
                 <button
                   type="button"
                   @click="showDefaultTagCategories"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  查看默认标签
+                  {{ $t('settings.viewDefaultTags') }}
                 </button>
                 <button
                   type="button"
                   @click="resetTagCategories"
                   class="text-xs text-gray-400 hover:text-primary transition-colors"
                 >
-                  重置为默认
+                  {{ $t('common.resetDefault') }}
                 </button>
               </div>
             </div>
@@ -273,10 +273,10 @@
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">时间策略</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.timeStrategy') }}</h3>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">截图间隔 (分钟)</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.screenshotInterval') }}</label>
               <input
                 v-model.number="settings.screenshot_interval"
                 type="number"
@@ -286,7 +286,7 @@
               />
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">每日总结时间</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.summaryTime') }}</label>
               <input
                 v-model="settings.summary_time"
                 type="time"
@@ -297,10 +297,10 @@
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">智能去重</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.smartDedup') }}</h3>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">变化阈值 (%)</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.changeThreshold') }}</label>
               <input
                 v-model.number="settings.change_threshold"
                 type="number"
@@ -308,10 +308,10 @@
                 max="20"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
               />
-              <span class="text-xs text-gray-500 mt-1 block">屏幕变化低于此比例时跳过截图，避免重复记录</span>
+              <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.changeThresholdHint') }}</span>
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">最大静默时间 (分钟)</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.maxSilentTime') }}</label>
               <input
                 v-model.number="settings.max_silent_minutes"
                 type="number"
@@ -319,14 +319,14 @@
                 max="120"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
               />
-              <span class="text-xs text-gray-500 mt-1 block">即使屏幕无变化，超过此时间也会强制记录一次</span>
+              <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.maxSilentTimeHint') }}</span>
             </div>
           </div>
         </div>
 
         <!-- SMART-002: 智能静默阈值调整 -->
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">静默阈值智能调整</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.silentThresholdAdjust') }}</h3>
           <div class="space-y-3">
             <div class="flex items-center gap-2">
               <input
@@ -336,32 +336,32 @@
                 class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
               />
               <label for="auto_adjust_silent" class="text-xs text-gray-300 cursor-pointer">
-                自动调整静默阈值
+                {{ $t('settings.autoAdjustSilent') }}
               </label>
             </div>
             <span class="text-xs text-gray-500 block">
-              根据工作模式自动调整：深度工作时提高阈值，活跃工作时降低阈值
+              {{ $t('settings.autoAdjustHint') }}
             </span>
             <div v-if="!settings.auto_adjust_silent" class="bg-darker rounded-lg p-3 border border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-gray-400">手动模式已启用</span>
-                <span class="text-xs text-primary">{{ settings.max_silent_minutes }} 分钟</span>
+                <span class="text-xs text-gray-400">{{ $t('settings.manualModeEnabled') }}</span>
+                <span class="text-xs text-primary">{{ settings.max_silent_minutes }} {{ $t('settings.timeStrategy').replace('(分钟)', '').trim() }}</span>
               </div>
               <span class="text-xs text-gray-500">
-                关闭自动调整后，系统将使用您设定的固定阈值
+                {{ $t('settings.autoAdjustHint') }}
               </span>
             </div>
             <div v-else class="bg-darker rounded-lg p-3 border border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-gray-400">学习状态</span>
-                <span class="text-xs text-green-400">自动学习中</span>
+                <span class="text-xs text-gray-400">{{ $t('settings.learningStatus') }}</span>
+                <span class="text-xs text-green-400">{{ $t('settings.autoLearning') }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-xs text-gray-400">当前阈值</span>
-                <span class="text-xs text-primary">{{ settings.max_silent_minutes }} 分钟</span>
+                <span class="text-xs text-gray-400">{{ $t('settings.currentThreshold') }}</span>
+                <span class="text-xs text-primary">{{ settings.max_silent_minutes }} {{ $t('settings.timeStrategy').replace('(分钟)', '').trim() }}</span>
               </div>
               <span class="text-xs text-gray-500 mt-2 block">
-                系统每小时自动评估并调整阈值（范围: 10-60 分钟）
+                {{ $t('settings.autoAdjustRangeHint') }}
               </span>
             </div>
           </div>
@@ -369,7 +369,7 @@
 
         <!-- SMART-003: 工作时间自动识别 -->
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">工作时间自动识别</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.workTimeDetection') }}</h3>
           <div class="space-y-3">
             <div class="flex items-center gap-2">
               <input
@@ -379,11 +379,11 @@
                 class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
               />
               <label for="auto_detect_work_time" class="text-xs text-gray-300 cursor-pointer">
-                自动识别工作时间
+                {{ $t('settings.autoDetectWorkTime') }}
               </label>
             </div>
             <span class="text-xs text-gray-500 block">
-              根据截图活动模式自动学习工作时间，非工作时间自动暂停捕获
+              {{ $t('settings.autoDetectHint') }}
             </span>
 
             <!-- Custom work time toggle -->
@@ -395,14 +395,14 @@
                 class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
               />
               <label for="use_custom_work_time" class="text-xs text-gray-300 cursor-pointer">
-                使用自定义工作时间
+                {{ $t('settings.useCustomWorkTime') }}
               </label>
             </div>
 
             <!-- Custom work time inputs -->
             <div v-if="settings.auto_detect_work_time && settings.use_custom_work_time" class="grid grid-cols-2 gap-3 pt-2">
               <div>
-                <label class="text-xs text-gray-300 block mb-1">开始时间</label>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.startTime') }}</label>
                 <input
                   v-model="settings.custom_work_time_start"
                   type="time"
@@ -410,7 +410,7 @@
                 />
               </div>
               <div>
-                <label class="text-xs text-gray-300 block mb-1">结束时间</label>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.endTime') }}</label>
                 <input
                   v-model="settings.custom_work_time_end"
                   type="time"
@@ -422,18 +422,18 @@
             <!-- Work time status display -->
             <div v-if="settings.auto_detect_work_time && !settings.use_custom_work_time" class="bg-darker rounded-lg p-3 border border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-gray-400">学习状态</span>
+                <span class="text-xs text-gray-400">{{ $t('settings.learningStatus') }}</span>
                 <span v-if="workTimeStatus" class="text-xs" :class="workTimeStatus.is_work_time ? 'text-green-400' : 'text-yellow-400'">
-                  {{ workTimeStatus.is_work_time ? '工作中' : '非工作时间' }}
+                  {{ workTimeStatus.is_work_time ? $t('settings.working') : $t('settings.nonWorkTime') }}
                 </span>
               </div>
               <div v-if="workTimeStatus" class="space-y-1">
                 <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-400">已学习天数</span>
+                  <span class="text-xs text-gray-400">{{ $t('settings.daysLearned') }}</span>
                   <span class="text-xs text-primary">{{ workTimeStatus.learning_progress.days_learned }} / {{ workTimeStatus.learning_progress.min_days_required }} 天</span>
                 </div>
                 <div v-if="workTimeStatus.learning_progress.days_learned >= workTimeStatus.learning_progress.min_days_required" class="flex items-center justify-between">
-                  <span class="text-xs text-gray-400">识别的工作时间</span>
+                  <span class="text-xs text-gray-400">{{ $t('settings.detectedWorkTime') }}</span>
                   <span class="text-xs text-gray-300">{{ formatWorkTimePeriods(workTimeStatus.detected_periods) }}</span>
                 </div>
                 <div v-else class="mt-2">
@@ -443,7 +443,7 @@
                       :style="{ width: `${Math.min(100, (workTimeStatus.learning_progress.days_learned / workTimeStatus.learning_progress.min_days_required) * 100)}%` }"
                     ></div>
                   </div>
-                  <span class="text-xs text-gray-500 mt-1 block">继续使用以学习您的工作模式</span>
+                  <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.continueLearningHint') }}</span>
                 </div>
               </div>
             </div>
@@ -451,21 +451,21 @@
             <!-- Disabled info -->
             <div v-if="!settings.auto_detect_work_time" class="bg-darker rounded-lg p-3 border border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-gray-400">工作时间检测</span>
-                <span class="text-xs text-gray-500">已关闭</span>
+                <span class="text-xs text-gray-400">{{ $t('settings.workTimeDetectionOff') }}</span>
+                <span class="text-xs text-gray-500">{{ $t('settings.off') }}</span>
               </div>
               <span class="text-xs text-gray-500">
-                关闭后，系统将在全天候进行截图捕获
+                {{ $t('settings.workTimeOffHint') }}
               </span>
             </div>
           </div>
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">窗口过滤</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.windowFilter') }}</h3>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">窗口白名单</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.windowWhitelist') }}</label>
               <div class="flex flex-wrap gap-2 mb-2">
                 <span
                   v-for="(tag, index) in whitelistTags"
@@ -483,14 +483,14 @@
               <input
                 v-model="newWhitelistTag"
                 type="text"
-                placeholder="输入应用名后按 Enter 添加白名单"
+                :placeholder="$t('settings.whitelistPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
                 @keyup.enter="addWhitelistTag"
               />
-              <span class="text-xs text-gray-500 mt-1 block">匹配窗口标题或进程名，支持部分匹配</span>
+              <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.filterMatchHint') }}</span>
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">窗口黑名单</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.windowBlacklist') }}</label>
               <div class="flex flex-wrap gap-2 mb-2">
                 <span
                   v-for="(tag, index) in blacklistTags"
@@ -508,11 +508,11 @@
               <input
                 v-model="newBlacklistTag"
                 type="text"
-                placeholder="输入应用名后按 Enter 添加黑名单"
+                :placeholder="$t('settings.blacklistPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
                 @keyup.enter="addBlacklistTag"
               />
-              <span class="text-xs text-gray-500 mt-1 block">匹配窗口标题或进程名，支持部分匹配</span>
+              <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.filterMatchHint') }}</span>
             </div>
             <div class="flex items-center gap-2 pt-1">
               <input
@@ -522,20 +522,20 @@
                 class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
               />
               <label for="use_whitelist_only" class="text-xs text-gray-300 cursor-pointer">
-                仅捕获白名单应用
+                {{ $t('settings.whitelistOnly') }}
               </label>
-              <span class="text-xs text-gray-500">（启用后仅捕获白名单中的应用）</span>
+              <span class="text-xs text-gray-500">{{ $t('settings.whitelistOnlyHint') }}</span>
             </div>
           </div>
         </div>
 
         <!-- SMART-004: 显示器设置 -->
         <div v-if="isScreenshotEnabled">
-          <h3 class="text-sm font-medium text-gray-300 mb-3">显示器设置</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.displaySettings') }}</h3>
           <div class="space-y-3">
             <!-- 多显示器时显示捕获模式选择 -->
             <div v-if="monitors?.length > 1" class="space-y-2">
-              <label class="text-xs text-gray-300 block mb-1">捕获模式</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.captureMode') }}</label>
               <div class="flex flex-wrap gap-4">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -544,7 +544,7 @@
                     value="primary"
                     class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
                   />
-                  <span class="text-sm text-gray-300">主显示器</span>
+                  <span class="text-sm text-gray-300">{{ $t('settings.primaryMonitor') }}</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -553,7 +553,7 @@
                     value="secondary"
                     class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
                   />
-                  <span class="text-sm text-gray-300">副显示器</span>
+                  <span class="text-sm text-gray-300">{{ $t('settings.secondaryMonitor') }}</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -562,14 +562,14 @@
                     value="all"
                     class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
                   />
-                  <span class="text-sm text-gray-300">全部拼接</span>
+                  <span class="text-sm text-gray-300">{{ $t('settings.allMonitors') }}</span>
                 </label>
               </div>
             </div>
 
             <!-- 显示器列表 -->
             <div v-if="monitors?.length > 1" class="space-y-1">
-              <label class="text-xs text-gray-300 block mb-1">已连接显示器</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.connectedDisplays') }}</label>
               <div
                 v-for="m in monitors"
                 :key="m.index"
@@ -577,7 +577,7 @@
               >
                 <span class="text-gray-300">{{ m.name }}</span>
                 <span class="text-gray-500">{{ m.resolution }}</span>
-                <span v-if="m.is_primary" class="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">主</span>
+                <span v-if="m.is_primary" class="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">{{ $t('settings.primary') }}</span>
                 <!-- 副显示器模式下可选择 -->
                 <button
                   v-if="settings.capture_mode === 'secondary' && !m.is_primary"
@@ -590,7 +590,7 @@
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   ]"
                 >
-                  {{ settings.selected_monitor_index === m.index ? '已选择' : '选择' }}
+                  {{ settings.selected_monitor_index === m.index ? $t('settings.selected') : $t('settings.select') }}
                 </button>
               </div>
             </div>
@@ -598,18 +598,18 @@
             <!-- 单显示器提示 -->
             <div v-if="monitors?.length === 1" class="bg-darker rounded-lg p-3 border border-gray-700">
               <div class="flex items-center justify-between mb-1">
-                <span class="text-xs text-gray-400">当前显示器</span>
-                <span class="text-xs text-gray-300">{{ monitors[0]?.name || '未知' }}</span>
+                <span class="text-xs text-gray-400">{{ $t('settings.currentDisplay') }}</span>
+                <span class="text-xs text-gray-300">{{ monitors[0]?.name || $t('settings.unknown') }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-xs text-gray-400">分辨率</span>
-                <span class="text-xs text-gray-300">{{ monitors[0]?.resolution || '未知' }}</span>
+                <span class="text-xs text-gray-400">{{ $t('settings.resolution') }}</span>
+                <span class="text-xs text-gray-300">{{ monitors[0]?.resolution || $t('settings.unknown') }}</span>
               </div>
             </div>
 
             <!-- 加载中或错误状态 -->
             <div v-if="isLoadingMonitors" class="text-xs text-gray-500">
-              正在加载显示器信息...
+              {{ $t('settings.loadingDisplays') }}
             </div>
             <div v-if="monitorError" class="text-xs text-red-400">
               {{ monitorError }}
@@ -618,9 +618,9 @@
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">输出配置</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.outputConfig') }}</h3>
           <div class="space-y-3">
-            <label class="text-xs text-gray-300 block">Obsidian Vaults</label>
+            <label class="text-xs text-gray-300 block">{{ $t('settings.obsidianVaults') }}</label>
             <!-- Vault list -->
             <div v-for="(vault, index) in vaults" :key="index"
               class="flex items-center gap-2 bg-darker border border-gray-700 rounded-lg px-3 py-2">
@@ -635,24 +635,24 @@
               <button @click="removeVault(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
             </div>
             <div v-if="vaults.length === 0" class="text-xs text-gray-500 py-2">
-              尚未配置 Vault，请添加
+              {{ $t('settings.noVaultConfigured') }}
             </div>
             <!-- Add vault form -->
             <div class="flex gap-2">
-              <input v-model="newVaultName" type="text" placeholder="名称"
+              <input v-model="newVaultName" type="text" :placeholder="$t('common.name')"
                 class="w-1/3 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
-              <input v-model="newVaultPath" type="text" placeholder="路径 (如 /Users/.../Obsidian Vault)"
+              <input v-model="newVaultPath" type="text" :placeholder="$t('common.path')"
                 class="flex-1 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
               <button @click="addVault" :disabled="!newVaultName.trim() || !newVaultPath.trim()"
                 class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
-                添加
+                {{ $t('common.add') }}
               </button>
             </div>
           </div>
         </div>
 
         <div>
-          <label class="text-xs text-gray-300 block mb-2">Logseq Graphs</label>
+          <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.logseqGraphs') }}</label>
           <!-- Graph list -->
           <div v-for="(graph, index) in graphs" :key="index"
             class="flex items-center gap-2 bg-darker border border-gray-700 rounded-lg px-3 py-2 mb-2">
@@ -667,62 +667,62 @@
             <button @click="removeGraph(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
           </div>
           <div v-if="graphs.length === 0" class="text-xs text-gray-500 py-2 mb-2">
-            尚未配置 Graph，请添加
+            {{ $t('settings.noGraphConfigured') }}
           </div>
           <!-- Add graph form -->
           <div class="flex gap-2">
-            <input v-model="newGraphName" type="text" placeholder="名称"
+            <input v-model="newGraphName" type="text" :placeholder="$t('common.name')"
               class="w-1/3 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
-            <input v-model="newGraphPath" type="text" placeholder="路径 (如 /Users/.../Logseq/graph)"
+            <input v-model="newGraphPath" type="text" :placeholder="$t('common.path')"
               class="flex-1 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
             <button @click="addGraph" :disabled="!newGraphName.trim() || !newGraphPath.trim()"
               class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
-              添加
+              {{ $t('common.add') }}
             </button>
           </div>
         </div>
 
         <!-- INT-001: Notion Integration -->
         <div>
-          <label class="text-xs text-gray-300 block mb-2">Notion Integration</label>
+          <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.notionIntegration') }}</label>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">API Key (Integration Token)</label>
-              <input v-model="settings.notion_api_key" type="password" placeholder="secret_xxx..."
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.notionApiKey') }}</label>
+              <input v-model="settings.notion_api_key" type="password" :placeholder="$t('settings.notionApiKeyPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">Database ID</label>
-              <input v-model="settings.notion_database_id" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.notionDatabaseId') }}</label>
+              <input v-model="settings.notion_database_id" type="text" :placeholder="$t('settings.notionDatabaseIdPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
             </div>
             <div class="flex gap-2">
               <button @click="testNotionConnection" :disabled="isTestingNotionConnection"
                 class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
-                {{ isTestingNotionConnection ? 'Testing...' : 'Test Connection' }}
+                {{ isTestingNotionConnection ? $t('common.testing') : $t('common.testConnection') }}
               </button>
               <span v-if="notionConnectionStatus" class="text-xs"
                 :class="notionConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
-                {{ notionConnectionStatus === 'success' ? '✓ Connected' : '✗ Failed' }}
+                {{ notionConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
               </span>
             </div>
             <p class="text-xs text-gray-500">
-              报告将自动同步到 Notion 数据库。需要先在 Notion 创建 Integration 并分享数据库。
+              {{ $t('settings.notionHint') }}
             </p>
           </div>
         </div>
 
         <!-- INT-003: GitHub Work Time Statistics -->
         <div>
-          <label class="text-xs text-gray-300 block mb-2">GitHub 工时统计</label>
+          <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.githubWorkTime') }}</label>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">Personal Access Token</label>
-              <input v-model="settings.github_token" type="password" placeholder="ghp_xxx..."
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.githubToken') }}</label>
+              <input v-model="settings.github_token" type="password" :placeholder="$t('settings.githubTokenPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">Repositories (owner/repo, one per line)</label>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.githubRepos') }}</label>
               <textarea
                 :value="githubReposText"
                 @input="updateGithubRepos"
@@ -733,60 +733,60 @@
             <div class="flex gap-2">
               <button @click="testGithubConnection" :disabled="isTestingGithubConnection"
                 class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
-                {{ isTestingGithubConnection ? 'Testing...' : 'Test Connection' }}
+                {{ isTestingGithubConnection ? $t('common.testing') : $t('common.testConnection') }}
               </button>
               <span v-if="githubConnectionStatus" class="text-xs"
                 :class="githubConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
-                {{ githubConnectionStatus === 'success' ? '✓ Connected' : '✗ Failed' }}
+                {{ githubConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
               </span>
             </div>
             <p class="text-xs text-gray-500">
-              统计指定仓库的提交记录和 PR 活动时间，生成工时报告。Token 需要 repo 权限。
+              {{ $t('settings.githubHint') }}
             </p>
           </div>
         </div>
 
         <!-- INT-004: Slack Notification -->
         <div>
-          <label class="text-xs text-gray-300 block mb-2">Slack 通知</label>
+          <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.slackNotification') }}</label>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">Incoming Webhook URL</label>
-              <input v-model="settings.slack_webhook_url" type="password" placeholder="https://hooks.slack.com/services/..."
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.slackWebhookUrl') }}</label>
+              <input v-model="settings.slack_webhook_url" type="password" :placeholder="$t('settings.slackWebhookPlaceholder')"
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
             </div>
             <div class="flex gap-2">
               <button @click="testSlackConnection" :disabled="isTestingSlackConnection"
                 class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
-                {{ isTestingSlackConnection ? 'Testing...' : 'Test Connection' }}
+                {{ isTestingSlackConnection ? $t('common.testing') : $t('common.testConnection') }}
               </button>
               <span v-if="slackConnectionStatus" class="text-xs"
                 :class="slackConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
-                {{ slackConnectionStatus === 'success' ? '✓ Connected' : '✗ Failed' }}
+                {{ slackConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
               </span>
             </div>
             <p class="text-xs text-gray-500">
-              报告生成后自动发送通知到 Slack 频道。需要在 Slack 中创建 Incoming Webhook。
+              {{ $t('settings.slackHint') }}
             </p>
           </div>
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">快捷键</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
           <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
-            闪念胶囊: Alt + Space
+            {{ $t('settings.quickNoteShortcut') }}
           </div>
         </div>
 
         <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">调试工具</h3>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.debugTools') }}</h3>
           <div class="space-y-3">
             <button
               @click="exportLogs"
               :disabled="isExportingLogs"
               class="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm text-gray-200 transition-colors flex items-center justify-center gap-2"
             >
-              {{ isExportingLogs ? '导出中…' : '📤 导出日志' }}
+              {{ isExportingLogs ? $t('settings.exporting') : '📤 ' + $t('settings.exportLogs') }}
             </button>
             <span v-if="exportError" class="text-xs text-red-400 block">{{ exportError }}</span>
           </div>
