@@ -156,23 +156,38 @@ fn write_report_to_obsidian(
     Ok(output_path.to_string_lossy().to_string())
 }
 
-/// INT-002: Write report content to a Logseq graph's pages directory.
+/// INT-002: Write report content to Logseq output directory if configured.
 /// Logseq stores user-created pages in the `pages` folder inside the graph root.
-#[allow(dead_code)] // Will be integrated with report generation commands in next sub-step
+/// Returns Some(path) if written successfully, None if Logseq not configured.
 fn write_report_to_logseq(
-    logseq_graph_path: &str,
+    settings: &memory_storage::Settings,
     filename: &str,
     content: &str,
-) -> Result<String, String> {
-    let output_dir = PathBuf::from(logseq_graph_path).join("pages");
-    std::fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create Logseq pages directory: {}", e))?;
+) -> Option<String> {
+    match settings.get_logseq_output_path() {
+        Ok(logseq_path) => {
+            // Logseq convention: pages go in the `pages` subdirectory
+            let output_dir = PathBuf::from(&logseq_path).join("pages");
+            if let Err(e) = std::fs::create_dir_all(&output_dir) {
+                tracing::warn!("Failed to create Logseq pages directory: {}", e);
+                return None;
+            }
 
-    let output_path = output_dir.join(filename);
-    std::fs::write(&output_path, content)
-        .map_err(|e| format!("Failed to write report to Logseq: {}", e))?;
-
-    Ok(output_path.to_string_lossy().to_string())
+            let output_path = output_dir.join(filename);
+            match std::fs::write(&output_path, content) {
+                Ok(_) => {
+                    let path_str = output_path.to_string_lossy().to_string();
+                    tracing::info!("Report also written to Logseq: {}", path_str);
+                    Some(path_str)
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to write report to Logseq: {}", e);
+                    None
+                }
+            }
+        }
+        Err(_) => None, // Logseq not configured, silently skip
+    }
 }
 
 const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个工作日志助手。请根据以下今日工作记录，生成一份结构化的 Markdown 格式日报。
@@ -429,6 +444,9 @@ pub async fn generate_daily_summary() -> Result<String, String> {
 
     let filename = generate_summary_filename(&settings);
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
+
+    // INT-002: Also write to Logseq if configured
+    write_report_to_logseq(&settings, &filename, &summary);
 
     let mut updated_settings = settings.clone();
     updated_settings.last_summary_path = Some(path_str.clone());
@@ -1007,9 +1025,19 @@ mod tests {
     fn write_report_to_logseq_creates_file_in_pages_folder() {
         let dir = std::env::temp_dir().join("dailylogger_test_write_logseq");
         let _ = std::fs::remove_dir_all(&dir);
-        let path =
-            write_report_to_logseq(dir.to_str().unwrap(), "test-report.md", "# Report\nContent")
-                .unwrap();
+
+        // Create settings with logseq_graphs configured
+        let mut settings = create_settings_with_include_manual(true);
+        let graph_path = dir.to_str().unwrap().to_string();
+        settings.logseq_graphs = Some(format!(
+            r#"[{{"name":"Test","path":"{}","is_default":true}}]"#,
+            graph_path
+        ));
+
+        let path = write_report_to_logseq(&settings, "test-report.md", "# Report\nContent");
+        assert!(path.is_some());
+        let path = path.unwrap();
+
         // File should be in pages subdirectory
         assert!(path.contains("pages"));
         assert!(std::path::Path::new(&path).exists());
@@ -1022,14 +1050,31 @@ mod tests {
     fn write_report_to_logseq_creates_pages_directory() {
         let dir = std::env::temp_dir().join("dailylogger_test_logseq_pages");
         let _ = std::fs::remove_dir_all(&dir);
-        // Don't create pages folder manually - function should create it
-        let path =
-            write_report_to_logseq(dir.to_str().unwrap(), "daily-report.md", "# Daily\n").unwrap();
+
+        // Create settings with logseq_graphs configured
+        let mut settings = create_settings_with_include_manual(true);
+        let graph_path = dir.to_str().unwrap().to_string();
+        settings.logseq_graphs = Some(format!(
+            r#"[{{"name":"Test","path":"{}","is_default":true}}]"#,
+            graph_path
+        ));
+
+        let path = write_report_to_logseq(&settings, "daily-report.md", "# Daily\n");
+        assert!(path.is_some());
+
         // Verify pages folder was created
         let pages_dir = std::path::Path::new(&dir).join("pages");
         assert!(pages_dir.exists());
-        assert!(std::path::Path::new(&path).exists());
+        assert!(std::path::Path::new(path.unwrap().as_str()).exists());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn write_report_to_logseq_returns_none_when_not_configured() {
+        let settings = create_settings_with_include_manual(true);
+        // logseq_graphs is None by default
+        let result = write_report_to_logseq(&settings, "test.md", "# Content");
+        assert!(result.is_none());
     }
 
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)
@@ -1103,6 +1148,9 @@ pub async fn generate_weekly_report() -> Result<String, String> {
     let filename = generate_weekly_report_filename(week_start_day);
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
 
+    // INT-002: Also write to Logseq if configured
+    write_report_to_logseq(&settings, &filename, &summary);
+
     let mut updated_settings = settings.clone();
     updated_settings.last_weekly_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
@@ -1148,6 +1196,9 @@ pub async fn generate_monthly_report() -> Result<String, String> {
 
     let filename = generate_monthly_report_filename();
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
+
+    // INT-002: Also write to Logseq if configured
+    write_report_to_logseq(&settings, &filename, &summary);
 
     let mut updated_settings = settings.clone();
     updated_settings.last_monthly_report_path = Some(path_str.clone());
@@ -1258,6 +1309,9 @@ pub async fn generate_custom_report(
     let filename = generate_custom_report_filename(name, &start_date, &end_date);
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
 
+    // INT-002: Also write to Logseq if configured
+    write_report_to_logseq(&settings, &filename, &summary);
+
     let mut updated_settings = settings.clone();
     updated_settings.last_custom_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
@@ -1346,6 +1400,9 @@ pub async fn compare_reports(
     let filename =
         generate_comparison_report_filename(&start_date_a, &end_date_a, &start_date_b, &end_date_b);
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
+
+    // INT-002: Also write to Logseq if configured
+    write_report_to_logseq(&settings, &filename, &summary);
 
     tracing::info!("Comparison report generated: {}", path_str);
     Ok(path_str)
