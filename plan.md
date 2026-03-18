@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
-> 最后更新: 2026-03-17
+> 最后更新: 2026-03-18
 > 当前版本: v1.13.2 ✅ 已发布
-> 下一版本: v1.14.0（待规划）
+> 下一版本: v1.14.0 ✅ 已完成（待发布）
 
 ---
 
@@ -276,6 +276,33 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
+## v1.14.0（Logseq 导出支持）✅ 已完成（待发布）
+
+**目标**: 新增 Logseq 导出支持，报告可同时输出到 Obsidian 和 Logseq。
+
+| ID | 需求 | 故事点 | 状态 |
+|----|------|--------|------|
+| INT-002 | Logseq 导出支持 | 3pts | ✅ 完成 |
+
+### INT-002: Logseq 导出支持
+
+**功能**: 支持将报告输出到 Logseq 图谱的 `pages` 文件夹，可配置多个图谱并设置默认图谱。
+
+**后端变更** (`src-tauri/src/`):
+- `memory_storage/mod.rs`: Settings 新增 `logseq_graphs` 字段，新增 `LogseqGraph` 结构体
+- `memory_storage/settings.rs`: 新增 `get_logseq_output_path()` 方法
+- `synthesis/mod.rs`: 新增 `write_report_to_logseq()` 函数，集成到所有 5 个报告生成函数
+
+**前端变更** (`src/`):
+- `components/SettingsModal.vue`: 新增 Logseq 图谱管理 UI（添加/删除/设默认）
+
+**验收条件**:
+- 用户可配置多个 Logseq 图谱
+- 报告自动写入到图谱的 `pages` 文件夹
+- 同时支持 Obsidian 和 Logseq 双输出
+
+---
+
 ## 长期规划: v2.0.0+（集成与扩展）
 
 **目标**: 与第三方工具集成，扩展应用场景。
@@ -283,7 +310,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | ID | 需求 | 故事点 | 状态 |
 |----|------|--------|------|
 | INT-001 | Notion 导出支持 | 5pts | Backlog |
-| INT-002 | Logseq 导出支持 | 3pts | Backlog |
+| INT-002 | Logseq 导出支持 | 3pts | ✅ 完成 (v1.14.0) |
 | INT-003 | GitHub 工时统计 | 8pts | Backlog |
 | INT-004 | Slack/钉钉通知 | 5pts | Backlog |
 
