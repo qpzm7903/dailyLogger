@@ -32,6 +32,14 @@
     "shortcutHint": "Enter 保存 · Shift+Enter 换行",
     "placeholder": "记录此刻的想法..."
   },
+  "quickNoteWindow": {
+    "title": "快速记录",
+    "shortcutHint": "Enter 保存 · Esc 关闭",
+    "placeholder": "记录此刻的想法...",
+    "cancel": "取消",
+    "saving": "保存中...",
+    "save": "保存"
+  },
   "toast": {
     "suggestion": "建议：",
     "retry": "重试",

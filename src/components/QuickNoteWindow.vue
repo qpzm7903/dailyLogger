@@ -3,9 +3,9 @@
     <header class="bg-dark border-b border-gray-700 px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <span class="text-lg">⚡</span>
-        <h1 class="text-sm font-medium">快速记录</h1>
+        <h1 class="text-sm font-medium">{{ t('quickNoteWindow.title') }}</h1>
       </div>
-      <span class="text-xs text-gray-500">Enter 保存 · Esc 关闭</span>
+      <span class="text-xs text-gray-500">{{ t('quickNoteWindow.shortcutHint') }}</span>
     </header>
 
     <main class="flex-1 p-4">
@@ -14,7 +14,7 @@
         v-model="content"
         @keydown.enter.exact.prevent="save"
         @keydown.esc="closeWindow"
-        placeholder="记录此刻的想法..."
+        :placeholder="t('quickNoteWindow.placeholder')"
         class="w-full h-full bg-darker border border-gray-700 rounded-lg px-4 py-3 text-sm focus:border-primary focus:outline-none resize-none"
         autofocus
       ></textarea>
@@ -27,14 +27,14 @@
           @click="closeWindow"
           class="px-3 py-1.5 rounded-lg text-xs hover:bg-gray-700 transition-colors"
         >
-          取消
+          {{ t('quickNoteWindow.cancel') }}
         </button>
         <button
           @click="save"
           :disabled="!content.trim() || isSaving"
           class="px-3 py-1.5 bg-primary rounded-lg text-xs font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {{ isSaving ? '保存中...' : '保存' }}
+          {{ isSaving ? t('quickNoteWindow.saving') : t('quickNoteWindow.save') }}
         </button>
       </div>
     </footer>
@@ -45,6 +45,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const content = ref('')
 const inputRef = ref(null)

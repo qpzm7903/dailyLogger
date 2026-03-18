@@ -42,21 +42,21 @@ describe('QuickNoteWindow.vue', () => {
 
   it('renders correctly', () => {
     const wrapper = mount(QuickNoteWindow)
-    expect(wrapper.find('h1').text()).toBe('快速记录')
+    expect(wrapper.find('h1').text()).toBe('Quick Note')
     expect(wrapper.find('textarea').exists()).toBe(true)
     expect(wrapper.find('button').exists()).toBe(true)
   })
 
   it('has save button disabled initially', () => {
     const wrapper = mount(QuickNoteWindow)
-    const saveButton = wrapper.findAll('button').find(b => b.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
     expect(saveButton?.attributes('disabled')).toBeDefined()
   })
 
   it('enables save button when content is entered', async () => {
     const wrapper = mount(QuickNoteWindow)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(b => b.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
 
     await textarea.setValue('Test note content')
     await nextTick()
@@ -81,7 +81,7 @@ describe('QuickNoteWindow.vue', () => {
 
     const wrapper = mount(QuickNoteWindow)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(b => b.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
 
     await textarea.setValue('Test note content')
     await nextTick()
@@ -128,7 +128,7 @@ describe('QuickNoteWindow.vue', () => {
 
     const wrapper = mount(QuickNoteWindow)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(b => b.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
 
     await textarea.setValue('Test note content')
     await nextTick()
@@ -148,7 +148,7 @@ describe('QuickNoteWindow.vue', () => {
     getCurrentWindow.mockReturnValue({ close: mockClose })
 
     const wrapper = mount(QuickNoteWindow)
-    const cancelButton = wrapper.findAll('button').find(b => b.text() === '取消')
+    const cancelButton = wrapper.findAll('button').find(b => b.text() === 'Cancel')
 
     await cancelButton?.trigger('click')
 

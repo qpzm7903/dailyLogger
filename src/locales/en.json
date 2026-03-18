@@ -32,6 +32,14 @@
     "shortcutHint": "Enter to save · Shift+Enter for new line",
     "placeholder": "Capture your thoughts..."
   },
+  "quickNoteWindow": {
+    "title": "Quick Note",
+    "shortcutHint": "Enter to save · Esc to close",
+    "placeholder": "Capture your thoughts...",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
   "toast": {
     "suggestion": "Suggestion:",
     "retry": "Retry",
