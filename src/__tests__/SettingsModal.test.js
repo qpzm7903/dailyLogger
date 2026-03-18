@@ -107,7 +107,7 @@ describe('SettingsModal', () => {
       await wrapper.vm.$nextTick()
 
       expect(wrapper.vm.settings.analysis_prompt).toBe('')
-      expect(showSuccess).toHaveBeenCalledWith('已重置为默认 Prompt，保存后生效')
+      expect(showSuccess).toHaveBeenCalledWith('Reset to default prompt, will take effect after save')
     }
   })
 

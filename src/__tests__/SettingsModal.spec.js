@@ -47,7 +47,7 @@ describe('SettingsModal.vue - saveSettings', () => {
     // 检查成功状态（带图标的绿色提示，位于底部 footer 区域）
     const successMsg = footer.find('.text-green-400')
     expect(successMsg.exists()).toBe(true)
-    expect(successMsg.text()).toContain('已保存')
+    expect(successMsg.text()).toContain('Saved')
   })
 
   it('保存失败时显示"✗ 保存失败"', async () => {
@@ -62,7 +62,7 @@ describe('SettingsModal.vue - saveSettings', () => {
     // 检查失败状态（带图标的红色提示）
     const errorMsg = wrapper.find('.text-red-400')
     expect(errorMsg.exists()).toBe(true)
-    expect(errorMsg.text()).toContain('保存失败')
+    expect(errorMsg.text()).toContain('Save failed')
   })
 
   it('调用 save_settings 命令并传入 settings 对象', async () => {
@@ -99,7 +99,7 @@ describe('SettingsModal.vue - saveSettings', () => {
 
     await flushPromises()
 
-    expect(saveBtn.text()).toBe('保存中…')
+    expect(saveBtn.text()).toBe('Saving...')
     expect(saveBtn.attributes('disabled')).toBeDefined()
 
     resolveSave()

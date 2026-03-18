@@ -822,7 +822,7 @@
       <div v-if="showDefaultPromptModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showDefaultPromptModal = false">
         <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-hidden border border-gray-700">
           <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">默认分析 Prompt</h3>
+            <h3 class="text-lg font-semibold">{{ t('settings.defaultAnalysisPrompt') }}</h3>
             <button @click="showDefaultPromptModal = false" class="text-gray-400 hover:text-white">✕</button>
           </div>
           <div class="p-6 overflow-y-auto max-h-[60vh]">
@@ -833,7 +833,7 @@
               @click="showDefaultPromptModal = false"
               class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 transition-colors"
             >
-              关闭
+              {{ t('settings.close') }}
             </button>
           </div>
         </div>
@@ -843,7 +843,7 @@
       <div v-if="showDefaultSummaryPromptModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showDefaultSummaryPromptModal = false">
         <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-hidden border border-gray-700">
           <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">默认日报 Prompt</h3>
+            <h3 class="text-lg font-semibold">{{ t('settings.defaultReportPrompt') }}</h3>
             <button @click="showDefaultSummaryPromptModal = false" class="text-gray-400 hover:text-white">✕</button>
           </div>
           <div class="p-6 overflow-y-auto max-h-[60vh]">
@@ -854,7 +854,7 @@
               @click="showDefaultSummaryPromptModal = false"
               class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 transition-colors"
             >
-              关闭
+              {{ t('settings.close') }}
             </button>
           </div>
         </div>
@@ -864,7 +864,7 @@
       <div v-if="showDefaultTagCategoriesModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showDefaultTagCategoriesModal = false">
         <div class="bg-dark rounded-2xl w-[400px] max-h-[80vh] overflow-hidden border border-gray-700">
           <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">默认标签分类</h3>
+            <h3 class="text-lg font-semibold">{{ t('settings.defaultTagCategories') }}</h3>
             <button @click="showDefaultTagCategoriesModal = false" class="text-gray-400 hover:text-white">✕</button>
           </div>
           <div class="p-6 overflow-y-auto max-h-[60vh]">
@@ -883,7 +883,7 @@
               @click="showDefaultTagCategoriesModal = false"
               class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 transition-colors"
             >
-              关闭
+              {{ t('settings.close') }}
             </button>
           </div>
         </div>
@@ -893,7 +893,7 @@
       <div v-if="showTemplateLibraryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showTemplateLibraryModal = false">
         <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-hidden border border-gray-700">
           <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">模板库</h3>
+            <h3 class="text-lg font-semibold">{{ t('common.templateLibrary') }}</h3>
             <button @click="showTemplateLibraryModal = false" class="text-gray-400 hover:text-white">✕</button>
           </div>
           <div class="p-6 overflow-y-auto max-h-[60vh] space-y-4">
@@ -922,7 +922,7 @@
               @click="showTemplateLibraryModal = false"
               class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-200 transition-colors"
             >
-              关闭
+              {{ t('settings.close') }}
             </button>
           </div>
         </div>
@@ -932,11 +932,11 @@
         <div class="flex flex-col">
           <span v-if="saveStatus === 'ok'" class="text-green-400 text-xs flex items-center gap-1">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-            已保存
+            {{ t('settings.saved') }}
           </span>
           <span v-else-if="saveStatus === 'err'" class="text-red-400 text-xs flex items-center gap-1">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-            保存失败
+            {{ t('settings.saveFailed') }}
           </span>
           <span v-if="saveError" class="text-xs text-red-400 mt-1">{{ saveError }}</span>
           <span v-else-if="!saveStatus" class="text-xs text-transparent select-none">placeholder</span>
@@ -946,14 +946,14 @@
             @click="$emit('close')"
             class="px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
           >
-            取消
+            {{ t('settings.cancel') }}
           </button>
           <button
             @click="saveSettings"
             :disabled="isSaving"
             class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
-            {{ isSaving ? '保存中…' : '保存' }}
+            {{ isSaving ? t('settings.saving') : t('settings.save') }}
           </button>
         </div>
       </div>
@@ -1016,14 +1016,14 @@ const defaultTagCategoriesContent = ref([])
 const presetTemplates = [
   {
     id: 'default',
-    name: '默认模板',
-    description: '结构化日报，包含时间线、关键成果和问题',
+    name: t('settings.templateDefaultName'),
+    description: t('settings.templateDefaultDesc'),
     content: null // Will be loaded from backend
   },
   {
     id: 'concise',
-    name: '简洁模板',
-    description: '简洁摘要，仅列出主要工作项',
+    name: t('settings.templateSimpleName'),
+    description: t('settings.templateSimpleDesc'),
     content: `请根据以下今日工作记录，生成简洁的工作摘要。
 
 今日记录：
@@ -1038,8 +1038,8 @@ const presetTemplates = [
   },
   {
     id: 'detailed',
-    name: '详细模板',
-    description: '详细日报，包含时间分析和工作建议',
+    name: t('settings.templateDetailedName'),
+    description: t('settings.templateDetailedDesc'),
     content: `请根据以下今日工作记录，生成详细的工作日报。
 
 今日记录：
@@ -1251,7 +1251,7 @@ const loadMonitors = async () => {
 // SMART-003: Format work time periods for display
 const formatWorkTimePeriods = (periods) => {
   if (!periods || periods.length === 0) {
-    return '未检测到'
+    return t('settings.notDetected')
   }
   return periods.map(p => {
     const startHour = String(p.start).padStart(2, '0')
@@ -1297,17 +1297,17 @@ const validateSettings = () => {
 
   // Validate screenshot interval
   if (settings.value.screenshot_interval < 1 || settings.value.screenshot_interval > 60) {
-    return '截图间隔必须在 1-60 分钟之间'
+    return t('settings.screenshotIntervalError')
   }
 
   // Validate change threshold
   if (settings.value.change_threshold < 1 || settings.value.change_threshold > 20) {
-    return '变化阈值必须在 1-20% 之间'
+    return t('settings.changeThresholdError')
   }
 
   // Validate max silent minutes
   if (settings.value.max_silent_minutes < 5 || settings.value.max_silent_minutes > 120) {
-    return '最大静默时间必须在 5-120 分钟之间'
+    return t('settings.maxSilentTimeError')
   }
 
   return null
@@ -1391,7 +1391,7 @@ const saveSettings = async () => {
     }
     await invoke('save_settings', { settings: settingsToSave })
     saveStatus.value = 'ok'
-    showSuccess('设置已保存')
+    showSuccess(t('settings.settingsSaved'))
     setTimeout(() => emit('close'), 800)
   } catch (err) {
     console.error('Failed to save settings:', err)
@@ -1470,7 +1470,7 @@ const exportLogs = async () => {
     if (filePath) {
       // Write the log content to the selected file
       await writeTextFile(filePath, logContent)
-      showSuccess('日志导出成功')
+      showSuccess(t('settings.logsExportSuccess'))
     }
   } catch (err) {
     console.error('Failed to export logs:', err)
@@ -1478,7 +1478,7 @@ const exportLogs = async () => {
       exportError.value = `导出失败: ${err}`
       showError(err)
     } else {
-      exportError.value = '日志文件不存在'
+      exportError.value = t('settings.logFileNotExist')
     }
   } finally {
     isExportingLogs.value = false
@@ -1497,7 +1497,7 @@ const showDefaultPrompt = async () => {
 
 const resetPrompt = () => {
   settings.value.analysis_prompt = ''
-  showSuccess('已重置为默认 Prompt，保存后生效')
+  showSuccess(t('settings.resetPromptSuccess'))
 }
 
 // AI-004: Tag categories methods
@@ -1513,20 +1513,20 @@ const showDefaultTagCategories = async () => {
 
 const resetTagCategories = () => {
   tagCategoriesText.value = ''
-  showSuccess('已重置为默认标签分类，保存后生效')
+  showSuccess(t('settings.resetTagCategoriesSuccess'))
 }
 
 // API Connection test
 const testConnection = async () => {
   if (!settings.value.api_base_url || !settings.value.model_name) {
-    showError('请先填写 API Base URL 和分析模型')
+    showError(t('settings.apiBaseUrlRequired'))
     return
   }
 
   // For non-Ollama endpoints, API Key is required
   const isOllama = isOllamaEndpoint(settings.value.api_base_url)
   if (!isOllama && !settings.value.api_key) {
-    showError('请先填写 API Key')
+    showError(t('settings.apiKeyRequired'))
     return
   }
 
@@ -1558,7 +1558,7 @@ const testConnection = async () => {
 const getModelInfo = async (type) => {
   const modelName = type === 'analysis' ? settings.value.model_name : settings.value.summary_model_name
   if (!modelName) {
-    showError('请先填写模型名称')
+    showError(t('settings.modelNameRequired'))
     return
   }
 
@@ -1582,7 +1582,7 @@ const getModelInfo = async (type) => {
     } else if (result.context_window) {
       showSuccess(`${modelName}: ${result.context_window / 1000}K tokens`)
     } else {
-      showSuccess('模型信息不可用，请参考模型文档')
+      showSuccess(t('settings.modelInfoUnavailable'))
     }
   } catch (err) {
     console.error('Failed to get model info:', err)
@@ -1613,7 +1613,7 @@ const isOllama = computed(() => isOllamaEndpoint(settings.value.api_base_url))
 // Fetch available models from Ollama
 const fetchOllamaModels = async () => {
   if (!settings.value.api_base_url) {
-    showError('请先填写 Base URL')
+    showError(t('settings.apiBaseUrlRequired'))
     return
   }
 
@@ -1628,7 +1628,7 @@ const fetchOllamaModels = async () => {
     if (result.success) {
       ollamaModels.value = result.models
       if (result.models.length === 0) {
-        ollamaModelError.value = '未找到已安装的模型，请使用 ollama pull <model> 安装'
+        ollamaModelError.value = t('settings.ollamaModelsNotFound')
       } else {
         showSuccess(`找到 ${result.models.length} 个模型`)
       }
@@ -1663,7 +1663,7 @@ const showDefaultSummaryPrompt = async () => {
 
 const resetSummaryPrompt = () => {
   settings.value.summary_prompt = ''
-  showSuccess('已重置为默认 Prompt，保存后生效')
+  showSuccess(t('settings.resetPromptSuccess'))
 }
 
 // Template Library functions
@@ -1684,7 +1684,7 @@ const applyTemplate = (template) => {
     showTemplateLibraryModal.value = false
     showSuccess(`已应用模板: ${template.name}`)
   } else {
-    showError('模板内容为空')
+    showError(t('settings.templateContentEmpty'))
   }
 }
 
@@ -1692,15 +1692,15 @@ const applyTemplate = (template) => {
 const exportTemplate = async () => {
   const currentPrompt = settings.value.summary_prompt || ''
   if (!currentPrompt.trim()) {
-    showError('当前 Prompt 为空，无法导出')
+    showError(t('settings.currentPromptEmpty'))
     return
   }
 
   try {
     const templateData = {
       version: '1.0',
-      name: '我的日报模板',
-      description: '自定义日报模板',
+      name: t('settings.myReportTemplateName'),
+      description: t('settings.myReportTemplateDesc'),
       content: currentPrompt,
       createdAt: new Date().toISOString()
     }
@@ -1715,7 +1715,7 @@ const exportTemplate = async () => {
 
     if (filePath) {
       await writeTextFile(filePath, JSON.stringify(templateData, null, 2))
-      showSuccess('模板导出成功')
+      showSuccess(t('settings.templateExportSuccess'))
     }
   } catch (err) {
     console.error('Failed to export template:', err)
@@ -1742,22 +1742,22 @@ const importTemplate = async () => {
 
     // Validate template format
     if (!templateData.content || typeof templateData.content !== 'string') {
-      showError('无效的模板文件：缺少 content 字段')
+      showError(t('settings.invalidTemplateFile'))
       return
     }
 
     // Check for {records} placeholder
     if (!templateData.content.includes('{records}')) {
-      showError('模板缺少 {records} 占位符，请确保模板包含此占位符')
+      showError(t('settings.templateMissingPlaceholder'))
       return
     }
 
     settings.value.summary_prompt = templateData.content
-    showSuccess(`导入成功: ${templateData.name || '未命名模板'}`)
+    showSuccess(t('settings.importSuccess', { name: templateData.name || t('settings.unnamedTemplate') }))
   } catch (err) {
     console.error('Failed to import template:', err)
     if (err instanceof SyntaxError) {
-      showError('导入失败: JSON 格式无效')
+      showError(t('settings.importFailed'))
     } else {
       showError(`导入失败: ${err}`)
     }

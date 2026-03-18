@@ -123,7 +123,7 @@ describe('SettingsModal', () => {
     await nextTick()
 
     // Find and click save button
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
     await saveButton.trigger('click')
 
     await nextTick()
@@ -393,7 +393,7 @@ describe('SettingsModal', () => {
       wrapper.vm.settings.use_whitelist_only = true
 
       // Find and click save button
-      const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+      const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
       await saveButton.trigger('click')
 
       await nextTick()
