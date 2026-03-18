@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-18
-> 当前版本: v1.15.0 ✅ 已发布
-> 下一版本: v1.16.0 ✅ 已完成（待发布）
+> 当前版本: v1.16.0 ✅ 已发布
+> 下一版本: v1.17.0 ✅ 已完成（待发布）
 
 ---
 
@@ -361,6 +361,36 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
+## v1.17.0（Slack 通知集成）✅ 已完成（待发布）
+
+**目标**: 新增 Slack 通知集成，支持将报告发送到 Slack 频道。
+
+| ID | 需求 | 故事点 | 状态 |
+|----|------|--------|------|
+| INT-004 | Slack 通知集成 | 5pts | ✅ 完成 |
+
+### INT-004: Slack 通知集成
+
+**功能**: 支持将报告通过 Slack Webhook 发送到指定频道，可配置多个 Webhook 并设置默认频道。
+
+**后端变更** (`src-tauri/src/`):
+- `memory_storage/mod.rs`: Settings 新增 `slack_webhooks` 字段，新增 `SlackWebhook` 结构体
+- `memory_storage/settings.rs`: 新增 `get_slack_webhooks()` 方法
+- `slack.rs`: 新增 Slack Webhook 集成模块，包含 `send_to_slack()` 和 `test_slack_webhook()` 函数
+- `synthesis/mod.rs`: 集成 Slack 输出到所有 5 个报告生成函数
+- `main.rs`: 注册 `test_slack_webhook` 命令
+
+**前端变更** (`src/`):
+- `components/SettingsModal.vue`: 新增 Slack Webhook 管理 UI（添加/删除/设默认、测试连接）
+
+**验收条件**:
+- 用户可配置多个 Slack Webhook URL
+- 报告自动发送到默认 Slack 频道
+- 支持连接测试验证配置正确性
+- 同时支持 Obsidian、Logseq、Notion 和 Slack 四重输出
+
+---
+
 ## 长期规划: v2.0.0+（集成与扩展）
 
 **目标**: 与第三方工具集成，扩展应用场景。
@@ -370,7 +400,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | INT-001 | Notion 导出支持 | 5pts | ✅ 完成 (v1.15.0) |
 | INT-002 | Logseq 导出支持 | 3pts | ✅ 完成 (v1.14.0) |
 | INT-003 | GitHub 工时统计 | 8pts | ✅ 完成 (v1.16.0) |
-| INT-004 | Slack/钉钉通知 | 5pts | Backlog |
+| INT-004 | Slack 通知集成 | 5pts | ✅ 完成 (v1.17.0) |
 
 **远期功能**:
 - 时间线可视化（图形化展示一天工作流）
