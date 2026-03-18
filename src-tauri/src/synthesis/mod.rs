@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use tauri::command;
 
 use crate::memory_storage::{self, Record, Settings};
+use crate::notion;
 
 /// API configuration extracted from Settings for LLM calls.
 #[derive(Debug)]
@@ -447,6 +448,11 @@ pub async fn generate_daily_summary() -> Result<String, String> {
 
     // INT-002: Also write to Logseq if configured
     write_report_to_logseq(&settings, &filename, &summary);
+
+    // INT-001: Also write to Notion if configured
+    if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
+        tracing::info!("Report also written to Notion: {}", notion_url);
+    }
 
     let mut updated_settings = settings.clone();
     updated_settings.last_summary_path = Some(path_str.clone());
@@ -1161,6 +1167,11 @@ pub async fn generate_weekly_report() -> Result<String, String> {
     // INT-002: Also write to Logseq if configured
     write_report_to_logseq(&settings, &filename, &summary);
 
+    // INT-001: Also write to Notion if configured
+    if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
+        tracing::info!("Weekly report also written to Notion: {}", notion_url);
+    }
+
     let mut updated_settings = settings.clone();
     updated_settings.last_weekly_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
@@ -1209,6 +1220,11 @@ pub async fn generate_monthly_report() -> Result<String, String> {
 
     // INT-002: Also write to Logseq if configured
     write_report_to_logseq(&settings, &filename, &summary);
+
+    // INT-001: Also write to Notion if configured
+    if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
+        tracing::info!("Monthly report also written to Notion: {}", notion_url);
+    }
 
     let mut updated_settings = settings.clone();
     updated_settings.last_monthly_report_path = Some(path_str.clone());
@@ -1322,6 +1338,11 @@ pub async fn generate_custom_report(
     // INT-002: Also write to Logseq if configured
     write_report_to_logseq(&settings, &filename, &summary);
 
+    // INT-001: Also write to Notion if configured
+    if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
+        tracing::info!("Custom report also written to Notion: {}", notion_url);
+    }
+
     let mut updated_settings = settings.clone();
     updated_settings.last_custom_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
@@ -1413,6 +1434,11 @@ pub async fn compare_reports(
 
     // INT-002: Also write to Logseq if configured
     write_report_to_logseq(&settings, &filename, &summary);
+
+    // INT-001: Also write to Notion if configured
+    if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
+        tracing::info!("Comparison report also written to Notion: {}", notion_url);
+    }
 
     tracing::info!("Comparison report generated: {}", path_str);
     Ok(path_str)
