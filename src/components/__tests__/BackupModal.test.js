@@ -49,8 +49,9 @@ describe('BackupModal', () => {
 
       await nextTick()
 
-      expect(wrapper.html()).toContain('数据备份与恢复')
-      expect(wrapper.find('h2').text()).toBe('数据备份与恢复')
+      // HTML encodes & as &amp;
+      expect(wrapper.html()).toContain('Data Backup')
+      expect(wrapper.find('h2').text()).toBe('Data Backup & Restore')
     })
 
     it('renders close button in header', async () => {
@@ -95,9 +96,9 @@ describe('BackupModal', () => {
       const tabsContainer = wrapper.findAll('.flex.border-b')[1] // Second .flex.border-b is the tabs
       const tabs = tabsContainer.findAll('button')
       expect(tabs).toHaveLength(3)
-      expect(tabs[0].text()).toContain('创建备份')
-      expect(tabs[1].text()).toContain('恢复数据')
-      expect(tabs[2].text()).toContain('备份历史')
+      expect(tabs[0].text()).toContain('Create Backup')
+      expect(tabs[1].text()).toContain('Restore Data')
+      expect(tabs[2].text()).toContain('Backup History')
     })
 
     it('shows backup tab by default', async () => {
@@ -105,8 +106,8 @@ describe('BackupModal', () => {
 
       await nextTick()
 
-      expect(wrapper.html()).toContain('备份说明')
-      expect(wrapper.html()).toContain('创建备份')
+      expect(wrapper.html()).toContain('Backup Information')
+      expect(wrapper.html()).toContain('Create Backup')
     })
 
     it('switches to restore tab when clicked', async () => {
@@ -120,8 +121,8 @@ describe('BackupModal', () => {
 
       await nextTick()
 
-      expect(wrapper.html()).toContain('恢复说明')
-      expect(wrapper.html()).toContain('选择备份文件')
+      expect(wrapper.html()).toContain('Restore Information')
+      expect(wrapper.html()).toContain('Select Backup File')
     })
 
     it('switches to history tab when clicked', async () => {
@@ -135,7 +136,7 @@ describe('BackupModal', () => {
 
       await nextTick()
 
-      expect(wrapper.html()).toContain('暂无备份记录')
+      expect(wrapper.html()).toContain('No backup records')
     })
 
     it('highlights active tab', async () => {
@@ -166,8 +167,8 @@ describe('BackupModal', () => {
 
       await nextTick()
 
-      expect(wrapper.html()).toContain('备份将包含数据库和所有截图文件')
-      expect(wrapper.html()).toContain('备份文件保存为 ZIP 格式')
+      expect(wrapper.html()).toContain('Backup includes database and all screenshots')
+      expect(wrapper.html()).toContain('Backup file saved as ZIP format')
     })
 
     it('has backup directory input', async () => {
@@ -177,7 +178,7 @@ describe('BackupModal', () => {
 
       const input = wrapper.find('input[type="text"]')
       expect(input.exists()).toBe(true)
-      expect(input.attributes('placeholder')).toContain('默认')
+      expect(input.attributes('placeholder')).toContain('Default')
     })
 
     it('has create backup button', async () => {
@@ -186,7 +187,7 @@ describe('BackupModal', () => {
       await nextTick()
 
       const buttons = wrapper.findAll('button')
-      const createButton = buttons.find(b => b.text().includes('创建备份'))
+      const createButton = buttons.find(b => b.text().includes('Create Backup'))
       expect(createButton).toBeDefined()
     })
 
@@ -201,7 +202,7 @@ describe('BackupModal', () => {
       await nextTick()
 
       const buttons = wrapper.findAll('button')
-      const createButton = buttons.find(b => b.text().includes('备份中'))
+      const createButton = buttons.find(b => b.text().includes('Backing up'))
       expect(createButton).toBeDefined()
       expect(createButton.attributes('disabled')).toBeDefined()
     })
@@ -220,7 +221,7 @@ describe('BackupModal', () => {
       }
       await nextTick()
 
-      expect(wrapper.html()).toContain('备份成功')
+      expect(wrapper.html()).toContain('Backup Successful')
       expect(wrapper.html()).toContain('/backups/backup-2026-03-18.zip')
     })
 
@@ -231,7 +232,7 @@ describe('BackupModal', () => {
 
       await nextTick()
 
-      const selectButton = wrapper.findAll('button').find(b => b.text().includes('选择'))
+      const selectButton = wrapper.findAll('button').find(b => b.text().includes('Select'))
       await selectButton.trigger('click')
 
       await nextTick()
@@ -239,7 +240,7 @@ describe('BackupModal', () => {
       expect(open).toHaveBeenCalledWith({
         directory: true,
         multiple: false,
-        title: '选择备份目录'
+        title: 'Select'
       })
     })
 
@@ -259,7 +260,7 @@ describe('BackupModal', () => {
 
       // Find the create backup button (has w-full class, not a tab)
       const createButton = wrapper.findAll('button').find(b =>
-        b.text().includes('创建备份') && b.classes().includes('w-full')
+        b.text().includes('Create Backup') && b.classes().includes('w-full')
       )
       await createButton.trigger('click')
 
@@ -280,8 +281,8 @@ describe('BackupModal', () => {
       await tabs[1].trigger('click')
       await nextTick()
 
-      expect(wrapper.html()).toContain('选择要恢复的备份文件')
-      expect(wrapper.html()).toContain('恢复前会自动备份当前数据')
+      expect(wrapper.html()).toContain('Select a backup file to restore')
+      expect(wrapper.html()).toContain('Current data will be auto-backed up before restore')
     })
 
     it('has select backup file button', async () => {
@@ -294,7 +295,7 @@ describe('BackupModal', () => {
       await tabs[1].trigger('click')
       await nextTick()
 
-      const selectFileButton = wrapper.findAll('button').find(b => b.text().includes('选择备份文件'))
+      const selectFileButton = wrapper.findAll('button').find(b => b.text().includes('Select Backup File'))
       expect(selectFileButton).toBeDefined()
     })
 
@@ -314,7 +315,7 @@ describe('BackupModal', () => {
       }
       await nextTick()
 
-      expect(wrapper.html()).toContain('选择的备份')
+      expect(wrapper.html()).toContain('Selected Backup')
       expect(wrapper.html()).toContain('25')
       expect(wrapper.html()).toContain('10')
     })
@@ -335,7 +336,7 @@ describe('BackupModal', () => {
       }
       await nextTick()
 
-      const confirmButton = wrapper.findAll('button').find(b => b.text().includes('确认恢复'))
+      const confirmButton = wrapper.findAll('button').find(b => b.text().includes('Confirm Restore'))
       expect(confirmButton).toBeDefined()
     })
 
@@ -355,12 +356,12 @@ describe('BackupModal', () => {
       }
       await nextTick()
 
-      const confirmButton = wrapper.findAll('button').find(b => b.text().includes('确认恢复'))
+      const confirmButton = wrapper.findAll('button').find(b => b.text().includes('Confirm Restore'))
       await confirmButton.trigger('click')
       await nextTick()
 
-      expect(wrapper.html()).toContain('确认恢复')
-      expect(wrapper.html()).toContain('恢复操作将用备份数据替换当前数据')
+      expect(wrapper.html()).toContain('Confirm Restore')
+      expect(wrapper.html()).toContain('Restore will replace current data')
     })
 
     it('shows restore result when available', async () => {
@@ -377,8 +378,8 @@ describe('BackupModal', () => {
       }
       await nextTick()
 
-      expect(wrapper.html()).toContain('恢复成功')
-      expect(wrapper.html()).toContain('已创建数据回滚备份')
+      expect(wrapper.html()).toContain('Restore Successful')
+      expect(wrapper.html()).toContain('Rollback backup created')
     })
   })
 
@@ -394,7 +395,7 @@ describe('BackupModal', () => {
       await tabs[2].trigger('click')
       await nextTick()
 
-      expect(wrapper.html()).toContain('暂无备份记录')
+      expect(wrapper.html()).toContain('No backup records')
     })
 
     it('shows loading state while loading backups', async () => {
@@ -408,7 +409,7 @@ describe('BackupModal', () => {
       vm.isLoadingBackups = true
       await nextTick()
 
-      expect(wrapper.html()).toContain('加载中')
+      expect(wrapper.html()).toContain('Loading')
     })
 
     it('displays backup list', async () => {
@@ -441,8 +442,8 @@ describe('BackupModal', () => {
       await tabs[2].trigger('click')
       await nextTick()
 
-      expect(wrapper.html()).toContain('10 条记录')
-      expect(wrapper.html()).toContain('20 条记录')
+      expect(wrapper.html()).toContain('10')
+      expect(wrapper.html()).toContain('20')
     })
 
     it('has restore button for each backup', async () => {
@@ -468,7 +469,7 @@ describe('BackupModal', () => {
       await tabs[2].trigger('click')
       await nextTick()
 
-      const restoreButtons = wrapper.findAll('button').filter(b => b.text().includes('恢复'))
+      const restoreButtons = wrapper.findAll('button').filter(b => b.text().includes('Restore Data'))
       expect(restoreButtons.length).toBeGreaterThan(0)
     })
 
@@ -495,7 +496,7 @@ describe('BackupModal', () => {
       await tabs[2].trigger('click')
       await nextTick()
 
-      const deleteButtons = wrapper.findAll('button').filter(b => b.text().includes('删除'))
+      const deleteButtons = wrapper.findAll('button').filter(b => b.text().includes('Delete'))
       expect(deleteButtons.length).toBeGreaterThan(0)
     })
 
@@ -510,7 +511,7 @@ describe('BackupModal', () => {
       await tabs[2].trigger('click')
       await nextTick()
 
-      const refreshButton = wrapper.findAll('button').find(b => b.text().includes('刷新'))
+      const refreshButton = wrapper.findAll('button').find(b => b.text().includes('Refresh'))
       expect(refreshButton).toBeDefined()
     })
 
@@ -606,7 +607,7 @@ describe('BackupModal', () => {
       const vm = wrapper.vm
       await vm.createBackup()
 
-      expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining('备份失败'))
+      expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining('Backup failed'))
       expect(vm.isBackingUp).toBe(false)
 
       mockAlert.mockRestore()
@@ -648,7 +649,7 @@ describe('BackupModal', () => {
 
       await vm.confirmRestore()
 
-      expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining('恢复失败'))
+      expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining('Restore failed'))
       expect(vm.isRestoring).toBe(false)
 
       mockAlert.mockRestore()

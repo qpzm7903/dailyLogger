@@ -3,7 +3,7 @@
     <div class="bg-dark rounded-2xl w-[600px] max-h-[80vh] overflow-hidden border border-gray-700 flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">数据备份与恢复</h2>
+        <h2 class="text-lg font-semibold">{{ t('backup.title') }}</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
@@ -18,7 +18,7 @@
               : 'text-gray-400 hover:text-white'
           ]"
         >
-          创建备份
+          {{ t('backup.tabCreateBackup') }}
         </button>
         <button
           @click="activeTab = 'restore'"
@@ -29,7 +29,7 @@
               : 'text-gray-400 hover:text-white'
           ]"
         >
-          恢复数据
+          {{ t('backup.tabRestore') }}
         </button>
         <button
           @click="activeTab = 'history'"
@@ -40,7 +40,7 @@
               : 'text-gray-400 hover:text-white'
           ]"
         >
-          备份历史
+          {{ t('backup.tabHistory') }}
         </button>
       </div>
 
@@ -49,28 +49,28 @@
         <!-- Backup Tab -->
         <div v-if="activeTab === 'backup'" class="space-y-4">
           <div class="bg-darker rounded-lg p-4">
-            <h3 class="text-sm font-medium text-gray-300 mb-2">备份说明</h3>
+            <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.backupInfo') }}</h3>
             <ul class="text-xs text-gray-400 space-y-1">
-              <li>• 备份将包含数据库和所有截图文件</li>
-              <li>• 备份文件保存为 ZIP 格式</li>
-              <li>• 默认保存到 Documents/DailyLogger/backups/</li>
+              <li>{{ t('backup.backupIncludes') }}</li>
+              <li>{{ t('backup.backupFormat') }}</li>
+              <li>{{ t('backup.backupLocation') }}</li>
             </ul>
           </div>
 
           <div>
-            <label class="text-xs text-gray-300 block mb-2">备份位置（可选）</label>
+            <label class="text-xs text-gray-300 block mb-2">{{ t('backup.backupPath') }}</label>
             <div class="flex gap-2">
               <input
                 v-model="backupDir"
                 type="text"
-                placeholder="默认: Documents/DailyLogger/backups/"
+                :placeholder="t('backup.backupPathPlaceholder')"
                 class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
               />
               <button
                 @click="selectBackupDir"
                 class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
               >
-                选择
+                {{ t('backup.select') }}
               </button>
             </div>
           </div>
@@ -80,17 +80,17 @@
             :disabled="isBackingUp"
             class="w-full py-3 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
           >
-            {{ isBackingUp ? '备份中...' : '创建备份' }}
+            {{ isBackingUp ? t('backup.backingUp') : t('backup.createBackup') }}
           </button>
 
           <!-- Backup Result -->
           <div v-if="backupResult" class="bg-green-900/30 border border-green-700 rounded-lg p-4">
-            <h4 class="text-sm font-medium text-green-400 mb-2">备份成功</h4>
+            <h4 class="text-sm font-medium text-green-400 mb-2">{{ t('backup.backupSuccess') }}</h4>
             <div class="text-xs text-gray-300 space-y-1">
-              <p>路径: {{ backupResult.path }}</p>
-              <p>大小: {{ formatSize(backupResult.size_bytes) }}</p>
-              <p>记录数: {{ backupResult.record_count }}</p>
-              <p>截图数: {{ backupResult.screenshot_count }}</p>
+              <p>{{ t('backup.path') }} {{ backupResult.path }}</p>
+              <p>{{ t('backup.size') }} {{ formatSize(backupResult.size_bytes) }}</p>
+              <p>{{ t('backup.recordCount') }} {{ backupResult.record_count }}</p>
+              <p>{{ t('backup.screenshotCount') }} {{ backupResult.screenshot_count }}</p>
             </div>
           </div>
         </div>
@@ -98,11 +98,11 @@
         <!-- Restore Tab -->
         <div v-if="activeTab === 'restore'" class="space-y-4">
           <div class="bg-darker rounded-lg p-4">
-            <h3 class="text-sm font-medium text-gray-300 mb-2">恢复说明</h3>
+            <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.restoreInfo') }}</h3>
             <ul class="text-xs text-gray-400 space-y-1">
-              <li>• 选择要恢复的备份文件</li>
-              <li>• 恢复前会自动备份当前数据</li>
-              <li>• 恢复失败时可回滚到之前的状态</li>
+              <li>{{ t('backup.restoreIncludes') }}</li>
+              <li>{{ t('backup.restoreAutoBackup') }}</li>
+              <li>{{ t('backup.restoreRollback') }}</li>
             </ul>
           </div>
 
@@ -110,17 +110,17 @@
             @click="selectBackupFile"
             class="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
           >
-            选择备份文件
+            {{ t('backup.selectBackupFile') }}
           </button>
 
           <!-- Selected Backup Info -->
           <div v-if="selectedBackup" class="bg-darker rounded-lg p-4">
-            <h4 class="text-sm font-medium text-gray-300 mb-2">选择的备份</h4>
+            <h4 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.selectedBackup') }}</h4>
             <div class="text-xs text-gray-400 space-y-1">
-              <p>创建时间: {{ formatDate(selectedBackup.created_at) }}</p>
-              <p>大小: {{ formatSize(selectedBackup.size_bytes) }}</p>
-              <p>记录数: {{ selectedBackup.record_count }}</p>
-              <p>截图数: {{ selectedBackup.screenshot_count }}</p>
+              <p>{{ t('backup.createdAt') }} {{ formatDate(selectedBackup.created_at) }}</p>
+              <p>{{ t('backup.size') }} {{ formatSize(selectedBackup.size_bytes) }}</p>
+              <p>{{ t('backup.recordCount') }} {{ selectedBackup.record_count }}</p>
+              <p>{{ t('backup.screenshotCount') }} {{ selectedBackup.screenshot_count }}</p>
             </div>
           </div>
 
@@ -130,14 +130,14 @@
               @click="showConfirm = true"
               class="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
             >
-              确认恢复
+              {{ t('backup.confirmRestore') }}
             </button>
           </div>
 
           <div v-if="showConfirm && selectedBackup" class="bg-red-900/30 border border-red-700 rounded-lg p-4">
-            <h4 class="text-sm font-medium text-red-400 mb-2">⚠️ 确认恢复</h4>
+            <h4 class="text-sm font-medium text-red-400 mb-2">{{ t('backup.confirmRestoreTitle') }}</h4>
             <p class="text-xs text-gray-300 mb-3">
-              恢复操作将用备份数据替换当前数据。恢复前会自动备份当前数据，以便在恢复失败时回滚。
+              {{ t('backup.confirmRestoreMessage') }}
             </p>
             <div class="flex gap-2">
               <button
@@ -145,24 +145,24 @@
                 :disabled="isRestoring"
                 class="flex-1 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
               >
-                {{ isRestoring ? '恢复中...' : '继续恢复' }}
+                {{ isRestoring ? t('backup.restoring') : t('backup.continueRestore') }}
               </button>
               <button
                 @click="showConfirm = false"
                 class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
               >
-                取消
+                {{ t('common.cancel') }}
               </button>
             </div>
           </div>
 
           <!-- Restore Result -->
           <div v-if="restoreResult" class="bg-green-900/30 border border-green-700 rounded-lg p-4">
-            <h4 class="text-sm font-medium text-green-400 mb-2">恢复成功</h4>
+            <h4 class="text-sm font-medium text-green-400 mb-2">{{ t('backup.restoreSuccess') }}</h4>
             <div class="text-xs text-gray-300 space-y-1">
-              <p>记录数: {{ restoreResult.record_count }}</p>
-              <p>截图数: {{ restoreResult.screenshot_count }}</p>
-              <p v-if="restoreResult.auto_backup_created">已创建数据回滚备份</p>
+              <p>{{ t('backup.recordCount') }} {{ restoreResult.record_count }}</p>
+              <p>{{ t('backup.screenshotCount') }} {{ restoreResult.screenshot_count }}</p>
+              <p v-if="restoreResult.auto_backup_created">{{ t('backup.autoBackupCreated') }}</p>
             </div>
           </div>
         </div>
@@ -170,11 +170,11 @@
         <!-- History Tab -->
         <div v-if="activeTab === 'history'" class="space-y-4">
           <div v-if="isLoadingBackups" class="text-center py-8 text-gray-400">
-            加载中...
+            {{ t('backup.loading') }}
           </div>
 
           <div v-else-if="backups.length === 0" class="text-center py-8 text-gray-400">
-            暂无备份记录
+            {{ t('backup.noBackups') }}
           </div>
 
           <div v-else class="space-y-2">
@@ -188,7 +188,7 @@
                   {{ formatDate(backup.created_at) }}
                 </div>
                 <div class="text-xs text-gray-400 mt-1">
-                  {{ formatSize(backup.size_bytes) }} • {{ backup.record_count }} 条记录 • {{ backup.screenshot_count }} 张截图
+                  {{ formatSize(backup.size_bytes) }} • {{ backup.record_count }} {{ t('backup.recordsWithCount', { count: backup.record_count }).split(' ')[1] }} • {{ backup.screenshot_count }} {{ t('backup.screenshotsWithCount', { count: backup.screenshot_count }).split(' ')[1] }}
                 </div>
               </div>
               <div class="flex gap-2">
@@ -196,13 +196,13 @@
                   @click="restoreFromHistory(backup)"
                   class="px-3 py-1.5 text-xs bg-primary hover:bg-primary/80 rounded transition-colors"
                 >
-                  恢复
+                  {{ t('backup.tabRestore') }}
                 </button>
                 <button
                   @click="deleteBackupFile(backup.path)"
                   class="px-3 py-1.5 text-xs bg-red-700 hover:bg-red-600 rounded transition-colors"
                 >
-                  删除
+                  {{ t('common.delete') }}
                 </button>
               </div>
             </div>
@@ -212,7 +212,7 @@
             @click="loadBackups"
             class="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
           >
-            刷新
+            {{ t('backup.refresh') }}
           </button>
         </div>
       </div>
@@ -222,9 +222,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 
+const { t } = useI18n()
 const emit = defineEmits(['close'])
 
 const activeTab = ref('backup')
@@ -261,7 +263,7 @@ async function selectBackupDir() {
     const selected = await open({
       directory: true,
       multiple: false,
-      title: '选择备份目录'
+      title: t('backup.select')
     })
     if (selected) {
       backupDir.value = selected
@@ -280,7 +282,7 @@ async function createBackup() {
     await loadBackups()
   } catch (e) {
     console.error('Failed to create backup:', e)
-    alert('备份失败: ' + e)
+    alert(t('backup.backupFailed', { error: e }))
   } finally {
     isBackingUp.value = false
   }
@@ -291,7 +293,7 @@ async function selectBackupFile() {
     const selected = await open({
       multiple: false,
       filters: [{ name: 'Backup', extensions: ['zip'] }],
-      title: '选择备份文件'
+      title: t('backup.selectBackupFile')
     })
     if (selected) {
       selectedBackup.value = await invoke('get_backup_info', { backupPath: selected })
@@ -311,7 +313,7 @@ async function confirmRestore() {
     selectedBackup.value = null
   } catch (e) {
     console.error('Failed to restore backup:', e)
-    alert('恢复失败: ' + e)
+    alert(t('backup.restoreFailed', { error: e }))
   } finally {
     isRestoring.value = false
   }
@@ -323,14 +325,14 @@ async function restoreFromHistory(backup) {
 }
 
 async function deleteBackupFile(path) {
-  if (!confirm('确定要删除这个备份吗？')) return
+  if (!confirm(t('backup.confirmDeleteBackup'))) return
 
   try {
     await invoke('delete_backup', { backupPath: path })
     await loadBackups()
   } catch (e) {
     console.error('Failed to delete backup:', e)
-    alert('删除失败: ' + e)
+    alert(t('backup.deleteFailed', { error: e }))
   }
 }
 
