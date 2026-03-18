@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-18
-> 当前版本: v1.16.0 ✅ 已发布
-> 下一版本: v1.17.0 ✅ 已完成（待发布）
+> 当前版本: v1.17.0 ✅ 已发布
+> 下一版本: v1.18.0（规划中）
 
 ---
 
@@ -421,7 +421,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | DEBT-003 | 统一测试数据库 Schema 初始化 | AI 回顾 | MEDIUM | ✅ 完成 (v1.13.2: init_test_database 提取到 schema.rs) |
 | DEBT-004 | 前端组件测试覆盖率 | 多 Epic 回顾 | MEDIUM | ✅ 完成 (v1.13.2: 531 个前端组件测试，覆盖所有主要组件) |
 | DEBT-005 | 学习数据持久化（SilentPatternTracker / WorkTimePatternLearner） | SMART 回顾 | MEDIUM | ✅ 完成 (v1.14.0: 数据库持久化实现) |
-| DEBT-006 | 硬件抽象层（窗口/显示器/截图 API） | SMART 回顾 | LOW | 待开发 |
+| DEBT-006 | 硬件抽象层（窗口/显示器/截图 API） | SMART 回顾 | LOW | ✅ 完成 (post-v1.17.0: hardware module traits + platform implementations) |
 
 ---
 
