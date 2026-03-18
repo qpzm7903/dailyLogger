@@ -40,8 +40,8 @@ impl ScreenshotProvider for PlatformScreenshotProvider {
         // For now, we'll use the monitor module directly
 
         let monitor_details = crate::monitor::get_monitor_list()?;
-        let monitors = xcap::Monitor::all()
-            .map_err(|e| format!("Failed to get monitors: {}", e))?;
+        let monitors =
+            xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
         if monitors.is_empty() {
             return Err("No monitors found".to_string());
@@ -125,20 +125,23 @@ fn stitch_monitors(
             base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &image_base64)
                 .map_err(|e| format!("Failed to decode captured image: {}", e))?;
 
-        let img =
-            image::load_from_memory(&image_data).map_err(|e| format!("Failed to load image: {}", e))?;
+        let img = image::load_from_memory(&image_data)
+            .map_err(|e| format!("Failed to load image: {}", e))?;
 
         let rgba_image = img.to_rgba8();
 
-        let detail = monitor_details.get(index).cloned().unwrap_or_else(|| MonitorDetail {
-            index,
-            name: format!("Monitor {}", index + 1),
-            width: rgba_image.width(),
-            height: rgba_image.height(),
-            x: 0,
-            y: 0,
-            is_primary: index == 0,
-        });
+        let detail = monitor_details
+            .get(index)
+            .cloned()
+            .unwrap_or_else(|| MonitorDetail {
+                index,
+                name: format!("Monitor {}", index + 1),
+                width: rgba_image.width(),
+                height: rgba_image.height(),
+                x: 0,
+                y: 0,
+                is_primary: index == 0,
+            });
 
         captured_images.push((detail, rgba_image));
     }
@@ -171,7 +174,9 @@ fn stitch_monitors(
 }
 
 /// Calculate the bounding box for all monitors.
-fn calculate_monitor_bounds(monitors: &[(MonitorDetail, image::RgbaImage)]) -> (i32, i32, i32, i32) {
+fn calculate_monitor_bounds(
+    monitors: &[(MonitorDetail, image::RgbaImage)],
+) -> (i32, i32, i32, i32) {
     let min_x = monitors.iter().map(|(m, _)| m.x).min().unwrap_or(0);
     let min_y = monitors.iter().map(|(m, _)| m.y).min().unwrap_or(0);
     let max_x = monitors

@@ -3,7 +3,9 @@
 //! These implementations allow unit tests to run without requiring
 //! actual hardware (display, window manager) access.
 
-use super::{DisplayProvider, MonitorDetail, MonitorSummary, ScreenshotProvider, WindowInfoProvider};
+use super::{
+    DisplayProvider, MonitorDetail, MonitorSummary, ScreenshotProvider, WindowInfoProvider,
+};
 use crate::monitor_types::{CaptureMode, MonitorInfo};
 use crate::window_info::ActiveWindow;
 use std::sync::atomic::{AtomicUsize, Ordering};

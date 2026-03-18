@@ -57,7 +57,12 @@ pub trait WindowInfoProvider: Send + Sync {
         blacklist: &[String],
         use_whitelist_only: bool,
     ) -> bool {
-        crate::window_info::should_capture_by_window(window, whitelist, blacklist, use_whitelist_only)
+        crate::window_info::should_capture_by_window(
+            window,
+            whitelist,
+            blacklist,
+            use_whitelist_only,
+        )
     }
 }
 
