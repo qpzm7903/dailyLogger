@@ -173,6 +173,22 @@
     "pathEmpty": "日报路径为空",
     "loadFailed": "加载失败: {error}"
   },
+  "searchPanel": {
+    "title": "全文搜索",
+    "placeholder": "输入关键词搜索...",
+    "search": "搜索",
+    "searching": "搜索中...",
+    "sortBy": "排序方式:",
+    "relevance": "相关性",
+    "time": "时间",
+    "totalResults": "共 {count} 条结果",
+    "noResults": "未找到匹配的记录",
+    "startHint": "输入关键词开始搜索",
+    "auto": "自动",
+    "manual": "手动",
+    "relevanceScore": "相关性: {rank}",
+    "searchFailed": "搜索失败: {error}"
+  },
   "settings": {
     "title": "设置",
     "apiConfig": "API 配置",

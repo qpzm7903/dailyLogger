@@ -3,7 +3,7 @@
     <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-gray-700 flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">全文搜索</h2>
+        <h2 class="text-lg font-semibold">{{ t('searchPanel.title') }}</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
@@ -15,7 +15,7 @@
               type="text"
               v-model="searchQuery"
               @keyup.enter="search"
-              placeholder="输入关键词搜索..."
+              :placeholder="t('searchPanel.placeholder')"
               class="w-full bg-darker border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-primary focus:outline-none pr-10"
             />
             <button
@@ -31,31 +31,31 @@
             :disabled="isLoading || !searchQuery.trim()"
             class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ isLoading ? '搜索中...' : '搜索' }}
+            {{ isLoading ? t('searchPanel.searching') : t('searchPanel.search') }}
           </button>
         </div>
 
         <!-- Sort Toggle -->
         <div v-if="results.length > 0" class="flex items-center gap-4 mt-3">
-          <span class="text-sm text-gray-400">排序方式:</span>
+          <span class="text-sm text-gray-400">{{ t('searchPanel.sortBy') }}</span>
           <div class="flex items-center gap-2">
             <button
               @click="setOrderBy('rank')"
               :class="orderBy === 'rank' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
               class="px-3 py-1 rounded text-sm transition-colors"
             >
-              相关性
+              {{ t('searchPanel.relevance') }}
             </button>
             <button
               @click="setOrderBy('time')"
               :class="orderBy === 'time' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
               class="px-3 py-1 rounded text-sm transition-colors"
             >
-              时间
+              {{ t('searchPanel.time') }}
             </button>
           </div>
           <span class="text-sm text-gray-400 ml-auto">
-            共 {{ results.length }} 条结果
+            {{ t('searchPanel.totalResults', { count: results.length }) }}
           </span>
         </div>
       </div>
@@ -63,13 +63,13 @@
       <!-- Results List -->
       <div class="flex-1 overflow-auto p-4">
         <div v-if="isLoading" class="text-center py-8 text-gray-500">
-          搜索中...
+          {{ t('searchPanel.searching') }}
         </div>
         <div v-else-if="hasSearched && results.length === 0" class="text-center py-8 text-gray-500">
-          未找到匹配的记录
+          {{ t('searchPanel.noResults') }}
         </div>
         <div v-else-if="!hasSearched" class="text-center py-8 text-gray-500">
-          输入关键词开始搜索
+          {{ t('searchPanel.startHint') }}
         </div>
 
         <div v-else class="flex flex-col divide-y divide-gray-700">
@@ -85,11 +85,11 @@
                     :class="result.record.source_type === 'auto' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
                     class="px-2 py-0.5 rounded text-xs"
                   >
-                    {{ result.record.source_type === 'auto' ? '自动' : '手动' }}
+                    {{ result.record.source_type === 'auto' ? t('searchPanel.auto') : t('searchPanel.manual') }}
                   </span>
                   <span class="text-xs text-gray-500">{{ formatTime(result.record.timestamp) }}</span>
                   <span v-if="orderBy === 'rank'" class="text-xs text-gray-600">
-                    相关性: {{ result.rank.toFixed(2) }}
+                    {{ t('searchPanel.relevanceScore', { rank: result.rank.toFixed(2) }) }}
                   </span>
                 </div>
                 <p class="text-sm text-gray-300" v-html="result.snippet"></p>
@@ -105,8 +105,10 @@
 <script setup>
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
 import { showError } from '../stores/toast'
 
+const { t } = useI18n()
 const emit = defineEmits(['close'])
 
 // State
@@ -147,7 +149,7 @@ async function search() {
     })
     results.value = searchResults
   } catch (error) {
-    showError(`搜索失败: ${error}`)
+    showError(t('searchPanel.searchFailed', { error }))
   } finally {
     isLoading.value = false
   }

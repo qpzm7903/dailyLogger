@@ -173,6 +173,22 @@
     "pathEmpty": "Report path is empty",
     "loadFailed": "Load failed: {error}"
   },
+  "searchPanel": {
+    "title": "Full-text Search",
+    "placeholder": "Enter keywords to search...",
+    "search": "Search",
+    "searching": "Searching...",
+    "sortBy": "Sort by:",
+    "relevance": "Relevance",
+    "time": "Time",
+    "totalResults": "{count} results",
+    "noResults": "No matching records found",
+    "startHint": "Enter keywords to start search",
+    "auto": "Auto",
+    "manual": "Manual",
+    "relevanceScore": "Relevance: {rank}",
+    "searchFailed": "Search failed: {error}"
+  },
   "settings": {
     "title": "Settings",
     "apiConfig": "API Configuration",

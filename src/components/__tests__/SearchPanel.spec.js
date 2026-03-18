@@ -27,12 +27,12 @@ describe('SearchPanel', () => {
 
   it('renders modal with title', () => {
     const wrapper = mount(SearchPanel)
-    expect(wrapper.text()).toContain('全文搜索')
+    expect(wrapper.text()).toContain('Full-text Search')
   })
 
   it('shows initial empty state', () => {
     const wrapper = mount(SearchPanel)
-    expect(wrapper.text()).toContain('输入关键词开始搜索')
+    expect(wrapper.text()).toContain('Enter keywords to start search')
   })
 
   it('emits close event when close button is clicked', async () => {
@@ -84,7 +84,7 @@ describe('SearchPanel', () => {
 
   it('disables search button when query is empty', () => {
     const wrapper = mount(SearchPanel)
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     expect(searchButton.attributes('disabled')).toBeDefined()
   })
 
@@ -94,7 +94,7 @@ describe('SearchPanel', () => {
     await input.setValue('test')
     await wrapper.vm.$nextTick()
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     expect(searchButton.attributes('disabled')).toBeUndefined()
   })
 
@@ -117,7 +117,7 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
@@ -153,10 +153,10 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
-    expect(wrapper.text()).toContain('搜索中...')
+    expect(wrapper.text()).toContain('Searching...')
   })
 
   it('shows no results message when search returns empty', async () => {
@@ -166,13 +166,13 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('未找到匹配的记录')
+    expect(wrapper.text()).toContain('No matching records found')
   })
 
   it('displays search results', async () => {
@@ -194,13 +194,13 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('共 1 条结果')
+    expect(wrapper.text()).toContain('1 results')
     expect(wrapper.html()).toContain('Test <mark>content</mark>')
   })
 
@@ -211,13 +211,13 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(showErrorMock).toHaveBeenCalledWith(expect.stringContaining('搜索失败'))
+    expect(showErrorMock).toHaveBeenCalledWith(expect.stringContaining('Search failed'))
   })
 
   it('shows sort options when results exist', async () => {
@@ -239,15 +239,15 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('排序方式')
-    expect(wrapper.text()).toContain('相关性')
-    expect(wrapper.text()).toContain('时间')
+    expect(wrapper.text()).toContain('Sort by:')
+    expect(wrapper.text()).toContain('Relevance')
+    expect(wrapper.text()).toContain('Time')
   })
 
   it('switches sort order when clicking sort buttons', async () => {
@@ -269,7 +269,7 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
@@ -279,7 +279,7 @@ describe('SearchPanel', () => {
     expect(wrapper.vm.orderBy).toBe('rank')
 
     // Click time sort button
-    const timeButton = wrapper.findAll('button').find(btn => btn.text() === '时间')
+    const timeButton = wrapper.findAll('button').find(btn => btn.text() === 'Time')
     await timeButton.trigger('click')
 
     await wrapper.vm.$nextTick()
@@ -318,13 +318,13 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('自动')
+    expect(wrapper.text()).toContain('Auto')
   })
 
   it('displays source type badge correctly for manual records', async () => {
@@ -346,13 +346,13 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('手动')
+    expect(wrapper.text()).toContain('Manual')
   })
 
   it('shows rank score when sorted by rank', async () => {
@@ -374,12 +374,12 @@ describe('SearchPanel', () => {
     const input = wrapper.find('input[type="text"]')
     await input.setValue('test')
 
-    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('搜索'))
+    const searchButton = wrapper.findAll('button').find(btn => btn.text().includes('Search'))
     await searchButton.trigger('click')
 
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('相关性: 0.95')
+    expect(wrapper.text()).toContain('Relevance: 0.95')
   })
 })
