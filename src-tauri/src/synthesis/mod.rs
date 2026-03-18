@@ -1028,11 +1028,15 @@ mod tests {
 
         // Create settings with logseq_graphs configured
         let mut settings = create_settings_with_include_manual(true);
-        let graph_path = dir.to_str().unwrap().to_string();
-        settings.logseq_graphs = Some(format!(
-            r#"[{{"name":"Test","path":"{}","is_default":true}}]"#,
-            graph_path
-        ));
+        let graph_path = dir.to_str().unwrap();
+        // Use serde_json to properly escape the path for JSON (handles Windows backslashes)
+        let graphs_json = serde_json::json!([{
+            "name": "Test",
+            "path": graph_path,
+            "is_default": true
+        }])
+        .to_string();
+        settings.logseq_graphs = Some(graphs_json);
 
         let path = write_report_to_logseq(&settings, "test-report.md", "# Report\nContent");
         assert!(path.is_some());
@@ -1053,11 +1057,15 @@ mod tests {
 
         // Create settings with logseq_graphs configured
         let mut settings = create_settings_with_include_manual(true);
-        let graph_path = dir.to_str().unwrap().to_string();
-        settings.logseq_graphs = Some(format!(
-            r#"[{{"name":"Test","path":"{}","is_default":true}}]"#,
-            graph_path
-        ));
+        let graph_path = dir.to_str().unwrap();
+        // Use serde_json to properly escape the path for JSON (handles Windows backslashes)
+        let graphs_json = serde_json::json!([{
+            "name": "Test",
+            "path": graph_path,
+            "is_default": true
+        }])
+        .to_string();
+        settings.logseq_graphs = Some(graphs_json);
 
         let path = write_report_to_logseq(&settings, "daily-report.md", "# Daily\n");
         assert!(path.is_some());
