@@ -218,6 +218,26 @@
     "export": "Export",
     "exportFailed": "Export failed"
   },
+  "customReport": {
+    "title": "Custom Report",
+    "presets": "Quick Presets",
+    "biweekly": "Biweekly",
+    "biweeklyDescription": "Last 14 days",
+    "quarterly": "Quarterly",
+    "quarterlyDescription": "Current quarter",
+    "custom": "Custom",
+    "customDescription": "Any dates",
+    "dateRange": "Date Range",
+    "to": "to",
+    "daysSelected": "{count} days selected",
+    "reportName": "Report Name (optional)",
+    "reportNamePlaceholder": "Default: Custom Report",
+    "reportSuccess": "Report generated successfully",
+    "close": "Close",
+    "generating": "Generating...",
+    "generate": "Generate Report",
+    "endDateBeforeStart": "End date cannot be before start date"
+  },
   "settings": {
     "title": "Settings",
     "apiConfig": "API Configuration",

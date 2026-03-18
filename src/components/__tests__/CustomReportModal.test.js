@@ -23,16 +23,16 @@ describe('CustomReportModal - REPORT-003', () => {
 
   it('renders with header and close button', () => {
     const wrapper = mount(CustomReportModal)
-    expect(wrapper.text()).toContain('自定义报告')
+    expect(wrapper.text()).toContain('Custom Report')
     expect(wrapper.find('button').exists()).toBe(true)
   })
 
   it('shows three preset buttons: biweekly, quarterly, custom', () => {
     const wrapper = mount(CustomReportModal)
     const text = wrapper.text()
-    expect(text).toContain('双周报')
-    expect(text).toContain('季度报')
-    expect(text).toContain('自定义')
+    expect(text).toContain('Biweekly')
+    expect(text).toContain('Quarterly')
+    expect(text).toContain('Custom')
   })
 
   it('has date range inputs', () => {
@@ -50,7 +50,7 @@ describe('CustomReportModal - REPORT-003', () => {
   it('biweekly preset sets 14-day range ending today', async () => {
     const wrapper = mount(CustomReportModal)
     const presetButtons = wrapper.findAll('button')
-    const biweeklyBtn = presetButtons.find(b => b.text().includes('双周报'))
+    const biweeklyBtn = presetButtons.find(b => b.text().includes('Biweekly'))
 
     await biweeklyBtn.trigger('click')
     await nextTick()
@@ -72,7 +72,7 @@ describe('CustomReportModal - REPORT-003', () => {
   it('quarterly preset sets current quarter range', async () => {
     const wrapper = mount(CustomReportModal)
     const presetButtons = wrapper.findAll('button')
-    const quarterBtn = presetButtons.find(b => b.text().includes('季度报'))
+    const quarterBtn = presetButtons.find(b => b.text().includes('Quarterly'))
 
     await quarterBtn.trigger('click')
     await nextTick()
@@ -88,7 +88,7 @@ describe('CustomReportModal - REPORT-003', () => {
 
   it('disables generate button when dates are empty', () => {
     const wrapper = mount(CustomReportModal)
-    const generateBtn = wrapper.findAll('button').find(b => b.text().includes('生成报告'))
+    const generateBtn = wrapper.findAll('button').find(b => b.text().includes('Generate Report'))
     expect(generateBtn.attributes('disabled')).toBeDefined()
   })
 
@@ -100,7 +100,7 @@ describe('CustomReportModal - REPORT-003', () => {
     await dateInputs[1].setValue('2026-03-14')
     await nextTick()
 
-    expect(wrapper.text()).toContain('14 天')
+    expect(wrapper.text()).toContain('14 days')
   })
 
   it('shows error when end date is before start date', async () => {
@@ -111,7 +111,7 @@ describe('CustomReportModal - REPORT-003', () => {
     await dateInputs[1].setValue('2026-03-01')
     await nextTick()
 
-    expect(wrapper.text()).toContain('结束日期不能早于起始日期')
+    expect(wrapper.text()).toContain('End date cannot be before start date')
   })
 
   it('calls invoke with correct params on generate', async () => {
@@ -125,7 +125,7 @@ describe('CustomReportModal - REPORT-003', () => {
     await nextTick()
 
     // Click generate
-    const generateBtn = wrapper.findAll('button').find(b => b.text().includes('生成报告'))
+    const generateBtn = wrapper.findAll('button').find(b => b.text().includes('Generate Report'))
     await generateBtn.trigger('click')
     await nextTick()
 
@@ -152,7 +152,7 @@ describe('CustomReportModal - REPORT-003', () => {
     await dateInputs[1].setValue('2026-03-14')
     await nextTick()
 
-    const generateBtn = wrapper.findAll('button').find(b => b.text().includes('生成报告'))
+    const generateBtn = wrapper.findAll('button').find(b => b.text().includes('Generate Report'))
     await generateBtn.trigger('click')
 
     // Wait for async invoke

@@ -3,7 +3,7 @@
     <div class="bg-dark rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-gray-700 flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">自定义报告</h2>
+        <h2 class="text-lg font-semibold">{{ t('customReport.title') }}</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
@@ -11,38 +11,38 @@
       <div class="p-6 space-y-5">
         <!-- Preset Buttons -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">快捷预设</label>
+          <label class="text-sm text-gray-400 block">{{ t('customReport.presets') }}</label>
           <div class="flex gap-3">
             <button
               @click="applyPreset('biweekly')"
               :class="activePreset === 'biweekly' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
-              <div class="font-medium">双周报</div>
-              <div class="text-xs mt-1 opacity-60">最近 14 天</div>
+              <div class="font-medium">{{ t('customReport.biweekly') }}</div>
+              <div class="text-xs mt-1 opacity-60">{{ t('customReport.biweeklyDescription') }}</div>
             </button>
             <button
               @click="applyPreset('quarterly')"
               :class="activePreset === 'quarterly' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
-              <div class="font-medium">季度报</div>
-              <div class="text-xs mt-1 opacity-60">当前季度</div>
+              <div class="font-medium">{{ t('customReport.quarterly') }}</div>
+              <div class="text-xs mt-1 opacity-60">{{ t('customReport.quarterlyDescription') }}</div>
             </button>
             <button
               @click="applyPreset('custom')"
               :class="activePreset === 'custom' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
-              <div class="font-medium">自定义</div>
-              <div class="text-xs mt-1 opacity-60">任意日期</div>
+              <div class="font-medium">{{ t('customReport.custom') }}</div>
+              <div class="text-xs mt-1 opacity-60">{{ t('customReport.customDescription') }}</div>
             </button>
           </div>
         </div>
 
         <!-- Date Range -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">日期范围</label>
+          <label class="text-sm text-gray-400 block">{{ t('customReport.dateRange') }}</label>
           <div class="flex items-center gap-3">
             <input
               type="date"
@@ -50,7 +50,7 @@
               @change="activePreset = 'custom'"
               class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">至</span>
+            <span class="text-gray-500">{{ t('customReport.to') }}</span>
             <input
               type="date"
               v-model="endDate"
@@ -58,16 +58,16 @@
               class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
             />
           </div>
-          <p v-if="dayCount > 0" class="text-xs text-gray-500">已选择 {{ dayCount }} 天</p>
+          <p v-if="dayCount > 0" class="text-xs text-gray-500">{{ t('customReport.daysSelected', { count: dayCount }) }}</p>
           <p v-if="dateError" class="text-red-400 text-xs">{{ dateError }}</p>
         </div>
 
         <!-- Report Name -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">报告名称（可选）</label>
+          <label class="text-sm text-gray-400 block">{{ t('customReport.reportName') }}</label>
           <input
             v-model="reportName"
-            placeholder="默认：自定义报告"
+            :placeholder="t('customReport.reportNamePlaceholder')"
             class="w-full bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
           />
         </div>
@@ -75,7 +75,7 @@
         <!-- Result -->
         <div v-if="resultPath" class="bg-darker rounded-lg p-4 space-y-2 border border-green-700/50">
           <div class="flex items-center gap-2 text-green-400 text-sm">
-            <span>报告生成成功</span>
+            <span>{{ t('customReport.reportSuccess') }}</span>
           </div>
           <p class="text-xs text-gray-400 break-all">{{ resultPath }}</p>
         </div>
@@ -92,14 +92,14 @@
           @click="$emit('close')"
           class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
         >
-          关闭
+          {{ t('customReport.close') }}
         </button>
         <button
           @click="generateReport"
           :disabled="isGenerating || !!dateError || !startDate || !endDate"
           class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-5 py-2 rounded-lg text-sm font-medium transition-colors"
         >
-          {{ isGenerating ? '生成中...' : '生成报告' }}
+          {{ isGenerating ? t('customReport.generating') : t('customReport.generate') }}
         </button>
       </div>
     </div>
@@ -108,9 +108,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { showError, showSuccess } from '../stores/toast.js'
 
+const { t } = useI18n()
 const emit = defineEmits(['close', 'generated'])
 
 const startDate = ref('')
@@ -133,7 +135,7 @@ const dayCount = computed(() => {
 const dateError = computed(() => {
   if (!startDate.value || !endDate.value) return ''
   if (new Date(endDate.value) < new Date(startDate.value)) {
-    return '结束日期不能早于起始日期'
+    return t('customReport.endDateBeforeStart')
   }
   return ''
 })
@@ -178,7 +180,7 @@ const generateReport = async () => {
       reportName: reportName.value || null,
     })
     resultPath.value = result
-    showSuccess('自定义报告生成成功')
+    showSuccess(t('customReport.reportSuccess'))
     emit('generated', result)
   } catch (err) {
     console.error('Failed to generate custom report:', err)

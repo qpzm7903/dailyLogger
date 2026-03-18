@@ -218,6 +218,26 @@
     "export": "导出",
     "exportFailed": "导出失败"
   },
+  "customReport": {
+    "title": "自定义报告",
+    "presets": "快捷预设",
+    "biweekly": "双周报",
+    "biweeklyDescription": "最近 14 天",
+    "quarterly": "季度报",
+    "quarterlyDescription": "当前季度",
+    "custom": "自定义",
+    "customDescription": "任意日期",
+    "dateRange": "日期范围",
+    "to": "至",
+    "daysSelected": "已选择 {count} 天",
+    "reportName": "报告名称（可选）",
+    "reportNamePlaceholder": "默认：自定义报告",
+    "reportSuccess": "报告生成成功",
+    "close": "关闭",
+    "generating": "生成中...",
+    "generate": "生成报告",
+    "endDateBeforeStart": "结束日期不能早于起始日期"
+  },
   "settings": {
     "title": "设置",
     "apiConfig": "API 配置",
