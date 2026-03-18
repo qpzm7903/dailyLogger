@@ -3,29 +3,29 @@
     <div class="bg-dark rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-gray-700 flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h3 class="text-lg font-semibold">标签云</h3>
+        <h3 class="text-lg font-semibold">{{ t('tagCloud.title') }}</h3>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
       <!-- Content -->
       <div class="p-6 flex-1 overflow-auto">
         <div class="flex items-center justify-between mb-4">
-          <span class="text-sm text-gray-400">点击标签筛选记录</span>
+          <span class="text-sm text-gray-400">{{ t('tagCloud.clickToFilter') }}</span>
           <button
             v-if="selectedTag"
             @click="selectedTag = null"
             class="text-sm text-gray-400 hover:text-white"
           >
-            清除筛选
+            {{ t('tagCloud.clearFilter') }}
           </button>
         </div>
 
         <!-- Tag cloud -->
         <div v-if="isLoading" class="text-center py-8 text-gray-500">
-          加载中...
+          {{ t('tagCloud.loading') }}
         </div>
         <div v-else-if="tags.length === 0" class="text-center py-8 text-gray-500">
-          暂无标签，可在历史记录中为记录添加标签
+          {{ t('tagCloud.noTagsHint') }}
         </div>
         <div v-else class="flex flex-wrap gap-2">
           <button
@@ -51,22 +51,22 @@
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
       >
         <div class="bg-dark rounded-xl p-6 max-w-sm border border-gray-700">
-          <h3 class="text-lg font-semibold mb-4">删除标签</h3>
-          <p class="text-gray-400 mb-2">确定要删除标签 "{{ tagToDelete.name }}" 吗？</p>
-          <p class="text-sm text-yellow-500 mb-6">该标签将从所有关联记录中移除。</p>
+          <h3 class="text-lg font-semibold mb-4">{{ t('tagCloud.deleteTag') }}</h3>
+          <p class="text-gray-400 mb-2">{{ t('tagCloud.confirmDeleteMessage', { name: tagToDelete.name }) }}</p>
+          <p class="text-sm text-yellow-500 mb-6">{{ t('tagCloud.deleteWarning') }}</p>
           <div class="flex justify-end gap-3">
             <button
               @click="tagToDelete = null"
               class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
             >
-              取消
+              {{ t('tagCloud.cancel') }}
             </button>
             <button
               @click="confirmDelete"
               :disabled="isDeleting"
               class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-400 transition-colors disabled:opacity-50"
             >
-              {{ isDeleting ? '删除中...' : '删除' }}
+              {{ isDeleting ? t('tagCloud.deleting') : t('tagCloud.delete') }}
             </button>
           </div>
         </div>
@@ -78,8 +78,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
 
+const { t } = useI18n()
 const emit = defineEmits(['tagSelected', 'close'])
 
 // State
@@ -120,7 +122,7 @@ async function loadTags() {
   try {
     tags.value = await invoke('get_all_manual_tags')
   } catch (e) {
-    showError('加载标签失败: ' + e)
+    showError(t('tagCloud.loadFailed', { error: e }))
   } finally {
     isLoading.value = false
   }
@@ -154,9 +156,9 @@ async function confirmDelete() {
       selectedTag.value = null
       emit('tagSelected', null)
     }
-    showSuccess('标签已删除')
+    showSuccess(t('tagCloud.tagDeleted'))
   } catch (e) {
-    showError('删除失败: ' + e)
+    showError(t('tagCloud.deleteFailed', { error: e }))
   } finally {
     isDeleting.value = false
     tagToDelete.value = null

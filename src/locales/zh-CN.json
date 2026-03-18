@@ -70,6 +70,22 @@
     "recordDeleted": "记录已删除",
     "deleteFailed": "删除失败: {error}"
   },
+  "tagCloud": {
+    "title": "标签云",
+    "clickToFilter": "点击标签筛选记录",
+    "clearFilter": "清除筛选",
+    "loading": "加载中...",
+    "noTagsHint": "暂无标签，可在历史记录中为记录添加标签",
+    "deleteTag": "删除标签",
+    "confirmDeleteMessage": "确定要删除标签 \"{name}\" 吗？",
+    "deleteWarning": "该标签将从所有关联记录中移除。",
+    "cancel": "取消",
+    "deleting": "删除中...",
+    "delete": "删除",
+    "loadFailed": "加载标签失败: {error}",
+    "tagDeleted": "标签已删除",
+    "deleteFailed": "删除失败: {error}"
+  },
   "common": {
     "cancel": "取消",
     "save": "保存",

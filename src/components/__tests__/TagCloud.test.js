@@ -35,7 +35,7 @@ describe('TagCloud', () => {
     invoke.mockResolvedValue([])
     const wrapper = mount(TagCloud)
     await flushPromises()
-    expect(wrapper.text()).toContain('标签云')
+    expect(wrapper.text()).toContain('Tag Cloud')
   })
 
   it('emits close event when close button clicked', async () => {
@@ -77,7 +77,7 @@ describe('TagCloud', () => {
     const wrapper = mount(TagCloud)
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('加载中...')
+    expect(wrapper.text()).toContain('Loading...')
 
     resolvePromise([])
     await flushPromises()
@@ -88,8 +88,8 @@ describe('TagCloud', () => {
     const wrapper = mount(TagCloud)
     await flushPromises()
 
-    expect(wrapper.text()).toContain('暂无标签')
-    expect(wrapper.text()).toContain('可在历史记录中为记录添加标签')
+    expect(wrapper.text()).toContain('No tags yet')
+    expect(wrapper.text()).toContain('add tags to records in history')
   })
 
   it('displays tags with names and usage counts', async () => {
@@ -110,7 +110,7 @@ describe('TagCloud', () => {
     const wrapper = mount(TagCloud)
     await flushPromises()
 
-    const tagButtons = wrapper.findAll('button').filter(btn => 
+    const tagButtons = wrapper.findAll('button').filter(btn =>
       btn.text().includes('work') || btn.text().includes('meeting') || btn.text().includes('bug')
     )
 
@@ -127,7 +127,7 @@ describe('TagCloud', () => {
     const wrapper = mount(TagCloud)
     await flushPromises()
 
-    const tagButtons = wrapper.findAll('button').filter(btn => 
+    const tagButtons = wrapper.findAll('button').filter(btn =>
       btn.text().includes('work') || btn.text().includes('meeting') || btn.text().includes('bug')
     )
 
@@ -185,13 +185,13 @@ describe('TagCloud', () => {
     const wrapper = mount(TagCloud)
     await flushPromises()
 
-    expect(wrapper.text()).not.toContain('清除筛选')
+    expect(wrapper.text()).not.toContain('Clear Filter')
 
     const workTag = wrapper.findAll('button').find(btn => btn.text().includes('work'))
     await workTag.trigger('click')
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('清除筛选')
+    expect(wrapper.text()).toContain('Clear Filter')
   })
 
   it('clears selection when clear filter clicked', async () => {
@@ -203,7 +203,7 @@ describe('TagCloud', () => {
     await workTag.trigger('click')
     await wrapper.vm.$nextTick()
 
-    const clearButton = wrapper.findAll('button').find(btn => btn.text() === '清除筛选')
+    const clearButton = wrapper.findAll('button').find(btn => btn.text() === 'Clear Filter')
     await clearButton.trigger('click')
 
     expect(wrapper.vm.selectedTag).toBeNull()
@@ -244,8 +244,8 @@ describe('TagCloud', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.vm.tagToDelete).toEqual(mockTags[0])
-    expect(wrapper.text()).toContain('删除标签')
-    expect(wrapper.text()).toContain('确定要删除标签 "work" 吗？')
+    expect(wrapper.text()).toContain('Delete Tag')
+    expect(wrapper.text()).toContain('Are you sure you want to delete tag "work"?')
   })
 
   it('cancels delete operation', async () => {
@@ -256,7 +256,7 @@ describe('TagCloud', () => {
     wrapper.vm.tagToDelete = mockTags[0]
     await wrapper.vm.$nextTick()
 
-    const cancelButton = wrapper.findAll('button').find(btn => btn.text() === '取消')
+    const cancelButton = wrapper.findAll('button').find(btn => btn.text() === 'Cancel')
     await cancelButton.trigger('click')
 
     expect(wrapper.vm.tagToDelete).toBeNull()
@@ -276,7 +276,7 @@ describe('TagCloud', () => {
     expect(invoke).toHaveBeenCalledWith('delete_manual_tag', { id: 1 })
     expect(wrapper.vm.tags.length).toBe(2)
     expect(wrapper.vm.tagToDelete).toBeNull()
-    expect(showSuccess).toHaveBeenCalledWith('标签已删除')
+    expect(showSuccess).toHaveBeenCalledWith('Tag deleted')
   })
 
   it('clears selection when deleting selected tag', async () => {
@@ -317,8 +317,11 @@ describe('TagCloud', () => {
     wrapper.vm.isDeleting = true
     await wrapper.vm.$nextTick()
 
-    const deleteButtons = wrapper.findAll('button').filter(btn => btn.text().includes('删除'))
-    const modalDeleteButton = deleteButtons.find(btn => btn.text() === '删除中...')
+    // Find the modal delete button (red button in the modal)
+    const redButtons = wrapper.findAll('button').filter(btn =>
+      btn.classes().includes('bg-red-500')
+    )
+    const modalDeleteButton = redButtons.find(btn => btn.text() === 'Deleting...')
     expect(modalDeleteButton).toBeTruthy()
     expect(modalDeleteButton.attributes('disabled')).toBeDefined()
   })
