@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-18
-> 当前版本: v1.13.2 ✅ 已发布
-> 下一版本: v1.15.0 ✅ 已完成（待发布）
+> 当前版本: v1.15.0 ✅ 已发布
+> 下一版本: v1.16.0 ✅ 已完成（待发布）
 
 ---
 
@@ -303,7 +303,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
-## v1.15.0（Notion 导出支持）✅ 已完成（待发布）
+## v1.15.0（Notion 导出支持）✅ 已发布
 
 **目标**: 新增 Notion 导出支持，报告可通过 API 写入 Notion 数据库。
 
@@ -332,6 +332,35 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
+## v1.16.0（GitHub 工时统计）✅ 已完成（待发布）
+
+**目标**: 新增 GitHub 工时统计功能，自动分析 GitHub 提交和 PR 活动计算工作时长。
+
+| ID | 需求 | 故事点 | 状态 |
+|----|------|--------|------|
+| INT-003 | GitHub 工时统计 | 8pts | ✅ 完成 |
+
+### INT-003: GitHub 工时统计
+
+**功能**: 通过 GitHub API 获取用户的提交和 PR 数据，计算预估工作时长，并集成到日报中。
+
+**后端变更** (`src-tauri/src/`):
+- `memory_storage/mod.rs`: Settings 新增 `github_token` 和 `github_repositories` 字段
+- `memory_storage/settings.rs`: github_token 加密存储
+- `github.rs`: 新增 GitHub API 集成模块，包含 `fetch_commits()`、`fetch_pull_requests()`、`calculate_work_time_stats()`、`format_github_activity_for_report()` 函数
+- `synthesis/mod.rs`: 集成 GitHub 活动统计到日报生成函数
+
+**前端变更** (`src/`):
+- `components/SettingsModal.vue`: 新增 GitHub 配置 UI（Token 输入、仓库列表管理、测试连接按钮）
+
+**验收条件**:
+- 用户可配置 GitHub Token 和监控的仓库列表
+- 自动获取当日提交和 PR 数据
+- 基于提交时间聚类算法预估工作时长
+- 日报中包含 GitHub 活动统计章节（提交数、PR数、预估工时、活跃仓库、提交时间分布）
+
+---
+
 ## 长期规划: v2.0.0+（集成与扩展）
 
 **目标**: 与第三方工具集成，扩展应用场景。
@@ -340,7 +369,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 |----|------|--------|------|
 | INT-001 | Notion 导出支持 | 5pts | ✅ 完成 (v1.15.0) |
 | INT-002 | Logseq 导出支持 | 3pts | ✅ 完成 (v1.14.0) |
-| INT-003 | GitHub 工时统计 | 8pts | Backlog |
+| INT-003 | GitHub 工时统计 | 8pts | ✅ 完成 (v1.16.0) |
 | INT-004 | Slack/钉钉通知 | 5pts | Backlog |
 
 **远期功能**:
