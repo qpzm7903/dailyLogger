@@ -2,7 +2,7 @@
 
 > 最后更新: 2026-03-18
 > 当前版本: v1.13.2 ✅ 已发布
-> 下一版本: v1.14.0 ✅ 已完成（待发布）
+> 下一版本: v1.15.0 ✅ 已完成（待发布）
 
 ---
 
@@ -276,7 +276,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
-## v1.14.0（Logseq 导出支持）✅ 已完成（待发布）
+## v1.14.0（Logseq 导出支持）✅ 已发布
 
 **目标**: 新增 Logseq 导出支持，报告可同时输出到 Obsidian 和 Logseq。
 
@@ -303,13 +303,42 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
+## v1.15.0（Notion 导出支持）✅ 已完成（待发布）
+
+**目标**: 新增 Notion 导出支持，报告可通过 API 写入 Notion 数据库。
+
+| ID | 需求 | 故事点 | 状态 |
+|----|------|--------|------|
+| INT-001 | Notion 导出支持 | 5pts | ✅ 完成 |
+
+### INT-001: Notion 导出支持
+
+**功能**: 支持将报告通过 Notion API 写入指定的数据库，可配置多个 Notion 数据库并设置默认。
+
+**后端变更** (`src-tauri/src/`):
+- `memory_storage/mod.rs`: Settings 新增 `notion_databases` 字段，新增 `NotionDatabase` 结构体
+- `memory_storage/settings.rs`: 新增 `get_notion_output_config()` 方法，API Key 加密存储
+- `notion.rs`: 新增 Notion API 集成模块，包含 `write_report_to_notion()` 和 `test_notion_connection()` 函数
+- `synthesis/mod.rs`: 集成 Notion 输出到所有 5 个报告生成函数
+
+**前端变更** (`src/`):
+- `components/SettingsModal.vue`: 新增 Notion 数据库管理 UI（添加/删除/设默认、连接测试）
+
+**验收条件**:
+- 用户可配置多个 Notion 数据库（API Key、Database ID）
+- 报告自动通过 API 写入 Notion 数据库
+- 支持连接测试验证配置正确性
+- 同时支持 Obsidian、Logseq 和 Notion 三重输出
+
+---
+
 ## 长期规划: v2.0.0+（集成与扩展）
 
 **目标**: 与第三方工具集成，扩展应用场景。
 
 | ID | 需求 | 故事点 | 状态 |
 |----|------|--------|------|
-| INT-001 | Notion 导出支持 | 5pts | Backlog |
+| INT-001 | Notion 导出支持 | 5pts | ✅ 完成 (v1.15.0) |
 | INT-002 | Logseq 导出支持 | 3pts | ✅ 完成 (v1.14.0) |
 | INT-003 | GitHub 工时统计 | 8pts | Backlog |
 | INT-004 | Slack/钉钉通知 | 5pts | Backlog |
