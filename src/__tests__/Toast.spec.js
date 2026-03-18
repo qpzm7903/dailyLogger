@@ -113,7 +113,7 @@ describe('Toast.vue', () => {
       }]
       const wrapper = mount(Toast)
       await nextTick()
-      expect(wrapper.text()).toContain('重试')
+      expect(wrapper.text()).toContain('Retry')
     })
 
     it('should not show retry button when no retryCallback', async () => {
@@ -124,7 +124,7 @@ describe('Toast.vue', () => {
       }]
       const wrapper = mount(Toast)
       await nextTick()
-      expect(wrapper.text()).not.toContain('重试')
+      expect(wrapper.text()).not.toContain('Retry')
     })
 
     it('should call retryCallback when retry button clicked', async () => {

@@ -32,6 +32,11 @@
     "shortcutHint": "Enter to save · Shift+Enter for new line",
     "placeholder": "Capture your thoughts..."
   },
+  "toast": {
+    "suggestion": "Suggestion:",
+    "retry": "Retry",
+    "close": "Close"
+  },
   "common": {
     "cancel": "Cancel",
     "save": "Save",

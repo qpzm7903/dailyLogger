@@ -74,7 +74,7 @@ describe('Error State and Retry', () => {
       await nextTick()
 
       expect(wrapper.find('.btn-retry').exists()).toBe(true)
-      expect(wrapper.text()).toContain('重试')
+      expect(wrapper.text()).toContain('Retry')
     })
 
     it('should call retryCallback when retry button is clicked', async () => {

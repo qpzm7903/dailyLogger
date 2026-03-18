@@ -72,14 +72,14 @@ describe('Toast', () => {
         suggestion: 'Please try again'
       })
       await nextTick()
-      expect(wrapper.text()).toContain('建议：Please try again')
+      expect(wrapper.text()).toContain('Suggestion: Please try again')
     })
 
     it('does not display suggestion when not provided', async () => {
       const wrapper = mountWithToast()
       toastStore.add({ message: 'Simple toast', type: 'info' })
       await nextTick()
-      expect(wrapper.text()).not.toContain('建议')
+      expect(wrapper.text()).not.toContain('Suggestion')
     })
   })
 

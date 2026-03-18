@@ -32,6 +32,11 @@
     "shortcutHint": "Enter 保存 · Shift+Enter 换行",
     "placeholder": "记录此刻的想法..."
   },
+  "toast": {
+    "suggestion": "建议：",
+    "retry": "重试",
+    "close": "关闭"
+  },
   "common": {
     "cancel": "取消",
     "save": "保存",

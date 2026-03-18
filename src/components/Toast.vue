@@ -26,7 +26,7 @@
 
               <!-- Suggestion -->
               <p v-if="toast.suggestion" class="toast-suggestion text-xs text-gray-400 mt-1">
-                建议：{{ toast.suggestion }}
+                {{ t('toast.suggestion') }} {{ toast.suggestion }}
               </p>
             </div>
           </div>
@@ -37,13 +37,13 @@
               @click="handleRetry(toast)"
               class="btn-retry px-3 py-1 text-xs bg-primary hover:bg-blue-600 rounded text-white transition-colors"
             >
-              重试
+              {{ t('toast.retry') }}
             </button>
             <button
               @click="remove(toast.id)"
               class="btn-close px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded text-gray-200 transition-colors"
             >
-              关闭
+              {{ t('toast.close') }}
             </button>
           </div>
 
@@ -62,8 +62,10 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useToastStore } from '../stores/toast.js'
 
+const { t } = useI18n()
 const { toasts, remove } = useToastStore()
 
 const handleRetry = (toast) => {
