@@ -240,6 +240,10 @@
   },
   "settings": {
     "title": "Settings",
+    "language": "Language",
+    "languageHint": "Select interface language",
+    "languageEn": "English",
+    "languageZhCN": "简体中文",
     "apiConfig": "API Configuration",
     "baseUrl": "Base URL",
     "baseUrlPlaceholder": "https://api.openai.com/v1",

@@ -772,6 +772,31 @@
         </div>
 
         <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.language') }}</h3>
+          <div class="space-y-3">
+            <div class="flex gap-2">
+              <button
+                @click="changeLanguage('en')"
+                type="button"
+                class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
+                :class="locale === 'en' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+              >
+                {{ $t('settings.languageEn') }}
+              </button>
+              <button
+                @click="changeLanguage('zh-CN')"
+                type="button"
+                class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
+                :class="locale === 'zh-CN' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+              >
+                {{ $t('settings.languageZhCN') }}
+              </button>
+            </div>
+            <p class="text-xs text-gray-500">{{ $t('settings.languageHint') }}</p>
+          </div>
+        </div>
+
+        <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
           <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
             {{ $t('settings.quickNoteShortcut') }}
@@ -942,6 +967,10 @@ import { invoke } from '@tauri-apps/api/core'
 import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeFile, writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { showError, showSuccess } from '../stores/toast.js'
+import { setLocale } from '../i18n.js'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 const emit = defineEmits(['close'])
 
@@ -956,6 +985,12 @@ const defaultPromptContent = ref('')
 const showDefaultSummaryPromptModal = ref(false)
 const defaultSummaryPromptContent = ref('')
 const showTemplateLibraryModal = ref(false)
+
+// Language switching
+function changeLanguage(lang) {
+  setLocale(lang)
+  locale.value = lang
+}
 
 // API Connection test state
 const isTestingConnection = ref(false)

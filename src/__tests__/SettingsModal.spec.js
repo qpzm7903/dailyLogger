@@ -39,11 +39,12 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('.bg-primary').trigger('click')
+    // Find save button in footer (not language switcher buttons)
+    const footer = wrapper.find('.border-t.border-gray-700')
+    await footer.find('.bg-primary').trigger('click')
     await flushPromises()
 
     // 检查成功状态（带图标的绿色提示，位于底部 footer 区域）
-    const footer = wrapper.find('.border-t.border-gray-700')
     const successMsg = footer.find('.text-green-400')
     expect(successMsg.exists()).toBe(true)
     expect(successMsg.text()).toContain('已保存')
@@ -54,7 +55,8 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('.bg-primary').trigger('click')
+    const footer = wrapper.find('.border-t.border-gray-700')
+    await footer.find('.bg-primary').trigger('click')
     await flushPromises()
 
     // 检查失败状态（带图标的红色提示）
@@ -67,7 +69,8 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    await wrapper.find('.bg-primary').trigger('click')
+    const footer = wrapper.find('.border-t.border-gray-700')
+    await footer.find('.bg-primary').trigger('click')
     await flushPromises()
 
     expect(invoke).toHaveBeenCalledWith('save_settings', {
@@ -90,7 +93,8 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const saveBtn = wrapper.find('.bg-primary')
+    const footer = wrapper.find('.border-t.border-gray-700')
+    const saveBtn = footer.find('.bg-primary')
     saveBtn.trigger('click') // 不 await，让保存保持 pending
 
     await flushPromises()
@@ -212,7 +216,8 @@ describe('SettingsModal.vue - AC2 按钮交互反馈', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const saveBtn = wrapper.find('button.bg-primary')
+    const footer = wrapper.find('.border-t.border-gray-700')
+    const saveBtn = footer.find('button.bg-primary')
     expect(saveBtn.classes()).toContain('hover:bg-blue-600')
   })
 
@@ -220,7 +225,8 @@ describe('SettingsModal.vue - AC2 按钮交互反馈', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const saveBtn = wrapper.find('button.bg-primary')
+    const footer = wrapper.find('.border-t.border-gray-700')
+    const saveBtn = footer.find('button.bg-primary')
     expect(saveBtn.classes()).toContain('disabled:opacity-50')
   })
 
