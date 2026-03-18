@@ -5,6 +5,8 @@
 
 use daily_logger_lib::get_app_data_dir;
 use daily_logger_lib::init_app;
+use std::fs::OpenOptions;
+use std::io::Write;
 use tauri::{Emitter, Manager};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -36,6 +38,64 @@ fn build_tray_tooltip() -> String {
 
     let record_count = get_today_record_count_sync().unwrap_or(0);
     format!("DailyLogger\n今日记录: {} 条", record_count)
+}
+
+/// Get crash log file path. For portable mode, write next to the exe.
+/// For installed mode, write to the app data directory.
+fn get_crash_log_path() -> std::path::PathBuf {
+    // First try to write next to the executable (portable mode)
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            let crash_log = exe_dir.join("dailylogger-crash.log");
+            // Test if we can write to this location
+            if OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&crash_log)
+                .is_ok()
+            {
+                return crash_log;
+            }
+        }
+    }
+
+    // Fall back to app data directory
+    get_app_data_dir().join("crash.log")
+}
+
+/// Write crash information to a persistent file.
+/// This is called from the panic hook to ensure crash info is captured
+/// even when stderr is not visible (Windows GUI mode).
+fn write_crash_log(panic_info: &std::panic::PanicHookInfo) {
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let crash_message = format!(
+        "[{}] FATAL CRASH\n{}\nVersion: {}\nPlatform: {}\n\n",
+        timestamp,
+        panic_info,
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS
+    );
+
+    let crash_log_path = get_crash_log_path();
+
+    // Try to write to crash log file
+    match OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&crash_log_path)
+    {
+        Ok(mut file) => {
+            if let Err(e) = file.write_all(crash_message.as_bytes()) {
+                eprintln!("Failed to write crash log: {}", e);
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to open crash log file {:?}: {}", crash_log_path, e);
+        }
+    }
+
+    // Also print to stderr (may be invisible on Windows GUI mode)
+    eprintln!("{}", crash_message);
 }
 
 fn setup_logging() -> Option<WorkerGuard> {
@@ -82,10 +142,11 @@ fn setup_logging() -> Option<WorkerGuard> {
 }
 
 fn main() {
-    // Set panic hook FIRST so any panic during initialization is logged.
+    // Set panic hook FIRST so any panic during initialization is logged to a crash file.
     // With `panic = "abort"` in release, the hook runs before process termination.
+    // This ensures crash info is captured even on Windows where stderr is invisible.
     std::panic::set_hook(Box::new(|panic_info| {
-        eprintln!("Application panic: {}", panic_info);
+        write_crash_log(panic_info);
     }));
 
     // _log_guard must live until main() returns; dropping it early stops the
