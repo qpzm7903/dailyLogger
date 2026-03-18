@@ -11,7 +11,8 @@
     "tags": "Tags",
     "export": "Export",
     "backup": "Backup",
-    "settings": "Settings"
+    "settings": "Settings",
+    "timeline": "Timeline"
   },
   "autoCapture": {
     "title": "Auto Capture",
@@ -448,5 +449,19 @@
     "limitReached": "Tag limit reached (10)",
     "maxTagsError": "Maximum 10 tags per record",
     "tagCreated": "Tag created"
+  },
+  "timeline": {
+    "title": "Timeline Visualization",
+    "date": "Date",
+    "previousDay": "Previous",
+    "today": "Today",
+    "nextDay": "Next",
+    "totalEvents": "Total Events",
+    "activeHours": "Active Hours",
+    "workTimeEstimate": "Work Time",
+    "loading": "Loading timeline...",
+    "loadFailed": "Failed to load timeline: {error}",
+    "noEvents": "No events for this day",
+    "events": "events"
   }
 }

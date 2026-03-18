@@ -11,7 +11,8 @@
     "tags": "标签",
     "export": "导出",
     "backup": "备份",
-    "settings": "设置"
+    "settings": "设置",
+    "timeline": "时间线"
   },
   "autoCapture": {
     "title": "自动感知",
@@ -444,5 +445,19 @@
     "limitReached": "已达标签上限 (10个)",
     "maxTagsError": "每条记录最多只能添加 10 个标签",
     "tagCreated": "标签已创建"
+  },
+  "timeline": {
+    "title": "时间线可视化",
+    "date": "日期",
+    "previousDay": "前一天",
+    "today": "今天",
+    "nextDay": "后一天",
+    "totalEvents": "总事件数",
+    "activeHours": "活跃时段",
+    "workTimeEstimate": "预估工时",
+    "loading": "加载时间线...",
+    "loadFailed": "加载时间线失败: {error}",
+    "noEvents": "当天暂无事件记录",
+    "events": "个事件"
   }
 }

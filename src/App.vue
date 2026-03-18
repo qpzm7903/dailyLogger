@@ -31,6 +31,9 @@
         <button @click="showExport = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           📤 {{ t('header.export') }}
         </button>
+        <button @click="showTimeline = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+          📈 {{ t('header.timeline') }}
+        </button>
         <button @click="showBackup = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           💾 {{ t('header.backup') }}
         </button>
@@ -292,6 +295,11 @@
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
     <TagCloud v-if="showTagCloud" @close="showTagCloud = false" @tagSelected="handleTagSelected" />
     <ExportModal v-if="showExport" @close="showExport = false" />
+    <TimelineVisualization
+      v-if="showTimeline"
+      @close="showTimeline = false"
+      @viewScreenshot="handleTimelineViewScreenshot"
+    />
     <Toast />
   </div>
 </template>
@@ -314,6 +322,7 @@ import TagCloud from './components/TagCloud.vue'
 import ExportModal from './components/ExportModal.vue'
 import CustomReportModal from './components/CustomReportModal.vue'
 import ReportComparisonModal from './components/ReportComparisonModal.vue'
+import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
@@ -352,6 +361,7 @@ const showHistoryViewer = ref(false)
 const showSearch = ref(false)
 const showTagCloud = ref(false)
 const showExport = ref(false)
+const showTimeline = ref(false)
 const selectedScreenshot = ref(null)
 const initialFilterTag = ref(null)
 
@@ -554,6 +564,12 @@ const openQuickNote = () => {
 }
 
 const openScreenshot = (record) => {
+  selectedScreenshot.value = record
+  showScreenshot.value = true
+}
+
+const handleTimelineViewScreenshot = (record) => {
+  showTimeline.value = false
   selectedScreenshot.value = record
   showScreenshot.value = true
 }
