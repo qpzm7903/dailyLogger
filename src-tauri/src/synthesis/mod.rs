@@ -541,6 +541,7 @@ mod tests {
             notion_database_id: None,
             github_token: None,
             github_repositories: None,
+            slack_webhook_url: None,
         }
     }
 
@@ -1514,6 +1515,7 @@ mod benchmarks {
             notion_database_id: None,
             github_token: None,
             github_repositories: None,
+            slack_webhook_url: None,
         }
     }
 

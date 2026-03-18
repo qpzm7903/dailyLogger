@@ -152,6 +152,7 @@ fn main() {
             daily_logger_lib::ollama::get_ollama_models,
             daily_logger_lib::notion::test_notion_connection,
             daily_logger_lib::github::test_github_connection,
+            daily_logger_lib::slack::test_slack_connection,
             daily_logger_lib::network_status::get_network_status,
             daily_logger_lib::network_status::check_network_status,
             // CORE-008: Performance benchmark

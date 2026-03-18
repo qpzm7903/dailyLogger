@@ -83,6 +83,8 @@ pub struct Settings {
     // INT-003: GitHub 工时统计配置
     pub github_token: Option<String>, // GitHub Personal Access Token (encrypted)
     pub github_repositories: Option<String>, // JSON: ["owner/repo", ...] repos to track
+    // INT-004: Slack 通知配置
+    pub slack_webhook_url: Option<String>, // Slack Incoming Webhook URL
 }
 
 /// DATA-006: Vault entry for multi-vault support

@@ -25,7 +25,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 last_monthly_report_path, obsidian_vaults,
                 comparison_report_prompt, logseq_graphs,
                 notion_api_key, notion_database_id,
-                github_token, github_repositories
+                github_token, github_repositories,
+                slack_webhook_url
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -88,6 +89,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 notion_database_id: row.get("notion_database_id")?,
                 github_token: row.get("github_token")?,
                 github_repositories: row.get("github_repositories")?,
+                slack_webhook_url: row.get("slack_webhook_url")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -228,7 +230,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             notion_api_key = :notion_api_key,
             notion_database_id = :notion_database_id,
             github_token = :github_token,
-            github_repositories = :github_repositories
+            github_repositories = :github_repositories,
+            slack_webhook_url = :slack_webhook_url
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -274,6 +277,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":notion_database_id": settings.notion_database_id,
             ":github_token": encrypted_github_token,
             ":github_repositories": settings.github_repositories,
+            ":slack_webhook_url": settings.slack_webhook_url,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
