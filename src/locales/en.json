@@ -153,6 +153,18 @@
     "restoreFailed": "Restore failed: {error}",
     "deleteFailed": "Delete failed: {error}"
   },
+  "screenshotModal": {
+    "title": "Screenshot Details",
+    "loading": "Loading...",
+    "window": "Window",
+    "analyzed": "Analyzed",
+    "screenshotOnly": "Screenshot Only",
+    "noAIAnalysis": "No AI Analysis",
+    "currentFocus": "Current Focus",
+    "activeSoftware": "Active Software",
+    "keywords": "Keywords",
+    "none": "None"
+  },
   "settings": {
     "title": "Settings",
     "apiConfig": "API Configuration",

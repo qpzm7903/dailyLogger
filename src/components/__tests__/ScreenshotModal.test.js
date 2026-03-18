@@ -110,7 +110,7 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
 
       // Check for window info section label
       const html = wrapper.html()
-      expect(html).toContain('窗口')
+      expect(html).toContain('Window')
     })
 
     it('does not show window info section when active_window is missing', async () => {
@@ -170,7 +170,7 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
 
       // Should not crash and window info section should be hidden
-      expect(wrapper.html()).toContain('截图详情')
+      expect(wrapper.html()).toContain('Screenshot Details')
     })
 
     it('displays window info with icon', async () => {

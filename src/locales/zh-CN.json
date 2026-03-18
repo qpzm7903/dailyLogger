@@ -153,6 +153,18 @@
     "restoreFailed": "恢复失败: {error}",
     "deleteFailed": "删除失败: {error}"
   },
+  "screenshotModal": {
+    "title": "截图详情",
+    "loading": "加载中...",
+    "window": "窗口",
+    "analyzed": "已分析",
+    "screenshotOnly": "仅截图预览",
+    "noAIAnalysis": "未进行 AI 分析",
+    "currentFocus": "当前焦点",
+    "activeSoftware": "使用软件",
+    "keywords": "关键词",
+    "none": "无"
+  },
   "settings": {
     "title": "设置",
     "apiConfig": "API 配置",
