@@ -302,7 +302,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | ID | 描述 | 来源 | 优先级 | 状态 |
 |----|------|------|--------|------|
 | DEBT-001 | 数据库 Schema 版本化迁移（settings 表已 38 字段，ALTER TABLE 链已 33 条，get/save_settings 使用脆弱的位置索引） | CORE/DATA/AI 回顾 | HIGH | ✅ 部分解决 (v1.13.0 DEBT-001a: 命名列访问) |
-| DEBT-002 | 离线队列 ScreenshotAnalysis 重试为空操作 | 代码审查 | MEDIUM | 待开发 |
+| DEBT-002 | 离线队列 ScreenshotAnalysis 重试为空操作 | 代码审查 | MEDIUM | ✅ 完成 (v1.14.0: retry_screenshot_analysis 实现) |
 | DEBT-003 | 统一测试数据库 Schema 初始化 | AI 回顾 | MEDIUM | ✅ 完成 (v1.13.2: init_test_database 提取到 schema.rs) |
 | DEBT-004 | 前端组件测试覆盖率 | 多 Epic 回顾 | MEDIUM | ✅ 完成 (v1.13.2: 531 个前端组件测试，覆盖所有主要组件) |
 | DEBT-005 | 学习数据持久化（SilentPatternTracker / WorkTimePatternLearner） | SMART 回顾 | MEDIUM | 待开发 |
