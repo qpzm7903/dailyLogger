@@ -4,6 +4,8 @@ pub mod backup;
 pub mod crypto;
 pub mod export;
 pub mod github;
+#[cfg(feature = "screenshot")]
+pub mod hardware;
 pub mod manual_entry;
 pub mod memory_storage;
 #[cfg(feature = "screenshot")]
