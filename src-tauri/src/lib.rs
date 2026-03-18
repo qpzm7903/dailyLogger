@@ -19,6 +19,7 @@ pub mod performance;
 pub mod silent_tracker;
 pub mod slack;
 pub mod synthesis;
+pub mod timeline;
 pub mod window_info;
 pub mod work_time;
 
