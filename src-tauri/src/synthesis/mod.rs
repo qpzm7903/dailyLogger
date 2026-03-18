@@ -1027,15 +1027,15 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
 
         // Create settings with logseq_graphs configured
+        // Use serde_json to properly escape Windows paths (backslashes)
         let mut settings = create_settings_with_include_manual(true);
-        let graph_path = dir.to_str().unwrap();
-        // Use serde_json to properly escape the path for JSON (handles Windows backslashes)
-        let graphs_json = serde_json::json!([{
+        let graph_path = dir.to_str().unwrap().to_string();
+        let graphs_json = serde_json::to_string(&[serde_json::json!({
             "name": "Test",
             "path": graph_path,
             "is_default": true
-        }])
-        .to_string();
+        })])
+        .unwrap();
         settings.logseq_graphs = Some(graphs_json);
 
         let path = write_report_to_logseq(&settings, "test-report.md", "# Report\nContent");
@@ -1056,15 +1056,15 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
 
         // Create settings with logseq_graphs configured
+        // Use serde_json to properly escape Windows paths (backslashes)
         let mut settings = create_settings_with_include_manual(true);
-        let graph_path = dir.to_str().unwrap();
-        // Use serde_json to properly escape the path for JSON (handles Windows backslashes)
-        let graphs_json = serde_json::json!([{
+        let graph_path = dir.to_str().unwrap().to_string();
+        let graphs_json = serde_json::to_string(&[serde_json::json!({
             "name": "Test",
             "path": graph_path,
             "is_default": true
-        }])
-        .to_string();
+        })])
+        .unwrap();
         settings.logseq_graphs = Some(graphs_json);
 
         let path = write_report_to_logseq(&settings, "daily-report.md", "# Daily\n");
