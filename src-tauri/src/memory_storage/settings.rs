@@ -24,7 +24,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
                 last_monthly_report_path, obsidian_vaults,
                 comparison_report_prompt, logseq_graphs,
-                notion_api_key, notion_database_id
+                notion_api_key, notion_database_id,
+                github_token, github_repositories
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -85,6 +86,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 logseq_graphs: row.get("logseq_graphs")?,
                 notion_api_key: row.get("notion_api_key")?,
                 notion_database_id: row.get("notion_database_id")?,
+                github_token: row.get("github_token")?,
+                github_repositories: row.get("github_repositories")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -103,6 +106,15 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                     decrypted_settings.notion_api_key = Some(
                         crypto::decrypt_api_key(notion_api_key)
                             .map_err(|e| format!("Failed to decrypt Notion API key: {}", e))?,
+                    );
+                }
+            }
+            // INT-003: Also decrypt github_token if present
+            if let Some(ref github_token) = settings.github_token {
+                if !github_token.is_empty() {
+                    decrypted_settings.github_token = Some(
+                        crypto::decrypt_api_key(github_token)
+                            .map_err(|e| format!("Failed to decrypt GitHub token: {}", e))?,
                     );
                 }
             }
@@ -141,6 +153,20 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             )
         } else {
             settings.notion_api_key.clone()
+        }
+    } else {
+        None
+    };
+
+    // INT-003: Encrypt GitHub token before saving
+    let encrypted_github_token = if let Some(ref github_token) = settings.github_token {
+        if !github_token.is_empty() && !crypto::is_encrypted(github_token) {
+            Some(
+                crypto::encrypt_api_key(github_token)
+                    .map_err(|e| format!("Failed to encrypt GitHub token: {}", e))?,
+            )
+        } else {
+            settings.github_token.clone()
         }
     } else {
         None
@@ -200,7 +226,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             comparison_report_prompt = :comparison_report_prompt,
             logseq_graphs = :logseq_graphs,
             notion_api_key = :notion_api_key,
-            notion_database_id = :notion_database_id
+            notion_database_id = :notion_database_id,
+            github_token = :github_token,
+            github_repositories = :github_repositories
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -244,6 +272,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":logseq_graphs": settings.logseq_graphs,
             ":notion_api_key": encrypted_notion_api_key,
             ":notion_database_id": settings.notion_database_id,
+            ":github_token": encrypted_github_token,
+            ":github_repositories": settings.github_repositories,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

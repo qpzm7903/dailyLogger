@@ -207,6 +207,13 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // INT-003: GitHub 工时统计配置
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN github_token TEXT", []);
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN github_repositories TEXT DEFAULT '[]'",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     conn.execute(
@@ -421,7 +428,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             comparison_report_prompt TEXT,
             logseq_graphs TEXT DEFAULT '[]',
             notion_api_key TEXT,
-            notion_database_id TEXT
+            notion_database_id TEXT,
+            github_token TEXT,
+            github_repositories TEXT DEFAULT '[]'
         )",
         [],
     )

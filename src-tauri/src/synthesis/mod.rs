@@ -523,6 +523,8 @@ mod tests {
             logseq_graphs: None,
             notion_api_key: None,
             notion_database_id: None,
+            github_token: None,
+            github_repositories: None,
         }
     }
 
@@ -1494,6 +1496,8 @@ mod benchmarks {
             logseq_graphs: None,
             notion_api_key: None,
             notion_database_id: None,
+            github_token: None,
+            github_repositories: None,
         }
     }
 
