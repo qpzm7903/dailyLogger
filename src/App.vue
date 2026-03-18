@@ -10,29 +10,29 @@
       <div class="flex items-center gap-4">
         <div v-if="!isOnline" class="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
           <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
-          离线模式
+          {{ t('header.offlineMode') }}
           <span v-if="offlineQueueCount > 0" class="ml-1 px-1.5 py-0.5 bg-yellow-500/30 rounded-full">
-            {{ offlineQueueCount }} 个待同步
+            {{ t('header.pendingSync', { count: offlineQueueCount }) }}
           </span>
         </div>
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
         <button @click="showLogViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-          🗒️ 日志
+          🗒️ {{ t('header.log') }}
         </button>
         <button @click="showHistoryViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-          📚 历史
+          📚 {{ t('header.history') }}
         </button>
         <button @click="showSearch = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-          🔍 搜索
+          🔍 {{ t('header.search') }}
         </button>
         <button @click="showTagCloud = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-          🏷️ 标签
+          🏷️ {{ t('header.tags') }}
         </button>
         <button @click="showExport = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-          📤 导出
+          📤 {{ t('header.export') }}
         </button>
         <button @click="showBackup = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-          💾 备份
+          💾 {{ t('header.backup') }}
         </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
@@ -46,37 +46,37 @@
           <div class="bg-dark rounded-xl p-5 border border-gray-700">
             <div class="flex items-center gap-2 mb-3">
               <span class="text-2xl">🖥️</span>
-              <h2 class="font-medium">自动感知</h2>
+              <h2 class="font-medium">{{ t('autoCapture.title') }}</h2>
             </div>
-            <p class="text-sm text-gray-400 mb-4">定时截取屏幕并分析工作上下文</p>
+            <p class="text-sm text-gray-400 mb-4">{{ t('autoCapture.description') }}</p>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span :class="autoCaptureEnabled ? 'bg-green-400 animate-pulse' : 'bg-gray-500'" class="w-2 h-2 rounded-full inline-block"></span>
-                <span class="text-xs text-gray-400">{{ autoCaptureEnabled ? '运行中' : '已停止' }}</span>
+                <span class="text-xs text-gray-400">{{ autoCaptureEnabled ? t('autoCapture.running') : t('autoCapture.stopped') }}</span>
               </div>
               <div class="flex items-center gap-2">
                 <button
                   @click="takeScreenshot"
                   :disabled="isCapturing"
                   class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-colors"
-                  title="截图查看，不做 AI 分析"
+                  :title="t('autoCapture.screenshot')"
                 >
-                  {{ isCapturing ? '截图中…' : '📸 截图' }}
+                  {{ isCapturing ? t('autoCapture.screenshotting') : '📸 ' + t('autoCapture.screenshot') }}
                 </button>
                 <button
                   @click="triggerCapture"
                   :disabled="isCapturing"
                   class="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-colors"
-                  title="截图并进行 AI 分析，保存到记录"
+                  :title="t('autoCapture.analyze')"
                 >
-                  🤖 分析
+                  🤖 {{ t('autoCapture.analyze') }}
                 </button>
                 <button
                   @click="toggleAutoCapture"
                   :class="autoCaptureEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
                   class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
                 >
-                  {{ autoCaptureEnabled ? '停止' : '启动' }}
+                  {{ autoCaptureEnabled ? t('autoCapture.stop') : t('autoCapture.start') }}
                 </button>
               </div>
             </div>
@@ -85,16 +85,16 @@
           <div class="bg-dark rounded-xl p-5 border border-gray-700">
             <div class="flex items-center gap-2 mb-3">
               <span class="text-2xl">⚡</span>
-              <h2 class="font-medium">闪念胶囊</h2>
+              <h2 class="font-medium">{{ t('quickNote.title') }}</h2>
             </div>
-            <p class="text-sm text-gray-400 mb-4">快捷键: Alt + Space</p>
+            <p class="text-sm text-gray-400 mb-4">{{ t('quickNote.shortcut') }}</p>
             <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500">今日记录: {{ quickNotesCount }} 条</span>
-              <button 
+              <span class="text-xs text-gray-500">{{ t('quickNote.todayRecords', { count: quickNotesCount }) }}</span>
+              <button
                 @click="openQuickNote"
                 class="bg-primary hover:bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
               >
-                记录
+                {{ t('quickNote.record') }}
               </button>
             </div>
           </div>
@@ -298,6 +298,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import SettingsModal from './components/SettingsModal.vue'
@@ -316,6 +317,8 @@ import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import Toast from './components/Toast.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
+
+const { t } = useI18n()
 
 const currentTime = ref('')
 const isOnline = ref(true)

@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "DailyLogger"
+  },
+  "header": {
+    "offlineMode": "Offline Mode",
+    "pendingSync": "{count} pending sync",
+    "log": "Log",
+    "history": "History",
+    "search": "Search",
+    "tags": "Tags",
+    "export": "Export",
+    "backup": "Backup",
+    "settings": "Settings"
+  },
+  "autoCapture": {
+    "title": "Auto Capture",
+    "description": "Periodically capture screen and analyze work context",
+    "running": "Running",
+    "stopped": "Stopped",
+    "screenshot": "Screenshot",
+    "screenshotting": "Capturing…",
+    "analyze": "Analyze",
+    "start": "Start",
+    "stop": "Stop"
+  },
+  "quickNote": {
+    "title": "Quick Note",
+    "shortcut": "Shortcut: Alt + Space",
+    "todayRecords": "Today's notes: {count}",
+    "record": "Record"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "loading": "Loading…",
+    "error": "Error",
+    "success": "Success"
+  }
+}

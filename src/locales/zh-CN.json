@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "DailyLogger"
+  },
+  "header": {
+    "offlineMode": "离线模式",
+    "pendingSync": "{count} 个待同步",
+    "log": "日志",
+    "history": "历史",
+    "search": "搜索",
+    "tags": "标签",
+    "export": "导出",
+    "backup": "备份",
+    "settings": "设置"
+  },
+  "autoCapture": {
+    "title": "自动感知",
+    "description": "定时截取屏幕并分析工作上下文",
+    "running": "运行中",
+    "stopped": "已停止",
+    "screenshot": "截图",
+    "screenshotting": "截图中…",
+    "analyze": "分析",
+    "start": "启动",
+    "stop": "停止"
+  },
+  "quickNote": {
+    "title": "闪念胶囊",
+    "shortcut": "快捷键: Alt + Space",
+    "todayRecords": "今日记录: {count} 条",
+    "record": "记录"
+  },
+  "common": {
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "confirm": "确认",
+    "loading": "加载中…",
+    "error": "错误",
+    "success": "成功"
+  }
+}

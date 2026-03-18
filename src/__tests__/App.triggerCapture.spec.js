@@ -53,7 +53,10 @@ describe('App.vue - triggerCapture', () => {
     const wrapper = mount(App, { global: { stubs: STUBS } })
     await flushPromises()
 
-    await wrapper.find('[title="截图并进行 AI 分析，保存到记录"]').trigger('click')
+    // Use text content to find the analyze button (i18n: "🤖 Analyze" or "🤖 分析")
+    const buttons = wrapper.findAll('button')
+    const analyzeBtn = buttons.find(btn => btn.text().includes('🤖'))
+    await analyzeBtn.trigger('click')
     await flushPromises()
 
     expect(invoke).toHaveBeenCalledWith('trigger_capture')
@@ -67,7 +70,9 @@ describe('App.vue - triggerCapture', () => {
     invoke.mockClear()
     setupInvoke()
 
-    await wrapper.find('[title="截图并进行 AI 分析，保存到记录"]').trigger('click')
+    const buttons = wrapper.findAll('button')
+    const analyzeBtn = buttons.find(btn => btn.text().includes('🤖'))
+    await analyzeBtn.trigger('click')
     await flushPromises()
 
     expect(invoke).toHaveBeenCalledWith('get_today_records')
@@ -80,7 +85,9 @@ describe('App.vue - triggerCapture', () => {
     invoke.mockClear()
     setupInvoke({ trigger_capture: new Error('screenshot failed') })
 
-    await wrapper.find('[title="截图并进行 AI 分析，保存到记录"]').trigger('click')
+    const buttons = wrapper.findAll('button')
+    const analyzeBtn = buttons.find(btn => btn.text().includes('🤖'))
+    await analyzeBtn.trigger('click')
     await flushPromises()
 
     expect(invoke).not.toHaveBeenCalledWith('get_today_records')
@@ -91,11 +98,12 @@ describe('App.vue - triggerCapture', () => {
     const wrapper = mount(App, { global: { stubs: STUBS } })
     await flushPromises()
 
-    const btn = wrapper.find('[title="截图并进行 AI 分析，保存到记录"]')
-    await btn.trigger('click')
+    const buttons = wrapper.findAll('button')
+    const analyzeBtn = buttons.find(btn => btn.text().includes('🤖'))
+    await analyzeBtn.trigger('click')
     await flushPromises()
 
-    expect(btn.text()).toBe('🤖 分析')
-    expect(btn.attributes('disabled')).toBeUndefined()
+    expect(analyzeBtn.text()).toMatch(/🤖/)
+    expect(analyzeBtn.attributes('disabled')).toBeUndefined()
   })
 })
