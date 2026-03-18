@@ -652,6 +652,37 @@
         </div>
 
         <div>
+          <label class="text-xs text-gray-300 block mb-2">Logseq Graphs</label>
+          <!-- Graph list -->
+          <div v-for="(graph, index) in graphs" :key="index"
+            class="flex items-center gap-2 bg-darker border border-gray-700 rounded-lg px-3 py-2 mb-2">
+            <button @click="setDefaultGraph(index)" class="text-xs shrink-0"
+              :class="graph.is_default ? 'text-primary font-bold' : 'text-gray-500 hover:text-gray-300'">
+              {{ graph.is_default ? '★' : '☆' }}
+            </button>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm text-gray-100 truncate">{{ graph.name }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ graph.path }}</div>
+            </div>
+            <button @click="removeGraph(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
+          </div>
+          <div v-if="graphs.length === 0" class="text-xs text-gray-500 py-2 mb-2">
+            尚未配置 Graph，请添加
+          </div>
+          <!-- Add graph form -->
+          <div class="flex gap-2">
+            <input v-model="newGraphName" type="text" placeholder="名称"
+              class="w-1/3 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            <input v-model="newGraphPath" type="text" placeholder="路径 (如 /Users/.../Logseq/graph)"
+              class="flex-1 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            <button @click="addGraph" :disabled="!newGraphName.trim() || !newGraphPath.trim()"
+              class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
+              添加
+            </button>
+          </div>
+        </div>
+
+        <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">快捷键</h3>
           <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
             闪念胶囊: Alt + Space
@@ -946,7 +977,9 @@ const settings = ref({
   // AI-005: Ollama support
   is_ollama: false,
   // DATA-006: Multi Obsidian Vault support
-  obsidian_vaults: '[]'
+  obsidian_vaults: '[]',
+  // INT-002: Logseq graph support
+  logseq_graphs: '[]'
 })
 
 // SMART-003: Work time status for learning progress display
@@ -962,6 +995,11 @@ const isScreenshotEnabled = ref(true) // Will be set based on backend capability
 const vaults = ref([])
 const newVaultName = ref('')
 const newVaultPath = ref('')
+
+// INT-002: Logseq graph support
+const graphs = ref([])
+const newGraphName = ref('')
+const newGraphPath = ref('')
 
 const loadSettings = async () => {
   try {
@@ -981,6 +1019,13 @@ const loadSettings = async () => {
         path: settings.value.obsidian_path,
         is_default: true
       }]
+    }
+    // INT-002: Parse logseq_graphs JSON
+    try {
+      const parsedGraphs = JSON.parse(settings.value.logseq_graphs || '[]')
+      graphs.value = Array.isArray(parsedGraphs) ? parsedGraphs : []
+    } catch {
+      graphs.value = []
     }
     // Parse window whitelist/blacklist JSON arrays into tag arrays
     try {
@@ -1130,7 +1175,9 @@ const saveSettings = async () => {
       ),
       // DATA-006: Serialize vaults to JSON and sync legacy obsidian_path
       obsidian_vaults: JSON.stringify(vaults.value),
-      obsidian_path: vaults.value.find(v => v.is_default)?.path || vaults.value[0]?.path || settings.value.obsidian_path || ''
+      obsidian_path: vaults.value.find(v => v.is_default)?.path || vaults.value[0]?.path || settings.value.obsidian_path || '',
+      // INT-002: Serialize Logseq graphs to JSON
+      logseq_graphs: JSON.stringify(graphs.value)
     }
     await invoke('save_settings', { settings: settingsToSave })
     saveStatus.value = 'ok'
@@ -1167,6 +1214,29 @@ const removeVault = (index) => {
 
 const setDefaultVault = (index) => {
   vaults.value.forEach((v, i) => { v.is_default = i === index })
+}
+
+// INT-002: Logseq graph management methods
+const addGraph = () => {
+  const name = newGraphName.value.trim()
+  const path = newGraphPath.value.trim()
+  if (!name || !path) return
+  const isFirst = graphs.value.length === 0
+  graphs.value.push({ name, path, is_default: isFirst })
+  newGraphName.value = ''
+  newGraphPath.value = ''
+}
+
+const removeGraph = (index) => {
+  const wasDefault = graphs.value[index].is_default
+  graphs.value.splice(index, 1)
+  if (wasDefault && graphs.value.length > 0) {
+    graphs.value[0].is_default = true
+  }
+}
+
+const setDefaultGraph = (index) => {
+  graphs.value.forEach((g, i) => { g.is_default = i === index })
 }
 
 const exportLogs = async () => {
