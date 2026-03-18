@@ -359,16 +359,37 @@ pub async fn process_queue() {
 /// Execute a single queued task based on its type.
 async fn execute_queued_task(
     task_type: &OfflineTaskType,
-    _payload: &str,
+    payload: &str,
     _record_id: Option<i64>,
 ) -> Result<(), String> {
     match task_type {
         OfflineTaskType::ScreenshotAnalysis => {
-            // Screenshot analysis: the screenshot is already saved locally.
-            // We need to re-analyze it with the AI.
-            // For now, we skip re-analysis since the screenshot record already exists.
-            // The content will remain as "offline - pending analysis" until retry.
-            tracing::info!("Screenshot analysis retry - skipping (screenshot already saved)");
+            // Call the retry function from auto_perception
+            #[cfg(feature = "screenshot")]
+            {
+                // Parse payload to get screenshot_path and record_id
+                #[derive(serde::Deserialize)]
+                struct ScreenshotPayload {
+                    screenshot_path: String,
+                    record_id: i64,
+                }
+
+                let parsed: ScreenshotPayload = serde_json::from_str(payload)
+                    .map_err(|e| format!("Failed to parse ScreenshotAnalysis payload: {}", e))?;
+
+                crate::auto_perception::retry_screenshot_analysis(
+                    &parsed.screenshot_path,
+                    parsed.record_id,
+                )
+                .await?;
+            }
+
+            #[cfg(not(feature = "screenshot"))]
+            {
+                tracing::warn!("Screenshot analysis retry skipped: screenshot feature not enabled");
+                let _ = payload; // Suppress unused warning
+            }
+
             Ok(())
         }
         OfflineTaskType::DailySummary => {

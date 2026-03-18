@@ -377,6 +377,29 @@ pub fn delete_record_sync(id: i64) -> Result<(), String> {
     Ok(())
 }
 
+/// Update the content of a record by ID
+/// Used by offline queue retry to update screenshot analysis results
+pub fn update_record_content_sync(id: i64, content: &str) -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let rows_affected = conn
+        .execute(
+            "UPDATE records SET content = ?1 WHERE id = ?2",
+            params![content, id],
+        )
+        .map_err(|e| format!("Failed to update record: {}", e))?;
+
+    if rows_affected == 0 {
+        return Err(format!("Record with id {} not found", id));
+    }
+
+    tracing::info!("Updated content for record {}", id);
+    Ok(())
+}
+
 /// Get history records with filtering and pagination
 /// - start_date/end_date: YYYY-MM-DD format (local timezone)
 /// - source_type: None for all, Some("auto") or Some("manual") for filtering
@@ -1639,6 +1662,35 @@ mod tests {
         assert!(results
             .iter()
             .any(|r| r.record.content == "async search test"));
+    }
+
+    #[test]
+    #[serial]
+    fn update_record_content_sync_updates_content() {
+        setup_test_db();
+
+        let id = add_record("auto", "original content", None, None, None).unwrap();
+        let new_content = r#"{"current_focus": "updated focus", "active_software": "VS Code"}"#;
+
+        update_record_content_sync(id, new_content).unwrap();
+
+        // Verify the content was updated
+        let records = get_today_records_sync().unwrap();
+        let record = records
+            .iter()
+            .find(|r| r.id == id)
+            .expect("record should exist");
+        assert_eq!(record.content, new_content);
+    }
+
+    #[test]
+    #[serial]
+    fn update_record_content_sync_returns_error_for_nonexistent_id() {
+        setup_test_db();
+
+        let result = update_record_content_sync(99999, "new content");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
     }
 
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)

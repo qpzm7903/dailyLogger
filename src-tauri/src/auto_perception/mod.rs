@@ -667,6 +667,58 @@ fn parse_window_patterns(json: Option<&str>) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Retry screenshot analysis for an offline-queued screenshot.
+/// This is called by the offline queue when network is restored.
+///
+/// # Arguments
+/// * `screenshot_path` - Full path to the screenshot file
+/// * `record_id` - Database record ID to update with the analysis result
+///
+/// # Returns
+/// * `Ok(())` on successful analysis and record update
+/// * `Err(String)` on failure (file not found, API error, etc.)
+pub async fn retry_screenshot_analysis(
+    screenshot_path: &str,
+    record_id: i64,
+) -> Result<(), String> {
+    tracing::info!(
+        "Retrying screenshot analysis for record {} from {}",
+        record_id,
+        screenshot_path
+    );
+
+    // Read screenshot file
+    let image_data = std::fs::read(screenshot_path)
+        .map_err(|e| format!("Failed to read screenshot file {}: {}", screenshot_path, e))?;
+
+    // Convert to base64
+    let image_base64 =
+        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
+
+    // Load settings
+    let settings = load_capture_settings();
+
+    // Check if API is configured
+    if settings.api_base_url.is_empty() {
+        return Err("API base URL not configured".to_string());
+    }
+
+    // Call analyze_screen
+    let analysis = analyze_screen(&settings, &image_base64).await?;
+
+    // Update the record content
+    let content = serde_json::to_string(&analysis)
+        .map_err(|e| format!("Failed to serialize analysis: {}", e))?;
+
+    memory_storage::update_record_content_sync(record_id, &content)?;
+
+    tracing::info!(
+        "Successfully updated record {} with analysis result",
+        record_id
+    );
+    Ok(())
+}
+
 /// SMART-003: Load work time settings from database
 fn load_work_time_settings() -> WorkTimeSettings {
     match memory_storage::get_settings_sync() {
