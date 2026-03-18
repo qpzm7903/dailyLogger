@@ -58,7 +58,7 @@ describe('ExportModal', () => {
     await dateInputs[0].setValue('2026-03-20')
     await dateInputs[1].setValue('2026-03-10')
 
-    expect(wrapper.text()).toContain('开始日期不能晚于结束日期')
+    expect(wrapper.text()).toContain('Start date cannot be after end date')
   })
 
   it('disables export button when dates invalid', async () => {
@@ -68,7 +68,7 @@ describe('ExportModal', () => {
     await dateInputs[0].setValue('2026-03-20')
     await dateInputs[1].setValue('2026-03-10')
 
-    const exportBtn = wrapper.findAll('button').find(b => b.text().includes('导出'))
+    const exportBtn = wrapper.findAll('button').find(b => b.text().includes('Export'))
     expect(exportBtn.attributes('disabled')).toBeDefined()
   })
 
@@ -86,7 +86,7 @@ describe('ExportModal', () => {
     await dateInputs[1].setValue('2026-03-14')
 
     const exportBtn = wrapper.findAll('button').find(b =>
-      b.text() === '导出' || b.text() === '导出中...'
+      b.text().includes('Export')
     )
     await exportBtn.trigger('click')
 
@@ -112,13 +112,13 @@ describe('ExportModal', () => {
     const wrapper = mount(ExportModal)
 
     const exportBtn = wrapper.findAll('button').find(b =>
-      b.text() === '导出' || b.text() === '导出中...'
+      b.text().includes('Export')
     )
     await exportBtn.trigger('click')
 
     await vi.waitFor(() => {
-      expect(wrapper.text()).toContain('导出成功')
-      expect(wrapper.text()).toContain('记录数: 42 条')
+      expect(wrapper.text()).toContain('Export successful')
+      expect(wrapper.text()).toContain('Records: 42')
     })
   })
 
@@ -128,7 +128,7 @@ describe('ExportModal', () => {
     const wrapper = mount(ExportModal)
 
     const exportBtn = wrapper.findAll('button').find(b =>
-      b.text() === '导出' || b.text() === '导出中...'
+      b.text().includes('Export')
     )
     await exportBtn.trigger('click')
 
@@ -140,7 +140,7 @@ describe('ExportModal', () => {
   it('emits close on close button', async () => {
     const wrapper = mount(ExportModal)
 
-    const closeBtn = wrapper.findAll('button').find(b => b.text() === '关闭')
+    const closeBtn = wrapper.findAll('button').find(b => b.text() === 'Close')
     await closeBtn.trigger('click')
 
     expect(wrapper.emitted('close')).toBeTruthy()
@@ -165,12 +165,12 @@ describe('ExportModal', () => {
     const wrapper = mount(ExportModal)
 
     const exportBtn = wrapper.findAll('button').find(b =>
-      b.text() === '导出' || b.text() === '导出中...'
+      b.text().includes('Export')
     )
     await exportBtn.trigger('click')
 
     await vi.waitFor(() => {
-      expect(wrapper.text()).toContain('打开所在目录')
+      expect(wrapper.text()).toContain('Open containing folder')
     })
   })
 
@@ -185,15 +185,15 @@ describe('ExportModal', () => {
     const wrapper = mount(ExportModal)
 
     const exportBtn = wrapper.findAll('button').find(b =>
-      b.text() === '导出' || b.text() === '导出中...'
+      b.text().includes('Export')
     )
     await exportBtn.trigger('click')
 
     await vi.waitFor(() => {
-      expect(wrapper.text()).toContain('打开所在目录')
+      expect(wrapper.text()).toContain('Open containing folder')
     })
 
-    const openDirBtn = wrapper.findAll('button').find(b => b.text().includes('打开所在目录'))
+    const openDirBtn = wrapper.findAll('button').find(b => b.text().includes('Open containing folder'))
     await openDirBtn.trigger('click')
 
     await vi.waitFor(() => {

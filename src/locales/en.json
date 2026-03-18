@@ -189,6 +189,27 @@
     "relevanceScore": "Relevance: {rank}",
     "searchFailed": "Search failed: {error}"
   },
+  "exportModal": {
+    "title": "Data Export",
+    "dateRange": "Date Range",
+    "to": "to",
+    "selectDateRange": "Please select a date range",
+    "startDateAfterEnd": "Start date cannot be after end date",
+    "exportFormat": "Export Format",
+    "jsonFormat": "JSON",
+    "jsonDescription": "Structured data, suitable for analysis",
+    "markdownFormat": "Markdown",
+    "markdownDescription": "Readable document, suitable for archiving",
+    "exportSuccess": "Export successful",
+    "recordCount": "Records: {count}",
+    "fileSize": "File size: {size}",
+    "path": "Path: {path}",
+    "openDirectory": "Open containing folder",
+    "close": "Close",
+    "exporting": "Exporting...",
+    "export": "Export",
+    "exportFailed": "Export failed"
+  },
   "settings": {
     "title": "Settings",
     "apiConfig": "API Configuration",

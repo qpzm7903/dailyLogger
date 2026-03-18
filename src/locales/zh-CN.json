@@ -189,6 +189,27 @@
     "relevanceScore": "相关性: {rank}",
     "searchFailed": "搜索失败: {error}"
   },
+  "exportModal": {
+    "title": "数据导出",
+    "dateRange": "日期范围",
+    "to": "至",
+    "selectDateRange": "请选择日期范围",
+    "startDateAfterEnd": "开始日期不能晚于结束日期",
+    "exportFormat": "导出格式",
+    "jsonFormat": "JSON",
+    "jsonDescription": "结构化数据，适合分析",
+    "markdownFormat": "Markdown",
+    "markdownDescription": "可读文档，适合归档",
+    "exportSuccess": "导出成功",
+    "recordCount": "记录数: {count} 条",
+    "fileSize": "文件大小: {size}",
+    "path": "路径: {path}",
+    "openDirectory": "打开所在目录",
+    "close": "关闭",
+    "exporting": "导出中...",
+    "export": "导出",
+    "exportFailed": "导出失败"
+  },
   "settings": {
     "title": "设置",
     "apiConfig": "API 配置",
