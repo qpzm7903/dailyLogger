@@ -28,7 +28,9 @@
     "title": "Quick Note",
     "shortcut": "Shortcut: Alt + Space",
     "todayRecords": "Today's notes: {count}",
-    "record": "Record"
+    "record": "Record",
+    "shortcutHint": "Enter to save · Shift+Enter for new line",
+    "placeholder": "Capture your thoughts..."
   },
   "common": {
     "cancel": "Cancel",

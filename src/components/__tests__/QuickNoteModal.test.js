@@ -15,13 +15,13 @@ describe('QuickNoteModal', () => {
 
   it('renders modal title', () => {
     const wrapper = mount(QuickNoteModal)
-    expect(wrapper.text()).toContain('闪念胶囊')
+    expect(wrapper.text()).toContain('Quick Note')
   })
 
   it('displays keyboard shortcuts hint', () => {
     const wrapper = mount(QuickNoteModal)
-    expect(wrapper.text()).toContain('Enter 保存')
-    expect(wrapper.text()).toContain('Shift+Enter 换行')
+    expect(wrapper.text()).toContain('Enter to save')
+    expect(wrapper.text()).toContain('Shift+Enter')
   })
 
   it('displays current time', () => {
@@ -65,12 +65,12 @@ describe('QuickNoteModal', () => {
   it('displays placeholder text', () => {
     const wrapper = mount(QuickNoteModal)
     const textarea = wrapper.find('textarea')
-    expect(textarea.attributes('placeholder')).toBe('记录此刻的想法...')
+    expect(textarea.attributes('placeholder')).toBe('Capture your thoughts...')
   })
 
   it('emits close event when cancel button clicked', async () => {
     const wrapper = mount(QuickNoteModal)
-    const cancelButton = wrapper.findAll('button').find(btn => btn.text() === '取消')
+    const cancelButton = wrapper.findAll('button').find(btn => btn.text() === 'Cancel')
 
     await cancelButton.trigger('click')
 
@@ -89,7 +89,7 @@ describe('QuickNoteModal', () => {
   it('emits save event when save button clicked with content', async () => {
     const wrapper = mount(QuickNoteModal)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
 
     await textarea.setValue('Test note')
     await saveButton.trigger('click')
@@ -101,7 +101,7 @@ describe('QuickNoteModal', () => {
   it('trims whitespace when saving', async () => {
     const wrapper = mount(QuickNoteModal)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
 
     await textarea.setValue('  Test note  ')
     await saveButton.trigger('click')
@@ -111,7 +111,7 @@ describe('QuickNoteModal', () => {
 
   it('does not emit save when content is empty', async () => {
     const wrapper = mount(QuickNoteModal)
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
 
     await saveButton.trigger('click')
 
@@ -121,7 +121,7 @@ describe('QuickNoteModal', () => {
   it('does not emit save when content is only whitespace', async () => {
     const wrapper = mount(QuickNoteModal)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
 
     await textarea.setValue('   ')
     await saveButton.trigger('click')
@@ -131,7 +131,7 @@ describe('QuickNoteModal', () => {
 
   it('disables save button when content is empty', () => {
     const wrapper = mount(QuickNoteModal)
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
 
     expect(saveButton.attributes('disabled')).toBeDefined()
   })
@@ -139,7 +139,7 @@ describe('QuickNoteModal', () => {
   it('disables save button when content is only whitespace', async () => {
     const wrapper = mount(QuickNoteModal)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
 
     await textarea.setValue('   ')
     await wrapper.vm.$nextTick()
@@ -150,7 +150,7 @@ describe('QuickNoteModal', () => {
   it('enables save button when content is valid', async () => {
     const wrapper = mount(QuickNoteModal)
     const textarea = wrapper.find('textarea')
-    const saveButton = wrapper.findAll('button').find(btn => btn.text() === '保存')
+    const saveButton = wrapper.findAll('button').find(btn => btn.text() === 'Save')
 
     await textarea.setValue('Valid content')
     await wrapper.vm.$nextTick()

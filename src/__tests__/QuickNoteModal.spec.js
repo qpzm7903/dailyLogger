@@ -66,15 +66,15 @@ describe('QuickNoteModal.vue - 笔记保存', () => {
 })
 
 describe('QuickNoteModal.vue - 快捷键提示', () => {
-  it('提示文字包含"Enter 保存"说明', () => {
+  it('提示文字包含"Enter to save"说明', () => {
     const wrapper = mount(QuickNoteModal)
 
-    expect(wrapper.text()).toContain('Enter 保存')
+    expect(wrapper.text()).toContain('Enter to save')
   })
 
-  it('提示文字包含"Shift+Enter 换行"说明', () => {
+  it('提示文字包含"Shift+Enter"说明', () => {
     const wrapper = mount(QuickNoteModal)
 
-    expect(wrapper.text()).toContain('Shift+Enter 换行')
+    expect(wrapper.text()).toContain('Shift+Enter')
   })
 })

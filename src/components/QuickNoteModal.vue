@@ -4,17 +4,17 @@
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-xl">⚡</span>
-          <h2 class="text-lg font-semibold">闪念胶囊</h2>
+          <h2 class="text-lg font-semibold">{{ $t('quickNote.title') }}</h2>
         </div>
-        <span class="text-xs text-gray-500">Enter 保存 &nbsp;·&nbsp; Shift+Enter 换行</span>
+        <span class="text-xs text-gray-500">{{ $t('quickNote.shortcutHint') }}</span>
       </div>
-      
+
       <div class="p-6">
-        <textarea 
+        <textarea
           ref="inputRef"
           v-model="content"
           @keydown.enter.exact.prevent="save"
-          placeholder="记录此刻的想法..."
+          :placeholder="$t('quickNote.placeholder')"
           class="w-full h-40 bg-darker border border-gray-700 rounded-lg px-4 py-3 text-sm focus:border-primary focus:outline-none resize-none"
           autofocus
         ></textarea>
@@ -23,18 +23,18 @@
       <div class="px-6 py-4 border-t border-gray-700 flex justify-between items-center">
         <span class="text-xs text-gray-500">{{ currentTime }}</span>
         <div class="flex gap-3">
-          <button 
+          <button
             @click="$emit('close')"
             class="px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors"
           >
-            取消
+            {{ $t('common.cancel') }}
           </button>
-          <button 
+          <button
             @click="save"
             :disabled="!content.trim()"
             class="px-4 py-2 bg-primary rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            保存
+            {{ $t('common.save') }}
           </button>
         </div>
       </div>
@@ -44,7 +44,9 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { locale } = useI18n()
 const emit = defineEmits(['close', 'save'])
 
 const content = ref('')
@@ -52,7 +54,7 @@ const inputRef = ref(null)
 const currentTime = ref('')
 
 const updateTime = () => {
-  currentTime.value = new Date().toLocaleString('zh-CN', {
+  currentTime.value = new Date().toLocaleString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US', {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',

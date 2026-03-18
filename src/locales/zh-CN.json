@@ -28,7 +28,9 @@
     "title": "闪念胶囊",
     "shortcut": "快捷键: Alt + Space",
     "todayRecords": "今日记录: {count} 条",
-    "record": "记录"
+    "record": "记录",
+    "shortcutHint": "Enter 保存 · Shift+Enter 换行",
+    "placeholder": "记录此刻的想法..."
   },
   "common": {
     "cancel": "取消",
