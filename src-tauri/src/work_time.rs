@@ -211,10 +211,13 @@ impl WorkTimePatternLearner {
 
 /// Global functions for use by other modules
 /// Record a capture in the global work time learner
+/// Also persists the capture to database for durability.
 pub fn record_work_time_capture() {
     if let Ok(mut learner) = WORK_TIME_LEARNER.lock() {
         learner.record_capture();
     }
+    // Persist to database (non-blocking, ignore errors)
+    save_work_time_capture_to_db();
 }
 
 /// Record a capture at a specific time (for testing)
@@ -268,6 +271,146 @@ pub fn get_work_time_hourly_summaries() -> Vec<HourlyActivitySummary> {
 pub fn clear_work_time_learner() {
     if let Ok(mut learner) = WORK_TIME_LEARNER.lock() {
         learner.clear();
+    }
+}
+
+// =============================================================================
+// Persistence Functions (DEBT-005)
+// =============================================================================
+
+/// Save a single hourly activity to database
+fn save_hourly_activity_to_db(
+    date: chrono::NaiveDate,
+    hour: u8,
+    capture_count: u32,
+) -> Result<(), String> {
+    use crate::memory_storage::DB_CONNECTION;
+    use rusqlite::params;
+
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let date_str = date.format("%Y-%m-%d").to_string();
+    conn.execute(
+        "INSERT OR REPLACE INTO work_time_activity (date, hour, capture_count)
+         VALUES (?1, ?2, ?3)",
+        params![date_str, hour as i32, capture_count as i32],
+    )
+    .map_err(|e| format!("Failed to save work time activity: {}", e))?;
+
+    Ok(())
+}
+
+/// Load all hourly activities from database into the learner
+fn load_hourly_activities_from_db(learner: &mut WorkTimePatternLearner) -> Result<(), String> {
+    use crate::memory_storage::DB_CONNECTION;
+
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let cutoff_date = chrono::Local::now().date_naive() - chrono::Duration::days(14);
+    let cutoff_str = cutoff_date.format("%Y-%m-%d").to_string();
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT date, hour, capture_count
+             FROM work_time_activity
+             WHERE date >= ?1
+             ORDER BY date, hour",
+        )
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let rows = stmt
+        .query_map([&cutoff_str], |row| {
+            let date_str: String = row.get(0)?;
+            let hour: i32 = row.get(1)?;
+            let capture_count: i32 = row.get(2)?;
+            Ok((
+                chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").unwrap_or(cutoff_date),
+                hour as u8,
+                capture_count as u32,
+            ))
+        })
+        .map_err(|e| format!("Failed to query work time activity: {}", e))?;
+
+    learner.hourly_activities.clear();
+    for row_result in rows {
+        let (date, hour, capture_count) =
+            row_result.map_err(|e| format!("Failed to read row: {}", e))?;
+        learner.hourly_activities.push(HourlyActivity {
+            date,
+            hour,
+            capture_count,
+        });
+    }
+
+    Ok(())
+}
+
+/// Persist the current learner state to database
+pub fn persist_work_time_activity() -> Result<(), String> {
+    let learner = WORK_TIME_LEARNER
+        .lock()
+        .map_err(|e| format!("Learner lock error: {}", e))?;
+
+    for activity in &learner.hourly_activities {
+        save_hourly_activity_to_db(activity.date, activity.hour, activity.capture_count)?;
+    }
+
+    tracing::debug!(
+        "Persisted {} hourly work time activities",
+        learner.hourly_activities.len()
+    );
+    Ok(())
+}
+
+/// Load persisted activities into the global learner
+pub fn load_work_time_activity() -> Result<(), String> {
+    let mut learner = WORK_TIME_LEARNER
+        .lock()
+        .map_err(|e| format!("Learner lock error: {}", e))?;
+
+    load_hourly_activities_from_db(&mut learner)?;
+
+    tracing::debug!(
+        "Loaded {} hourly work time activities from database",
+        learner.hourly_activities.len()
+    );
+    Ok(())
+}
+
+/// Save a single capture to database (called after recording)
+pub fn save_work_time_capture_to_db() {
+    let now = chrono::Local::now();
+    let date = now.date_naive();
+    let hour = now.hour() as u8;
+
+    if let Ok(db) = crate::memory_storage::DB_CONNECTION.lock() {
+        if let Some(conn) = db.as_ref() {
+            let date_str = date.format("%Y-%m-%d").to_string();
+
+            // Get existing count
+            let existing: Option<i32> = conn
+                .query_row(
+                    "SELECT capture_count FROM work_time_activity WHERE date = ?1 AND hour = ?2",
+                    rusqlite::params![&date_str, hour as i32],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            let new_count = existing.unwrap_or(0) + 1;
+
+            // Save updated count
+            let _ = conn.execute(
+                "INSERT OR REPLACE INTO work_time_activity (date, hour, capture_count)
+                 VALUES (?1, ?2, ?3)",
+                rusqlite::params![&date_str, hour as i32, new_count],
+            );
+        }
     }
 }
 
@@ -776,5 +919,77 @@ mod tests {
         assert_eq!(status.current_periods.len(), 1);
         assert_eq!(status.current_periods[0].start, 9);
         assert_eq!(status.current_periods[0].end, 18);
+    }
+
+    // ── Persistence Tests (DEBT-005) ──
+
+    #[test]
+    fn test_save_and_load_work_time_activity() {
+        use crate::memory_storage::init_test_database;
+        use rusqlite::Connection;
+
+        // Setup test database
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Clear learner
+        clear_work_time_learner();
+
+        // Record some captures
+        record_work_time_capture();
+        record_work_time_capture();
+        record_work_time_capture();
+
+        // Persist
+        persist_work_time_activity().unwrap();
+
+        // Clear learner
+        clear_work_time_learner();
+        {
+            let learner = WORK_TIME_LEARNER.lock().unwrap();
+            assert!(learner.hourly_activities.is_empty());
+        }
+
+        // Load from database
+        load_work_time_activity().unwrap();
+
+        // Verify data restored
+        let learner = WORK_TIME_LEARNER.lock().unwrap();
+        assert!(!learner.hourly_activities.is_empty());
+        let activity = &learner.hourly_activities[0];
+        assert_eq!(activity.capture_count, 3);
+    }
+
+    #[test]
+    fn test_save_work_time_capture_to_db_increments() {
+        use crate::memory_storage::init_test_database;
+        use rusqlite::Connection;
+
+        // Setup test database
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Clear learner
+        clear_work_time_learner();
+
+        // Save captures directly to DB
+        save_work_time_capture_to_db();
+        save_work_time_capture_to_db();
+        save_work_time_capture_to_db();
+
+        // Load and verify
+        load_work_time_activity().unwrap();
+        let learner = WORK_TIME_LEARNER.lock().unwrap();
+        assert!(!learner.hourly_activities.is_empty());
+        let activity = &learner.hourly_activities[0];
+        assert_eq!(activity.capture_count, 3);
     }
 }

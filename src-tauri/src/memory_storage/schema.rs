@@ -274,8 +274,34 @@ pub fn init_database() -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create index on manual_tags: {}", e))?;
 
-    // CORE-007: 离线队列表
+    // Create offline queue table
     crate::offline_queue::create_offline_queue_table(&conn)?;
+
+    // DEBT-005: Learning data persistence tables
+    // Silent pattern stats for SMART-002 auto-threshold adjustment
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS silent_pattern_stats (
+            date TEXT NOT NULL,
+            hour INTEGER NOT NULL,
+            silent_captures INTEGER NOT NULL DEFAULT 0,
+            change_captures INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (date, hour)
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create silent_pattern_stats table: {}", e))?;
+
+    // Work time activity for SMART-003 work time detection
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS work_time_activity (
+            date TEXT NOT NULL,
+            hour INTEGER NOT NULL,
+            capture_count INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (date, hour)
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
 
     let mut db = DB_CONNECTION
         .lock()
@@ -466,6 +492,30 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
 
     // Create offline queue table
     crate::offline_queue::create_offline_queue_table(conn)?;
+
+    // DEBT-005: Learning data persistence tables
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS silent_pattern_stats (
+            date TEXT NOT NULL,
+            hour INTEGER NOT NULL,
+            silent_captures INTEGER NOT NULL DEFAULT 0,
+            change_captures INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (date, hour)
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create silent_pattern_stats table: {}", e))?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS work_time_activity (
+            date TEXT NOT NULL,
+            hour INTEGER NOT NULL,
+            capture_count INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (date, hour)
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
 
     Ok(())
 }

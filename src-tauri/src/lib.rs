@@ -55,6 +55,15 @@ pub fn mask_api_key(key: &str) -> String {
 
 pub fn init_app() -> tauri::Result<()> {
     memory_storage::init_database().map_err(|e| tauri::Error::Anyhow(anyhow::anyhow!("{}", e)))?;
+
+    // Load persisted learning data (DEBT-005)
+    if let Err(e) = silent_tracker::load_silent_pattern_stats() {
+        tracing::warn!("Failed to load silent pattern stats: {}", e);
+    }
+    if let Err(e) = work_time::load_work_time_activity() {
+        tracing::warn!("Failed to load work time activity: {}", e);
+    }
+
     tracing::info!("DailyLogger initialized successfully");
     Ok(())
 }

@@ -318,10 +318,13 @@ pub static SILENT_PATTERN_TRACKER: Lazy<Mutex<SilentPatternTracker>> =
     Lazy::new(|| Mutex::new(SilentPatternTracker::default()));
 
 /// Record a capture event in the global tracker.
+/// Also persists the capture to database for durability.
 pub fn record_capture(reason: CaptureReason) {
     if let Ok(mut tracker) = SILENT_PATTERN_TRACKER.lock() {
         tracker.record_capture(reason);
     }
+    // Persist to database (non-blocking, ignore errors)
+    save_capture_to_db(reason);
 }
 
 /// Get aggregated statistics from the global tracker.
@@ -367,6 +370,169 @@ pub fn has_sufficient_data() -> bool {
         tracker.has_sufficient_data()
     } else {
         false
+    }
+}
+
+// =============================================================================
+// Persistence Functions (DEBT-005)
+// =============================================================================
+
+/// Save hourly stats to database
+fn save_hourly_stats_to_db(
+    date: NaiveDate,
+    hour: u8,
+    silent_captures: u32,
+    change_captures: u32,
+) -> Result<(), String> {
+    use crate::memory_storage::DB_CONNECTION;
+    use rusqlite::params;
+
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let date_str = date.format("%Y-%m-%d").to_string();
+    conn.execute(
+        "INSERT OR REPLACE INTO silent_pattern_stats (date, hour, silent_captures, change_captures)
+         VALUES (?1, ?2, ?3, ?4)",
+        params![
+            date_str,
+            hour as i32,
+            silent_captures as i32,
+            change_captures as i32
+        ],
+    )
+    .map_err(|e| format!("Failed to save silent pattern stats: {}", e))?;
+
+    Ok(())
+}
+
+/// Load all hourly stats from database into the tracker
+fn load_hourly_stats_from_db(tracker: &mut SilentPatternTracker) -> Result<(), String> {
+    use crate::memory_storage::DB_CONNECTION;
+
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let cutoff_date = Local::now().date_naive() - Duration::days(MAX_HISTORY_DAYS);
+    let cutoff_str = cutoff_date.format("%Y-%m-%d").to_string();
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT date, hour, silent_captures, change_captures
+             FROM silent_pattern_stats
+             WHERE date >= ?1
+             ORDER BY date, hour",
+        )
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let rows = stmt
+        .query_map([&cutoff_str], |row| {
+            let date_str: String = row.get(0)?;
+            let hour: i32 = row.get(1)?;
+            let silent_captures: i32 = row.get(2)?;
+            let change_captures: i32 = row.get(3)?;
+            Ok((
+                NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").unwrap_or(cutoff_date),
+                hour as u8,
+                silent_captures as u32,
+                change_captures as u32,
+            ))
+        })
+        .map_err(|e| format!("Failed to query silent pattern stats: {}", e))?;
+
+    tracker.hourly_stats.clear();
+    for row_result in rows {
+        let (date, hour, silent_captures, change_captures) =
+            row_result.map_err(|e| format!("Failed to read row: {}", e))?;
+        let mut stats = HourlyStats::new(date, hour);
+        stats.silent_captures = silent_captures;
+        stats.change_captures = change_captures;
+        tracker.hourly_stats.push(stats);
+    }
+
+    Ok(())
+}
+
+/// Persist the current tracker state to database
+pub fn persist_silent_pattern_stats() -> Result<(), String> {
+    let tracker = SILENT_PATTERN_TRACKER
+        .lock()
+        .map_err(|e| format!("Tracker lock error: {}", e))?;
+
+    for stats in &tracker.hourly_stats {
+        save_hourly_stats_to_db(
+            stats.date,
+            stats.hour,
+            stats.silent_captures,
+            stats.change_captures,
+        )?;
+    }
+
+    tracing::debug!(
+        "Persisted {} hourly silent pattern stats",
+        tracker.hourly_stats.len()
+    );
+    Ok(())
+}
+
+/// Load persisted stats into the global tracker
+pub fn load_silent_pattern_stats() -> Result<(), String> {
+    let mut tracker = SILENT_PATTERN_TRACKER
+        .lock()
+        .map_err(|e| format!("Tracker lock error: {}", e))?;
+
+    load_hourly_stats_from_db(&mut tracker)?;
+
+    tracing::debug!(
+        "Loaded {} hourly silent pattern stats from database",
+        tracker.hourly_stats.len()
+    );
+    Ok(())
+}
+
+/// Save a single hourly stat after recording a capture
+pub fn save_capture_to_db(reason: CaptureReason) {
+    let now = Local::now();
+    let date = now.date_naive();
+    let hour = now.hour() as u8;
+
+    let (silent, change) = match reason {
+        CaptureReason::SilentTimeout => (1, 0),
+        CaptureReason::ScreenChanged | CaptureReason::ManualTrigger => (0, 1),
+    };
+
+    // Get current counts from database and update
+    if let Ok(db) = crate::memory_storage::DB_CONNECTION.lock() {
+        if let Some(conn) = db.as_ref() {
+            let date_str = date.format("%Y-%m-%d").to_string();
+
+            // Try to get existing counts
+            let existing: Option<(i32, i32)> = conn
+                .query_row(
+                    "SELECT silent_captures, change_captures FROM silent_pattern_stats WHERE date = ?1 AND hour = ?2",
+                    rusqlite::params![&date_str, hour as i32],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )
+                .ok();
+
+            let (existing_silent, existing_change) = existing.unwrap_or((0, 0));
+
+            // Save updated counts
+            let _ = conn.execute(
+                "INSERT OR REPLACE INTO silent_pattern_stats (date, hour, silent_captures, change_captures)
+                 VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![
+                    &date_str,
+                    hour as i32,
+                    existing_silent + silent,
+                    existing_change + change
+                ],
+            );
+        }
     }
 }
 
@@ -912,5 +1078,87 @@ mod tests {
 
         let new_threshold = calculate_optimal_silent_minutes(&tracker);
         assert_eq!(new_threshold, 60, "Should stay at maximum");
+    }
+
+    // ── Persistence Tests (DEBT-005) ──
+
+    #[test]
+    #[serial]
+    fn test_save_and_load_hourly_stats() {
+        use crate::memory_storage::init_test_database;
+        use rusqlite::Connection;
+
+        // Setup test database
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Clear tracker
+        {
+            let mut tracker = SILENT_PATTERN_TRACKER.lock().unwrap();
+            tracker.clear();
+        }
+
+        // Record some captures
+        record_capture(CaptureReason::SilentTimeout);
+        record_capture(CaptureReason::SilentTimeout);
+        record_capture(CaptureReason::ScreenChanged);
+
+        // Persist
+        persist_silent_pattern_stats().unwrap();
+
+        // Clear tracker
+        {
+            let mut tracker = SILENT_PATTERN_TRACKER.lock().unwrap();
+            tracker.clear();
+            assert!(tracker.hourly_stats.is_empty());
+        }
+
+        // Load from database
+        load_silent_pattern_stats().unwrap();
+
+        // Verify data restored
+        let tracker = SILENT_PATTERN_TRACKER.lock().unwrap();
+        assert!(!tracker.hourly_stats.is_empty());
+        let stats = &tracker.hourly_stats[0];
+        assert_eq!(stats.silent_captures, 2);
+        assert_eq!(stats.change_captures, 1);
+    }
+
+    #[test]
+    #[serial]
+    fn test_save_capture_to_db_increments() {
+        use crate::memory_storage::init_test_database;
+        use rusqlite::Connection;
+
+        // Setup test database
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Clear tracker
+        {
+            let mut tracker = SILENT_PATTERN_TRACKER.lock().unwrap();
+            tracker.clear();
+        }
+
+        // Save captures directly to DB
+        save_capture_to_db(CaptureReason::SilentTimeout);
+        save_capture_to_db(CaptureReason::SilentTimeout);
+        save_capture_to_db(CaptureReason::ScreenChanged);
+
+        // Load and verify
+        load_silent_pattern_stats().unwrap();
+        let tracker = SILENT_PATTERN_TRACKER.lock().unwrap();
+        assert!(!tracker.hourly_stats.is_empty());
+        let stats = &tracker.hourly_stats[0];
+        assert_eq!(stats.silent_captures, 2);
+        assert_eq!(stats.change_captures, 1);
     }
 }
