@@ -31,7 +31,7 @@ describe('DailySummaryViewer', () => {
         summaryPath: '/test/path/summary.md'
       }
     })
-    expect(wrapper.text()).toContain('📝 日报预览')
+    expect(wrapper.text()).toContain('Daily Report Preview')
   })
 
   it('shows loading state initially', () => {
@@ -41,7 +41,7 @@ describe('DailySummaryViewer', () => {
         summaryPath: '/test/path/summary.md'
       }
     })
-    expect(wrapper.text()).toContain('加载中...')
+    expect(wrapper.text()).toContain('Loading...')
   })
 
   it('loads and displays summary content', async () => {
@@ -74,7 +74,7 @@ describe('DailySummaryViewer', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain(`文件路径: ${testPath}`)
+    expect(wrapper.text()).toContain(`File Path: ${testPath}`)
   })
 
   it('shows error when path is empty', async () => {
@@ -87,7 +87,7 @@ describe('DailySummaryViewer', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('日报路径为空')
+    expect(wrapper.text()).toContain('Report path is empty')
   })
 
   it('shows error when loading fails', async () => {
@@ -102,7 +102,7 @@ describe('DailySummaryViewer', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('加载失败')
+    expect(wrapper.text()).toContain('Load failed')
   })
 
   it('emits close event when close button is clicked', async () => {
@@ -148,7 +148,7 @@ describe('DailySummaryViewer', () => {
 
     await wrapper.vm.$nextTick()
 
-    const finderButton = wrapper.findAll('button').find(btn => btn.text().includes('在 Finder 中显示'))
+    const finderButton = wrapper.findAll('button').find(btn => btn.text().includes('Show in Finder'))
     await finderButton.trigger('click')
 
     await wrapper.vm.$nextTick()
@@ -169,7 +169,7 @@ describe('DailySummaryViewer', () => {
 
     await wrapper.vm.$nextTick()
 
-    const finderButton = wrapper.findAll('button').find(btn => btn.text().includes('在 Finder 中显示'))
+    const finderButton = wrapper.findAll('button').find(btn => btn.text().includes('Show in Finder'))
     await finderButton.trigger('click')
 
     await wrapper.vm.$nextTick()
@@ -190,7 +190,7 @@ describe('DailySummaryViewer', () => {
 
     await wrapper.vm.$nextTick()
 
-    const finderButton = wrapper.findAll('button').find(btn => btn.text().includes('在 Finder 中显示'))
+    const finderButton = wrapper.findAll('button').find(btn => btn.text().includes('Show in Finder'))
     await finderButton.trigger('click')
 
     await wrapper.vm.$nextTick()

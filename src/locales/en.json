@@ -165,6 +165,14 @@
     "keywords": "Keywords",
     "none": "None"
   },
+  "dailySummaryViewer": {
+    "title": "Daily Report Preview",
+    "showInFinder": "Show in Finder",
+    "loading": "Loading...",
+    "filePath": "File Path:",
+    "pathEmpty": "Report path is empty",
+    "loadFailed": "Load failed: {error}"
+  },
   "settings": {
     "title": "Settings",
     "apiConfig": "API Configuration",

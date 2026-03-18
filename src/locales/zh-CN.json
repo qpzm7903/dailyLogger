@@ -165,6 +165,14 @@
     "keywords": "关键词",
     "none": "无"
   },
+  "dailySummaryViewer": {
+    "title": "日报预览",
+    "showInFinder": "在 Finder 中显示",
+    "loading": "加载中...",
+    "filePath": "文件路径:",
+    "pathEmpty": "日报路径为空",
+    "loadFailed": "加载失败: {error}"
+  },
   "settings": {
     "title": "设置",
     "apiConfig": "API 配置",
