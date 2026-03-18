@@ -9,6 +9,7 @@ pub mod memory_storage;
 pub mod monitor;
 pub mod monitor_types;
 pub mod network_status;
+pub mod notion;
 pub mod offline_queue;
 pub mod ollama;
 pub mod performance;

@@ -22,7 +22,7 @@ pub use schema::init_test_database;
 
 pub static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Settings {
     pub api_base_url: Option<String>,
     pub api_key: Option<String>,
