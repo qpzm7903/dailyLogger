@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
         <div class="flex items-center gap-3">
           <span class="text-xl">📋</span>
-          <h2 class="font-medium">运行日志</h2>
+          <h2 class="font-medium">{{ t('logViewer.title') }}</h2>
           <span class="text-xs text-gray-500 bg-darker px-2 py-0.5 rounded">{{ logPath }}</span>
         </div>
         <div class="flex items-center gap-2">
@@ -26,11 +26,11 @@
             :disabled="loading"
             class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
           >
-            {{ loading ? '加载中...' : '刷新' }}
+            {{ loading ? t('logViewer.loading') : t('logViewer.refresh') }}
           </button>
           <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none">
             <input type="checkbox" v-model="autoRefresh" class="accent-primary" />
-            自动刷新
+            {{ t('logViewer.autoRefresh') }}
           </label>
           <button @click="$emit('close')" class="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
             ✕
@@ -41,10 +41,10 @@
       <!-- Log content -->
       <div ref="logContainer" class="flex-1 overflow-y-auto font-mono text-xs p-4 space-y-0.5 bg-darker rounded-b-xl">
         <div v-if="loading && filteredLines.length === 0" class="text-center py-8 text-gray-500">
-          加载中...
+          {{ t('logViewer.loading') }}
         </div>
         <div v-else-if="filteredLines.length === 0" class="text-center py-8 text-gray-500">
-          暂无日志
+          {{ t('logViewer.noLogs') }}
         </div>
         <div
           v-for="(line, i) in filteredLines"
@@ -60,6 +60,9 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 defineEmits(['close'])
 
@@ -119,7 +122,7 @@ const loadLogs = async () => {
     rawLines.value = content ? content.split('\n') : []
     await scrollToBottom()
   } catch (err) {
-    rawLines.value = [`[日志加载失败] ${err}`]
+    rawLines.value = [t('logViewer.loadFailed', { error: err })]
   } finally {
     loading.value = false
   }

@@ -165,6 +165,14 @@
     "keywords": "Keywords",
     "none": "None"
   },
+  "logViewer": {
+    "title": "Runtime Logs",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "autoRefresh": "Auto Refresh",
+    "noLogs": "No logs",
+    "loadFailed": "[Log load failed] {error}"
+  },
   "dailySummaryViewer": {
     "title": "Daily Report Preview",
     "showInFinder": "Show in Finder",

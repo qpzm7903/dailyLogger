@@ -25,7 +25,7 @@ describe('LogViewer', () => {
   it('renders modal with title', () => {
     invokeMock.mockResolvedValue('')
     const wrapper = mount(LogViewer)
-    expect(wrapper.text()).toContain('运行日志')
+    expect(wrapper.text()).toContain('Runtime Logs')
   })
 
   it('displays log path', () => {
@@ -89,7 +89,7 @@ describe('LogViewer', () => {
     await vi.runAllTimersAsync()
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('暂无日志')
+    expect(wrapper.text()).toContain('No logs')
   })
 
   it('shows error message when loading fails', async () => {
@@ -100,7 +100,7 @@ describe('LogViewer', () => {
     await vi.runAllTimersAsync()
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('[日志加载失败]')
+    expect(wrapper.text()).toContain('[Log load failed]')
   })
 
   it('refreshes logs when refresh button is clicked', async () => {
@@ -112,7 +112,7 @@ describe('LogViewer', () => {
 
     invokeMock.mockResolvedValue('Refreshed logs')
 
-    const refreshButton = wrapper.findAll('button').find(btn => btn.text().includes('刷新'))
+    const refreshButton = wrapper.findAll('button').find(btn => btn.text().includes('Refresh'))
     await refreshButton.trigger('click')
 
     await vi.runAllTimersAsync()
@@ -132,7 +132,7 @@ describe('LogViewer', () => {
     const buttons = wrapper.findAll('button')
     const refreshButton = buttons.find(btn => {
       const text = btn.text()
-      return text.includes('刷新') || text.includes('加载中')
+      return text.includes('Refresh') || text.includes('Loading')
     })
 
     expect(refreshButton).toBeDefined()
