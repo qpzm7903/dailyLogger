@@ -712,6 +712,40 @@
           </div>
         </div>
 
+        <!-- INT-003: GitHub Work Time Statistics -->
+        <div>
+          <label class="text-xs text-gray-300 block mb-2">GitHub 工时统计</label>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">Personal Access Token</label>
+              <input v-model="settings.github_token" type="password" placeholder="ghp_xxx..."
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">Repositories (owner/repo, one per line)</label>
+              <textarea
+                :value="githubReposText"
+                @input="updateGithubRepos"
+                rows="3"
+                placeholder="owner/repo1&#10;owner/repo2"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-none font-mono"></textarea>
+            </div>
+            <div class="flex gap-2">
+              <button @click="testGithubConnection" :disabled="isTestingGithubConnection"
+                class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
+                {{ isTestingGithubConnection ? 'Testing...' : 'Test Connection' }}
+              </button>
+              <span v-if="githubConnectionStatus" class="text-xs"
+                :class="githubConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
+                {{ githubConnectionStatus === 'success' ? '✓ Connected' : '✗ Failed' }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500">
+              统计指定仓库的提交记录和 PR 活动时间，生成工时报告。Token 需要 repo 权限。
+            </p>
+          </div>
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">快捷键</h3>
           <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
@@ -1012,7 +1046,10 @@ const settings = ref({
   logseq_graphs: '[]',
   // INT-001: Notion integration
   notion_api_key: null,
-  notion_database_id: null
+  notion_database_id: null,
+  // INT-003: GitHub integration
+  github_token: null,
+  github_repositories: '[]'
 })
 
 // SMART-003: Work time status for learning progress display
@@ -1037,6 +1074,31 @@ const newGraphPath = ref('')
 // INT-001: Notion integration
 const isTestingNotionConnection = ref(false)
 const notionConnectionStatus = ref('')
+
+// INT-003: GitHub integration
+const isTestingGithubConnection = ref(false)
+const githubConnectionStatus = ref('')
+
+// Computed for GitHub repos (JSON array <-> textarea)
+const githubReposText = computed({
+  get: () => {
+    try {
+      const repos = JSON.parse(settings.value.github_repositories || '[]')
+      return Array.isArray(repos) ? repos.join('\n') : ''
+    } catch {
+      return ''
+    }
+  },
+  set: (value) => {
+    const repos = value.split('\n').map(r => r.trim()).filter(r => r)
+    settings.value.github_repositories = JSON.stringify(repos)
+  }
+})
+
+const updateGithubRepos = (event) => {
+  const target = event.target
+  githubReposText.value = target.value
+}
 
 const loadSettings = async () => {
   try {
@@ -1197,6 +1259,21 @@ const testNotionConnection = async () => {
     notionConnectionStatus.value = 'failed'
   } finally {
     isTestingNotionConnection.value = false
+  }
+}
+
+// INT-003: Test GitHub connection
+const testGithubConnection = async () => {
+  isTestingGithubConnection.value = true
+  githubConnectionStatus.value = ''
+  try {
+    const result = await invoke('test_github_connection')
+    githubConnectionStatus.value = result ? 'success' : 'failed'
+  } catch (error) {
+    console.error('GitHub connection test failed:', error)
+    githubConnectionStatus.value = 'failed'
+  } finally {
+    isTestingGithubConnection.value = false
   }
 }
 
