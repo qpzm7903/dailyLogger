@@ -1548,6 +1548,34 @@ mod benchmarks {
         assert!(settings.get_obsidian_output_path().is_err());
     }
 
+    /// INT-002: get_logseq_output_path resolves graph path for report generation
+    #[test]
+    fn get_logseq_output_path_resolves_graph_for_reports() {
+        let mut settings = create_settings_with_include_manual(true);
+
+        // With graphs configured, should use default graph
+        settings.logseq_graphs =
+            Some(r#"[{"name":"Work","path":"/logseq/work","is_default":true}]"#.to_string());
+        assert_eq!(settings.get_logseq_output_path().unwrap(), "/logseq/work");
+
+        // With no default, should use first graph
+        settings.logseq_graphs = Some(
+            r#"[{"name":"Personal","path":"/logseq/personal","is_default":false}]"#.to_string(),
+        );
+        assert_eq!(
+            settings.get_logseq_output_path().unwrap(),
+            "/logseq/personal"
+        );
+
+        // With empty graphs, should error
+        settings.logseq_graphs = Some("[]".to_string());
+        assert!(settings.get_logseq_output_path().is_err());
+
+        // With no graphs configured, should error
+        settings.logseq_graphs = None;
+        assert!(settings.get_logseq_output_path().is_err());
+    }
+
     /// REPORT-004: comparison report filename generation
     #[test]
     fn comparison_report_filename_format() {

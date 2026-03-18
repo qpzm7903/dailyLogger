@@ -122,6 +122,29 @@ impl Settings {
             .filter(|p| !p.trim().is_empty())
             .ok_or_else(|| "Obsidian path not configured".to_string())
     }
+
+    /// INT-002: Get the effective Logseq output path.
+    /// Checks `logseq_graphs` for the default graph first.
+    pub fn get_logseq_output_path(&self) -> Result<String, String> {
+        // Try logseq_graphs
+        if let Some(ref graphs_json) = self.logseq_graphs {
+            if let Ok(graphs) = serde_json::from_str::<Vec<LogseqGraph>>(graphs_json) {
+                if let Some(default_graph) = graphs.iter().find(|g| g.is_default) {
+                    if !default_graph.path.trim().is_empty() {
+                        return Ok(default_graph.path.clone());
+                    }
+                }
+                // If no default, use the first graph
+                if let Some(first_graph) = graphs.first() {
+                    if !first_graph.path.trim().is_empty() {
+                        return Ok(first_graph.path.clone());
+                    }
+                }
+            }
+        }
+
+        Err("Logseq path not configured".to_string())
+    }
 }
 
 /// Model information
