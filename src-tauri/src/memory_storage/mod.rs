@@ -77,6 +77,9 @@ pub struct Settings {
     pub comparison_report_prompt: Option<String>,
     // INT-002: Logseq 导出支持
     pub logseq_graphs: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
+    // INT-001: Notion 导出支持
+    pub notion_api_key: Option<String>, // Notion integration secret (encrypted)
+    pub notion_database_id: Option<String>, // Notion database ID to write pages to
 }
 
 /// DATA-006: Vault entry for multi-vault support

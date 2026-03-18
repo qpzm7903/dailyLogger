@@ -200,6 +200,13 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // INT-001: Notion 导出支持
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN notion_api_key TEXT", []);
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN notion_database_id TEXT",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     conn.execute(
@@ -412,7 +419,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             last_custom_report_path TEXT,
             obsidian_vaults TEXT DEFAULT '[]',
             comparison_report_prompt TEXT,
-            logseq_graphs TEXT DEFAULT '[]'
+            logseq_graphs TEXT DEFAULT '[]',
+            notion_api_key TEXT,
+            notion_database_id TEXT
         )",
         [],
     )

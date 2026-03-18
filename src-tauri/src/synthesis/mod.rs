@@ -515,6 +515,8 @@ mod tests {
             obsidian_vaults: None,
             comparison_report_prompt: None,
             logseq_graphs: None,
+            notion_api_key: None,
+            notion_database_id: None,
         }
     }
 
@@ -1464,6 +1466,8 @@ mod benchmarks {
             obsidian_vaults: None,
             comparison_report_prompt: None,
             logseq_graphs: None,
+            notion_api_key: None,
+            notion_database_id: None,
         }
     }
 

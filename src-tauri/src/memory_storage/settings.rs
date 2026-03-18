@@ -23,7 +23,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
                 last_monthly_report_path, obsidian_vaults,
-                comparison_report_prompt, logseq_graphs
+                comparison_report_prompt, logseq_graphs,
+                notion_api_key, notion_database_id
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -82,6 +83,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 obsidian_vaults: row.get("obsidian_vaults")?,
                 comparison_report_prompt: row.get("comparison_report_prompt")?,
                 logseq_graphs: row.get("logseq_graphs")?,
+                notion_api_key: row.get("notion_api_key")?,
+                notion_database_id: row.get("notion_database_id")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -94,6 +97,15 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 crypto::decrypt_api_key(api_key)
                     .map_err(|e| format!("Failed to decrypt API key: {}", e))?,
             );
+            // Also decrypt notion_api_key if present
+            if let Some(ref notion_api_key) = settings.notion_api_key {
+                if !notion_api_key.is_empty() {
+                    decrypted_settings.notion_api_key = Some(
+                        crypto::decrypt_api_key(notion_api_key)
+                            .map_err(|e| format!("Failed to decrypt Notion API key: {}", e))?,
+                    );
+                }
+            }
             decrypted_settings
         } else {
             settings
@@ -115,6 +127,20 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             )
         } else {
             settings.api_key.clone()
+        }
+    } else {
+        None
+    };
+
+    // INT-001: Encrypt Notion API key before saving
+    let encrypted_notion_api_key = if let Some(ref notion_api_key) = settings.notion_api_key {
+        if !notion_api_key.is_empty() && !crypto::is_encrypted(notion_api_key) {
+            Some(
+                crypto::encrypt_api_key(notion_api_key)
+                    .map_err(|e| format!("Failed to encrypt Notion API key: {}", e))?,
+            )
+        } else {
+            settings.notion_api_key.clone()
         }
     } else {
         None
@@ -172,7 +198,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             last_monthly_report_path = :last_monthly_report_path,
             obsidian_vaults = :obsidian_vaults,
             comparison_report_prompt = :comparison_report_prompt,
-            logseq_graphs = :logseq_graphs
+            logseq_graphs = :logseq_graphs,
+            notion_api_key = :notion_api_key,
+            notion_database_id = :notion_database_id
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -214,6 +242,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":obsidian_vaults": settings.obsidian_vaults,
             ":comparison_report_prompt": settings.comparison_report_prompt,
             ":logseq_graphs": settings.logseq_graphs,
+            ":notion_api_key": encrypted_notion_api_key,
+            ":notion_database_id": settings.notion_database_id,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;
