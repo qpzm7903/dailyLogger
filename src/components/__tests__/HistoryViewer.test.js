@@ -68,7 +68,7 @@ describe('HistoryViewer', () => {
     invoke.mockResolvedValue([])
     const wrapper = mountComponent()
     await flushPromises()
-    expect(wrapper.text()).toContain('历史记录')
+    expect(wrapper.text()).toContain('History Records')
   })
 
   it('emits close event when close button clicked', async () => {
@@ -113,7 +113,7 @@ describe('HistoryViewer', () => {
     const wrapper = mountComponent()
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('加载中...')
+    expect(wrapper.text()).toContain('Loading...')
 
     resolvePromise([])
     await flushPromises()
@@ -124,7 +124,7 @@ describe('HistoryViewer', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('暂无记录')
+    expect(wrapper.text()).toContain('No records')
   })
 
   it('displays records list', async () => {
@@ -143,9 +143,9 @@ describe('HistoryViewer', () => {
     await flushPromises()
 
     const badges = wrapper.findAll('.px-2.py-0\\.5.rounded.text-xs')
-    expect(badges[0].text()).toBe('自动')
+    expect(badges[0].text()).toBe('Auto')
     expect(badges[0].classes()).toContain('bg-blue-500/20')
-    expect(badges[1].text()).toBe('手动')
+    expect(badges[1].text()).toBe('Manual')
     expect(badges[1].classes()).toContain('bg-green-500/20')
   })
 
@@ -154,7 +154,7 @@ describe('HistoryViewer', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('共 2 条')
+    expect(wrapper.text()).toContain('2 records')
   })
 
   it('filters by source type', async () => {
@@ -203,7 +203,7 @@ describe('HistoryViewer', () => {
 
     const queryButton = wrapper.find('button[class*="bg-primary"]')
     expect(queryButton.attributes('disabled')).toBeDefined()
-    expect(queryButton.text()).toBe('加载中...')
+    expect(queryButton.text()).toBe('Loading...')
 
     resolvePromise([])
     await flushPromises()
@@ -359,7 +359,7 @@ describe('HistoryViewer', () => {
     wrapper.vm.isLoadingMore = true
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('加载更多...')
+    expect(wrapper.text()).toContain('Loading more...')
   })
 
   it('does not load more when already loading', async () => {
@@ -410,12 +410,12 @@ describe('HistoryViewer', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    const deleteButton = wrapper.findAll('button').find(btn => btn.text() === '删除')
+    const deleteButton = wrapper.findAll('button').find(btn => btn.text() === 'Delete')
     await deleteButton.trigger('click')
 
     expect(wrapper.vm.recordToDelete).toBeTruthy()
-    expect(wrapper.text()).toContain('确认删除')
-    expect(wrapper.text()).toContain('确定要删除这条记录吗？')
+    expect(wrapper.text()).toContain('Confirm Delete')
+    expect(wrapper.text()).toContain('Are you sure you want to delete this record?')
   })
 
   it('cancels delete operation', async () => {
@@ -426,7 +426,7 @@ describe('HistoryViewer', () => {
     wrapper.vm.recordToDelete = mockRecords[0]
     await wrapper.vm.$nextTick()
 
-    const cancelButton = wrapper.findAll('button').find(btn => btn.text() === '取消')
+    const cancelButton = wrapper.findAll('button').find(btn => btn.text() === 'Cancel')
     await cancelButton.trigger('click')
 
     expect(wrapper.vm.recordToDelete).toBeNull()
@@ -447,7 +447,7 @@ describe('HistoryViewer', () => {
     expect(invoke).toHaveBeenCalledWith('delete_record', { id: 1 })
     expect(wrapper.vm.records.length).toBe(1)
     expect(wrapper.vm.recordToDelete).toBeNull()
-    expect(showSuccess).toHaveBeenCalledWith('记录已删除')
+    expect(showSuccess).toHaveBeenCalledWith('Record deleted')
   })
 
   it('handles delete error', async () => {
@@ -475,8 +475,9 @@ describe('HistoryViewer', () => {
     wrapper.vm.isDeleting = true
     await wrapper.vm.$nextTick()
 
-    const deleteButtons = wrapper.findAll('button').filter(btn => btn.text().includes('删除'))
-    const modalDeleteButton = deleteButtons.find(btn => btn.text() === '删除中...')
+    // Find modal delete button (the one in the confirmation modal)
+    const allButtons = wrapper.findAll('button')
+    const modalDeleteButton = allButtons.find(btn => btn.text() === 'Deleting...')
     expect(modalDeleteButton).toBeTruthy()
     expect(modalDeleteButton.attributes('disabled')).toBeDefined()
   })

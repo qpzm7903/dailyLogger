@@ -3,14 +3,14 @@
     <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-gray-700 flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">历史记录</h2>
+        <h2 class="text-lg font-semibold">{{ t('historyViewer.title') }}</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
       <!-- Filters -->
       <div class="px-6 py-3 border-b border-gray-700 flex items-center gap-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">开始:</label>
+          <label class="text-sm text-gray-400">{{ t('historyViewer.startDate') }}</label>
           <input
             type="date"
             v-model="startDate"
@@ -18,7 +18,7 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">结束:</label>
+          <label class="text-sm text-gray-400">{{ t('historyViewer.endDate') }}</label>
           <input
             type="date"
             v-model="endDate"
@@ -26,14 +26,14 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">来源:</label>
+          <label class="text-sm text-gray-400">{{ t('historyViewer.source') }}</label>
           <select
             v-model="sourceType"
             class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
           >
-            <option :value="null">全部</option>
-            <option value="auto">自动捕获</option>
-            <option value="manual">手动记录</option>
+            <option :value="null">{{ t('historyViewer.all') }}</option>
+            <option value="auto">{{ t('historyViewer.autoCapture') }}</option>
+            <option value="manual">{{ t('historyViewer.manualRecord') }}</option>
           </select>
         </div>
         <button
@@ -41,10 +41,10 @@
           :disabled="isLoading"
           class="px-4 py-1 bg-primary text-white rounded text-sm hover:bg-primary/80 transition-colors disabled:opacity-50"
         >
-          {{ isLoading ? '加载中...' : '查询' }}
+          {{ isLoading ? t('historyViewer.loading') : t('historyViewer.query') }}
         </button>
         <span v-if="records.length > 0" class="text-sm text-gray-400 ml-auto">
-          共 {{ records.length }} 条
+          {{ t('historyViewer.totalRecords', { count: records.length }) }}
         </span>
       </div>
 
@@ -59,10 +59,10 @@
       <!-- Record List -->
       <div class="flex-1 overflow-auto p-4" ref="scrollContainer" @scroll="handleScroll">
         <div v-if="isLoading && records.length === 0" class="text-center py-8 text-gray-500">
-          加载中...
+          {{ t('historyViewer.loading') }}
         </div>
         <div v-else-if="records.length === 0" class="text-center py-8 text-gray-500">
-          暂无记录
+          {{ t('historyViewer.noRecords') }}
         </div>
 
         <div v-else class="flex flex-col divide-y divide-gray-700">
@@ -78,7 +78,7 @@
                     :class="record.source_type === 'auto' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
                     class="px-2 py-0.5 rounded text-xs"
                   >
-                    {{ record.source_type === 'auto' ? '自动' : '手动' }}
+                    {{ record.source_type === 'auto' ? t('historyViewer.auto') : t('historyViewer.manual') }}
                   </span>
                   <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
                 </div>
@@ -96,7 +96,7 @@
                 @click="confirmDelete(record)"
                 class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-sm px-2 py-1 transition-opacity"
               >
-                删除
+                {{ t('historyViewer.delete') }}
               </button>
             </div>
           </div>
@@ -104,7 +104,7 @@
 
         <!-- Loading indicator for pagination -->
         <div v-if="isLoadingMore" class="text-center py-4 text-gray-500">
-          加载更多...
+          {{ t('historyViewer.loadingMore') }}
         </div>
       </div>
     </div>
@@ -115,21 +115,21 @@
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
     >
       <div class="bg-dark rounded-xl p-6 max-w-sm border border-gray-700">
-        <h3 class="text-lg font-semibold mb-4">确认删除</h3>
-        <p class="text-gray-400 mb-6">确定要删除这条记录吗？此操作无法撤销。</p>
+        <h3 class="text-lg font-semibold mb-4">{{ t('historyViewer.confirmDelete') }}</h3>
+        <p class="text-gray-400 mb-6">{{ t('historyViewer.confirmDeleteMessage') }}</p>
         <div class="flex justify-end gap-3">
           <button
             @click="recordToDelete = null"
             class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
           >
-            取消
+            {{ t('historyViewer.cancel') }}
           </button>
           <button
             @click="deleteRecord"
             :disabled="isDeleting"
             class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-400 transition-colors disabled:opacity-50"
           >
-            {{ isDeleting ? '删除中...' : '删除' }}
+            {{ isDeleting ? t('historyViewer.deleting') : t('historyViewer.delete') }}
           </button>
         </div>
       </div>
@@ -140,9 +140,12 @@
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
 import TagFilter from './TagFilter.vue'
 import TagBadge from './TagBadge.vue'
+
+const { t } = useI18n()
 
 const emit = defineEmits(['close'])
 
@@ -257,7 +260,7 @@ async function loadRecords() {
     // Load tags for all records
     await loadRecordTags()
   } catch (error) {
-    showError(`加载记录失败: ${error}`)
+    showError(t('historyViewer.loadFailed', { error }))
   } finally {
     isLoading.value = false
   }
@@ -312,7 +315,7 @@ async function loadMoreRecords() {
       }
     }
   } catch (error) {
-    showError(`加载更多失败: ${error}`)
+    showError(t('historyViewer.loadMoreFailed', { error }))
     page.value -= 1 // Revert page increment on error
   } finally {
     isLoadingMore.value = false
@@ -345,10 +348,10 @@ async function deleteRecord() {
     // Remove from local list
     records.value = records.value.filter(r => r.id !== recordToDelete.value.id)
 
-    showSuccess('记录已删除')
+    showSuccess(t('historyViewer.recordDeleted'))
     recordToDelete.value = null
   } catch (error) {
-    showError(`删除失败: ${error}`)
+    showError(t('historyViewer.deleteFailed', { error }))
   } finally {
     isDeleting.value = false
   }
