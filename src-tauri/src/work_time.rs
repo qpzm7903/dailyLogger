@@ -924,6 +924,7 @@ mod tests {
     // ── Persistence Tests (DEBT-005) ──
 
     #[test]
+    #[serial_test::serial]
     fn test_save_and_load_work_time_activity() {
         use crate::memory_storage::init_test_database;
         use rusqlite::Connection;
@@ -965,6 +966,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_save_work_time_capture_to_db_increments() {
         use crate::memory_storage::init_test_database;
         use rusqlite::Connection;
