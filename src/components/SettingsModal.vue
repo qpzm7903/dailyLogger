@@ -746,6 +746,31 @@
           </div>
         </div>
 
+        <!-- INT-004: Slack Notification -->
+        <div>
+          <label class="text-xs text-gray-300 block mb-2">Slack 通知</label>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">Incoming Webhook URL</label>
+              <input v-model="settings.slack_webhook_url" type="password" placeholder="https://hooks.slack.com/services/..."
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            </div>
+            <div class="flex gap-2">
+              <button @click="testSlackConnection" :disabled="isTestingSlackConnection"
+                class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
+                {{ isTestingSlackConnection ? 'Testing...' : 'Test Connection' }}
+              </button>
+              <span v-if="slackConnectionStatus" class="text-xs"
+                :class="slackConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
+                {{ slackConnectionStatus === 'success' ? '✓ Connected' : '✗ Failed' }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500">
+              报告生成后自动发送通知到 Slack 频道。需要在 Slack 中创建 Incoming Webhook。
+            </p>
+          </div>
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">快捷键</h3>
           <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
@@ -1049,7 +1074,9 @@ const settings = ref({
   notion_database_id: null,
   // INT-003: GitHub integration
   github_token: null,
-  github_repositories: '[]'
+  github_repositories: '[]',
+  // INT-004: Slack integration
+  slack_webhook_url: null
 })
 
 // SMART-003: Work time status for learning progress display
@@ -1078,6 +1105,10 @@ const notionConnectionStatus = ref('')
 // INT-003: GitHub integration
 const isTestingGithubConnection = ref(false)
 const githubConnectionStatus = ref('')
+
+// INT-004: Slack integration
+const isTestingSlackConnection = ref(false)
+const slackConnectionStatus = ref('')
 
 // Computed for GitHub repos (JSON array <-> textarea)
 const githubReposText = computed({
@@ -1274,6 +1305,21 @@ const testGithubConnection = async () => {
     githubConnectionStatus.value = 'failed'
   } finally {
     isTestingGithubConnection.value = false
+  }
+}
+
+// INT-004: Test Slack connection
+const testSlackConnection = async () => {
+  isTestingSlackConnection.value = true
+  slackConnectionStatus.value = ''
+  try {
+    const result = await invoke('test_slack_connection')
+    slackConnectionStatus.value = result ? 'success' : 'failed'
+  } catch (error) {
+    console.error('Slack connection test failed:', error)
+    slackConnectionStatus.value = 'failed'
+  } finally {
+    isTestingSlackConnection.value = false
   }
 }
 
