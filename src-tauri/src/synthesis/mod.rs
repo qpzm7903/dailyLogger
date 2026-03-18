@@ -477,6 +477,7 @@ mod tests {
             last_custom_report_path: None,
             obsidian_vaults: None,
             comparison_report_prompt: None,
+            logseq_graphs: None,
         }
     }
 
@@ -1347,6 +1348,7 @@ mod benchmarks {
             last_custom_report_path: None,
             obsidian_vaults: None,
             comparison_report_prompt: None,
+            logseq_graphs: None,
         }
     }
 

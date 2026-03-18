@@ -23,7 +23,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
                 last_monthly_report_path, obsidian_vaults,
-                comparison_report_prompt
+                comparison_report_prompt, logseq_graphs
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -81,6 +81,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 last_custom_report_path: row.get("last_custom_report_path")?,
                 obsidian_vaults: row.get("obsidian_vaults")?,
                 comparison_report_prompt: row.get("comparison_report_prompt")?,
+                logseq_graphs: row.get("logseq_graphs")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -170,7 +171,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             last_custom_report_path = :last_custom_report_path,
             last_monthly_report_path = :last_monthly_report_path,
             obsidian_vaults = :obsidian_vaults,
-            comparison_report_prompt = :comparison_report_prompt
+            comparison_report_prompt = :comparison_report_prompt,
+            logseq_graphs = :logseq_graphs
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -211,6 +213,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":last_monthly_report_path": settings.last_monthly_report_path,
             ":obsidian_vaults": settings.obsidian_vaults,
             ":comparison_report_prompt": settings.comparison_report_prompt,
+            ":logseq_graphs": settings.logseq_graphs,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

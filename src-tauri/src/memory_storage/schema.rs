@@ -194,6 +194,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // INT-002: Logseq 导出支持
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN logseq_graphs TEXT DEFAULT '[]'",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     conn.execute(
@@ -405,7 +411,8 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             custom_report_prompt TEXT,
             last_custom_report_path TEXT,
             obsidian_vaults TEXT DEFAULT '[]',
-            comparison_report_prompt TEXT
+            comparison_report_prompt TEXT,
+            logseq_graphs TEXT DEFAULT '[]'
         )",
         [],
     )

@@ -75,11 +75,21 @@ pub struct Settings {
     pub obsidian_vaults: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
     // REPORT-004: 对比报告配置
     pub comparison_report_prompt: Option<String>,
+    // INT-002: Logseq 导出支持
+    pub logseq_graphs: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
 }
 
 /// DATA-006: Vault entry for multi-vault support
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ObsidianVault {
+    pub name: String,
+    pub path: String,
+    pub is_default: bool,
+}
+
+/// INT-002: Logseq graph entry for multi-graph support
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogseqGraph {
     pub name: String,
     pub path: String,
     pub is_default: bool,
