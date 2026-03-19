@@ -5,7 +5,7 @@
         <span class="text-lg">⚡</span>
         <h1 class="text-sm font-medium">{{ t('quickNoteWindow.title') }}</h1>
       </div>
-      <span class="text-xs text-gray-500">{{ t('quickNoteWindow.shortcutHint') }}</span>
+      <span v-if="isDesktop" class="text-xs text-gray-500">{{ t('quickNoteWindow.shortcutHint') }}</span>
     </header>
 
     <main class="flex-1 p-4">
@@ -46,8 +46,10 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useI18n } from 'vue-i18n'
+import { usePlatform } from '../composables/usePlatform'
 
 const { t } = useI18n()
+const { isDesktop } = usePlatform()
 
 const content = ref('')
 const inputRef = ref(null)

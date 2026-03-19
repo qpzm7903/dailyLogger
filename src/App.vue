@@ -90,7 +90,7 @@
               <span class="text-2xl">⚡</span>
               <h2 class="font-medium">{{ t('quickNote.title') }}</h2>
             </div>
-            <p class="text-sm text-gray-400 mb-4">{{ t('quickNote.shortcut') }}</p>
+            <p class="text-sm text-gray-400 mb-4">{{ isDesktop ? t('quickNote.shortcut') : '' }}</p>
             <div class="flex items-center justify-between">
               <span class="text-xs text-gray-500">{{ t('quickNote.todayRecords', { count: quickNotesCount }) }}</span>
               <button
@@ -309,6 +309,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { usePlatform } from './composables/usePlatform'
 import SettingsModal from './components/SettingsModal.vue'
 import BackupModal from './components/BackupModal.vue'
 import QuickNoteModal from './components/QuickNoteModal.vue'
@@ -328,6 +329,7 @@ import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
 
 const { t } = useI18n()
+const { isDesktop } = usePlatform()
 
 const currentTime = ref('')
 const isOnline = ref(true)

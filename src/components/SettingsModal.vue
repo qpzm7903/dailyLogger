@@ -925,7 +925,7 @@
           </div>
         </div>
 
-        <div>
+        <div v-if="isDesktop">
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
           <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
             {{ $t('settings.quickNoteShortcut') }}
@@ -1247,9 +1247,11 @@ import { writeFile, writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { showError, showSuccess } from '../stores/toast.js'
 import { setLocale } from '../i18n.js'
 import { useI18n } from 'vue-i18n'
+import { usePlatform } from '../composables/usePlatform'
 import PluginPanel from './PluginPanel.vue'
 
 const { t, locale } = useI18n()
+const { isDesktop } = usePlatform()
 
 const emit = defineEmits(['close'])
 

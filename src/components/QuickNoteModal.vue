@@ -6,7 +6,7 @@
           <span class="text-xl">⚡</span>
           <h2 class="text-lg font-semibold">{{ $t('quickNote.title') }}</h2>
         </div>
-        <span class="text-xs text-gray-500">{{ $t('quickNote.shortcutHint') }}</span>
+        <span v-if="isDesktop" class="text-xs text-gray-500">{{ $t('quickNote.shortcutHint') }}</span>
       </div>
 
       <div class="p-6">
@@ -45,8 +45,10 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { usePlatform } from '../composables/usePlatform'
 
 const { locale } = useI18n()
+const { isDesktop } = usePlatform()
 const emit = defineEmits(['close', 'save'])
 
 const content = ref('')
