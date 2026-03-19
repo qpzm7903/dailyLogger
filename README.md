@@ -126,6 +126,7 @@ src-tauri/src/              # Rust 后端
   ├── slack.rs              # Slack Webhook 集成
   ├── github.rs             # GitHub API 集成
   ├── ollama.rs             # Ollama 本地模型管理
+  ├── fine_tuning.rs        # 模型微调
   ├── plugin.rs             # 插件系统
   └── timeline.rs           # 时间线数据生成
 ```
@@ -167,7 +168,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.19.1
+**最新版本**: v1.20.0
+- 新增本地 AI 模型微调功能
+  - 训练数据导出（JSONL 格式）
+  - 基于 Ollama API 的模型微调
+  - 自定义训练参数（轮次、学习率、系统提示词等）
+
+v1.19.1 更新:
 - 修复 Windows 版本启动问题诊断
   - 添加启动诊断日志，帮助定位窗口不显示的问题
   - 添加 WebView2 检测和缺失提示
