@@ -81,7 +81,7 @@
                     class="px-2 py-1 text-xs rounded border transition-colors"
                     :class="settings.model_name === model ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
                   >
-                    {{ model }}
+                    {{ model }}<span v-if="getModelSize(model)" class="text-gray-400 ml-1">({{ getModelSize(model) }})</span>
                   </button>
                 </div>
               </div>
@@ -1594,6 +1594,7 @@ const getModelInfo = async (type) => {
 
 // AI-005: Ollama support
 const ollamaModels = ref([])
+const ollamaModelDetails = ref([])
 const isLoadingOllamaModels = ref(false)
 const ollamaModelError = ref('')
 
@@ -1627,6 +1628,7 @@ const fetchOllamaModels = async () => {
 
     if (result.success) {
       ollamaModels.value = result.models
+      ollamaModelDetails.value = result.model_details || []
       if (result.models.length === 0) {
         ollamaModelError.value = t('settings.ollamaModelsNotFound')
       } else {
@@ -1648,6 +1650,21 @@ const fetchOllamaModels = async () => {
 // Select an Ollama model
 const selectOllamaModel = (modelName) => {
   settings.value.model_name = modelName
+}
+
+// Format model size to human readable format
+const formatModelSize = (bytes) => {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}
+
+// Get model size by name
+const getModelSize = (modelName) => {
+  const detail = ollamaModelDetails.value.find(d => d.name === modelName)
+  return detail?.size ? formatModelSize(detail.size) : ''
 }
 
 // Summary Prompt functions

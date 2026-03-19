@@ -9,11 +9,30 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tauri::command;
 
+/// Detailed information about an Ollama model.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OllamaModelInfo {
+    pub name: String,
+    pub modified_at: Option<String>,
+    pub size: Option<u64>,
+    pub digest: Option<String>,
+    pub details: Option<OllamaModelDetails>,
+}
+
+/// Additional details about an Ollama model.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OllamaModelDetails {
+    pub family: Option<String>,
+    pub parameter_size: Option<String>,
+    pub quantization_level: Option<String>,
+}
+
 /// Result structure for Ollama model list retrieval.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OllamaModelsResult {
     pub success: bool,
     pub models: Vec<String>,
+    pub model_details: Vec<OllamaModelInfo>,
     pub message: String,
 }
 
@@ -75,6 +94,7 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
         return Ok(OllamaModelsResult {
             success: false,
             models: vec![],
+            model_details: vec![],
             message: format!("Ollama API error ({}): {}", status, body),
         });
     }
@@ -84,12 +104,32 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-    let models: Vec<String> = json["models"]
+    let (models, model_details): (Vec<String>, Vec<OllamaModelInfo>) = json["models"]
         .as_array()
         .map(|arr| {
             arr.iter()
-                .filter_map(|m| m["name"].as_str().map(String::from))
-                .collect()
+                .filter_map(|m| {
+                    let name = m["name"].as_str()?.to_string();
+                    let details = OllamaModelInfo {
+                        name: name.clone(),
+                        modified_at: m["modified_at"].as_str().map(String::from),
+                        size: m["size"].as_u64(),
+                        digest: m["digest"].as_str().map(String::from),
+                        details: m["details"].as_object().map(|d| OllamaModelDetails {
+                            family: d.get("family").and_then(|v| v.as_str()).map(String::from),
+                            parameter_size: d
+                                .get("parameter_size")
+                                .and_then(|v| v.as_str())
+                                .map(String::from),
+                            quantization_level: d
+                                .get("quantization_level")
+                                .and_then(|v| v.as_str())
+                                .map(String::from),
+                        }),
+                    };
+                    Some((name, details))
+                })
+                .unzip()
         })
         .unwrap_or_default();
 
@@ -99,6 +139,7 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
     Ok(OllamaModelsResult {
         success: true,
         models,
+        model_details,
         message: format!("Found {} models", model_count),
     })
 }
