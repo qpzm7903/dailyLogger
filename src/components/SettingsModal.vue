@@ -1580,7 +1580,7 @@ const getModelInfo = async (type) => {
     if (result.error) {
       showError(result.error)
     } else if (result.context_window) {
-      showSuccess(`${modelName}: ${result.context_window / 1000}K tokens`)
+      showSuccess(t('settings.modelContextWindow', { model: modelName, size: result.context_window / 1000 }))
     } else {
       showSuccess(t('settings.modelInfoUnavailable'))
     }

@@ -401,6 +401,7 @@
     "apiKeyRequired": "请先填写 API Key",
     "modelNameRequired": "请先填写模型名称",
     "modelInfoUnavailable": "模型信息不可用，请参考模型文档",
+    "modelContextWindow": "{model}: {size}K tokens",
     "ollamaModelsNotFound": "未找到已安装的模型，请使用 ollama pull <model> 安装",
     "ollamaModelsFound": "找到 {count} 个模型",
     "templateContentEmpty": "模板内容为空",
