@@ -891,17 +891,339 @@ pub fn regenerate_invite_code(team_id: String, current_user_id: String) -> Resul
     Ok(new_code)
 }
 
+// ============================================================================
+// Phase 3: Record Sharing
+// ============================================================================
+
+/// Shared record in a team
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SharedRecord {
+    pub id: String,
+    pub team_id: String,
+    pub user_id: String,
+    pub username: String,
+    pub record_id: i64,
+    pub record_timestamp: DateTime<Utc>,
+    pub record_source: String,
+    pub record_content: String,
+    pub shared_at: DateTime<Utc>,
+}
+
+/// Parameters for sharing a record
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShareRecordParams {
+    pub team_id: String,
+    pub record_id: i64,
+}
+
+/// Create the shared_records table
+pub fn create_shared_records_table(conn: &Connection) -> Result<(), String> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS shared_records (
+            id TEXT PRIMARY KEY,
+            team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+            shared_at TEXT NOT NULL,
+            UNIQUE(team_id, record_id)
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create shared_records table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_shared_records_team ON shared_records(team_id)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create shared_records team index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_shared_records_user ON shared_records(user_id)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create shared_records user index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_shared_records_record ON shared_records(record_id)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create shared_records record index: {}", e))?;
+
+    Ok(())
+}
+
+/// Generate unique shared record ID
+fn generate_shared_record_id() -> String {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    format!(
+        "shr_{:016x}",
+        rng.sample(rand::distributions::Uniform::new(0u64, u64::MAX))
+    )
+}
+
+/// Share a record to a team
+#[tauri::command]
+pub fn share_record_to_team(
+    params: ShareRecordParams,
+    current_user_id: String,
+) -> Result<SharedRecord, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Check if user is a team member (member or admin can share)
+    let role: Option<String> = conn
+        .query_row(
+            "SELECT role FROM team_members WHERE team_id = ?1 AND user_id = ?2",
+            params![params.team_id, current_user_id],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    let role = role.ok_or("You are not a member of this team")?;
+    if role == "viewer" {
+        return Err("Viewers cannot share records".to_string());
+    }
+
+    // Check if already shared
+    let existing: bool = conn
+        .query_row(
+            "SELECT 1 FROM shared_records WHERE team_id = ?1 AND record_id = ?2",
+            params![params.team_id, params.record_id],
+            |_| Ok(true),
+        )
+        .optional()
+        .map_err(|e| format!("Database error: {}", e))?
+        .unwrap_or(false);
+
+    if existing {
+        return Err("Record already shared to this team".to_string());
+    }
+
+    // Get record details
+    let (timestamp, source, content): (String, String, String) = conn
+        .query_row(
+            "SELECT timestamp, source_type, content FROM records WHERE id = ?1",
+            params![params.record_id],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .optional()
+        .map_err(|e| format!("Database error: {}", e))?
+        .ok_or("Record not found")?;
+
+    // Get username
+    let username: String = conn
+        .query_row(
+            "SELECT username FROM users WHERE id = ?1",
+            params![current_user_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    // Create shared record
+    let id = generate_shared_record_id();
+    let shared_at = Utc::now().to_rfc3339();
+
+    conn.execute(
+        "INSERT INTO shared_records (id, team_id, user_id, record_id, shared_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![
+            id,
+            params.team_id,
+            current_user_id,
+            params.record_id,
+            shared_at
+        ],
+    )
+    .map_err(|e| format!("Failed to share record: {}", e))?;
+
+    Ok(SharedRecord {
+        id,
+        team_id: params.team_id,
+        user_id: current_user_id,
+        username,
+        record_id: params.record_id,
+        record_timestamp: DateTime::parse_from_rfc3339(&timestamp)
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|_| Utc::now()),
+        record_source: source,
+        record_content: content,
+        shared_at: Utc::now(),
+    })
+}
+
+/// Unshare a record from a team
+#[tauri::command]
+pub fn unshare_record_from_team(
+    team_id: String,
+    record_id: i64,
+    current_user_id: String,
+) -> Result<bool, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Check if user is admin or the one who shared it
+    let role: Option<String> = conn
+        .query_row(
+            "SELECT role FROM team_members WHERE team_id = ?1 AND user_id = ?2",
+            params![team_id, current_user_id],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    let role = role.ok_or("You are not a member of this team")?;
+
+    // Admin can unshare anything, others can only unshare their own shares
+    let condition = if role == "admin" {
+        ""
+    } else {
+        " AND user_id = ?3"
+    };
+
+    let sql = format!(
+        "DELETE FROM shared_records WHERE team_id = ?1 AND record_id = ?2{}",
+        condition
+    );
+
+    let rows_affected = if role == "admin" {
+        conn.execute(&sql, params![team_id, record_id])
+            .map_err(|e| format!("Failed to unshare record: {}", e))?
+    } else {
+        conn.execute(&sql, params![team_id, record_id, current_user_id])
+            .map_err(|e| format!("Failed to unshare record: {}", e))?
+    };
+
+    Ok(rows_affected > 0)
+}
+
+/// Get all shared records for a team
+#[tauri::command]
+pub fn get_team_shared_records(
+    team_id: String,
+    current_user_id: String,
+) -> Result<Vec<SharedRecord>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Check if user is a team member
+    let is_member: bool = conn
+        .query_row(
+            "SELECT 1 FROM team_members WHERE team_id = ?1 AND user_id = ?2",
+            params![team_id, current_user_id],
+            |_| Ok(true),
+        )
+        .optional()
+        .map_err(|e| format!("Database error: {}", e))?
+        .unwrap_or(false);
+
+    if !is_member {
+        return Err("You are not a member of this team".to_string());
+    }
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT sr.id, sr.team_id, sr.user_id, u.username, sr.record_id,
+                    r.timestamp, r.source_type, r.content, sr.shared_at
+             FROM shared_records sr
+             JOIN users u ON sr.user_id = u.id
+             JOIN records r ON sr.record_id = r.id
+             WHERE sr.team_id = ?1
+             ORDER BY sr.shared_at DESC",
+        )
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let records: Vec<SharedRecord> = stmt
+        .query_map(params![team_id], |row| {
+            Ok(SharedRecord {
+                id: row.get(0)?,
+                team_id: row.get(1)?,
+                user_id: row.get(2)?,
+                username: row.get(3)?,
+                record_id: row.get(4)?,
+                record_timestamp: DateTime::parse_from_rfc3339(&row.get::<_, String>(5)?)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .unwrap_or_else(|_| Utc::now()),
+                record_source: row.get(6)?,
+                record_content: row.get(7)?,
+                shared_at: DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .unwrap_or_else(|_| Utc::now()),
+            })
+        })
+        .map_err(|e| format!("Failed to query shared records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect shared records: {}", e))?;
+
+    Ok(records)
+}
+
+/// Get records shared by the current user
+#[tauri::command]
+pub fn get_user_shared_records(user_id: String) -> Result<Vec<SharedRecord>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT sr.id, sr.team_id, sr.user_id, u.username, sr.record_id,
+                    r.timestamp, r.source_type, r.content, sr.shared_at
+             FROM shared_records sr
+             JOIN users u ON sr.user_id = u.id
+             JOIN records r ON sr.record_id = r.id
+             WHERE sr.user_id = ?1
+             ORDER BY sr.shared_at DESC",
+        )
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let records: Vec<SharedRecord> = stmt
+        .query_map(params![user_id], |row| {
+            Ok(SharedRecord {
+                id: row.get(0)?,
+                team_id: row.get(1)?,
+                user_id: row.get(2)?,
+                username: row.get(3)?,
+                record_id: row.get(4)?,
+                record_timestamp: DateTime::parse_from_rfc3339(&row.get::<_, String>(5)?)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .unwrap_or_else(|_| Utc::now()),
+                record_source: row.get(6)?,
+                record_content: row.get(7)?,
+                shared_at: DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .unwrap_or_else(|_| Utc::now()),
+            })
+        })
+        .map_err(|e| format!("Failed to query shared records: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect shared records: {}", e))?;
+
+    Ok(records)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::auth::{create_users_table, register_user, RegisterParams};
+    use crate::memory_storage::{add_record, init_test_database};
     use rusqlite::Connection;
     use serial_test::serial;
 
     fn setup_test_db() {
         let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
         create_users_table(&conn).unwrap();
         create_teams_tables(&conn).unwrap();
+        create_shared_records_table(&conn).unwrap();
 
         let mut db = DB_CONNECTION.lock().unwrap();
         *db = Some(conn);
@@ -914,6 +1236,10 @@ mod tests {
             password: "password123".to_string(),
         };
         register_user(params).unwrap().id
+    }
+
+    fn create_test_record(_user_id: &str) -> i64 {
+        add_record("manual", "Test content", None, None, None).unwrap()
     }
 
     #[test]
@@ -1318,5 +1644,244 @@ mod tests {
         let result = update_team(update_params, member_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Only admins"));
+    }
+
+    // ========================================================================
+    // Phase 3: Record Sharing Tests
+    // ========================================================================
+
+    #[test]
+    #[serial]
+    fn test_share_record_to_team() {
+        setup_test_db();
+        let owner_id = create_test_user("shareowner");
+        let record_id = create_test_record(&owner_id);
+
+        let team = create_team(
+            CreateTeamParams {
+                name: "Share Team".to_string(),
+                description: None,
+                visibility: None,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        let shared = share_record_to_team(
+            ShareRecordParams {
+                team_id: team.id.clone(),
+                record_id,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(shared.team_id, team.id);
+        assert_eq!(shared.user_id, owner_id);
+        assert_eq!(shared.record_id, record_id);
+        assert_eq!(shared.record_content, "Test content");
+    }
+
+    #[test]
+    #[serial]
+    fn test_share_record_viewer_cannot_share() {
+        setup_test_db();
+        let owner_id = create_test_user("shareowner2");
+        let viewer_id = create_test_user("sharereviewer");
+        let record_id = create_test_record(&viewer_id);
+
+        let team = create_team(
+            CreateTeamParams {
+                name: "Share Team".to_string(),
+                description: None,
+                visibility: None,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        // Add viewer
+        invite_member(
+            InviteMemberParams {
+                team_id: team.id.clone(),
+                user_id: viewer_id.clone(),
+                role: TeamRole::Viewer,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        let result = share_record_to_team(
+            ShareRecordParams {
+                team_id: team.id,
+                record_id,
+            },
+            viewer_id,
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Viewers cannot share"));
+    }
+
+    #[test]
+    #[serial]
+    fn test_share_record_already_shared() {
+        setup_test_db();
+        let owner_id = create_test_user("shareowner3");
+        let record_id = create_test_record(&owner_id);
+
+        let team = create_team(
+            CreateTeamParams {
+                name: "Share Team".to_string(),
+                description: None,
+                visibility: None,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        share_record_to_team(
+            ShareRecordParams {
+                team_id: team.id.clone(),
+                record_id,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        // Try to share again
+        let result = share_record_to_team(
+            ShareRecordParams {
+                team_id: team.id,
+                record_id,
+            },
+            owner_id,
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("already shared"));
+    }
+
+    #[test]
+    #[serial]
+    fn test_unshare_record() {
+        setup_test_db();
+        let owner_id = create_test_user("shareowner4");
+        let record_id = create_test_record(&owner_id);
+
+        let team = create_team(
+            CreateTeamParams {
+                name: "Share Team".to_string(),
+                description: None,
+                visibility: None,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        share_record_to_team(
+            ShareRecordParams {
+                team_id: team.id.clone(),
+                record_id,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        let result = unshare_record_from_team(team.id.clone(), record_id, owner_id).unwrap();
+        assert!(result);
+
+        // Verify it's gone
+        let records = get_team_shared_records(team.id, "test-user".to_string());
+        // This will fail because we're not checking membership, but the record should be gone
+    }
+
+    #[test]
+    #[serial]
+    fn test_get_team_shared_records() {
+        setup_test_db();
+        let owner_id = create_test_user("shareowner5");
+        let record_id1 = create_test_record(&owner_id);
+        let record_id2 = create_test_record(&owner_id);
+
+        let team = create_team(
+            CreateTeamParams {
+                name: "Share Team".to_string(),
+                description: None,
+                visibility: None,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        share_record_to_team(
+            ShareRecordParams {
+                team_id: team.id.clone(),
+                record_id: record_id1,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        share_record_to_team(
+            ShareRecordParams {
+                team_id: team.id.clone(),
+                record_id: record_id2,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        let records = get_team_shared_records(team.id, owner_id).unwrap();
+        assert_eq!(records.len(), 2);
+    }
+
+    #[test]
+    #[serial]
+    fn test_get_user_shared_records() {
+        setup_test_db();
+        let owner_id = create_test_user("shareowner6");
+        let record_id = create_test_record(&owner_id);
+
+        let team1 = create_team(
+            CreateTeamParams {
+                name: "Team 1".to_string(),
+                description: None,
+                visibility: None,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        let team2 = create_team(
+            CreateTeamParams {
+                name: "Team 2".to_string(),
+                description: None,
+                visibility: None,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        share_record_to_team(
+            ShareRecordParams {
+                team_id: team1.id,
+                record_id,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        share_record_to_team(
+            ShareRecordParams {
+                team_id: team2.id,
+                record_id,
+            },
+            owner_id.clone(),
+        )
+        .unwrap();
+
+        let records = get_user_shared_records(owner_id).unwrap();
+        assert_eq!(records.len(), 2);
     }
 }

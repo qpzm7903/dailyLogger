@@ -335,6 +335,9 @@ pub fn init_database() -> Result<(), String> {
     // Team collaboration: Teams and team_members tables
     crate::team::create_teams_tables(&conn)?;
 
+    // Team collaboration: Shared records table
+    crate::team::create_shared_records_table(&conn)?;
+
     let mut db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
@@ -563,6 +566,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
 
     // Team collaboration: Teams and team_members tables
     crate::team::create_teams_tables(conn)?;
+
+    // Team collaboration: Shared records table
+    crate::team::create_shared_records_table(conn)?;
 
     Ok(())
 }
