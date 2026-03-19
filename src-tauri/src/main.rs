@@ -247,6 +247,11 @@ fn main() {
             daily_logger_lib::timeline::get_timeline_today,
             daily_logger_lib::timeline::get_timeline_for_date,
             daily_logger_lib::timeline::get_timeline_for_range,
+            // Plugin system
+            daily_logger_lib::plugin::list_discovered_plugins,
+            daily_logger_lib::plugin::enable_plugin,
+            daily_logger_lib::plugin::disable_plugin,
+            daily_logger_lib::plugin::open_plugins_directory,
         ])
         .setup(|app| {
             tracing::info!("Application setup complete");

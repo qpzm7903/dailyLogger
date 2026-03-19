@@ -224,6 +224,137 @@ pub fn ensure_plugins_directory() -> io::Result<PathBuf> {
     Ok(plugins_dir)
 }
 
+// ============================================================================
+// Tauri Commands
+// ============================================================================
+
+/// Plugin info for frontend display.
+#[derive(Debug, Clone, Serialize)]
+pub struct PluginInfo {
+    /// Plugin ID
+    pub id: String,
+    /// Plugin name
+    pub name: String,
+    /// Plugin version
+    pub version: String,
+    /// Plugin description
+    pub description: String,
+    /// Plugin author
+    pub author: String,
+    /// Whether the plugin is enabled
+    pub enabled: bool,
+    /// Plugin status
+    pub status: String,
+    /// Plugin path
+    pub path: String,
+}
+
+impl From<DiscoveredPlugin> for PluginInfo {
+    fn from(discovered: DiscoveredPlugin) -> Self {
+        let status = match discovered.status {
+            PluginStatus::Ready => "ready",
+            PluginStatus::Disabled => "disabled",
+            PluginStatus::Error(_) => "error",
+        };
+        Self {
+            id: discovered.manifest.metadata.id,
+            name: discovered.manifest.metadata.name,
+            version: discovered.manifest.metadata.version,
+            description: discovered.manifest.metadata.description,
+            author: discovered.manifest.metadata.author,
+            enabled: discovered.manifest.enabled,
+            status: status.to_string(),
+            path: discovered.path.to_string_lossy().to_string(),
+        }
+    }
+}
+
+/// Tauri command: List all discovered plugins.
+#[tauri::command]
+pub fn list_discovered_plugins() -> Result<Vec<PluginInfo>, String> {
+    let plugins_dir = get_plugins_directory();
+
+    let discovered =
+        discover_plugins(&plugins_dir).map_err(|e| format!("Failed to discover plugins: {}", e))?;
+
+    Ok(discovered.into_iter().map(PluginInfo::from).collect())
+}
+
+/// Tauri command: Enable a plugin by ID.
+#[tauri::command]
+pub fn enable_plugin(plugin_id: String) -> Result<(), String> {
+    let plugins_dir = get_plugins_directory();
+    let discovered =
+        discover_plugins(&plugins_dir).map_err(|e| format!("Failed to discover plugins: {}", e))?;
+
+    for plugin in discovered {
+        if plugin.manifest.metadata.id == plugin_id {
+            let manifest_path = plugin.path.join("plugin.json");
+            let mut manifest = plugin.manifest;
+            manifest.enabled = true;
+            save_manifest(&manifest, &manifest_path)
+                .map_err(|e| format!("Failed to save manifest: {}", e))?;
+            return Ok(());
+        }
+    }
+
+    Err(format!("Plugin '{}' not found", plugin_id))
+}
+
+/// Tauri command: Disable a plugin by ID.
+#[tauri::command]
+pub fn disable_plugin(plugin_id: String) -> Result<(), String> {
+    let plugins_dir = get_plugins_directory();
+    let discovered =
+        discover_plugins(&plugins_dir).map_err(|e| format!("Failed to discover plugins: {}", e))?;
+
+    for plugin in discovered {
+        if plugin.manifest.metadata.id == plugin_id {
+            let manifest_path = plugin.path.join("plugin.json");
+            let mut manifest = plugin.manifest;
+            manifest.enabled = false;
+            save_manifest(&manifest, &manifest_path)
+                .map_err(|e| format!("Failed to save manifest: {}", e))?;
+            return Ok(());
+        }
+    }
+
+    Err(format!("Plugin '{}' not found", plugin_id))
+}
+
+/// Tauri command: Open the plugins directory in file explorer.
+#[tauri::command]
+pub fn open_plugins_directory() -> Result<String, String> {
+    let plugins_dir = ensure_plugins_directory()
+        .map_err(|e| format!("Failed to create plugins directory: {}", e))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&plugins_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&plugins_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&plugins_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    Ok(plugins_dir.to_string_lossy().to_string())
+}
+
 /// Context provided to plugins during lifecycle hooks.
 #[derive(Debug, Clone)]
 pub struct PluginContext {

@@ -477,5 +477,19 @@
     "loadFailed": "Failed to load timeline: {error}",
     "noEvents": "No events for this day",
     "events": "events"
+  },
+  "plugin": {
+    "title": "Plugins",
+    "openDirectory": "Open Plugins Folder",
+    "loading": "Loading plugins...",
+    "noPlugins": "No plugins found. Click 'Open Plugins Folder' to add plugins.",
+    "version": "Version",
+    "author": "Author",
+    "enable": "Enable",
+    "disable": "Disable",
+    "toggling": "Processing...",
+    "statusEnabled": "Enabled",
+    "statusDisabled": "Disabled",
+    "statusError": "Error"
   }
 }

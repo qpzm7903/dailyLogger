@@ -473,5 +473,19 @@
     "loadFailed": "加载时间线失败: {error}",
     "noEvents": "当天暂无事件记录",
     "events": "个事件"
+  },
+  "plugin": {
+    "title": "插件管理",
+    "openDirectory": "打开插件目录",
+    "loading": "加载插件中...",
+    "noPlugins": "暂无插件。点击「打开插件目录」添加插件。",
+    "version": "版本",
+    "author": "作者",
+    "enable": "启用",
+    "disable": "禁用",
+    "toggling": "处理中...",
+    "statusEnabled": "已启用",
+    "statusDisabled": "已禁用",
+    "statusError": "错误"
   }
 }

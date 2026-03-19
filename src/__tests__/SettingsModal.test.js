@@ -50,6 +50,9 @@ describe('SettingsModal', () => {
       if (cmd === 'save_settings') {
         return Promise.resolve()
       }
+      if (cmd === 'list_discovered_plugins') {
+        return Promise.resolve([])
+      }
       return Promise.resolve()
     })
   })

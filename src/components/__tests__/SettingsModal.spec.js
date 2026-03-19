@@ -57,7 +57,8 @@ describe('SettingsModal', () => {
     const wrapper = mount(SettingsModal, {
       global: {
         stubs: {
-          teleport: true
+          teleport: true,
+          PluginPanel: true
         }
       }
     })
@@ -76,7 +77,8 @@ describe('SettingsModal', () => {
     const wrapper = mount(SettingsModal, {
       global: {
         stubs: {
-          teleport: true
+          teleport: true,
+          PluginPanel: true
         }
       }
     })
@@ -95,7 +97,8 @@ describe('SettingsModal', () => {
     const wrapper = mount(SettingsModal, {
       global: {
         stubs: {
-          teleport: true
+          teleport: true,
+          PluginPanel: true
         }
       }
     })
@@ -114,7 +117,8 @@ describe('SettingsModal', () => {
     const wrapper = mount(SettingsModal, {
       global: {
         stubs: {
-          teleport: true
+          teleport: true,
+          PluginPanel: true
         }
       }
     })
@@ -143,7 +147,8 @@ describe('SettingsModal', () => {
     const wrapper = mount(SettingsModal, {
       global: {
         stubs: {
-          teleport: true
+          teleport: true,
+          PluginPanel: true
         }
       }
     })
@@ -161,7 +166,8 @@ describe('SettingsModal', () => {
     const wrapper = mount(SettingsModal, {
       global: {
         stubs: {
-          teleport: true
+          teleport: true,
+          PluginPanel: true
         }
       }
     })
@@ -182,7 +188,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -202,7 +209,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -222,7 +230,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -240,7 +249,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -261,7 +271,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -284,7 +295,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -304,7 +316,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -336,7 +349,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -379,7 +393,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })
@@ -416,7 +431,8 @@ describe('SettingsModal', () => {
       const wrapper = mount(SettingsModal, {
         global: {
           stubs: {
-            teleport: true
+            teleport: true,
+            PluginPanel: true
           }
         }
       })

@@ -846,6 +846,11 @@
           </div>
         </div>
 
+        <!-- Plugin Management -->
+        <div>
+          <PluginPanel />
+        </div>
+
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.debugTools') }}</h3>
           <div class="space-y-3">
@@ -1012,6 +1017,7 @@ import { writeFile, writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { showError, showSuccess } from '../stores/toast.js'
 import { setLocale } from '../i18n.js'
 import { useI18n } from 'vue-i18n'
+import PluginPanel from './PluginPanel.vue'
 
 const { t, locale } = useI18n()
 
