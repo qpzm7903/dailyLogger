@@ -58,7 +58,8 @@ describe('SettingsModal', () => {
       global: {
         stubs: {
           teleport: true,
-          PluginPanel: true
+          PluginPanel: true,
+            TeamPanel: true
         }
       }
     })
@@ -78,7 +79,8 @@ describe('SettingsModal', () => {
       global: {
         stubs: {
           teleport: true,
-          PluginPanel: true
+          PluginPanel: true,
+            TeamPanel: true
         }
       }
     })
@@ -98,7 +100,8 @@ describe('SettingsModal', () => {
       global: {
         stubs: {
           teleport: true,
-          PluginPanel: true
+          PluginPanel: true,
+            TeamPanel: true
         }
       }
     })
@@ -118,7 +121,8 @@ describe('SettingsModal', () => {
       global: {
         stubs: {
           teleport: true,
-          PluginPanel: true
+          PluginPanel: true,
+            TeamPanel: true
         }
       }
     })
@@ -148,7 +152,8 @@ describe('SettingsModal', () => {
       global: {
         stubs: {
           teleport: true,
-          PluginPanel: true
+          PluginPanel: true,
+            TeamPanel: true
         }
       }
     })
@@ -167,7 +172,8 @@ describe('SettingsModal', () => {
       global: {
         stubs: {
           teleport: true,
-          PluginPanel: true
+          PluginPanel: true,
+            TeamPanel: true
         }
       }
     })
@@ -189,7 +195,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -210,7 +217,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -231,7 +239,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -250,7 +259,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -272,7 +282,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -296,7 +307,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -317,7 +329,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -350,7 +363,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -394,7 +408,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
@@ -432,7 +447,8 @@ describe('SettingsModal', () => {
         global: {
           stubs: {
             teleport: true,
-            PluginPanel: true
+            PluginPanel: true,
+            TeamPanel: true
           }
         }
       })
