@@ -219,7 +219,7 @@
           </div>
         </div>
 
-        <div>
+        <div v-if="isDesktop">
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.screenshotAnalysis') }}</h3>
           <div class="space-y-3">
             <div>
@@ -590,7 +590,7 @@
           </div>
         </div>
 
-        <div>
+        <div v-if="isDesktop">
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.windowFilter') }}</h3>
           <div class="space-y-3">
             <div>
@@ -659,7 +659,7 @@
         </div>
 
         <!-- SMART-004: 显示器设置 -->
-        <div v-if="isScreenshotEnabled">
+        <div v-if="isScreenshotEnabled && isDesktop">
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.displaySettings') }}</h3>
           <div class="space-y-3">
             <!-- 多显示器时显示捕获模式选择 -->
