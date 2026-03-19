@@ -185,6 +185,17 @@
                     {{ $t('settings.createCustomModel') }}
                   </button>
                 </div>
+
+                <!-- Fine-tuning button -->
+                <div v-if="isOllama" class="mt-2">
+                  <button
+                    @click="showFineTuningModal = true"
+                    type="button"
+                    class="w-full px-3 py-2 text-xs bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 rounded-lg transition-colors"
+                  >
+                    {{ $t('settings.fineTuning') }}
+                  </button>
+                </div>
               </div>
 
               <!-- Running models section -->
@@ -1206,6 +1217,143 @@
         </div>
       </div>
 
+      <!-- Fine-tuning Modal -->
+      <div v-if="showFineTuningModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showFineTuningModal = false">
+        <div class="bg-dark rounded-2xl w-[500px] max-h-[85vh] overflow-hidden border border-gray-700">
+          <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">{{ $t('settings.fineTuningTitle') }}</h3>
+            <button @click="showFineTuningModal = false" class="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div class="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+            <!-- Training Data Section -->
+            <div class="space-y-3">
+              <h4 class="text-sm font-medium text-gray-300">{{ $t('settings.fineTuningTrainingData') }}</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="flex items-center gap-2 text-xs text-gray-300">
+                  <input type="checkbox" v-model="fineTuningParams.includeAutoRecords" class="rounded bg-darker border-gray-600" />
+                  {{ $t('settings.fineTuningIncludeAuto') }}
+                </label>
+                <label class="flex items-center gap-2 text-xs text-gray-300">
+                  <input type="checkbox" v-model="fineTuningParams.includeManualRecords" class="rounded bg-darker border-gray-600" />
+                  {{ $t('settings.fineTuningIncludeManual') }}
+                </label>
+              </div>
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fineTuningDaysBack') }}</label>
+                <input
+                  v-model.number="fineTuningParams.daysBack"
+                  type="number"
+                  min="1"
+                  max="365"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Model Configuration Section -->
+            <div class="space-y-3 pt-3 border-t border-gray-700">
+              <h4 class="text-sm font-medium text-gray-300">{{ $t('settings.fineTuningModelConfig') }}</h4>
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fineTuningBaseModel') }}</label>
+                <select
+                  v-model="fineTuningParams.baseModel"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+                >
+                  <option value="" disabled>{{ $t('settings.fineTuningSelectBaseModel') }}</option>
+                  <option v-for="model in ollamaModels" :key="model" :value="model">{{ model }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fineTuningOutputName') }}</label>
+                <input
+                  v-model="fineTuningParams.outputModelName"
+                  type="text"
+                  :placeholder="$t('settings.fineTuningOutputNamePlaceholder')"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Advanced Parameters Section -->
+            <div class="space-y-3 pt-3 border-t border-gray-700">
+              <h4 class="text-sm font-medium text-gray-300">{{ $t('settings.fineTuningAdvancedParams') }}</h4>
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fineTuningSystemPrompt') }}</label>
+                <textarea
+                  v-model="fineTuningParams.systemPrompt"
+                  rows="3"
+                  :placeholder="$t('settings.fineTuningSystemPromptPlaceholder')"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
+                />
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fineTuningTemperature') }}</label>
+                  <input
+                    v-model.number="fineTuningParams.temperature"
+                    type="number"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fineTuningContext') }}</label>
+                  <input
+                    v-model.number="fineTuningParams.numCtx"
+                    type="number"
+                    min="512"
+                    step="512"
+                    class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fineTuningEpochs') }}</label>
+                  <input
+                    v-model.number="fineTuningParams.epochs"
+                    type="number"
+                    min="1"
+                    max="100"
+                    class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Export Training Data Section -->
+            <div class="pt-3 border-t border-gray-700">
+              <button
+                @click="exportTrainingData"
+                :disabled="isExportingTrainingData"
+                type="button"
+                class="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {{ isExportingTrainingData ? $t('settings.fineTuningExporting') : $t('settings.fineTuningExportData') }}
+              </button>
+              <p v-if="trainingDataResult" class="text-xs mt-2" :class="trainingDataResult.success ? 'text-green-400' : 'text-red-400'">
+                {{ trainingDataResult.message }}
+              </p>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+            <button
+              @click="showFineTuningModal = false"
+              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-200 transition-colors"
+            >
+              {{ t('settings.cancel') }}
+            </button>
+            <button
+              @click="startFineTuning"
+              :disabled="isFineTuning || !fineTuningParams.baseModel || !fineTuningParams.outputModelName"
+              class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
+            >
+              {{ isFineTuning ? $t('settings.fineTuningRunning') : $t('settings.fineTuningStart') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between gap-3">
         <div class="flex flex-col">
           <span v-if="saveStatus === 'ok'" class="text-green-400 text-xs flex items-center gap-1">
@@ -1905,6 +2053,23 @@ const isCopyingModel = ref(false)
 const copyModelSource = ref('')
 const copyModelDestination = ref('')
 
+// Fine-tuning state
+const showFineTuningModal = ref(false)
+const isFineTuning = ref(false)
+const isExportingTrainingData = ref(false)
+const trainingDataResult = ref(null)
+const fineTuningParams = ref({
+  baseModel: '',
+  outputModelName: '',
+  includeAutoRecords: true,
+  includeManualRecords: true,
+  daysBack: 30,
+  systemPrompt: '',
+  temperature: 0.7,
+  numCtx: 4096,
+  epochs: 3
+})
+
 // Check if the current endpoint is an Ollama endpoint
 const isOllamaEndpoint = (url) => {
   if (!url) return false
@@ -2177,6 +2342,91 @@ const copyModel = async () => {
     showError(t('settings.copyModelFailed', { error: String(err) }))
   } finally {
     isCopyingModel.value = false
+  }
+}
+
+// FUTURE-003: Fine-tuning functions
+const exportTrainingData = async () => {
+  if (!fineTuningParams.value.includeAutoRecords && !fineTuningParams.value.includeManualRecords) {
+    showError(t('settings.fineTuningSelectRecordType'))
+    return
+  }
+
+  isExportingTrainingData.value = true
+  trainingDataResult.value = null
+
+  try {
+    const { save } = await import('@tauri-apps/plugin-dialog')
+    const filePath = await save({
+      defaultPath: `training-data-${new Date().toISOString().slice(0, 10)}.jsonl`,
+      filters: [{ name: 'JSONL', extensions: ['jsonl'] }]
+    })
+
+    if (filePath) {
+      const result = await invoke('prepare_training_data', {
+        outputPath: filePath,
+        includeAutoRecords: fineTuningParams.value.includeAutoRecords,
+        includeManualRecords: fineTuningParams.value.includeManualRecords,
+        daysBack: fineTuningParams.value.daysBack
+      })
+      trainingDataResult.value = result
+      if (result.success) {
+        showSuccess(t('settings.fineTuningExportSuccess', { count: result.entries_count }))
+      }
+    }
+  } catch (err) {
+    console.error('Failed to export training data:', err)
+    trainingDataResult.value = { success: false, message: String(err) }
+    showError(err)
+  } finally {
+    isExportingTrainingData.value = false
+  }
+}
+
+const startFineTuning = async () => {
+  if (!fineTuningParams.value.baseModel) {
+    showError(t('settings.fineTuningSelectBaseModel'))
+    return
+  }
+
+  if (!fineTuningParams.value.outputModelName.trim()) {
+    showError(t('settings.fineTuningOutputNameRequired'))
+    return
+  }
+
+  if (!settings.value.api_base_url) {
+    showError(t('settings.apiBaseUrlRequired'))
+    return
+  }
+
+  isFineTuning.value = true
+
+  try {
+    const result = await invoke('start_fine_tuning', {
+      baseUrl: settings.value.api_base_url,
+      config: {
+        base_model: fineTuningParams.value.baseModel,
+        output_model_name: fineTuningParams.value.outputModelName.trim(),
+        epochs: fineTuningParams.value.epochs,
+        system_prompt: fineTuningParams.value.systemPrompt || null,
+        temperature: fineTuningParams.value.temperature,
+        num_ctx: fineTuningParams.value.numCtx
+      }
+    })
+
+    if (result.success) {
+      showSuccess(t('settings.fineTuningSuccess', { model: result.model_name }))
+      showFineTuningModal.value = false
+      // Refresh the model list
+      await fetchOllamaModels()
+    } else {
+      showError(t('settings.fineTuningFailed', { error: result.message }))
+    }
+  } catch (err) {
+    console.error('Failed to start fine-tuning:', err)
+    showError(t('settings.fineTuningFailed', { error: String(err) }))
+  } finally {
+    isFineTuning.value = false
   }
 }
 
