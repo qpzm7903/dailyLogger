@@ -301,7 +301,7 @@
     <ReportComparisonModal v-if="showComparisonReport" @close="showComparisonReport = false" @generated="handleComparisonReportGenerated" />
     <DailySummaryViewer v-if="showComparisonReportViewer" :summaryPath="comparisonReportPath" @close="showComparisonReportViewer = false" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
-    <HistoryViewer v-if="showHistoryViewer" :initialTag="initialFilterTag" @close="showHistoryViewer = false; initialFilterTag = null" />
+    <HistoryViewer v-if="showHistoryViewer" :initialTag="initialFilterTag" :currentUser="currentUser" @close="showHistoryViewer = false; initialFilterTag = null" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
     <TagCloud v-if="showTagCloud" @close="showTagCloud = false" @tagSelected="handleTagSelected" />
     <ExportModal v-if="showExport" @close="showExport = false" />

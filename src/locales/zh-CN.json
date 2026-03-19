@@ -610,6 +610,16 @@
     "memberRemoved": "成员已从团队移除",
     "confirmLeave": "确定要退出该团队吗？",
     "confirmDelete": "确定要删除该团队吗？此操作无法撤销。",
-    "confirmRemove": "确定要从团队中移除该成员吗？"
+    "confirmRemove": "确定要从团队中移除该成员吗？",
+    "share": "分享",
+    "shareRecord": "分享记录",
+    "shareToTeam": "分享到团队",
+    "selectTeam": "选择要分享的团队",
+    "noTeamsToShare": "您还没有加入任何团队。请先创建或加入团队。",
+    "recordShared": "记录已成功分享到团队",
+    "shareFailed": "分享记录失败：{error}",
+    "alreadyShared": "该记录已分享到此团队",
+    "loadingTeams": "加载团队中...",
+    "sharedBadge": "已分享"
   }
 }
