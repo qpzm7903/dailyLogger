@@ -48,6 +48,82 @@ pub struct Session {
     pub logged_in_at: DateTime<Utc>,
 }
 
+/// Create the sessions table for session persistence
+pub fn create_sessions_table(conn: &Connection) -> Result<(), String> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            user_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            logged_in_at TEXT NOT NULL
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create sessions table: {}", e))?;
+
+    Ok(())
+}
+
+/// Save session to local storage (single session model)
+pub fn save_session(user: &User) -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let logged_in_at = Utc::now().to_rfc3339();
+
+    conn.execute(
+        "INSERT OR REPLACE INTO sessions (id, user_id, username, logged_in_at) VALUES (1, ?1, ?2, ?3)",
+        params![user.id, user.username, logged_in_at],
+    )
+    .map_err(|e| format!("Failed to save session: {}", e))?;
+
+    Ok(())
+}
+
+/// Get current session from local storage
+#[tauri::command]
+pub fn get_current_session() -> Result<Option<Session>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let result: Option<Session> = conn
+        .query_row(
+            "SELECT user_id, username, logged_in_at FROM sessions WHERE id = 1",
+            [],
+            |row| {
+                Ok(Session {
+                    user_id: row.get(0)?,
+                    username: row.get(1)?,
+                    logged_in_at: DateTime::parse_from_rfc3339(&row.get::<_, String>(2)?)
+                        .map(|dt| dt.with_timezone(&Utc))
+                        .unwrap_or_else(|_| Utc::now()),
+                })
+            },
+        )
+        .optional()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(result)
+}
+
+/// Logout - clear session from local storage
+#[tauri::command]
+pub fn logout() -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    conn.execute("DELETE FROM sessions WHERE id = 1", [])
+        .map_err(|e| format!("Failed to logout: {}", e))?;
+
+    Ok(())
+}
+
 /// Hash a password using Argon2
 pub fn hash_password(password: &str) -> Result<String, String> {
     let salt = SaltString::generate(&mut OsRng);
@@ -180,12 +256,18 @@ pub fn login_user(params: LoginParams) -> Result<User, String> {
         return Err("Invalid username or password".to_string());
     }
 
-    Ok(User {
+    let user = User {
         id: user_id,
         username,
         email,
         created_at: Utc::now(), // We don't store this in the return, just use current time
-    })
+    };
+
+    // Save session after successful login
+    drop(db); // Release lock before save_session
+    save_session(&user)?;
+
+    Ok(user)
 }
 
 /// Get user by ID
@@ -286,6 +368,7 @@ mod tests {
     fn setup_test_db() {
         let conn = Connection::open_in_memory().unwrap();
         create_users_table(&conn).unwrap();
+        create_sessions_table(&conn).unwrap();
 
         // Initialize global DB_CONNECTION for tests
         let mut db = DB_CONNECTION.lock().unwrap();
@@ -549,5 +632,115 @@ mod tests {
         let id = generate_user_id();
         assert!(id.starts_with("user_"));
         assert_eq!(id.len(), 21); // "user_" + 16 hex chars
+    }
+
+    #[test]
+    #[serial]
+    fn test_save_and_get_session() {
+        setup_test_db();
+
+        let params = RegisterParams {
+            username: "sessionuser".to_string(),
+            email: Some("session@example.com".to_string()),
+            password: "password123".to_string(),
+        };
+        let user = register_user(params).unwrap();
+
+        // Initially no session
+        assert!(get_current_session().unwrap().is_none());
+
+        // Save session
+        save_session(&user).unwrap();
+
+        // Get session
+        let session = get_current_session().unwrap();
+        assert!(session.is_some());
+        let session = session.unwrap();
+        assert_eq!(session.user_id, user.id);
+        assert_eq!(session.username, "sessionuser");
+    }
+
+    #[test]
+    #[serial]
+    fn test_logout() {
+        setup_test_db();
+
+        let params = RegisterParams {
+            username: "logoutuser".to_string(),
+            email: None,
+            password: "password123".to_string(),
+        };
+        let user = register_user(params).unwrap();
+
+        save_session(&user).unwrap();
+        assert!(get_current_session().unwrap().is_some());
+
+        logout().unwrap();
+        assert!(get_current_session().unwrap().is_none());
+    }
+
+    #[test]
+    #[serial]
+    fn test_login_creates_session() {
+        setup_test_db();
+
+        let register_params = RegisterParams {
+            username: "loginsession".to_string(),
+            email: None,
+            password: "password123".to_string(),
+        };
+        register_user(register_params).unwrap();
+
+        // No session initially
+        assert!(get_current_session().unwrap().is_none());
+
+        // Login creates session
+        let login_params = LoginParams {
+            username: "loginsession".to_string(),
+            password: "password123".to_string(),
+        };
+        login_user(login_params).unwrap();
+
+        // Session should now exist
+        let session = get_current_session().unwrap();
+        assert!(session.is_some());
+        assert_eq!(session.unwrap().username, "loginsession");
+    }
+
+    #[test]
+    #[serial]
+    fn test_session_overwrites_on_new_login() {
+        setup_test_db();
+
+        // Create two users
+        let params1 = RegisterParams {
+            username: "user1".to_string(),
+            email: None,
+            password: "password123".to_string(),
+        };
+        register_user(params1).unwrap();
+
+        let params2 = RegisterParams {
+            username: "user2".to_string(),
+            email: None,
+            password: "password456".to_string(),
+        };
+        register_user(params2).unwrap();
+
+        // Login as user1
+        let login1 = LoginParams {
+            username: "user1".to_string(),
+            password: "password123".to_string(),
+        };
+        login_user(login1).unwrap();
+        assert_eq!(get_current_session().unwrap().unwrap().username, "user1");
+
+        // Login as user2 (should overwrite)
+        let login2 = LoginParams {
+            username: "user2".to_string(),
+            password: "password456".to_string(),
+        };
+        login_user(login2).unwrap();
+        assert_eq!(get_current_session().unwrap().unwrap().username, "user2");
     }
 }

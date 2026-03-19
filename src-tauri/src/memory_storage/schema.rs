@@ -329,6 +329,9 @@ pub fn init_database() -> Result<(), String> {
     // Team collaboration: Users table for local authentication
     crate::auth::create_users_table(&conn)?;
 
+    // Team collaboration: Sessions table for session persistence
+    crate::auth::create_sessions_table(&conn)?;
+
     let mut db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
@@ -551,6 +554,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
 
     // Team collaboration: Users table for local authentication
     crate::auth::create_users_table(conn)?;
+
+    // Team collaboration: Sessions table for session persistence
+    crate::auth::create_sessions_table(conn)?;
 
     Ok(())
 }

@@ -458,6 +458,8 @@ fn main() {
             daily_logger_lib::auth::get_all_users,
             daily_logger_lib::auth::delete_user,
             daily_logger_lib::auth::has_any_user,
+            daily_logger_lib::auth::get_current_session,
+            daily_logger_lib::auth::logout,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");
