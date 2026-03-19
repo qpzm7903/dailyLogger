@@ -69,25 +69,20 @@ fn count_screenshots_in_dir(dir: &Path) -> usize {
     fs::read_dir(dir)
         .map(|entries| {
             entries
-                .filter_map(|e| e.ok())
-                .filter(|e| {
-                    e.path()
-                        .extension()
-                        .map(|ext| ext == "png")
-                        .unwrap_or(false)
-                })
+                .filter_map(std::result::Result::ok)
+                .filter(|e| e.path().extension().is_some_and(|ext| ext == "png"))
                 .count()
         })
         .unwrap_or(0)
 }
 
-/// Copy all files from src_dir to dst_dir (non-recursive, files only).
+/// Copy all files from `src_dir` to `dst_dir` (non-recursive, files only).
 fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> Result<(), String> {
     if !src_dir.exists() {
         return Ok(());
     }
     fs::create_dir_all(dst_dir)
-        .map_err(|e| format!("Failed to create dir {:?}: {}", dst_dir, e))?;
+        .map_err(|e| format!("Failed to create dir {}: {e}", dst_dir.display()))?;
 
     for entry in fs::read_dir(src_dir).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
@@ -95,7 +90,7 @@ fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> Result<(), String> {
         if src_path.is_file() {
             if let Some(file_name) = src_path.file_name() {
                 fs::copy(&src_path, dst_dir.join(file_name))
-                    .map_err(|e| format!("Failed to copy {:?}: {}", src_path, e))?;
+                    .map_err(|e| format!("Failed to copy {}: {e}", src_path.display()))?;
             }
         }
     }
@@ -111,24 +106,25 @@ fn clear_dir_files(dir: &Path) -> Result<(), String> {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
         if path.is_file() {
-            fs::remove_file(&path).map_err(|e| format!("Failed to remove {:?}: {}", path, e))?;
+            fs::remove_file(&path)
+                .map_err(|e| format!("Failed to remove {}: {e}", path.display()))?;
         }
     }
     Ok(())
 }
 
-/// Read a BackupManifest from a ZipArchive.
+/// Read a `BackupManifest` from a `ZipArchive`.
 fn read_manifest_from_archive<R: std::io::Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
 ) -> Result<BackupManifest, String> {
     let mut manifest_file = archive
         .by_name("manifest.json")
-        .map_err(|e| format!("Invalid backup file: {}", e))?;
+        .map_err(|e| format!("Invalid backup file: {e}"))?;
     let mut content = String::new();
     manifest_file
         .read_to_string(&mut content)
         .map_err(|e| e.to_string())?;
-    serde_json::from_str(&content).map_err(|e| format!("Invalid manifest: {}", e))
+    serde_json::from_str(&content).map_err(|e| format!("Invalid manifest: {e}"))
 }
 
 /// 创建备份
