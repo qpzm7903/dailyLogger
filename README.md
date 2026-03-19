@@ -164,11 +164,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.18.1
-- 新增插件系统架构，支持用户扩展应用功能
-- 新增 Windows 免安装版本（portable exe）
-- 修复 Windows 启动时 WebView2 缺失导致的崩溃问题
-- 修复 FTS5 全文搜索在 Windows 上的兼容性问题
+**最新版本**: v1.19.0
+- 新增 Ollama 模型管理增强功能
+  - 运行模型状态监控，显示当前加载模型及 VRAM 占用
+  - 自定义模型创建（基于 Modelfile）
+  - 模型拉取量化参数支持（q4_0, q5_0, q8_0 等）
+  - 模型复制功能
 
 ## 贡献
 
