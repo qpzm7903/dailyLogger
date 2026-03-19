@@ -412,7 +412,12 @@
     "templateMissingPlaceholder": "模板缺少 {records} 占位符，请确保模板包含此占位符",
     "importSuccess": "导入成功: {name}",
     "importFailed": "导入失败: JSON 格式无效",
-    "unnamedTemplate": "未命名模板"
+    "unnamedTemplate": "未命名模板",
+    "monitorLoadFailed": "加载显示器信息失败: {error}",
+    "connectionSuccess": "连接成功 ({latency}ms)",
+    "templateApplied": "已应用模板: {name}",
+    "exportFailedMsg": "导出失败: {error}",
+    "importFailedMsg": "导入失败: {error}"
   },
   "screenshotGallery": {
     "title": "截图画廊",

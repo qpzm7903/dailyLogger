@@ -1241,7 +1241,7 @@ const loadMonitors = async () => {
     if (String(err).includes('not found') || String(err).includes('not registered')) {
       isScreenshotEnabled.value = false
     } else {
-      monitorError.value = `加载显示器信息失败: ${err}`
+      monitorError.value = t('settings.monitorLoadFailed', { error: err })
     }
   } finally {
     isLoadingMonitors.value = false
@@ -1475,7 +1475,7 @@ const exportLogs = async () => {
   } catch (err) {
     console.error('Failed to export logs:', err)
     if (err !== 'Log file does not exist') {
-      exportError.value = `导出失败: ${err}`
+      exportError.value = t('settings.exportFailedMsg', { error: err })
       showError(err)
     } else {
       exportError.value = t('settings.logFileNotExist')
@@ -1541,7 +1541,7 @@ const testConnection = async () => {
     })
     connectionTestResult.value = result
     if (result.success) {
-      showSuccess(`连接成功 (${result.latency_ms}ms)`)
+      showSuccess(t('settings.connectionSuccess', { latency: result.latency_ms }))
     } else {
       showError(result.message)
     }
@@ -1699,7 +1699,7 @@ const applyTemplate = (template) => {
   if (template.content) {
     settings.value.summary_prompt = template.content
     showTemplateLibraryModal.value = false
-    showSuccess(`已应用模板: ${template.name}`)
+    showSuccess(t('settings.templateApplied', { name: template.name }))
   } else {
     showError(t('settings.templateContentEmpty'))
   }
@@ -1736,7 +1736,7 @@ const exportTemplate = async () => {
     }
   } catch (err) {
     console.error('Failed to export template:', err)
-    showError(`导出失败: ${err}`)
+    showError(t('settings.exportFailedMsg', { error: err }))
   }
 }
 
@@ -1776,7 +1776,7 @@ const importTemplate = async () => {
     if (err instanceof SyntaxError) {
       showError(t('settings.importFailed'))
     } else {
-      showError(`导入失败: ${err}`)
+      showError(t('settings.importFailedMsg', { error: err }))
     }
   }
 }

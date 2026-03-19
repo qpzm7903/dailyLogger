@@ -416,7 +416,12 @@
     "templateMissingPlaceholder": "Template missing {records} placeholder, please ensure template contains this placeholder",
     "importSuccess": "Import successful: {name}",
     "importFailed": "Import failed: invalid JSON format",
-    "unnamedTemplate": "Unnamed Template"
+    "unnamedTemplate": "Unnamed Template",
+    "monitorLoadFailed": "Failed to load monitor info: {error}",
+    "connectionSuccess": "Connection successful ({latency}ms)",
+    "templateApplied": "Template applied: {name}",
+    "exportFailedMsg": "Export failed: {error}",
+    "importFailedMsg": "Import failed: {error}"
   },
   "screenshotGallery": {
     "title": "Screenshot Gallery",
