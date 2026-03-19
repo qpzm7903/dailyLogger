@@ -3,6 +3,7 @@ pub mod auto_perception;
 pub mod backup;
 pub mod crypto;
 pub mod export;
+pub mod fine_tuning;
 pub mod github;
 #[cfg(feature = "screenshot")]
 pub mod hardware;
