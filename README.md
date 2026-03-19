@@ -164,12 +164,11 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.17.0
-- 新增 Slack 通知集成，报告可发送到 Slack 频道
-- 新增时间线可视化，图形化展示一天工作流程
-- 新增多语言支持（中文/英文界面切换）
-- 新增 Ollama 模型管理（拉取/删除本地模型）
-- 新增崩溃日志文件，便于诊断 Windows 启动问题
+**最新版本**: v1.18.1
+- 新增插件系统架构，支持用户扩展应用功能
+- 新增 Windows 免安装版本（portable exe）
+- 修复 Windows 启动时 WebView2 缺失导致的崩溃问题
+- 修复 FTS5 全文搜索在 Windows 上的兼容性问题
 
 ## 贡献
 
