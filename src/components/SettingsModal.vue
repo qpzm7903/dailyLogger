@@ -131,6 +131,12 @@
                       {{ model }}<span v-if="getModelSize(model)" class="text-gray-400 ml-1">({{ getModelSize(model) }})</span>
                     </button>
                     <button
+                      @click="openCopyModelModal(model)"
+                      type="button"
+                      class="ml-1 text-gray-400 hover:text-blue-400 transition-colors"
+                      :title="$t('settings.copyModel')"
+                    >⧉</button>
+                    <button
                       @click="deleteModel(model)"
                       :disabled="isDeletingModel === model"
                       type="button"
@@ -1136,6 +1142,52 @@
         </div>
       </div>
 
+      <!-- Copy Model Modal -->
+      <div v-if="showCopyModelModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showCopyModelModal = false">
+        <div class="bg-dark rounded-2xl w-[400px] overflow-hidden border border-gray-700">
+          <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">{{ $t('settings.copyModelTitle') }}</h3>
+            <button @click="showCopyModelModal = false" class="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.copyModelSource') }}</label>
+              <input
+                :value="copyModelSource"
+                type="text"
+                disabled
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.copyModelDestination') }}</label>
+              <input
+                v-model="copyModelDestination"
+                type="text"
+                :placeholder="$t('settings.copyModelDestinationPlaceholder')"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              />
+            </div>
+            <p class="text-xs text-gray-500">{{ $t('settings.copyModelHint') }}</p>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+            <button
+              @click="showCopyModelModal = false"
+              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-200 transition-colors"
+            >
+              {{ t('settings.cancel') }}
+            </button>
+            <button
+              @click="copyModel"
+              :disabled="isCopyingModel || !copyModelDestination.trim()"
+              class="px-4 py-2 bg-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
+            >
+              {{ isCopyingModel ? $t('settings.copying') : $t('settings.copyModelButton') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between gap-3">
         <div class="flex flex-col">
           <span v-if="saveStatus === 'ok'" class="text-green-400 text-xs flex items-center gap-1">
@@ -1826,6 +1878,12 @@ const createModelParams = ref({
   num_ctx: null
 })
 
+// Copy model state
+const showCopyModelModal = ref(false)
+const isCopyingModel = ref(false)
+const copyModelSource = ref('')
+const copyModelDestination = ref('')
+
 // Check if the current endpoint is an Ollama endpoint
 const isOllamaEndpoint = (url) => {
   if (!url) return false
@@ -2048,6 +2106,54 @@ const createCustomModel = async () => {
     showError(t('settings.createModelFailed', { error: String(err) }))
   } finally {
     isCreatingModel.value = false
+  }
+}
+
+// Open copy model modal for a specific model
+const openCopyModelModal = (modelName) => {
+  copyModelSource.value = modelName
+  copyModelDestination.value = ''
+  showCopyModelModal.value = true
+}
+
+// Copy a model from Ollama
+const copyModel = async () => {
+  if (!copyModelSource.value || !copyModelDestination.value.trim()) {
+    return
+  }
+
+  if (!settings.value.api_base_url) {
+    showError(t('settings.apiBaseUrlRequired'))
+    return
+  }
+
+  isCopyingModel.value = true
+
+  try {
+    const result = await invoke('copy_ollama_model', {
+      baseUrl: settings.value.api_base_url,
+      source: copyModelSource.value,
+      destination: copyModelDestination.value.trim()
+    })
+
+    if (result.success) {
+      showSuccess(t('settings.copyModelSuccess', {
+        source: copyModelSource.value,
+        destination: copyModelDestination.value.trim()
+      }))
+      showCopyModelModal.value = false
+      copyModelSource.value = ''
+      copyModelDestination.value = ''
+      // Refresh the model list
+      await fetchOllamaModels()
+    } else {
+      showError(t('settings.copyModelFailed', { error: result.message }))
+    }
+  } catch (err) {
+    console.error('Failed to copy model:', err)
+    showError(t('settings.copyModelFailed', { error: String(err) }))
+  } finally {
+    isCopyingModel.value = false
   }
 }
 
