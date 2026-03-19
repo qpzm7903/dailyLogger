@@ -12,6 +12,9 @@ use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
+#[cfg(target_os = "windows")]
+use std::process::Command;
+
 /// Build tooltip text for tray icon showing status and today's record count.
 #[cfg(feature = "screenshot")]
 fn build_tray_tooltip() -> String {
@@ -67,11 +70,16 @@ fn get_crash_log_path() -> std::path::PathBuf {
 /// This is called from the panic hook to ensure crash info is captured
 /// even when stderr is not visible (Windows GUI mode).
 fn write_crash_log(panic_info: &std::panic::PanicHookInfo) {
+    write_crash_message(&panic_info.to_string());
+}
+
+/// Write a crash message to the crash log file.
+fn write_crash_message(message: &str) {
     let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
     let crash_message = format!(
-        "[{}] FATAL CRASH\n{}\nVersion: {}\nPlatform: {}\n\n",
+        "[{}] FATAL ERROR\n{}\nVersion: {}\nPlatform: {}\n\n",
         timestamp,
-        panic_info,
+        message,
         env!("CARGO_PKG_VERSION"),
         std::env::consts::OS
     );
@@ -96,6 +104,72 @@ fn write_crash_log(panic_info: &std::panic::PanicHookInfo) {
 
     // Also print to stderr (may be invisible on Windows GUI mode)
     eprintln!("{}", crash_message);
+}
+
+/// Check if WebView2 is installed on Windows.
+/// Returns true if WebView2 is available, false otherwise.
+#[cfg(target_os = "windows")]
+fn is_webview2_installed() -> bool {
+    // Check for WebView2 via registry or by trying to find the DLL
+    // Method 1: Check registry for installed WebView2
+    if let Ok(output) = Command::new("reg")
+        .args([
+            "query",
+            "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+            "/v",
+            "pv",
+        ])
+        .output()
+    {
+        if output.status.success() {
+            return true;
+        }
+    }
+
+    // Method 2: Check user-specific registry
+    if let Ok(output) = Command::new("reg")
+        .args([
+            "query",
+            "HKCU\\SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+            "/v",
+            "pv",
+        ])
+        .output()
+    {
+        if output.status.success() {
+            return true;
+        }
+    }
+
+    // Method 3: Check for the fixed version DLL path
+    let webview2_paths = [
+        // Fixed version paths
+        std::env::var("WEBVIEW2_BROWSER_EXECUTABLE_FOLDER").unwrap_or_default(),
+        // Common installation paths
+        format!(
+            "{}\\Microsoft\\EdgeWebView\\Application",
+            std::env::var("ProgramFiles(x86)")
+                .unwrap_or_else(|_| "C:\\Program Files (x86)".to_string())
+        ),
+        format!(
+            "{}\\Microsoft\\EdgeWebView\\Application",
+            std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string())
+        ),
+    ];
+
+    for path in &webview2_paths {
+        if !path.is_empty() && std::path::Path::new(path).exists() {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
+fn is_webview2_installed() -> bool {
+    true // WebView2 is only required on Windows
 }
 
 fn setup_logging() -> Option<WorkerGuard> {
@@ -153,13 +227,34 @@ fn main() {
     // background logging thread and discards all subsequent log messages.
     let _log_guard = setup_logging();
 
+    // Check WebView2 availability on Windows
+    #[cfg(target_os = "windows")]
+    {
+        if !is_webview2_installed() {
+            let error_msg = "WebView2 runtime is not installed.\n\n\
+                DailyLogger requires Microsoft Edge WebView2 runtime to run.\n\n\
+                Please install WebView2 from:\n\
+                https://developer.microsoft.com/en-us/microsoft-edge/webview2/\n\n\
+                Or use the installer version (*-setup.exe) which will automatically\n\
+                install WebView2 for you.";
+
+            tracing::error!("{}", error_msg);
+            write_crash_message(error_msg);
+
+            // On Windows GUI mode, we can't show a message box easily without
+            // additional dependencies. Write to crash log and exit.
+            std::process::exit(1);
+        }
+    }
+
     if let Err(e) = init_app() {
         tracing::error!("Failed to initialize app: {}", e);
         eprintln!("Fatal: Failed to initialize app: {}", e);
+        write_crash_message(&format!("Failed to initialize app: {}", e));
         return;
     }
 
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -492,6 +587,11 @@ fn main() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+
+    if let Err(e) = result {
+        tracing::error!("Tauri application error: {}", e);
+        write_crash_message(&format!("Tauri application error: {}", e));
+        std::process::exit(1);
+    }
 }
