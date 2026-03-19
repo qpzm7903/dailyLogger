@@ -11,50 +11,49 @@
 //! 4. Plugin can register hooks and extend functionality
 //! 5. Plugin's `on_unload` hook is called when the app shuts down
 //!
-//! # Example Plugin
+//! # Plugin Discovery
 //!
-//! ```ignore
-//! use daily_logger_lib::plugin::{Plugin, PluginContext, PluginMetadata};
+//! Plugins are discovered by scanning the plugins directory for subdirectories
+//! containing a `plugin.json` manifest file. The manifest contains metadata
+//! about the plugin and its capabilities.
 //!
-//! struct MyPlugin;
+//! # Example Plugin Manifest (plugin.json)
 //!
-//! impl Plugin for MyPlugin {
-//!     fn metadata(&self) -> PluginMetadata {
-//!         PluginMetadata {
-//!             name: "My Plugin".to_string(),
-//!             version: "1.0.0".to_string(),
-//!             description: "A custom plugin".to_string(),
-//!             author: "Author Name".to_string(),
-//!         }
-//!     }
-//!
-//!     fn on_load(&mut self, context: &PluginContext) -> Result<(), String> {
-//!         // Initialize plugin
-//!         Ok(())
-//!     }
-//!
-//!     fn on_unload(&mut self) -> Result<(), String> {
-//!         // Cleanup
-//!         Ok(())
-//!     }
+//! ```json
+//! {
+//!   "id": "com.example.my-plugin",
+//!   "name": "My Plugin",
+//!   "version": "1.0.0",
+//!   "description": "A custom plugin",
+//!   "author": "Author Name",
+//!   "min_app_version": "1.18.0",
+//!   "enabled": true
 //! }
 //! ```
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs;
+use std::io;
+use std::path::Path;
 
 /// Metadata describing a plugin.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginMetadata {
     /// Unique identifier for the plugin (e.g., "com.example.my-plugin")
+    #[serde(default)]
     pub id: String,
     /// Human-readable name of the plugin
+    #[serde(default)]
     pub name: String,
     /// Version string (semver recommended)
+    #[serde(default = "default_version")]
     pub version: String,
     /// Brief description of what the plugin does
+    #[serde(default)]
     pub description: String,
     /// Author or organization name
+    #[serde(default)]
     pub author: String,
     /// Minimum DailyLogger version required (semver)
     #[serde(default)]
@@ -65,6 +64,164 @@ pub struct PluginMetadata {
     /// Plugin license
     #[serde(default)]
     pub license: Option<String>,
+}
+
+fn default_version() -> String {
+    "1.0.0".to_string()
+}
+
+/// Plugin manifest loaded from plugin.json file.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginManifest {
+    /// Plugin metadata
+    #[serde(flatten)]
+    pub metadata: PluginMetadata,
+    /// Whether the plugin is enabled
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+    /// Plugin entry point (for future scripting support)
+    #[serde(default)]
+    pub entry_point: Option<String>,
+    /// List of plugin dependencies (IDs)
+    #[serde(default)]
+    pub dependencies: Vec<String>,
+}
+
+fn default_enabled() -> bool {
+    true
+}
+
+impl Default for PluginManifest {
+    fn default() -> Self {
+        Self {
+            metadata: PluginMetadata {
+                id: String::new(),
+                name: String::new(),
+                version: "1.0.0".to_string(),
+                description: String::new(),
+                author: String::new(),
+                min_app_version: None,
+                homepage: None,
+                license: None,
+            },
+            enabled: true,
+            entry_point: None,
+            dependencies: Vec::new(),
+        }
+    }
+}
+
+/// Status of a discovered plugin.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PluginStatus {
+    /// Plugin is ready to be loaded
+    Ready,
+    /// Plugin is disabled in manifest
+    Disabled,
+    /// Plugin has an error (e.g., invalid manifest)
+    Error(String),
+}
+
+/// A discovered plugin with its manifest and status.
+#[derive(Debug, Clone)]
+pub struct DiscoveredPlugin {
+    /// Path to the plugin directory
+    pub path: PathBuf,
+    /// Plugin manifest
+    pub manifest: PluginManifest,
+    /// Plugin status
+    pub status: PluginStatus,
+}
+
+use std::path::PathBuf;
+
+/// Discovers plugins in a directory.
+///
+/// Scans the given directory for subdirectories containing a `plugin.json` manifest.
+/// Returns a list of discovered plugins with their manifests and status.
+pub fn discover_plugins(plugins_dir: &Path) -> io::Result<Vec<DiscoveredPlugin>> {
+    let mut plugins = Vec::new();
+
+    if !plugins_dir.exists() {
+        return Ok(plugins);
+    }
+
+    for entry in fs::read_dir(plugins_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if !path.is_dir() {
+            continue;
+        }
+
+        let manifest_path = path.join("plugin.json");
+        if !manifest_path.exists() {
+            continue;
+        }
+
+        let discovered = match load_manifest(&manifest_path) {
+            Ok(manifest) => {
+                let status = if manifest.enabled {
+                    PluginStatus::Ready
+                } else {
+                    PluginStatus::Disabled
+                };
+                DiscoveredPlugin {
+                    path,
+                    manifest,
+                    status,
+                }
+            }
+            Err(e) => DiscoveredPlugin {
+                path,
+                manifest: PluginManifest::default(),
+                status: PluginStatus::Error(e),
+            },
+        };
+
+        plugins.push(discovered);
+    }
+
+    Ok(plugins)
+}
+
+/// Loads a plugin manifest from a file.
+pub fn load_manifest(path: &Path) -> Result<PluginManifest, String> {
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Failed to read manifest: {}", e))?;
+
+    let manifest: PluginManifest =
+        serde_json::from_str(&content).map_err(|e| format!("Invalid manifest JSON: {}", e))?;
+
+    // Validate required fields
+    if manifest.metadata.id.is_empty() {
+        return Err("Plugin ID is required".to_string());
+    }
+    if manifest.metadata.name.is_empty() {
+        return Err("Plugin name is required".to_string());
+    }
+
+    Ok(manifest)
+}
+
+/// Saves a plugin manifest to a file.
+pub fn save_manifest(manifest: &PluginManifest, path: &Path) -> io::Result<()> {
+    let content = serde_json::to_string_pretty(manifest)?;
+    fs::write(path, content)
+}
+
+/// Returns the default plugins directory path.
+pub fn get_plugins_directory() -> PathBuf {
+    crate::get_app_data_dir().join("plugins")
+}
+
+/// Creates the plugins directory if it doesn't exist.
+pub fn ensure_plugins_directory() -> io::Result<PathBuf> {
+    let plugins_dir = get_plugins_directory();
+    if !plugins_dir.exists() {
+        fs::create_dir_all(&plugins_dir)?;
+    }
+    Ok(plugins_dir)
 }
 
 /// Context provided to plugins during lifecycle hooks.
@@ -426,5 +583,189 @@ mod tests {
         assert_eq!(metadata.id, deserialized.id);
         assert_eq!(metadata.name, deserialized.name);
         assert_eq!(metadata.version, deserialized.version);
+    }
+
+    #[test]
+    fn test_plugin_manifest_serialization() {
+        let manifest = PluginManifest {
+            metadata: PluginMetadata {
+                id: "com.example.test".to_string(),
+                name: "Test Plugin".to_string(),
+                version: "1.0.0".to_string(),
+                description: "A test plugin".to_string(),
+                author: "Test Author".to_string(),
+                min_app_version: Some("1.18.0".to_string()),
+                homepage: None,
+                license: Some("MIT".to_string()),
+            },
+            enabled: true,
+            entry_point: Some("index.js".to_string()),
+            dependencies: vec!["com.example.other".to_string()],
+        };
+
+        let json = serde_json::to_string(&manifest).unwrap();
+        let deserialized: PluginManifest = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(manifest.metadata.id, deserialized.metadata.id);
+        assert_eq!(manifest.enabled, deserialized.enabled);
+        assert_eq!(manifest.entry_point, deserialized.entry_point);
+        assert_eq!(manifest.dependencies.len(), deserialized.dependencies.len());
+    }
+
+    #[test]
+    fn test_load_manifest_valid() {
+        use std::io::Write;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manifest_path = temp_dir.path().join("plugin.json");
+
+        let manifest_content = r#"{
+            "id": "com.example.test",
+            "name": "Test Plugin",
+            "version": "1.0.0",
+            "description": "A test plugin",
+            "author": "Test Author",
+            "enabled": true
+        }"#;
+
+        let mut file = std::fs::File::create(&manifest_path).unwrap();
+        file.write_all(manifest_content.as_bytes()).unwrap();
+
+        let loaded = load_manifest(&manifest_path).unwrap();
+        assert_eq!(loaded.metadata.id, "com.example.test");
+        assert_eq!(loaded.metadata.name, "Test Plugin");
+        assert!(loaded.enabled);
+    }
+
+    #[test]
+    fn test_load_manifest_missing_id() {
+        use std::io::Write;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manifest_path = temp_dir.path().join("plugin.json");
+
+        let manifest_content = r#"{
+            "name": "Test Plugin",
+            "version": "1.0.0",
+            "description": "A test plugin",
+            "author": "Test Author"
+        }"#;
+
+        let mut file = std::fs::File::create(&manifest_path).unwrap();
+        file.write_all(manifest_content.as_bytes()).unwrap();
+
+        let result = load_manifest(&manifest_path);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Plugin ID is required"));
+    }
+
+    #[test]
+    fn test_load_manifest_invalid_json() {
+        use std::io::Write;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manifest_path = temp_dir.path().join("plugin.json");
+
+        let mut file = std::fs::File::create(&manifest_path).unwrap();
+        file.write_all(b"not valid json").unwrap();
+
+        let result = load_manifest(&manifest_path);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid manifest JSON"));
+    }
+
+    #[test]
+    fn test_discover_plugins_empty_dir() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let plugins = discover_plugins(temp_dir.path()).unwrap();
+        assert!(plugins.is_empty());
+    }
+
+    #[test]
+    fn test_discover_plugins_with_valid_plugin() {
+        use std::io::Write;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let plugin_dir = temp_dir.path().join("test-plugin");
+        std::fs::create_dir(&plugin_dir).unwrap();
+
+        let manifest_path = plugin_dir.join("plugin.json");
+        let manifest_content = r#"{
+            "id": "com.example.test",
+            "name": "Test Plugin",
+            "version": "1.0.0",
+            "description": "A test plugin",
+            "author": "Test Author"
+        }"#;
+
+        let mut file = std::fs::File::create(&manifest_path).unwrap();
+        file.write_all(manifest_content.as_bytes()).unwrap();
+
+        let plugins = discover_plugins(temp_dir.path()).unwrap();
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].manifest.metadata.id, "com.example.test");
+        assert_eq!(plugins[0].status, PluginStatus::Ready);
+    }
+
+    #[test]
+    fn test_discover_plugins_disabled_plugin() {
+        use std::io::Write;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let plugin_dir = temp_dir.path().join("disabled-plugin");
+        std::fs::create_dir(&plugin_dir).unwrap();
+
+        let manifest_path = plugin_dir.join("plugin.json");
+        let manifest_content = r#"{
+            "id": "com.example.disabled",
+            "name": "Disabled Plugin",
+            "version": "1.0.0",
+            "description": "A disabled plugin",
+            "author": "Test Author",
+            "enabled": false
+        }"#;
+
+        let mut file = std::fs::File::create(&manifest_path).unwrap();
+        file.write_all(manifest_content.as_bytes()).unwrap();
+
+        let plugins = discover_plugins(temp_dir.path()).unwrap();
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].status, PluginStatus::Disabled);
+    }
+
+    #[test]
+    fn test_discover_plugins_invalid_manifest() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let plugin_dir = temp_dir.path().join("broken-plugin");
+        std::fs::create_dir(&plugin_dir).unwrap();
+
+        let manifest_path = plugin_dir.join("plugin.json");
+        std::fs::write(&manifest_path, "not json").unwrap();
+
+        let plugins = discover_plugins(temp_dir.path()).unwrap();
+        assert_eq!(plugins.len(), 1);
+        assert!(matches!(plugins[0].status, PluginStatus::Error(_)));
+    }
+
+    #[test]
+    fn test_save_manifest() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manifest_path = temp_dir.path().join("plugin.json");
+
+        let manifest = PluginManifest {
+            metadata: PluginMetadata {
+                id: "com.example.test".to_string(),
+                name: "Test Plugin".to_string(),
+                version: "1.0.0".to_string(),
+                description: "A test plugin".to_string(),
+                author: "Test Author".to_string(),
+                min_app_version: None,
+                homepage: None,
+                license: None,
+            },
+            enabled: true,
+            entry_point: None,
+            dependencies: Vec::new(),
+        };
+
+        save_manifest(&manifest, &manifest_path).unwrap();
+
+        let loaded = load_manifest(&manifest_path).unwrap();
+        assert_eq!(loaded.metadata.id, manifest.metadata.id);
     }
 }
