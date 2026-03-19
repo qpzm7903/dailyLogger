@@ -144,6 +144,134 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
     })
 }
 
+/// Result structure for model pull operation.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PullModelResult {
+    pub success: bool,
+    pub message: String,
+    pub status: String,
+}
+
+/// Result structure for model delete operation.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeleteModelResult {
+    pub success: bool,
+    pub message: String,
+}
+
+/// Pull (download) a model from Ollama registry.
+///
+/// Uses Ollama's native API endpoint `/api/pull` to download a model.
+/// This is an async operation that may take a long time for large models.
+#[command]
+pub async fn pull_ollama_model(
+    base_url: String,
+    model_name: String,
+) -> Result<PullModelResult, String> {
+    let client = Client::builder()
+        .timeout(Duration::from_secs(600)) // 10 minutes timeout for large models
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    // Normalize URL: remove /v1 suffix if present, then append /api/pull
+    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let url = format!("{}/api/pull", base);
+
+    tracing::info!("Pulling Ollama model '{}' from: {}", model_name, url);
+
+    let request_body = serde_json::json!({
+        "name": model_name,
+        "stream": false
+    });
+
+    let response = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Ok(PullModelResult {
+            success: false,
+            message: format!("Failed to pull model ({}): {}", status, body),
+            status: "error".to_string(),
+        });
+    }
+
+    // Parse the response to get status
+    let json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let status = json["status"].as_str().unwrap_or("completed").to_string();
+    let message = if status == "success" || status == "completed" {
+        format!("Model '{}' pulled successfully", model_name)
+    } else {
+        format!("Model pull status: {}", status)
+    };
+
+    tracing::info!("Pull result: {}", message);
+
+    Ok(PullModelResult {
+        success: true,
+        message,
+        status,
+    })
+}
+
+/// Delete a model from Ollama.
+///
+/// Uses Ollama's native API endpoint `/api/delete` to remove an installed model.
+#[command]
+pub async fn delete_ollama_model(
+    base_url: String,
+    model_name: String,
+) -> Result<DeleteModelResult, String> {
+    let client = Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    // Normalize URL: remove /v1 suffix if present, then append /api/delete
+    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let url = format!("{}/api/delete", base);
+
+    tracing::info!("Deleting Ollama model '{}' from: {}", model_name, url);
+
+    let request_body = serde_json::json!({
+        "name": model_name
+    });
+
+    let response = client
+        .delete(&url)
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Ok(DeleteModelResult {
+            success: false,
+            message: format!("Failed to delete model ({}): {}", status, body),
+        });
+    }
+
+    tracing::info!("Model '{}' deleted successfully", model_name);
+
+    Ok(DeleteModelResult {
+        success: true,
+        message: format!("Model '{}' deleted successfully", model_name),
+    })
+}
+
 /// Test API connection for both OpenAI and Ollama endpoints.
 ///
 /// This function detects if the endpoint is Ollama and adjusts the request accordingly:
@@ -348,5 +476,48 @@ mod tests {
         let error = format_connection_error("some other error", true);
         assert!(error.contains("连接失败"));
         assert!(error.contains("some other error"));
+    }
+
+    // ── Tests for PullModelResult and DeleteModelResult structs ──
+
+    #[test]
+    fn pull_model_result_serialization() {
+        let result = PullModelResult {
+            success: true,
+            message: "Model pulled".to_string(),
+            status: "completed".to_string(),
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"success\":true"));
+        assert!(json.contains("\"message\":\"Model pulled\""));
+        assert!(json.contains("\"status\":\"completed\""));
+    }
+
+    #[test]
+    fn delete_model_result_serialization() {
+        let result = DeleteModelResult {
+            success: true,
+            message: "Model deleted".to_string(),
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"success\":true"));
+        assert!(json.contains("\"message\":\"Model deleted\""));
+    }
+
+    #[test]
+    fn pull_model_result_deserialization() {
+        let json = r#"{"success":false,"message":"Failed to pull","status":"error"}"#;
+        let result: PullModelResult = serde_json::from_str(json).unwrap();
+        assert!(!result.success);
+        assert_eq!(result.message, "Failed to pull");
+        assert_eq!(result.status, "error");
+    }
+
+    #[test]
+    fn delete_model_result_deserialization() {
+        let json = r#"{"success":false,"message":"Model not found"}"#;
+        let result: DeleteModelResult = serde_json::from_str(json).unwrap();
+        assert!(!result.success);
+        assert_eq!(result.message, "Model not found");
     }
 }

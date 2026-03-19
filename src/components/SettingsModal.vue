@@ -71,19 +71,62 @@
                 <span v-if="connectionTestResult.latency_ms">({{ connectionTestResult.latency_ms }}ms)</span>
               </span>
               <!-- Ollama model list -->
-              <div v-if="isOllama && ollamaModels.length > 0" class="mt-3">
-                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.selectModel') }}</label>
-                <div class="flex flex-wrap gap-2">
+              <div v-if="isOllama" class="mt-3">
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs text-gray-300">{{ $t('settings.selectModel') }}</label>
                   <button
-                    v-for="model in ollamaModels"
-                    :key="model"
-                    @click="selectOllamaModel(model)"
-                    class="px-2 py-1 text-xs rounded border transition-colors"
-                    :class="settings.model_name === model ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+                    @click="fetchOllamaModels"
+                    :disabled="isLoadingOllamaModels"
+                    type="button"
+                    class="text-xs text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
                   >
-                    {{ model }}<span v-if="getModelSize(model)" class="text-gray-400 ml-1">({{ getModelSize(model) }})</span>
+                    {{ isLoadingOllamaModels ? '...' : $t('settings.refreshModels') }}
                   </button>
                 </div>
+
+                <!-- Pull model input -->
+                <div class="flex gap-2 mb-2">
+                  <input
+                    v-model="pullModelName"
+                    type="text"
+                    :placeholder="$t('settings.pullModelPlaceholder')"
+                    class="flex-1 bg-darker border border-gray-700 rounded px-2 py-1 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                  />
+                  <button
+                    @click="pullModel"
+                    :disabled="isPullingModel || !pullModelName"
+                    type="button"
+                    class="px-2 py-1 text-xs rounded bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {{ isPullingModel ? $t('settings.pulling') : $t('settings.pullModel') }}
+                  </button>
+                </div>
+
+                <!-- Model list -->
+                <div v-if="ollamaModels.length > 0" class="flex flex-wrap gap-2">
+                  <div
+                    v-for="model in ollamaModels"
+                    :key="model"
+                    class="flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors"
+                    :class="settings.model_name === model ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+                  >
+                    <button
+                      @click="selectOllamaModel(model)"
+                      type="button"
+                      class="hover:text-white transition-colors"
+                    >
+                      {{ model }}<span v-if="getModelSize(model)" class="text-gray-400 ml-1">({{ getModelSize(model) }})</span>
+                    </button>
+                    <button
+                      @click="deleteModel(model)"
+                      :disabled="isDeletingModel === model"
+                      type="button"
+                      class="ml-1 text-gray-400 hover:text-red-400 disabled:opacity-50 transition-colors"
+                      :title="$t('settings.deleteModel')"
+                    >×</button>
+                  </div>
+                </div>
+                <p v-else-if="!isLoadingOllamaModels" class="text-xs text-gray-500">{{ $t('settings.noModelsFound') }}</p>
               </div>
               <p v-if="ollamaModelError" class="text-xs text-red-400 mt-1">{{ ollamaModelError }}</p>
             </div>
@@ -1597,6 +1640,9 @@ const ollamaModels = ref([])
 const ollamaModelDetails = ref([])
 const isLoadingOllamaModels = ref(false)
 const ollamaModelError = ref('')
+const pullModelName = ref('')
+const isPullingModel = ref(false)
+const isDeletingModel = ref('')
 
 // Check if the current endpoint is an Ollama endpoint
 const isOllamaEndpoint = (url) => {
@@ -1650,6 +1696,76 @@ const fetchOllamaModels = async () => {
 // Select an Ollama model
 const selectOllamaModel = (modelName) => {
   settings.value.model_name = modelName
+}
+
+// Pull a model from Ollama registry
+const pullModel = async () => {
+  if (!pullModelName.value.trim()) {
+    showError(t('settings.modelNameRequired'))
+    return
+  }
+
+  if (!settings.value.api_base_url) {
+    showError(t('settings.apiBaseUrlRequired'))
+    return
+  }
+
+  isPullingModel.value = true
+  ollamaModelError.value = ''
+
+  try {
+    const result = await invoke('pull_ollama_model', {
+      baseUrl: settings.value.api_base_url,
+      modelName: pullModelName.value.trim()
+    })
+
+    if (result.success) {
+      showSuccess(result.message)
+      pullModelName.value = ''
+      // Refresh the model list
+      await fetchOllamaModels()
+    } else {
+      showError(result.message)
+    }
+  } catch (err) {
+    console.error('Failed to pull model:', err)
+    showError(err)
+  } finally {
+    isPullingModel.value = false
+  }
+}
+
+// Delete a model from Ollama
+const deleteModel = async (modelName) => {
+  if (!confirm(t('settings.confirmDeleteModel', { model: modelName }))) {
+    return
+  }
+
+  isDeletingModel.value = modelName
+
+  try {
+    const result = await invoke('delete_ollama_model', {
+      baseUrl: settings.value.api_base_url,
+      modelName: modelName
+    })
+
+    if (result.success) {
+      showSuccess(result.message)
+      // Refresh the model list
+      await fetchOllamaModels()
+      // Clear model selection if deleted model was selected
+      if (settings.value.model_name === modelName) {
+        settings.value.model_name = ''
+      }
+    } else {
+      showError(result.message)
+    }
+  } catch (err) {
+    console.error('Failed to delete model:', err)
+    showError(err)
+  } finally {
+    isDeletingModel.value = ''
+  }
 }
 
 // Format model size to human readable format
