@@ -248,22 +248,70 @@ fn setup_logging() -> Option<WorkerGuard> {
     }
 }
 
+fn write_diagnostic_file(message: &str) {
+    // Try to write a diagnostic file to help debug Windows startup issues
+    // This should be called early in the startup process
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let diagnostic_message = format!("[{}] {}\n", timestamp, message);
+
+    // Try multiple locations in order of preference
+    let locations: Vec<std::path::PathBuf> = vec![
+        // 1. Next to executable (portable mode)
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join("dailylogger-startup.log")))
+            .unwrap_or_default(),
+        // 2. App data directory
+        get_app_data_dir().join("startup.log"),
+        // 3. User home directory as fallback
+        dirs::home_dir()
+            .map(|h| h.join("dailylogger-startup.log"))
+            .unwrap_or_default(),
+    ];
+
+    for location in &locations {
+        if location.as_os_str().is_empty() {
+            continue;
+        }
+        match OpenOptions::new().create(true).append(true).open(location) {
+            Ok(mut file) => {
+                if file.write_all(diagnostic_message.as_bytes()).is_ok() {
+                    return; // Successfully wrote
+                }
+            }
+            Err(_) => continue,
+        }
+    }
+    // Last resort: try to print to stderr (may be invisible on Windows GUI mode)
+    eprintln!("{}", diagnostic_message);
+}
+
 fn main() {
+    // Write diagnostic file IMMEDIATELY - before anything else
+    write_diagnostic_file("Application starting...");
+
     // Set panic hook FIRST so any panic during initialization is logged to a crash file.
     // With `panic = "abort"` in release, the hook runs before process termination.
     // This ensures crash info is captured even on Windows where stderr is invisible.
     std::panic::set_hook(Box::new(|panic_info| {
+        write_diagnostic_file(&format!("PANIC: {}", panic_info));
         write_crash_log(panic_info);
     }));
+
+    write_diagnostic_file("Panic hook installed");
 
     // _log_guard must live until main() returns; dropping it early stops the
     // background logging thread and discards all subsequent log messages.
     let _log_guard = setup_logging();
 
+    write_diagnostic_file("Logging setup complete");
+
     // Check WebView2 availability on Windows
     #[cfg(target_os = "windows")]
     {
+        write_diagnostic_file("Checking WebView2...");
         if !is_webview2_installed() {
+            write_diagnostic_file("WebView2 NOT found - showing error");
             let error_msg = "DailyLogger requires Microsoft Edge WebView2 Runtime to run.\n\n\
                 Please download and install WebView2 Runtime from:\n\
                 https://developer.microsoft.com/en-us/microsoft-edge/webview2/\n\n\
@@ -280,15 +328,20 @@ fn main() {
 
             std::process::exit(1);
         }
+        write_diagnostic_file("WebView2 found");
     }
 
+    write_diagnostic_file("Initializing app...");
     if let Err(e) = init_app() {
+        write_diagnostic_file(&format!("Failed to initialize app: {}", e));
         tracing::error!("Failed to initialize app: {}", e);
         eprintln!("Fatal: Failed to initialize app: {}", e);
         write_crash_message(&format!("Failed to initialize app: {}", e));
         return;
     }
+    write_diagnostic_file("App initialized successfully");
 
+    write_diagnostic_file("Building Tauri application...");
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -388,10 +441,12 @@ fn main() {
             daily_logger_lib::plugin::open_plugins_directory,
         ])
         .setup(|app| {
+            write_diagnostic_file("Tauri setup started");
             tracing::info!("Application setup complete");
 
             // Start background network connectivity monitor
             daily_logger_lib::network_status::start_network_monitor(app.handle().clone());
+            write_diagnostic_file("Network monitor started");
 
             #[cfg(desktop)]
             {
@@ -622,15 +677,22 @@ fn main() {
                         }
                     })
                     .build(app)?;
+                write_diagnostic_file("Tray icon created successfully");
             }
 
+            write_diagnostic_file("Tauri setup completed - window should be visible");
             Ok(())
         })
         .run(tauri::generate_context!());
 
+    write_diagnostic_file("Tauri run completed");
+
     if let Err(e) = result {
+        write_diagnostic_file(&format!("Tauri application error: {}", e));
         tracing::error!("Tauri application error: {}", e);
         write_crash_message(&format!("Tauri application error: {}", e));
         std::process::exit(1);
     }
+
+    write_diagnostic_file("Application exiting normally");
 }
