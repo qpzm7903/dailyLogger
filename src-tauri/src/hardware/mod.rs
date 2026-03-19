@@ -124,27 +124,56 @@ pub struct MonitorSummary {
 /// Get the platform-specific window info provider.
 ///
 /// This returns a static reference to avoid repeated allocations.
+/// On mobile platforms (Android/iOS), returns a stub provider that returns
+/// empty window info (mobile doesn't have traditional window management).
 pub fn get_window_provider() -> &'static dyn WindowInfoProvider {
-    platform::get_window_provider()
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        mobile::get_mobile_window_provider()
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        platform::get_window_provider()
+    }
 }
 
 /// Get the platform-specific screenshot provider.
 ///
 /// This returns a static reference to avoid repeated allocations.
+/// On mobile platforms, returns a stub provider that errors on capture
+/// (screenshot requires special permissions/APIs on mobile).
 pub fn get_screenshot_provider() -> &'static dyn ScreenshotProvider {
-    platform::get_screenshot_provider()
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        mobile::get_mobile_screenshot_provider()
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        platform::get_screenshot_provider()
+    }
 }
 
 /// Get the platform-specific display provider.
 ///
 /// This returns a static reference to avoid repeated allocations.
+/// On mobile platforms, returns a provider that reports a single screen.
 pub fn get_display_provider() -> &'static dyn DisplayProvider {
-    platform::get_display_provider()
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        mobile::get_mobile_display_provider()
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        platform::get_display_provider()
+    }
 }
 
 // ─── Platform-specific implementations ───────────────────────────────────────
 
 mod platform;
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+mod mobile;
 
 #[cfg(test)]
 mod mock;

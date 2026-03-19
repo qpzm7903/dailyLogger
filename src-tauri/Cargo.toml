@@ -45,11 +45,16 @@ walkdir = "2"
 [dev-dependencies]
 serial_test = "3"
 
-[target.'cfg(not(target_os = "windows"))'.dependencies]
+# Desktop-only dependencies
+[target.'cfg(desktop)'.dependencies]
+# System tray is desktop-only
+# tauri tray-icon feature is already enabled above
+
+# Mobile platforms don't support global shortcuts (app runs in foreground only)
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 xcap = { version = "0.9", optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-xcap = { version = "0.9", optional = true }
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_UI_WindowsAndMessaging",
