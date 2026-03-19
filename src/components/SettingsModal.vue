@@ -127,6 +127,45 @@
                   </div>
                 </div>
                 <p v-else-if="!isLoadingOllamaModels" class="text-xs text-gray-500">{{ $t('settings.noModelsFound') }}</p>
+
+                <!-- Running models status -->
+                <div v-if="isOllama" class="mt-3 pt-3 border-t border-gray-700">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-gray-400">{{ $t('settings.runningModels') }}</span>
+                    <button
+                      @click="fetchRunningModels"
+                      :disabled="isLoadingRunningModels"
+                      type="button"
+                      class="text-xs text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
+                    >
+                      {{ isLoadingRunningModels ? '...' : $t('settings.refreshModels') }}
+                    </button>
+                  </div>
+                  <div v-if="runningModels.length > 0" class="space-y-1">
+                    <div
+                      v-for="model in runningModels"
+                      :key="model.name"
+                      class="flex items-center justify-between px-2 py-1 text-xs bg-green-900/30 border border-green-800 rounded"
+                    >
+                      <span class="text-green-300">{{ model.name }}</span>
+                      <span v-if="model.size_vram" class="text-green-400 text-xs">
+                        {{ $t('settings.vramUsage', { size: formatModelSize(model.size_vram) }) }}
+                      </span>
+                    </div>
+                  </div>
+                  <p v-else-if="!isLoadingRunningModels" class="text-xs text-gray-500">{{ $t('settings.noRunningModels') }}</p>
+                </div>
+
+                <!-- Create custom model button -->
+                <div v-if="isOllama && ollamaModels.length > 0" class="mt-3 pt-3 border-t border-gray-700">
+                  <button
+                    @click="showCreateModelModal = true"
+                    type="button"
+                    class="w-full px-3 py-2 text-xs bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 rounded-lg transition-colors"
+                  >
+                    {{ $t('settings.createCustomModel') }}
+                  </button>
+                </div>
               </div>
 
               <!-- Running models section -->
@@ -1004,6 +1043,86 @@
         </div>
       </div>
 
+      <!-- Create Custom Ollama Model Modal -->
+      <div v-if="showCreateModelModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @click.self="showCreateModelModal = false">
+        <div class="bg-dark rounded-2xl w-[450px] max-h-[80vh] overflow-hidden border border-gray-700">
+          <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">{{ $t('settings.createModelTitle') }}</h3>
+            <button @click="showCreateModelModal = false" class="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.createModelName') }}</label>
+              <input
+                v-model="createModelParams.name"
+                type="text"
+                :placeholder="$t('settings.createModelNamePlaceholder')"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.createModelBase') }}</label>
+              <select
+                v-model="createModelParams.from"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+              >
+                <option value="" disabled>{{ $t('settings.createModelBasePlaceholder') }}</option>
+                <option v-for="model in ollamaModels" :key="model" :value="model">{{ model }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.createModelSystem') }}</label>
+              <textarea
+                v-model="createModelParams.system"
+                rows="3"
+                :placeholder="$t('settings.createModelSystemPlaceholder')"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.createModelTemperature') }}</label>
+                <input
+                  v-model.number="createModelParams.temperature"
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  placeholder="0.7"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.createModelContext') }}</label>
+                <input
+                  v-model.number="createModelParams.num_ctx"
+                  type="number"
+                  min="512"
+                  step="512"
+                  placeholder="4096"
+                  class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+            <button
+              @click="showCreateModelModal = false"
+              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-200 transition-colors"
+            >
+              {{ t('settings.cancel') }}
+            </button>
+            <button
+              @click="createCustomModel"
+              :disabled="isCreatingModel || !createModelParams.name || !createModelParams.from"
+              class="px-4 py-2 bg-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
+            >
+              {{ isCreatingModel ? $t('settings.creating') : $t('settings.createCustomModel') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between gap-3">
         <div class="flex flex-col">
           <span v-if="saveStatus === 'ok'" class="text-green-400 text-xs flex items-center gap-1">
@@ -1682,6 +1801,17 @@ const isDeletingModel = ref('')
 const runningModels = ref([])
 const isLoadingRunningModels = ref(false)
 
+// Create custom model state
+const showCreateModelModal = ref(false)
+const isCreatingModel = ref(false)
+const createModelParams = ref({
+  name: '',
+  from: '',
+  system: '',
+  temperature: null,
+  num_ctx: null
+})
+
 // Check if the current endpoint is an Ollama endpoint
 const isOllamaEndpoint = (url) => {
   if (!url) return false
@@ -1824,7 +1954,6 @@ const getModelSize = (modelName) => {
 // Fetch running models from Ollama
 const fetchRunningModels = async () => {
   if (!settings.value.api_base_url) {
-    showError(t('settings.apiBaseUrlRequired'))
     return
   }
 
@@ -1846,6 +1975,63 @@ const fetchRunningModels = async () => {
     runningModels.value = []
   } finally {
     isLoadingRunningModels.value = false
+  }
+}
+
+// Create a custom model from a base model
+const createCustomModel = async () => {
+  if (!createModelParams.value.name || !createModelParams.value.from) {
+    return
+  }
+
+  if (!settings.value.api_base_url) {
+    showError(t('settings.apiBaseUrlRequired'))
+    return
+  }
+
+  isCreatingModel.value = true
+
+  try {
+    // Build parameters object (only include non-null values)
+    const parameters = {}
+    if (createModelParams.value.temperature !== null) {
+      parameters.temperature = createModelParams.value.temperature
+    }
+    if (createModelParams.value.num_ctx !== null) {
+      parameters.num_ctx = createModelParams.value.num_ctx
+    }
+
+    const result = await invoke('create_ollama_model', {
+      baseUrl: settings.value.api_base_url,
+      params: {
+        name: createModelParams.value.name.trim(),
+        from: createModelParams.value.from,
+        system: createModelParams.value.system || null,
+        parameters: Object.keys(parameters).length > 0 ? parameters : null
+      }
+    })
+
+    if (result.success) {
+      showSuccess(t('settings.createModelSuccess', { model: result.model_name }))
+      // Reset form
+      createModelParams.value = {
+        name: '',
+        from: '',
+        system: '',
+        temperature: null,
+        num_ctx: null
+      }
+      showCreateModelModal.value = false
+      // Refresh the model list
+      await fetchOllamaModels()
+    } else {
+      showError(t('settings.createModelFailed', { error: result.message }))
+    }
+  } catch (err) {
+    console.error('Failed to create model:', err)
+    showError(t('settings.createModelFailed', { error: String(err) }))
+  } finally {
+    isCreatingModel.value = false
   }
 }
 
