@@ -485,6 +485,119 @@ pub fn format_connection_error(error: &str, is_ollama: bool) -> String {
     }
 }
 
+/// Parameters for creating a custom Ollama model.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreateModelParams {
+    /// Name for the new model.
+    pub name: String,
+    /// Base model to use (e.g., "llama3.2").
+    pub from: String,
+    /// System prompt for the model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system: Option<String>,
+    /// Model parameters (temperature, num_ctx, etc.).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<std::collections::HashMap<String, serde_json::Value>>,
+    /// Template for the model (overrides base model's template).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub template: Option<String>,
+}
+
+/// Result structure for model create operation.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateModelResult {
+    pub success: bool,
+    pub message: String,
+    pub model_name: String,
+}
+
+/// Create a custom model in Ollama.
+///
+/// Uses Ollama's native API endpoint `/api/create` to create a custom model
+/// from a base model with optional custom system prompt and parameters.
+///
+/// # Example
+/// ```ignore
+/// let params = CreateModelParams {
+///     name: "my-custom-llama".to_string(),
+///     from: "llama3.2".to_string(),
+///     system: Some("You are a helpful assistant.".to_string()),
+///     parameters: Some({
+///         let mut p = HashMap::new();
+///         p.insert("temperature".to_string(), json!(0.7));
+///         p
+///     }),
+///     template: None,
+/// };
+/// let result = create_ollama_model("http://localhost:11434", params).await?;
+/// ```
+#[command]
+pub async fn create_ollama_model(
+    base_url: String,
+    params: CreateModelParams,
+) -> Result<CreateModelResult, String> {
+    let client = Client::builder()
+        .timeout(Duration::from_secs(300)) // 5 minutes timeout for model creation
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    // Normalize URL: remove /v1 suffix if present, then append /api/create
+    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let url = format!("{}/api/create", base);
+
+    let model_name = params.name.clone();
+    tracing::info!(
+        "Creating Ollama model '{}' from '{}' at: {}",
+        model_name,
+        params.from,
+        url
+    );
+
+    // Build request body
+    let mut request_body = serde_json::json!({
+        "name": params.name,
+        "from": params.from,
+        "stream": false,
+    });
+
+    // Add optional fields
+    if let Some(system) = &params.system {
+        request_body["system"] = serde_json::json!(system);
+    }
+    if let Some(parameters) = &params.parameters {
+        request_body["parameters"] = serde_json::json!(parameters);
+    }
+    if let Some(template) = &params.template {
+        request_body["template"] = serde_json::json!(template);
+    }
+
+    let response = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Ok(CreateModelResult {
+            success: false,
+            message: format!("Failed to create model ({}): {}", status, body),
+            model_name,
+        });
+    }
+
+    tracing::info!("Model '{}' created successfully", model_name);
+
+    Ok(CreateModelResult {
+        success: true,
+        message: format!("Model '{}' created successfully", model_name),
+        model_name,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -696,5 +809,103 @@ mod tests {
         assert!(!result.success);
         assert!(result.running_models.is_empty());
         assert_eq!(result.message, "No running models");
+    }
+
+    // ── Tests for CreateModelParams and CreateModelResult structs ──
+
+    #[test]
+    fn create_model_params_minimal() {
+        let params = CreateModelParams {
+            name: "my-model".to_string(),
+            from: "llama3.2".to_string(),
+            system: None,
+            parameters: None,
+            template: None,
+        };
+        let json = serde_json::to_string(&params).unwrap();
+        assert!(json.contains("\"name\":\"my-model\""));
+        assert!(json.contains("\"from\":\"llama3.2\""));
+        assert!(!json.contains("\"system\""));
+        assert!(!json.contains("\"parameters\""));
+        assert!(!json.contains("\"template\""));
+    }
+
+    #[test]
+    fn create_model_params_with_system() {
+        let params = CreateModelParams {
+            name: "custom-model".to_string(),
+            from: "llama3.2".to_string(),
+            system: Some("You are a helpful assistant.".to_string()),
+            parameters: None,
+            template: None,
+        };
+        let json = serde_json::to_string(&params).unwrap();
+        assert!(json.contains("\"system\":\"You are a helpful assistant.\""));
+    }
+
+    #[test]
+    fn create_model_params_with_parameters() {
+        use serde_json::json;
+        use std::collections::HashMap;
+
+        let mut params_map = HashMap::new();
+        params_map.insert("temperature".to_string(), json!(0.7));
+        params_map.insert("num_ctx".to_string(), json!(4096));
+
+        let params = CreateModelParams {
+            name: "tuned-model".to_string(),
+            from: "llama3.2".to_string(),
+            system: None,
+            parameters: Some(params_map),
+            template: None,
+        };
+        let json = serde_json::to_string(&params).unwrap();
+        assert!(json.contains("\"temperature\":0.7"));
+        assert!(json.contains("\"num_ctx\":4096"));
+    }
+
+    #[test]
+    fn create_model_params_full() {
+        use serde_json::json;
+        use std::collections::HashMap;
+
+        let mut params_map = HashMap::new();
+        params_map.insert("temperature".to_string(), json!(0.5));
+
+        let params = CreateModelParams {
+            name: "full-model".to_string(),
+            from: "llama3.2".to_string(),
+            system: Some("Be concise.".to_string()),
+            parameters: Some(params_map),
+            template: Some("{{ .System }}\n{{ .Prompt }}".to_string()),
+        };
+        let json = serde_json::to_string(&params).unwrap();
+        assert!(json.contains("\"name\":\"full-model\""));
+        assert!(json.contains("\"from\":\"llama3.2\""));
+        assert!(json.contains("\"system\":\"Be concise.\""));
+        assert!(json.contains("\"temperature\":0.5"));
+        assert!(json.contains("\"template\":\"{{ .System }}\\n{{ .Prompt }}\""));
+    }
+
+    #[test]
+    fn create_model_result_serialization() {
+        let result = CreateModelResult {
+            success: true,
+            message: "Model created".to_string(),
+            model_name: "my-model".to_string(),
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"success\":true"));
+        assert!(json.contains("\"message\":\"Model created\""));
+        assert!(json.contains("\"model_name\":\"my-model\""));
+    }
+
+    #[test]
+    fn create_model_result_deserialization() {
+        let json = r#"{"success":false,"message":"Base model not found","model_name":"test"}"#;
+        let result: CreateModelResult = serde_json::from_str(json).unwrap();
+        assert!(!result.success);
+        assert_eq!(result.message, "Base model not found");
+        assert_eq!(result.model_name, "test");
     }
 }
