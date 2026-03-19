@@ -555,5 +555,30 @@
     "statusEnabled": "Enabled",
     "statusDisabled": "Disabled",
     "statusError": "Error"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "usernameHint": "3-32 characters, letters, numbers, _ or -",
+    "email": "Email (optional)",
+    "emailPlaceholder": "Enter email",
+    "emailHint": "Optional, for account recovery",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "passwordHint": "At least 8 characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm password",
+    "passwordMismatch": "Passwords do not match",
+    "loggingIn": "Logging in...",
+    "registering": "Registering...",
+    "welcomeBack": "Welcome back, {username}!",
+    "accountCreated": "Account created successfully!",
+    "sessionRestored": "Session restored for {username}",
+    "loggedOut": "You have been logged out",
+    "loginRequired": "Login Required",
+    "loginHint": "Create an account to sync your data across devices"
   }
 }

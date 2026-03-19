@@ -37,6 +37,16 @@
         <button @click="showBackup = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           💾 {{ t('header.backup') }}
         </button>
+        <!-- Auth buttons -->
+        <div v-if="currentUser" class="flex items-center gap-2">
+          <span class="text-sm text-gray-400">{{ currentUser.username }}</span>
+          <button @click="handleLogout" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+            {{ t('auth.logout') }}
+          </button>
+        </div>
+        <button v-else @click="showLoginModal = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+          {{ t('auth.login') }}
+        </button>
         <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
@@ -300,6 +310,7 @@
       @close="showTimeline = false"
       @viewScreenshot="handleTimelineViewScreenshot"
     />
+    <LoginModal v-if="showLoginModal" @close="showLoginModal = false" @loggedIn="handleLogin" />
     <Toast />
   </div>
 </template>
@@ -325,6 +336,7 @@ import CustomReportModal from './components/CustomReportModal.vue'
 import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
+import LoginModal from './components/LoginModal.vue'
 import { showError, showSuccess } from './stores/toast.js'
 import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
 
@@ -366,6 +378,8 @@ const showExport = ref(false)
 const showTimeline = ref(false)
 const selectedScreenshot = ref(null)
 const initialFilterTag = ref(null)
+const showLoginModal = ref(false)
+const currentUser = ref(null)
 
 // AI-004: Tag filtering state
 const selectedTagFilter = ref('')
@@ -681,6 +695,33 @@ const loadSettings = async () => {
   }
 }
 
+// Auth functions
+const loadSession = async () => {
+  try {
+    const session = await invoke('get_current_session')
+    if (session) {
+      currentUser.value = { id: session.user_id, username: session.username }
+    }
+  } catch (err) {
+    console.error('Failed to load session:', err)
+  }
+}
+
+const handleLogin = (user) => {
+  currentUser.value = user
+  showSuccess(t('auth.welcomeBack', { username: user.username }))
+}
+
+const handleLogout = async () => {
+  try {
+    await invoke('logout')
+    currentUser.value = null
+    showSuccess(t('auth.loggedOut'))
+  } catch (err) {
+    showError(t('auth.loggedOut'))
+  }
+}
+
 onMounted(async () => {
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
@@ -729,6 +770,7 @@ onMounted(async () => {
 
   await loadSettings()
   await loadTodayRecords()
+  await loadSession()
 })
 
 onUnmounted(() => {

@@ -551,5 +551,30 @@
     "statusEnabled": "已启用",
     "statusDisabled": "已禁用",
     "statusError": "错误"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出登录",
+    "username": "用户名",
+    "usernamePlaceholder": "输入用户名",
+    "usernameHint": "3-32 个字符，支持字母、数字、_ 或 -",
+    "email": "邮箱（可选）",
+    "emailPlaceholder": "输入邮箱",
+    "emailHint": "可选，用于账户找回",
+    "password": "密码",
+    "passwordPlaceholder": "输入密码",
+    "passwordHint": "至少 8 个字符",
+    "confirmPassword": "确认密码",
+    "confirmPasswordPlaceholder": "再次输入密码",
+    "passwordMismatch": "两次密码输入不一致",
+    "loggingIn": "登录中...",
+    "registering": "注册中...",
+    "welcomeBack": "欢迎回来，{username}！",
+    "accountCreated": "账户创建成功！",
+    "sessionRestored": "已恢复 {username} 的会话",
+    "loggedOut": "您已退出登录",
+    "loginRequired": "需要登录",
+    "loginHint": "创建账户以在多设备间同步数据"
   }
 }
