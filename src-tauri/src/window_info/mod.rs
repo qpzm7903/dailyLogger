@@ -654,7 +654,7 @@ mod tests {
         assert!(should_capture_by_window(&window, &[], &blacklist, false));
         assert!(!should_capture_by_window(
             &window,
-            &vec!["Other".to_string()],
+            &["Other".to_string()],
             &[],
             true
         ));

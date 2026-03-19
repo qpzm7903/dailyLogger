@@ -644,12 +644,14 @@ mod tests {
 
     #[test]
     fn format_github_activity_with_commits() {
-        let mut stats = GitHubWorkStats::default();
-        stats.commit_count = 5;
-        stats.pr_count = 2;
-        stats.estimated_hours = 3.5;
-        stats.active_repos = vec!["owner/repo1".to_string(), "owner/repo2".to_string()];
-        stats.pull_requests = vec!["#42: Add feature".to_string()];
+        let stats = GitHubWorkStats {
+            commit_count: 5,
+            pr_count: 2,
+            estimated_hours: 3.5,
+            active_repos: vec!["owner/repo1".to_string(), "owner/repo2".to_string()],
+            pull_requests: vec!["#42: Add feature".to_string()],
+            commits_by_hour: std::collections::HashMap::new(),
+        };
 
         let output = format_github_activity_for_report(&stats);
         assert!(output.contains("提交数"));
@@ -663,16 +665,18 @@ mod tests {
 
     #[test]
     fn format_github_activity_with_hour_distribution() {
-        let mut stats = GitHubWorkStats::default();
-        stats.commit_count = 3;
-        stats.estimated_hours = 1.0;
-        stats.active_repos = vec!["owner/repo".to_string()];
-        stats
-            .commits_by_hour
-            .insert(10, vec!["commit 1".to_string(), "commit 2".to_string()]);
-        stats
-            .commits_by_hour
-            .insert(14, vec!["commit 3".to_string()]);
+        let mut commits_by_hour = std::collections::HashMap::new();
+        commits_by_hour.insert(10, vec!["commit 1".to_string(), "commit 2".to_string()]);
+        commits_by_hour.insert(14, vec!["commit 3".to_string()]);
+
+        let stats = GitHubWorkStats {
+            commit_count: 3,
+            pr_count: 0,
+            estimated_hours: 1.0,
+            active_repos: vec!["owner/repo".to_string()],
+            commits_by_hour,
+            pull_requests: Vec::new(),
+        };
 
         let output = format_github_activity_for_report(&stats);
         assert!(output.contains("10:00"));

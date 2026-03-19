@@ -965,7 +965,7 @@ mod tests {
         // Quarter should be roughly 90 days
         let diff = (end_date - start_date).num_days();
         assert!(
-            diff >= 89 && diff <= 92,
+            (89..=92).contains(&diff),
             "Quarter should be 89-92 days, got {}",
             diff
         );

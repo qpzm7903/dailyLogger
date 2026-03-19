@@ -790,7 +790,7 @@ mod tests {
 
         // Add a record and associate with tag1
         let record_id = add_record("manual", "test content", None, None, None).unwrap();
-        let _ = add_tag_to_record(record_id, tag1.id).unwrap();
+        add_tag_to_record(record_id, tag1.id).unwrap();
 
         let tags = get_all_manual_tags().unwrap();
         assert_eq!(tags.len(), 2);
@@ -822,7 +822,7 @@ mod tests {
 
         let tag = create_manual_tag("工作".to_string(), "blue".to_string()).unwrap();
         let record_id = add_record("manual", "test", None, None, None).unwrap();
-        let _ = add_tag_to_record(record_id, tag.id).unwrap();
+        add_tag_to_record(record_id, tag.id).unwrap();
 
         delete_manual_tag(tag.id).unwrap();
 

@@ -851,8 +851,8 @@ mod tests {
         // Note: This test depends on current time, so we just verify the function works
         let result = is_in_work_time(&settings);
         let now = Local::now();
-        let current_minutes = now.hour() as u32 * 60 + now.minute() as u32;
-        let in_range = current_minutes >= 9 * 60 && current_minutes < 18 * 60;
+        let current_minutes = now.hour() * 60 + now.minute();
+        let in_range = (9 * 60..18 * 60).contains(&current_minutes);
 
         assert_eq!(result, in_range);
     }
@@ -869,10 +869,10 @@ mod tests {
         };
 
         let now = Local::now();
-        let current_minutes = now.hour() as u32 * 60 + now.minute() as u32;
+        let current_minutes = now.hour() * 60 + now.minute();
 
-        let in_morning = current_minutes >= 9 * 60 && current_minutes < 12 * 60;
-        let in_afternoon = current_minutes >= 14 * 60 && current_minutes < 18 * 60;
+        let in_morning = (9 * 60..12 * 60).contains(&current_minutes);
+        let in_afternoon = (14 * 60..18 * 60).contains(&current_minutes);
         let expected = in_morning || in_afternoon;
 
         assert_eq!(is_in_work_time(&settings), expected);
