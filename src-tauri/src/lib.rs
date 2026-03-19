@@ -16,6 +16,7 @@ pub mod notion;
 pub mod offline_queue;
 pub mod ollama;
 pub mod performance;
+pub mod plugin;
 pub mod silent_tracker;
 pub mod slack;
 pub mod synthesis;
