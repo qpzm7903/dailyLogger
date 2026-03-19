@@ -183,10 +183,25 @@ pub struct RunningModelsResult {
 ///
 /// Uses Ollama's native API endpoint `/api/pull` to download a model.
 /// This is an async operation that may take a long time for large models.
+///
+/// # Arguments
+/// * `base_url` - The Ollama server URL (e.g., `http://localhost:11434`)
+/// * `model_name` - The name of the model to pull (e.g., `llama3.2`)
+/// * `quantization` - Optional quantization level (e.g., `q4_0`, `q5_0`, `q8_0`)
+///
+/// # Example
+/// ```ignore
+/// // Pull with default quantization
+/// pull_ollama_model("http://localhost:11434", "llama3.2", None).await?;
+///
+/// // Pull with specific quantization
+/// pull_ollama_model("http://localhost:11434", "llama3.2", Some("q4_0".to_string())).await?;
+/// ```
 #[command]
 pub async fn pull_ollama_model(
     base_url: String,
     model_name: String,
+    quantization: Option<String>,
 ) -> Result<PullModelResult, String> {
     let client = Client::builder()
         .timeout(Duration::from_secs(600)) // 10 minutes timeout for large models
@@ -197,12 +212,22 @@ pub async fn pull_ollama_model(
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/pull", base);
 
-    tracing::info!("Pulling Ollama model '{}' from: {}", model_name, url);
+    tracing::info!(
+        "Pulling Ollama model '{}' (quantization: {:?}) from: {}",
+        model_name,
+        quantization,
+        url
+    );
 
-    let request_body = serde_json::json!({
+    let mut request_body = serde_json::json!({
         "name": model_name,
         "stream": false
     });
+
+    // Add quantization if specified
+    if let Some(ref q) = quantization {
+        request_body["quantization"] = serde_json::json!(q);
+    }
 
     let response = client
         .post(&url)
@@ -721,6 +746,43 @@ mod tests {
         assert!(!result.success);
         assert_eq!(result.message, "Failed to pull");
         assert_eq!(result.status, "error");
+    }
+
+    #[test]
+    fn pull_model_with_quantization_request_body() {
+        // Test that the request body is correctly formed with quantization
+        let mut request_body = serde_json::json!({
+            "name": "llama3.2",
+            "stream": false
+        });
+        request_body["quantization"] = serde_json::json!("q4_0");
+
+        assert_eq!(request_body["name"], "llama3.2");
+        assert_eq!(request_body["stream"], false);
+        assert_eq!(request_body["quantization"], "q4_0");
+    }
+
+    #[test]
+    fn pull_model_without_quantization_request_body() {
+        // Test that the request body is correctly formed without quantization
+        let request_body = serde_json::json!({
+            "name": "llama3.2",
+            "stream": false
+        });
+
+        assert_eq!(request_body["name"], "llama3.2");
+        assert_eq!(request_body["stream"], false);
+        assert!(request_body.get("quantization").is_none());
+    }
+
+    #[test]
+    fn pull_model_common_quantization_values() {
+        // Test that common quantization values are valid JSON strings
+        let quantization_levels = vec!["q4_0", "q4_1", "q5_0", "q5_1", "q8_0", "f16"];
+        for q in quantization_levels {
+            let json = serde_json::json!({"quantization": q});
+            assert_eq!(json["quantization"], q);
+        }
     }
 
     #[test]

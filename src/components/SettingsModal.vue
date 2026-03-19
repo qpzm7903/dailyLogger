@@ -92,6 +92,19 @@
                     :placeholder="$t('settings.pullModelPlaceholder')"
                     class="flex-1 bg-darker border border-gray-700 rounded px-2 py-1 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
                   />
+                  <select
+                    v-model="pullModelQuantization"
+                    class="bg-darker border border-gray-700 rounded px-2 py-1 text-xs text-gray-100 focus:border-primary focus:outline-none"
+                    :title="$t('settings.quantizationTooltip')"
+                  >
+                    <option value="">{{ $t('settings.defaultQuantization') }}</option>
+                    <option value="q4_0">q4_0 ({{ $t('settings.smallest') }})</option>
+                    <option value="q4_1">q4_1</option>
+                    <option value="q5_0">q5_0</option>
+                    <option value="q5_1">q5_1</option>
+                    <option value="q8_0">q8_0 ({{ $t('settings.largest') }})</option>
+                    <option value="f16">f16 ({{ $t('settings.noCompression') }})</option>
+                  </select>
                   <button
                     @click="pullModel"
                     :disabled="isPullingModel || !pullModelName"
@@ -1794,6 +1807,7 @@ const ollamaModelDetails = ref([])
 const isLoadingOllamaModels = ref(false)
 const ollamaModelError = ref('')
 const pullModelName = ref('')
+const pullModelQuantization = ref('')
 const isPullingModel = ref(false)
 const isDeletingModel = ref('')
 
@@ -1884,12 +1898,14 @@ const pullModel = async () => {
   try {
     const result = await invoke('pull_ollama_model', {
       baseUrl: settings.value.api_base_url,
-      modelName: pullModelName.value.trim()
+      modelName: pullModelName.value.trim(),
+      quantization: pullModelQuantization.value.trim() || null
     })
 
     if (result.success) {
       showSuccess(result.message)
       pullModelName.value = ''
+      pullModelQuantization.value = ''
       // Refresh the model list
       await fetchOllamaModels()
     } else {
