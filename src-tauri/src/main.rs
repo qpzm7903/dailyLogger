@@ -343,6 +343,7 @@ fn main() {
             daily_logger_lib::ollama::get_ollama_models,
             daily_logger_lib::ollama::pull_ollama_model,
             daily_logger_lib::ollama::delete_ollama_model,
+            daily_logger_lib::ollama::get_running_models,
             daily_logger_lib::notion::test_notion_connection,
             daily_logger_lib::github::test_github_connection,
             daily_logger_lib::slack::test_slack_connection,

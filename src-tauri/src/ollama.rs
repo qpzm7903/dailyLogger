@@ -159,6 +159,26 @@ pub struct DeleteModelResult {
     pub message: String,
 }
 
+/// Information about a currently running Ollama model.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RunningModelInfo {
+    pub name: String,
+    pub model: String,
+    pub size: Option<u64>,
+    pub digest: Option<String>,
+    pub details: Option<OllamaModelDetails>,
+    pub expires_at: Option<String>,
+    pub size_vram: Option<u64>,
+}
+
+/// Result structure for running models retrieval.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunningModelsResult {
+    pub success: bool,
+    pub running_models: Vec<RunningModelInfo>,
+    pub message: String,
+}
+
 /// Pull (download) a model from Ollama registry.
 ///
 /// Uses Ollama's native API endpoint `/api/pull` to download a model.
@@ -269,6 +289,83 @@ pub async fn delete_ollama_model(
     Ok(DeleteModelResult {
         success: true,
         message: format!("Model '{}' deleted successfully", model_name),
+    })
+}
+
+/// Get the list of currently running models from an Ollama endpoint.
+///
+/// Uses Ollama's native API endpoint `/api/ps` to retrieve currently loaded models.
+/// This helps users see which models are loaded in memory and their resource usage.
+#[command]
+pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult, String> {
+    let client = Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    // Normalize URL: remove /v1 suffix if present, then append /api/ps
+    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let url = format!("{}/api/ps", base);
+
+    tracing::info!("Fetching running models from: {}", url);
+
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Ok(RunningModelsResult {
+            success: false,
+            running_models: vec![],
+            message: format!("Ollama API error ({}): {}", status, body),
+        });
+    }
+
+    let json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let running_models: Vec<RunningModelInfo> = json["models"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|m| {
+                    Some(RunningModelInfo {
+                        name: m["name"].as_str()?.to_string(),
+                        model: m["model"].as_str().unwrap_or("").to_string(),
+                        size: m["size"].as_u64(),
+                        digest: m["digest"].as_str().map(String::from),
+                        details: m["details"].as_object().map(|d| OllamaModelDetails {
+                            family: d.get("family").and_then(|v| v.as_str()).map(String::from),
+                            parameter_size: d
+                                .get("parameter_size")
+                                .and_then(|v| v.as_str())
+                                .map(String::from),
+                            quantization_level: d
+                                .get("quantization_level")
+                                .and_then(|v| v.as_str())
+                                .map(String::from),
+                        }),
+                        expires_at: m["expires_at"].as_str().map(String::from),
+                        size_vram: m["size_vram"].as_u64(),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let model_count = running_models.len();
+    tracing::info!("Found {} running models", model_count);
+
+    Ok(RunningModelsResult {
+        success: true,
+        running_models,
+        message: format!("Found {} running models", model_count),
     })
 }
 
@@ -519,5 +616,85 @@ mod tests {
         let result: DeleteModelResult = serde_json::from_str(json).unwrap();
         assert!(!result.success);
         assert_eq!(result.message, "Model not found");
+    }
+
+    // ── Tests for RunningModelInfo and RunningModelsResult structs ──
+
+    #[test]
+    fn running_model_info_serialization() {
+        let info = RunningModelInfo {
+            name: "llama3:latest".to_string(),
+            model: "llama3:latest".to_string(),
+            size: Some(4661224676),
+            digest: Some("abc123".to_string()),
+            details: Some(OllamaModelDetails {
+                family: Some("llama".to_string()),
+                parameter_size: Some("8B".to_string()),
+                quantization_level: Some("Q4_0".to_string()),
+            }),
+            expires_at: Some("2024-01-01T00:00:00Z".to_string()),
+            size_vram: Some(4000000000),
+        };
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("\"name\":\"llama3:latest\""));
+        assert!(json.contains("\"size_vram\":4000000000"));
+    }
+
+    #[test]
+    fn running_model_info_deserialization() {
+        let json = r#"{
+            "name": "llama3:latest",
+            "model": "llama3:latest",
+            "size": 4661224676,
+            "digest": "abc123",
+            "details": {
+                "family": "llama",
+                "parameter_size": "8B",
+                "quantization_level": "Q4_0"
+            },
+            "expires_at": "2024-01-01T00:00:00Z",
+            "size_vram": 4000000000
+        }"#;
+        let info: RunningModelInfo = serde_json::from_str(json).unwrap();
+        assert_eq!(info.name, "llama3:latest");
+        assert_eq!(info.size, Some(4661224676));
+        assert_eq!(info.size_vram, Some(4000000000));
+        assert!(info.details.is_some());
+        let details = info.details.unwrap();
+        assert_eq!(details.family, Some("llama".to_string()));
+        assert_eq!(details.parameter_size, Some("8B".to_string()));
+    }
+
+    #[test]
+    fn running_models_result_serialization() {
+        let result = RunningModelsResult {
+            success: true,
+            running_models: vec![RunningModelInfo {
+                name: "test:model".to_string(),
+                model: "test:model".to_string(),
+                size: None,
+                digest: None,
+                details: None,
+                expires_at: None,
+                size_vram: None,
+            }],
+            message: "Found 1 running model".to_string(),
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"success\":true"));
+        assert!(json.contains("\"name\":\"test:model\""));
+    }
+
+    #[test]
+    fn running_models_result_deserialization() {
+        let json = r#"{
+            "success": false,
+            "running_models": [],
+            "message": "No running models"
+        }"#;
+        let result: RunningModelsResult = serde_json::from_str(json).unwrap();
+        assert!(!result.success);
+        assert!(result.running_models.is_empty());
+        assert_eq!(result.message, "No running models");
     }
 }
