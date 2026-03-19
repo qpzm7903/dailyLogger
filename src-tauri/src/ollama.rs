@@ -536,6 +536,15 @@ pub struct CreateModelResult {
     pub model_name: String,
 }
 
+/// Result structure for model copy operation.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CopyModelResult {
+    pub success: bool,
+    pub message: String,
+    pub source: String,
+    pub destination: String,
+}
+
 /// Create a custom model in Ollama.
 ///
 /// Uses Ollama's native API endpoint `/api/create` to create a custom model
@@ -620,6 +629,82 @@ pub async fn create_ollama_model(
         success: true,
         message: format!("Model '{}' created successfully", model_name),
         model_name,
+    })
+}
+
+/// Copy an existing model to a new name.
+///
+/// Uses Ollama's native API endpoint `/api/copy` to create a copy of an existing model.
+/// This is useful for creating variants of models before modifying them.
+///
+/// # Example
+/// ```ignore
+/// let result = copy_ollama_model(
+///     "http://localhost:11434",
+///     "llama3.2",
+///     "my-llama3.2-copy"
+/// ).await?;
+/// ```
+#[command]
+pub async fn copy_ollama_model(
+    base_url: String,
+    source: String,
+    destination: String,
+) -> Result<CopyModelResult, String> {
+    let client = Client::builder()
+        .timeout(Duration::from_secs(60))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    // Normalize URL: remove /v1 suffix if present, then append /api/copy
+    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let url = format!("{}/api/copy", base);
+
+    tracing::info!(
+        "Copying Ollama model '{}' to '{}' at: {}",
+        source,
+        destination,
+        url
+    );
+
+    let request_body = serde_json::json!({
+        "source": source,
+        "destination": destination
+    });
+
+    let response = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Ok(CopyModelResult {
+            success: false,
+            message: format!("Failed to copy model ({}): {}", status, body),
+            source,
+            destination,
+        });
+    }
+
+    tracing::info!(
+        "Model '{}' copied to '{}' successfully",
+        source,
+        destination
+    );
+
+    Ok(CopyModelResult {
+        success: true,
+        message: format!(
+            "Model '{}' copied to '{}' successfully",
+            source, destination
+        ),
+        source,
+        destination,
     })
 }
 
@@ -969,5 +1054,56 @@ mod tests {
         assert!(!result.success);
         assert_eq!(result.message, "Base model not found");
         assert_eq!(result.model_name, "test");
+    }
+
+    // ── Tests for CopyModelResult struct ──
+
+    #[test]
+    fn copy_model_result_serialization() {
+        let result = CopyModelResult {
+            success: true,
+            message: "Model copied".to_string(),
+            source: "llama3.2".to_string(),
+            destination: "my-llama3.2".to_string(),
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"success\":true"));
+        assert!(json.contains("\"message\":\"Model copied\""));
+        assert!(json.contains("\"source\":\"llama3.2\""));
+        assert!(json.contains("\"destination\":\"my-llama3.2\""));
+    }
+
+    #[test]
+    fn copy_model_result_deserialization() {
+        let json = r#"{"success":false,"message":"Source model not found","source":"unknown","destination":"new-model"}"#;
+        let result: CopyModelResult = serde_json::from_str(json).unwrap();
+        assert!(!result.success);
+        assert_eq!(result.message, "Source model not found");
+        assert_eq!(result.source, "unknown");
+        assert_eq!(result.destination, "new-model");
+    }
+
+    #[test]
+    fn copy_model_result_with_special_chars() {
+        let result = CopyModelResult {
+            success: true,
+            message: "Model 'llama3:latest' copied to 'my-llama:custom'".to_string(),
+            source: "llama3:latest".to_string(),
+            destination: "my-llama:custom".to_string(),
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        let parsed: CopyModelResult = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.source, "llama3:latest");
+        assert_eq!(parsed.destination, "my-llama:custom");
+    }
+
+    #[test]
+    fn copy_model_request_body_format() {
+        let request_body = serde_json::json!({
+            "source": "llama3.2",
+            "destination": "my-custom-llama"
+        });
+        assert_eq!(request_body["source"], "llama3.2");
+        assert_eq!(request_body["destination"], "my-custom-llama");
     }
 }
