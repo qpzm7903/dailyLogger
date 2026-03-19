@@ -108,6 +108,7 @@ src/                        # Vue 3 前端
       ├── ReportComparisonModal.vue
       ├── LogViewer.vue
       ├── TimelineVisualization.vue
+      ├── PluginPanel.vue
       └── BackupModal.vue
 
 src-tauri/src/              # Rust 后端
@@ -120,10 +121,12 @@ src-tauri/src/              # Rust 后端
   ├── offline_queue/        # 离线任务队列
   ├── backup/               # 数据备份恢复
   ├── crypto/               # API Key 加密存储
+  ├── hardware/             # 硬件抽象层（跨平台支持）
   ├── notion.rs             # Notion API 集成
   ├── slack.rs              # Slack Webhook 集成
   ├── github.rs             # GitHub API 集成
   ├── ollama.rs             # Ollama 本地模型管理
+  ├── plugin.rs             # 插件系统
   └── timeline.rs           # 时间线数据生成
 ```
 
@@ -164,7 +167,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.19.0
+**最新版本**: v1.19.1
+- 修复 Windows 版本启动问题诊断
+  - 添加启动诊断日志，帮助定位窗口不显示的问题
+  - 添加 WebView2 检测和缺失提示
+
+v1.19.0 更新:
 - 新增 Ollama 模型管理增强功能
   - 运行模型状态监控，显示当前加载模型及 VRAM 占用
   - 自定义模型创建（基于 Modelfile）
