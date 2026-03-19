@@ -455,7 +455,7 @@ fn main() {
             daily_logger_lib::network_status::start_network_monitor(app.handle().clone());
             write_diagnostic_file("Network monitor started");
 
-            #[cfg(desktop)]
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
             {
                 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
                 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
