@@ -399,7 +399,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 |----|------|--------|------|
 | PLUGIN-001 | 插件系统核心架构 | 5pts | ✅ 完成 |
 | PLUGIN-002 | 插件加载与发现机制 | 3pts | ✅ 完成 |
-| PLUGIN-003 | 插件配置管理 UI | 3pts | 🔲 待开始 |
+| PLUGIN-003 | 插件配置管理 UI | 3pts | ✅ 完成 |
 
 ### PLUGIN-001: 插件系统核心架构
 
@@ -440,6 +440,31 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 - 可验证插件元数据有效性
 - 支持启用/禁用插件状态
 
+### PLUGIN-003: 插件配置管理 UI
+
+**功能**: 在设置界面中添加插件管理面板，支持查看、启用/禁用插件。
+
+**后端变更** (`src-tauri/src/`):
+- `plugin.rs`: 新增 Tauri 命令
+  - `list_discovered_plugins()`: 返回所有发现的插件列表
+  - `enable_plugin(plugin_id)`: 启用指定插件
+  - `disable_plugin(plugin_id)`: 禁用指定插件
+  - `open_plugins_directory()`: 打开插件目录
+  - `PluginInfo`: 前端显示用的插件信息结构体
+
+**前端变更** (`src/`):
+- 新建 `components/PluginPanel.vue`: 插件管理面板组件
+  - 插件列表展示（名称、版本、作者、状态）
+  - 启用/禁用按钮
+  - 打开插件目录按钮
+- `SettingsModal.vue`: 集成 PluginPanel 组件
+- `locales/en.json` / `locales/zh-CN.json`: 添加插件相关翻译
+
+**验收条件**:
+- 用户可在设置中查看所有已发现的插件
+- 可一键启用/禁用插件
+- 可快速打开插件目录添加新插件
+
 ---
 
 ## 长期规划: v2.0.0+（集成与扩展）
@@ -456,7 +481,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 **远期功能**:
 - 时间线可视化（图形化展示一天工作流）
 - 多语言支持 (i18n)
-- 插件系统架构
+- ~~插件系统架构~~ ✅ 已完成 (v1.18.0)
 - 移动端适配（Tauri Mobile）
 - 团队协作模式
 - 本地 AI 模型深度集成（模型管理、微调）
