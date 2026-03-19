@@ -45,8 +45,8 @@
 
     <main class="flex-1 overflow-auto p-6">
       <div class="max-w-4xl mx-auto space-y-6">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="bg-dark rounded-xl p-5 border border-gray-700">
+        <div :class="isDesktop ? 'grid grid-cols-2 gap-4' : ''">
+          <div v-if="isDesktop" class="bg-dark rounded-xl p-5 border border-gray-700">
             <div class="flex items-center gap-2 mb-3">
               <span class="text-2xl">🖥️</span>
               <h2 class="font-medium">{{ t('autoCapture.title') }}</h2>
