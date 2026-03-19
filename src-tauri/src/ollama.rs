@@ -548,6 +548,35 @@ pub struct CopyModelResult {
     pub destination: String,
 }
 
+/// Detailed model information returned by Ollama /api/show endpoint.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ModelShowDetails {
+    /// The model's license information
+    pub license: Option<String>,
+    /// The modelfile content used to create this model
+    pub modelfile: Option<String>,
+    /// The parameters used by this model
+    pub parameters: Option<String>,
+    /// The template used for prompts
+    pub template: Option<String>,
+    /// The system prompt
+    pub system: Option<String>,
+    /// Model details (family, parameter size, quantization)
+    pub details: Option<OllamaModelDetails>,
+    /// Model info (more detailed metadata)
+    #[serde(default)]
+    pub model_info: Option<std::collections::HashMap<String, serde_json::Value>>,
+}
+
+/// Result structure for show_ollama_model operation.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ShowModelResult {
+    pub success: bool,
+    pub message: String,
+    pub model_name: String,
+    pub details: Option<ModelShowDetails>,
+}
+
 /// Create a custom model in Ollama.
 ///
 /// Uses Ollama's native API endpoint `/api/create` to create a custom model
@@ -711,6 +740,94 @@ pub async fn copy_ollama_model(
         ),
         source,
         destination,
+    })
+}
+
+/// Get detailed information about an Ollama model.
+///
+/// Uses Ollama's native API endpoint `/api/show` to retrieve detailed model information
+/// including modelfile, parameters, template, and system prompt.
+///
+/// # Example
+/// ```ignore
+/// let result = show_ollama_model("http://localhost:11434", "llama3.2").await?;
+/// if result.success {
+///     println!("Modelfile: {:?}", result.details.unwrap().modelfile);
+/// }
+/// ```
+#[command]
+pub async fn show_ollama_model(
+    base_url: String,
+    model_name: String,
+) -> Result<ShowModelResult, String> {
+    let client = Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    // Normalize URL: remove /v1 suffix if present, then append /api/show
+    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let url = format!("{}/api/show", base);
+
+    tracing::info!(
+        "Getting detailed info for Ollama model '{}' at: {}",
+        model_name,
+        url
+    );
+
+    let request_body = serde_json::json!({
+        "name": model_name
+    });
+
+    let response = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Ok(ShowModelResult {
+            success: false,
+            message: format!("Failed to get model info ({}): {}", status, body),
+            model_name,
+            details: None,
+        });
+    }
+
+    // Parse the response
+    let response_text = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read response body: {}", e))?;
+
+    let details: ModelShowDetails = match serde_json::from_str(&response_text) {
+        Ok(d) => d,
+        Err(e) => {
+            tracing::warn!(
+                "Failed to parse model show response: {}. Response: {}",
+                e,
+                response_text
+            );
+            return Ok(ShowModelResult {
+                success: false,
+                message: format!("Failed to parse model details: {}", e),
+                model_name,
+                details: None,
+            });
+        }
+    };
+
+    tracing::info!("Successfully retrieved details for model '{}'", model_name);
+
+    Ok(ShowModelResult {
+        success: true,
+        message: format!("Model '{}' details retrieved successfully", model_name),
+        model_name,
+        details: Some(details),
     })
 }
 
@@ -1117,5 +1234,102 @@ mod tests {
         });
         assert_eq!(request_body["source"], "llama3.2");
         assert_eq!(request_body["destination"], "my-custom-llama");
+    }
+
+    // ── Tests for show_ollama_model ──
+
+    #[test]
+    fn show_model_result_serialization() {
+        let result = ShowModelResult {
+            success: true,
+            message: "Model details retrieved".to_string(),
+            model_name: "llama3.2".to_string(),
+            details: None,
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"success\":true"));
+        assert!(json.contains("\"message\":\"Model details retrieved\""));
+        assert!(json.contains("\"model_name\":\"llama3.2\""));
+    }
+
+    #[test]
+    fn show_model_result_deserialization() {
+        let json = r#"{"success":false,"message":"Model not found","model_name":"unknown","details":null}"#;
+        let result: ShowModelResult = serde_json::from_str(json).unwrap();
+        assert!(!result.success);
+        assert_eq!(result.message, "Model not found");
+        assert_eq!(result.model_name, "unknown");
+        assert!(result.details.is_none());
+    }
+
+    #[test]
+    fn model_show_details_serialization() {
+        let details = ModelShowDetails {
+            license: Some("MIT".to_string()),
+            modelfile: Some("FROM llama3.2\nSYSTEM You are helpful".to_string()),
+            parameters: Some("temperature 0.7\nnum_ctx 4096".to_string()),
+            template: Some("{{ .System }}\n{{ .Prompt }}".to_string()),
+            system: Some("You are a helpful assistant.".to_string()),
+            details: Some(OllamaModelDetails {
+                family: Some("llama".to_string()),
+                parameter_size: Some("3B".to_string()),
+                quantization_level: Some("Q4_K_M".to_string()),
+            }),
+            model_info: None,
+        };
+        let json = serde_json::to_string(&details).unwrap();
+        assert!(json.contains("\"license\":\"MIT\""));
+        assert!(json.contains("\"modelfile\":\"FROM llama3.2"));
+        assert!(json.contains("\"family\":\"llama\""));
+    }
+
+    #[test]
+    fn model_show_details_deserialization_full() {
+        let json = r#"{
+            "license": "Apache-2.0",
+            "modelfile": "FROM llama3\nSYSTEM Be concise",
+            "parameters": "temperature 0.5",
+            "template": "{{ .Prompt }}",
+            "system": "Be concise",
+            "details": {
+                "family": "llama",
+                "parameter_size": "8B",
+                "quantization_level": "Q4_0"
+            }
+        }"#;
+        let details: ModelShowDetails = serde_json::from_str(json).unwrap();
+        assert_eq!(details.license, Some("Apache-2.0".to_string()));
+        assert_eq!(
+            details.modelfile,
+            Some("FROM llama3\nSYSTEM Be concise".to_string())
+        );
+        assert_eq!(details.parameters, Some("temperature 0.5".to_string()));
+        assert_eq!(details.template, Some("{{ .Prompt }}".to_string()));
+        assert_eq!(details.system, Some("Be concise".to_string()));
+        assert!(details.details.is_some());
+        let d = details.details.unwrap();
+        assert_eq!(d.family, Some("llama".to_string()));
+        assert_eq!(d.parameter_size, Some("8B".to_string()));
+        assert_eq!(d.quantization_level, Some("Q4_0".to_string()));
+    }
+
+    #[test]
+    fn model_show_details_deserialization_minimal() {
+        let json = r#"{}"#;
+        let details: ModelShowDetails = serde_json::from_str(json).unwrap();
+        assert!(details.license.is_none());
+        assert!(details.modelfile.is_none());
+        assert!(details.parameters.is_none());
+        assert!(details.template.is_none());
+        assert!(details.system.is_none());
+        assert!(details.details.is_none());
+    }
+
+    #[test]
+    fn show_model_request_body_format() {
+        let request_body = serde_json::json!({
+            "name": "llama3.2"
+        });
+        assert_eq!(request_body["name"], "llama3.2");
     }
 }

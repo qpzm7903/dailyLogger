@@ -346,6 +346,7 @@ fn main() {
             daily_logger_lib::ollama::get_running_models,
             daily_logger_lib::ollama::create_ollama_model,
             daily_logger_lib::ollama::copy_ollama_model,
+            daily_logger_lib::ollama::show_ollama_model,
             daily_logger_lib::notion::test_notion_connection,
             daily_logger_lib::github::test_github_connection,
             daily_logger_lib::slack::test_slack_connection,
