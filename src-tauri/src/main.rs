@@ -342,11 +342,18 @@ fn main() {
     write_diagnostic_file("App initialized successfully");
 
     write_diagnostic_file("Building Tauri application...");
-    let result = tauri::Builder::default()
+
+    // Build base builder with cross-platform plugins
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_fs::init());
+
+    // Add desktop-only plugins (global shortcuts not supported on mobile)
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
+
+    let result = builder
         .invoke_handler(tauri::generate_handler![
             daily_logger_lib::manual_entry::add_quick_note,
             daily_logger_lib::manual_entry::tray_quick_note,

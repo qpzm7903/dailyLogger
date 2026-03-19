@@ -19,7 +19,6 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-shell = "2"
-tauri-plugin-global-shortcut = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 serde = { version = "1", features = ["derive"] }
@@ -46,12 +45,10 @@ walkdir = "2"
 serial_test = "3"
 
 # Desktop-only dependencies
-[target.'cfg(desktop)'.dependencies]
-# System tray is desktop-only
-# tauri tray-icon feature is already enabled above
-
-# Mobile platforms don't support global shortcuts (app runs in foreground only)
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+# Global shortcuts are desktop-only (mobile apps run in foreground only)
+tauri-plugin-global-shortcut = "2"
+# Screenshot capture (xcap) - desktop only
 xcap = { version = "0.9", optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
