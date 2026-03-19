@@ -128,6 +128,34 @@
                 </div>
                 <p v-else-if="!isLoadingOllamaModels" class="text-xs text-gray-500">{{ $t('settings.noModelsFound') }}</p>
               </div>
+
+              <!-- Running models section -->
+              <div v-if="isOllama" class="mt-3 pt-3 border-t border-gray-700">
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs text-gray-300">{{ $t('settings.runningModels') }}</label>
+                  <button
+                    @click="fetchRunningModels"
+                    :disabled="isLoadingRunningModels"
+                    type="button"
+                    class="text-xs text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
+                  >
+                    {{ isLoadingRunningModels ? $t('settings.loadingRunningModels') : $t('settings.refreshRunning') }}
+                  </button>
+                </div>
+                <div v-if="runningModels.length > 0" class="flex flex-wrap gap-2">
+                  <div
+                    v-for="model in runningModels"
+                    :key="model.name"
+                    class="flex items-center gap-1 px-2 py-1 text-xs rounded bg-green-900/30 border border-green-700 text-green-300"
+                  >
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span>{{ model.name }}</span>
+                    <span v-if="model.size_vram" class="text-gray-400 ml-1">({{ formatModelSize(model.size_vram) }} VRAM)</span>
+                  </div>
+                </div>
+                <p v-else-if="!isLoadingRunningModels" class="text-xs text-gray-500">{{ $t('settings.noRunningModels') }}</p>
+              </div>
+
               <p v-if="ollamaModelError" class="text-xs text-red-400 mt-1">{{ ollamaModelError }}</p>
             </div>
           </div>
@@ -1650,6 +1678,10 @@ const pullModelName = ref('')
 const isPullingModel = ref(false)
 const isDeletingModel = ref('')
 
+// Running models state
+const runningModels = ref([])
+const isLoadingRunningModels = ref(false)
+
 // Check if the current endpoint is an Ollama endpoint
 const isOllamaEndpoint = (url) => {
   if (!url) return false
@@ -1787,6 +1819,34 @@ const formatModelSize = (bytes) => {
 const getModelSize = (modelName) => {
   const detail = ollamaModelDetails.value.find(d => d.name === modelName)
   return detail?.size ? formatModelSize(detail.size) : ''
+}
+
+// Fetch running models from Ollama
+const fetchRunningModels = async () => {
+  if (!settings.value.api_base_url) {
+    showError(t('settings.apiBaseUrlRequired'))
+    return
+  }
+
+  isLoadingRunningModels.value = true
+
+  try {
+    const result = await invoke('get_running_models', {
+      baseUrl: settings.value.api_base_url
+    })
+
+    if (result.success) {
+      runningModels.value = result.running_models || []
+    } else {
+      runningModels.value = []
+      console.warn('Failed to fetch running models:', result.message)
+    }
+  } catch (err) {
+    console.error('Failed to fetch running models:', err)
+    runningModels.value = []
+  } finally {
+    isLoadingRunningModels.value = false
+  }
 }
 
 // Summary Prompt functions
