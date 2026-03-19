@@ -406,6 +406,7 @@
     "modelNameRequired": "Please fill in model name",
     "modelInfoUnavailable": "Model info unavailable, please refer to model documentation",
     "ollamaModelsNotFound": "No installed models found, please use ollama pull <model> to install",
+    "ollamaModelsFound": "Found {count} models",
     "templateContentEmpty": "Template content is empty",
     "currentPromptEmpty": "Current prompt is empty, cannot export",
     "myReportTemplateName": "My Daily Report Template",

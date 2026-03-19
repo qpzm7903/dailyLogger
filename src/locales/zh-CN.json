@@ -402,6 +402,7 @@
     "modelNameRequired": "请先填写模型名称",
     "modelInfoUnavailable": "模型信息不可用，请参考模型文档",
     "ollamaModelsNotFound": "未找到已安装的模型，请使用 ollama pull <model> 安装",
+    "ollamaModelsFound": "找到 {count} 个模型",
     "templateContentEmpty": "模板内容为空",
     "currentPromptEmpty": "当前 Prompt 为空，无法导出",
     "myReportTemplateName": "我的日报模板",

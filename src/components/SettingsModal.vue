@@ -1630,7 +1630,7 @@ const fetchOllamaModels = async () => {
       if (result.models.length === 0) {
         ollamaModelError.value = t('settings.ollamaModelsNotFound')
       } else {
-        showSuccess(`找到 ${result.models.length} 个模型`)
+        showSuccess(t('settings.ollamaModelsFound', { count: result.models.length }))
       }
     } else {
       ollamaModelError.value = result.message
