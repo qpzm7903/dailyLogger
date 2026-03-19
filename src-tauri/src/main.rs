@@ -172,6 +172,39 @@ fn is_webview2_installed() -> bool {
     true // WebView2 is only required on Windows
 }
 
+/// Show a Windows message box with WebView2 error message.
+#[cfg(target_os = "windows")]
+fn show_webview2_error_message(message: &str) {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR};
+
+    let title_wide: Vec<u16> = OsStr::new("DailyLogger - Missing Dependency")
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let message_wide: Vec<u16> = OsStr::new(message)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+
+    unsafe {
+        let _ = MessageBoxW(
+            HWND(std::ptr::null_mut()),
+            windows::core::PCWSTR(message_wide.as_ptr()),
+            windows::core::PCWSTR(title_wide.as_ptr()),
+            MB_ICONERROR,
+        );
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
+fn show_webview2_error_message(_message: &str) {
+    // No-op on non-Windows platforms
+}
+
 fn setup_logging() -> Option<WorkerGuard> {
     let log_dir = get_app_data_dir().join("logs");
     if let Err(e) = std::fs::create_dir_all(&log_dir) {
@@ -231,18 +264,20 @@ fn main() {
     #[cfg(target_os = "windows")]
     {
         if !is_webview2_installed() {
-            let error_msg = "WebView2 runtime is not installed.\n\n\
-                DailyLogger requires Microsoft Edge WebView2 runtime to run.\n\n\
-                Please install WebView2 from:\n\
+            let error_msg = "DailyLogger requires Microsoft Edge WebView2 Runtime to run.\n\n\
+                Please download and install WebView2 Runtime from:\n\
                 https://developer.microsoft.com/en-us/microsoft-edge/webview2/\n\n\
+                Direct download link:\n\
+                https://go.microsoft.com/fwlink/p/?LinkId=2124703\n\n\
                 Or use the installer version (*-setup.exe) which will automatically\n\
                 install WebView2 for you.";
 
             tracing::error!("{}", error_msg);
             write_crash_message(error_msg);
 
-            // On Windows GUI mode, we can't show a message box easily without
-            // additional dependencies. Write to crash log and exit.
+            // Show a Windows message box so the user can see the error
+            show_webview2_error_message(error_msg);
+
             std::process::exit(1);
         }
     }
