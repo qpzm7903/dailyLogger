@@ -398,7 +398,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | ID | 需求 | 故事点 | 状态 |
 |----|------|--------|------|
 | PLUGIN-001 | 插件系统核心架构 | 5pts | ✅ 完成 |
-| PLUGIN-002 | 插件加载与发现机制 | 3pts | 🔲 待开始 |
+| PLUGIN-002 | 插件加载与发现机制 | 3pts | ✅ 完成 |
 | PLUGIN-003 | 插件配置管理 UI | 3pts | 🔲 待开始 |
 
 ### PLUGIN-001: 插件系统核心架构
@@ -419,6 +419,26 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 - 插件生命周期钩子正常调用
 - 钩子系统可触发回调
 - 插件元数据可序列化
+
+### PLUGIN-002: 插件加载与发现机制
+
+**功能**: 从插件目录自动发现并加载插件。
+
+**后端变更** (`src-tauri/src/`):
+- `plugin.rs`: 新增插件发现功能
+  - `PluginManifest`: 插件清单结构（plugin.json 格式）
+  - `PluginStatus`: 插件状态（Ready/Disabled/Error）
+  - `DiscoveredPlugin`: 发现的插件信息
+  - `discover_plugins()`: 扫描插件目录
+  - `load_manifest()`/`save_manifest()`: 清单读写
+  - `get_plugins_directory()`/`ensure_plugins_directory()`: 目录管理
+  - 9 个新单元测试
+
+**验收条件**:
+- 可从插件目录扫描发现插件
+- 可解析 plugin.json 清单文件
+- 可验证插件元数据有效性
+- 支持启用/禁用插件状态
 
 ---
 
