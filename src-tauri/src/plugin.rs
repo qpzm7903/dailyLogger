@@ -340,16 +340,22 @@ mod tests {
         let called = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let called_clone = called.clone();
 
-        manager.register_hook(HookPoint::OnAppStart, Box::new(move |_data| {
-            called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
-            Ok(())
-        }));
+        manager.register_hook(
+            HookPoint::OnAppStart,
+            Box::new(move |_data| {
+                called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+                Ok(())
+            }),
+        );
 
         manager.set_enabled(true);
         manager
-            .trigger_hook(HookPoint::OnAppStart, &HookData::AppLifecycle {
-                version: "1.0.0".to_string(),
-            })
+            .trigger_hook(
+                HookPoint::OnAppStart,
+                &HookData::AppLifecycle {
+                    version: "1.0.0".to_string(),
+                },
+            )
             .unwrap();
 
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
@@ -361,16 +367,22 @@ mod tests {
         let called = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let called_clone = called.clone();
 
-        manager.register_hook(HookPoint::OnAppStart, Box::new(move |_data| {
-            called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
-            Ok(())
-        }));
+        manager.register_hook(
+            HookPoint::OnAppStart,
+            Box::new(move |_data| {
+                called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+                Ok(())
+            }),
+        );
 
         manager.set_enabled(false);
         manager
-            .trigger_hook(HookPoint::OnAppStart, &HookData::AppLifecycle {
-                version: "1.0.0".to_string(),
-            })
+            .trigger_hook(
+                HookPoint::OnAppStart,
+                &HookData::AppLifecycle {
+                    version: "1.0.0".to_string(),
+                },
+            )
             .unwrap();
 
         assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
