@@ -451,6 +451,13 @@ fn main() {
             daily_logger_lib::fine_tuning::prepare_training_data,
             daily_logger_lib::fine_tuning::start_fine_tuning,
             daily_logger_lib::fine_tuning::get_default_fine_tuning_config,
+            // Team collaboration: User authentication
+            daily_logger_lib::auth::register_user,
+            daily_logger_lib::auth::login_user,
+            daily_logger_lib::auth::get_user_by_id,
+            daily_logger_lib::auth::get_all_users,
+            daily_logger_lib::auth::delete_user,
+            daily_logger_lib::auth::has_any_user,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");

@@ -1,3 +1,4 @@
+pub mod auth;
 #[cfg(feature = "screenshot")]
 pub mod auto_perception;
 pub mod backup;
