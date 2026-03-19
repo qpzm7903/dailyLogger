@@ -526,6 +526,9 @@ pub struct CreateModelParams {
     /// Template for the model (overrides base model's template).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub template: Option<String>,
+    /// Quantization level for the model (e.g., "q4_K_M", "q8_0").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub quantize: Option<String>,
 }
 
 /// Result structure for model create operation.
@@ -603,6 +606,9 @@ pub async fn create_ollama_model(
     }
     if let Some(template) = &params.template {
         request_body["template"] = serde_json::json!(template);
+    }
+    if let Some(quantize) = &params.quantize {
+        request_body["quantize"] = serde_json::json!(quantize);
     }
 
     let response = client
@@ -968,6 +974,7 @@ mod tests {
             system: None,
             parameters: None,
             template: None,
+            quantize: None,
         };
         let json = serde_json::to_string(&params).unwrap();
         assert!(json.contains("\"name\":\"my-model\""));
@@ -975,6 +982,7 @@ mod tests {
         assert!(!json.contains("\"system\""));
         assert!(!json.contains("\"parameters\""));
         assert!(!json.contains("\"template\""));
+        assert!(!json.contains("\"quantize\""));
     }
 
     #[test]
@@ -985,6 +993,7 @@ mod tests {
             system: Some("You are a helpful assistant.".to_string()),
             parameters: None,
             template: None,
+            quantize: None,
         };
         let json = serde_json::to_string(&params).unwrap();
         assert!(json.contains("\"system\":\"You are a helpful assistant.\""));
@@ -1005,6 +1014,7 @@ mod tests {
             system: None,
             parameters: Some(params_map),
             template: None,
+            quantize: None,
         };
         let json = serde_json::to_string(&params).unwrap();
         assert!(json.contains("\"temperature\":0.7"));
@@ -1025,6 +1035,7 @@ mod tests {
             system: Some("Be concise.".to_string()),
             parameters: Some(params_map),
             template: Some("{{ .System }}\n{{ .Prompt }}".to_string()),
+            quantize: Some("q4_K_M".to_string()),
         };
         let json = serde_json::to_string(&params).unwrap();
         assert!(json.contains("\"name\":\"full-model\""));
@@ -1032,6 +1043,7 @@ mod tests {
         assert!(json.contains("\"system\":\"Be concise.\""));
         assert!(json.contains("\"temperature\":0.5"));
         assert!(json.contains("\"template\":\"{{ .System }}\\n{{ .Prompt }}\""));
+        assert!(json.contains("\"quantize\":\"q4_K_M\""));
     }
 
     #[test]

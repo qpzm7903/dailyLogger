@@ -1123,6 +1123,24 @@
                 />
               </div>
             </div>
+            <div>
+              <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.createModelQuantize') }}</label>
+              <select
+                v-model="createModelParams.quantize"
+                class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+              >
+                <option value="">{{ $t('settings.createModelQuantizeNone') }}</option>
+                <option value="q4_0">q4_0 (4-bit, fastest)</option>
+                <option value="q4_1">q4_1 (4-bit, higher accuracy)</option>
+                <option value="q5_0">q5_0 (5-bit, balanced)</option>
+                <option value="q5_1">q5_1 (5-bit, higher accuracy)</option>
+                <option value="q8_0">q8_0 (8-bit, highest accuracy)</option>
+                <option value="q4_K_M">q4_K_M (4-bit K-quant, recommended)</option>
+                <option value="q5_K_M">q5_K_M (5-bit K-quant)</option>
+                <option value="q6_K">q6_K (6-bit K-quant)</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">{{ $t('settings.createModelQuantizeHint') }}</p>
+            </div>
           </div>
           <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
             <button
@@ -1875,7 +1893,8 @@ const createModelParams = ref({
   from: '',
   system: '',
   temperature: null,
-  num_ctx: null
+  num_ctx: null,
+  quantize: ''
 })
 
 // Copy model state
@@ -2081,7 +2100,8 @@ const createCustomModel = async () => {
         name: createModelParams.value.name.trim(),
         from: createModelParams.value.from,
         system: createModelParams.value.system || null,
-        parameters: Object.keys(parameters).length > 0 ? parameters : null
+        parameters: Object.keys(parameters).length > 0 ? parameters : null,
+        quantize: createModelParams.value.quantize || null
       }
     })
 
@@ -2093,7 +2113,8 @@ const createCustomModel = async () => {
         from: '',
         system: '',
         temperature: null,
-        num_ctx: null
+        num_ctx: null,
+        quantize: ''
       }
       showCreateModelModal.value = false
       // Refresh the model list
