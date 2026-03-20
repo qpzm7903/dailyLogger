@@ -118,15 +118,17 @@
                 <p class="text-sm text-gray-300 truncate">{{ parseContent(screenshot.content) }}</p>
               </div>
               <!-- Action -->
-              <div class="flex-shrink-0 ml-4">
-                <span class="text-xs text-primary hover:underline">{{ t('screenshotGallery.view') }}</span>
+              <div class="flex-shrink-0">
+                <button class="text-xs text-gray-400 hover:text-primary transition-colors">
+                  {{ t('screenshotGallery.view') }}
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- Load More Button / Loading Indicator for AC4 -->
-          <div v-if="hasMorePages || isLoadingMore" class="text-center mt-6">
-            <div v-if="isLoadingMore" class="text-gray-400 text-sm py-2">
+          <!-- Load More Section -->
+          <div v-if="hasMorePages" class="text-center py-4 mt-4 border-t border-gray-700">
+            <div v-if="isLoadingMore" class="text-gray-400 text-sm">
               <span class="animate-pulse">{{ t('screenshotGallery.loadingMore') }}</span>
             </div>
             <button
@@ -152,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import ScreenshotModal from './ScreenshotModal.vue'
@@ -160,6 +162,7 @@ import type { LogRecord } from '../types/tauri'
 
 interface ScreenshotRecord extends LogRecord {
   thumbnail?: string
+  thumbnailLoaded?: boolean
 }
 
 const { t } = useI18n()
@@ -210,15 +213,33 @@ const parseContent = (content: string) => {
   }
 }
 
-const loadThumbnails = async (records: ScreenshotRecord[]) => {
+// UX-023: Lazy load thumbnails only for visible items
+const loadThumbnailsForPage = async (page: number) => {
+  const start = (page - 1) * pageSize
+  const end = page * pageSize
+  const records = screenshots.value.slice(start, end)
+
   for (const record of records) {
+    // Skip if already loaded or loading
+    if (record.thumbnailLoaded || record.thumbnail) continue
+
     try {
       const thumbnail = await invoke<string>('get_screenshot', { path: record.screenshot_path })
       record.thumbnail = thumbnail
+      record.thumbnailLoaded = true
     } catch (err) {
       console.error('Failed to load thumbnail:', err)
     }
   }
+}
+
+// Legacy function for compatibility - now just marks as needing load
+const loadThumbnails = async (records: ScreenshotRecord[]) => {
+  // UX-023: Don't load all thumbnails upfront, just mark them
+  // Thumbnails will be loaded lazily via loadThumbnailsForPage
+  records.forEach(r => {
+    r.thumbnailLoaded = false
+  })
 }
 
 const loadScreenshots = async () => {
@@ -227,11 +248,16 @@ const loadScreenshots = async () => {
     // Filter only auto records with screenshots
     const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path) as ScreenshotRecord[]
 
-    // Load thumbnails
-    await loadThumbnails(autoRecords)
+    // UX-023: Don't load thumbnails upfront - they will be lazy loaded
+    autoRecords.forEach(r => {
+      r.thumbnailLoaded = false
+    })
 
     screenshots.value = autoRecords
     currentPage.value = 1 // Reset pagination
+
+    // Load thumbnails for first page
+    await loadThumbnailsForPage(1)
   } catch (err) {
     console.error('Failed to load screenshots:', err)
   }
@@ -250,11 +276,16 @@ const applyFilter = async () => {
     // Filter only auto records with screenshots
     const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path) as ScreenshotRecord[]
 
-    // Load thumbnails
-    await loadThumbnails(autoRecords)
+    // UX-023: Don't load thumbnails upfront
+    autoRecords.forEach(r => {
+      r.thumbnailLoaded = false
+    })
 
     screenshots.value = autoRecords
     currentPage.value = 1 // Reset pagination
+
+    // Load thumbnails for first page
+    await loadThumbnailsForPage(1)
   } catch (err) {
     console.error('Failed to filter screenshots:', err)
   }
@@ -266,14 +297,17 @@ const resetFilter = async () => {
   await loadScreenshots()
 }
 
-const loadMore = () => {
+const loadMore = async () => {
   if (hasMorePages.value && !isLoadingMore.value) {
     isLoadingMore.value = true
-    // Simulate a small delay for UX feedback
-    setTimeout(() => {
-      currentPage.value++
+    try {
+      const nextPage = currentPage.value + 1
+      // UX-023: Load thumbnails for new page before incrementing
+      await loadThumbnailsForPage(nextPage)
+      currentPage.value = nextPage
+    } finally {
       isLoadingMore.value = false
-    }, 150)
+    }
   }
 }
 
@@ -287,7 +321,17 @@ const handleScroll = (event: Event) => {
   }
 }
 
-const openScreenshot = (screenshot: ScreenshotRecord) => {
+const openScreenshot = async (screenshot: ScreenshotRecord) => {
+  // UX-023: Ensure thumbnail is loaded when opening
+  if (!screenshot.thumbnail && !screenshot.thumbnailLoaded) {
+    try {
+      const thumbnail = await invoke<string>('get_screenshot', { path: screenshot.screenshot_path })
+      screenshot.thumbnail = thumbnail
+      screenshot.thumbnailLoaded = true
+    } catch (err) {
+      console.error('Failed to load thumbnail:', err)
+    }
+  }
   selectedScreenshot.value = screenshot
   showDetail.value = true
 }
@@ -299,12 +343,14 @@ const handleRecordUpdated = (updatedRecord: LogRecord) => {
   if (index !== -1) {
     // Preserve the thumbnail
     const thumbnail = screenshots.value[index].thumbnail
-    screenshots.value[index] = { ...updatedRecord, thumbnail } as ScreenshotRecord
+    const thumbnailLoaded = screenshots.value[index].thumbnailLoaded
+    screenshots.value[index] = { ...updatedRecord, thumbnail, thumbnailLoaded } as ScreenshotRecord
   }
   // Also update the selected screenshot
   if (selectedScreenshot.value && selectedScreenshot.value.id === updatedRecord.id) {
     const thumbnail = selectedScreenshot.value.thumbnail
-    selectedScreenshot.value = { ...updatedRecord, thumbnail } as ScreenshotRecord
+    const thumbnailLoaded = selectedScreenshot.value.thumbnailLoaded
+    selectedScreenshot.value = { ...updatedRecord, thumbnail, thumbnailLoaded } as ScreenshotRecord
   }
 }
 
