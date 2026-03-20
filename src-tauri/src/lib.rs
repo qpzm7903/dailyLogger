@@ -54,6 +54,17 @@ pub fn write_diagnostic_file(message: &str) {
     let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f UTC");
     let diagnostic_message = format!("[{}] {}\n", timestamp, message);
 
+    // Always try temp directory first as it's most reliable
+    let temp_path = std::env::temp_dir().join("dailylogger-startup.log");
+    if let Ok(mut file) = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&temp_path)
+    {
+        let _ = file.write_all(diagnostic_message.as_bytes());
+        let _ = file.flush();
+    }
+
     // Get executable path once to avoid repeated calls
     let exe_path = std::env::current_exe().ok();
     let exe_dir = exe_path.as_ref().and_then(|p| p.parent());
@@ -70,39 +81,19 @@ pub fn write_diagnostic_file(message: &str) {
         dirs::home_dir()
             .map(|h| h.join("dailylogger-startup.log"))
             .unwrap_or_default(),
-        // 4. Temp directory as last resort
-        std::env::temp_dir().join("dailylogger-startup.log"),
     ];
 
-    let mut last_error = String::new();
     for location in &locations {
         if location.as_os_str().is_empty() {
             continue;
         }
-        match OpenOptions::new().create(true).append(true).open(location) {
-            Ok(mut file) => {
-                match file.write_all(diagnostic_message.as_bytes()) {
-                    Ok(()) => {
-                        // Flush to ensure data is written to disk
-                        if file.flush().is_ok() {
-                            return; // Successfully wrote
-                        }
-                    }
-                    Err(e) => {
-                        last_error = format!("Write failed to {:?}: {}", location, e);
-                    }
-                }
-            }
-            Err(e) => {
-                last_error = format!("Open failed for {:?}: {}", location, e);
-            }
+        if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(location) {
+            let _ = file.write_all(diagnostic_message.as_bytes());
+            let _ = file.flush();
         }
     }
     // Last resort: try to print to stderr (may be invisible on Windows GUI mode)
     eprintln!("{}", diagnostic_message);
-    if !last_error.is_empty() {
-        eprintln!("Diagnostic write error: {}", last_error);
-    }
 }
 
 #[derive(Default)]
@@ -128,6 +119,24 @@ pub fn mask_api_key(key: &str) -> String {
 }
 
 pub fn init_app() -> tauri::Result<()> {
+    // Write diagnostic directly without helper function to ensure it works
+    let _ = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(std::env::temp_dir().join("dailylogger-startup.log"))
+        .and_then(|mut f| {
+            use std::io::Write;
+            let _ = f.write_all(
+                format!(
+                    "[{}] init_app: ENTRY POINT\n",
+                    chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f UTC")
+                )
+                .as_bytes(),
+            );
+            let _ = f.flush();
+            Ok(())
+        });
+
     write_diagnostic_file("init_app: Starting database initialization");
     tracing::info!("init_app: Starting database initialization");
 
