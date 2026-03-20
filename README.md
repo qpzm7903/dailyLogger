@@ -173,7 +173,14 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.45.0
+**最新版本**: v1.46.0
+- 依赖升级：Tailwind CSS v3 → v4
+- 升级 Tailwind CSS 从 3.4.19 到 4.2.2，获得显著性能提升
+- 配置迁移：tailwind.config.js → CSS @theme 块
+- 使用 @tailwindcss/vite 和 @tailwindcss/postcss 插件
+- 渐变类名更新：bg-gradient-* → bg-linear-*
+
+v1.45.0 更新:
 - 代码架构优化：SettingsModal.vue 组件拆分
 - 将 2750 行的 SettingsModal.vue 拆分为模块化子组件
 - BasicSettings.vue: API 配置、模型选择、Ollama 管理

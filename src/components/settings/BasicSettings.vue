@@ -177,7 +177,7 @@
             <button
               @click="showCreateModelModal = true"
               type="button"
-              class="w-full px-3 py-2 text-xs bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 rounded-lg transition-colors"
+              class="w-full px-3 py-2 text-xs bg-linear-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 rounded-lg transition-colors"
             >
               {{ $t('settings.createCustomModel') }}
             </button>
@@ -188,7 +188,7 @@
             <button
               @click="showFineTuningModal = true"
               type="button"
-              class="w-full px-3 py-2 text-xs bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 rounded-lg transition-colors"
+              class="w-full px-3 py-2 text-xs bg-linear-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 rounded-lg transition-colors"
             >
               {{ $t('settings.fineTuning') }}
             </button>

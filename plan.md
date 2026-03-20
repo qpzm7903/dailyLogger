@@ -6,40 +6,29 @@
 
 ---
 
-## 后续版本规划
+## v1.46.0（Tailwind CSS v4 升级）⏳ 开发中
 
-### v1.46.0 待定
+**目标**: 将 Tailwind CSS 从 v3.4.19 升级到 v4.2.2，获得性能提升和新特性
 
-**状态**: 等待需求输入
+**版本类型**: MINOR（依赖升级）
 
-**潜在需求**:
-- 用户反馈收集后的新需求
-- 进一步优化 SettingsModal.vue（将模态框逻辑提取为独立组件）
-- 性能优化或用户体验改进
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| DEP-001 | 升级 Tailwind CSS 从 v3.4.19 到 v4.2.2 | 3pts | MEDIUM | ⏳ 进行中 | [specs/DEP-001-tailwind-v4.md](specs/DEP-001-tailwind-v4.md) |
 
-**需求来源检查 (2026-03-20 当前)**:
-- ✅ GitHub Issues: 无未关闭问题
-- ✅ GitHub Actions: 最新 workflow 全部通过（Build and Release + Test）
-- ✅ 代码质量: `cargo clippy -- -D warnings` 无警告
-- ✅ 前端测试: 583 个测试全部通过
-- ✅ Rust 测试: 435 个测试全部通过
-- ✅ 安全审计: npm audit 显示 0 个漏洞
-- ✅ 依赖状态: Tailwind CSS 有大版本更新可用（3.4.19 → 4.2.2）
-- ⏳ 等待用户反馈或新功能需求
+**迁移清单**:
+- [ ] 安装 Tailwind CSS v4 和 @tailwindcss/vite 插件
+- [ ] 更新 `src/styles/main.css` 使用 `@import "tailwindcss"`
+- [ ] 迁移 `tailwind.config.js` 自定义颜色到 CSS `@theme` 块
+- [ ] 更新 `bg-gradient-to-r` 为 `bg-linear-to-r`（2处）
+- [ ] 验证所有测试通过
+- [ ] 验证 CI 通过
 
----
-
-**潜在改进点（待用户确认）**:
-- Tailwind CSS v4 大版本更新（需谨慎评估，当前 3.4.19 → 4.2.2）
-
----
-
-## v1.46.0 需求决策
-
-当前无明确需求输入，需确认以下事项：
-1. 是否执行 Tailwind CSS v4 升级？（major 更新，可能有破坏性变更）
-2. 是否有新的功能需求或改进点？
-3. 是否需要进行其他维护工作？
+**评估结果**:
+- 受影响文件: `src/styles/main.css`, `tailwind.config.js`, `src/components/settings/BasicSettings.vue`
+- 破坏性变更: `bg-gradient-*` → `bg-linear-*`（项目中有 2 处使用）
+- 性能提升: 增量构建快 182 倍
+- 风险等级: 中等（范围可控）
 
 ---
 
