@@ -397,6 +397,14 @@ pub fn init_database() -> Result<(), String> {
     crate::write_diagnostic_file("init_database: Shared records table ready");
     tracing::info!("init_database: Shared records table ready");
 
+    // Migrate plain text API key to encrypted storage BEFORE moving conn
+    // This avoids deadlock (no need to lock DB_CONNECTION again)
+    crate::write_diagnostic_file("init_database: Migrating API key if needed");
+    tracing::info!("init_database: Migrating API key if needed");
+    migrate_plain_api_key_with_conn(&conn)?;
+    crate::write_diagnostic_file("init_database: API key migration complete");
+    tracing::info!("init_database: API key migration complete");
+
     crate::write_diagnostic_file("init_database: Acquiring DB connection lock");
     let mut db = DB_CONNECTION.lock().map_err(|e| {
         let msg = format!("Lock error: {}", e);
@@ -410,13 +418,6 @@ pub fn init_database() -> Result<(), String> {
     crate::write_diagnostic_file("init_database: DB connection stored");
     tracing::info!("init_database: DB connection stored");
 
-    // Migrate plain text API key to encrypted storage
-    crate::write_diagnostic_file("init_database: Migrating API key if needed");
-    tracing::info!("init_database: Migrating API key if needed");
-    migrate_plain_api_key()?;
-    crate::write_diagnostic_file("init_database: API key migration complete");
-    tracing::info!("init_database: API key migration complete");
-
     crate::write_diagnostic_file(&format!(
         "init_database: Database initialized at {:?}",
         db_path
@@ -426,12 +427,8 @@ pub fn init_database() -> Result<(), String> {
 }
 
 /// Migrate plain text API key to encrypted storage
-fn migrate_plain_api_key() -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
-
+/// Takes a connection reference to avoid deadlock when called from init_database
+fn migrate_plain_api_key_with_conn(conn: &Connection) -> Result<(), String> {
     // Query current API key
     let api_key: Option<String> = conn
         .query_row("SELECT api_key FROM settings WHERE id = 1", [], |row| {
