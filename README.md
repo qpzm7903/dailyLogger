@@ -173,10 +173,16 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.42.0
+**最新版本**: v1.43.0
+- 支持重新分析已分析的截图记录 (#53)
+- 移除登录/注册功能，简化应用架构 (#55)
+
+v1.42.0 更新:
 - 设置入口优化：拆分为 4 个标签页（Basic、AI、Capture、Output），解决功能过于集中问题 (#50)
 - 历史报告查看：支持浏览所有历史输出文件 (#52)
 - 修复 Windows portable 版本日报生成崩溃问题 (#54)
+
+v1.41.0 更新:
 
 v1.41.0 更新:
 - 核心交互重构：状态管理优化 + 性能提升
