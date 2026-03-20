@@ -25,13 +25,18 @@
     "start": "Start",
     "stop": "Stop"
   },
+  "offlineBanner": {
+    "offline": "You are offline. AI features are unavailable.",
+    "reconnected": "Connection restored"
+  },
   "quickNote": {
     "title": "Quick Note",
     "shortcut": "Shortcut: Alt + Space",
     "todayRecords": "Today's notes: {count}",
     "record": "Record",
     "shortcutHint": "Enter to save · Shift+Enter for new line",
-    "placeholder": "Capture your thoughts..."
+    "placeholder": "Capture your thoughts...",
+    "savedSuccess": "Note saved"
   },
   "quickNoteWindow": {
     "title": "Quick Note",

@@ -25,13 +25,18 @@
     "start": "启动",
     "stop": "停止"
   },
+  "offlineBanner": {
+    "offline": "当前处于离线状态，AI 功能暂不可用",
+    "reconnected": "网络已恢复"
+  },
   "quickNote": {
     "title": "闪念胶囊",
     "shortcut": "快捷键: Alt + Space",
     "todayRecords": "今日记录: {count} 条",
     "record": "记录",
     "shortcutHint": "Enter 保存 · Shift+Enter 换行",
-    "placeholder": "记录此刻的想法..."
+    "placeholder": "记录此刻的想法...",
+    "savedSuccess": "记录已保存"
   },
   "quickNoteWindow": {
     "title": "快速记录",
