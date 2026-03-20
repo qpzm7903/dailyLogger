@@ -1114,6 +1114,51 @@ pub async fn take_screenshot() -> Result<String, String> {
     Ok(path)
 }
 
+/// FEAT-001: Reanalyze an existing screenshot record.
+/// Reads the screenshot from disk, calls AI analysis, and updates the record content.
+#[command]
+pub async fn reanalyze_record(record_id: i64) -> Result<ScreenAnalysis, String> {
+    // 1. Get the record from database
+    let record = memory_storage::get_record_by_id_sync(record_id)?;
+
+    // 2. Check if screenshot exists
+    let screenshot_path = record
+        .screenshot_path
+        .as_ref()
+        .ok_or_else(|| "Record has no screenshot".to_string())?;
+
+    // 3. Read screenshot file
+    let image_data =
+        std::fs::read(screenshot_path).map_err(|e| format!("Failed to read screenshot: {}", e))?;
+    let image_base64 =
+        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
+
+    // 4. Load capture settings
+    let settings = load_capture_settings();
+
+    // 5. Check API key
+    if settings.api_key.is_empty() {
+        return Err("API Key 未配置，请先在设置中配置 API Key".to_string());
+    }
+
+    // 6. Call AI analysis
+    tracing::info!("Reanalyzing record {}", record_id);
+    let analysis = analyze_screen(&settings, &image_base64).await?;
+
+    // 7. Update record content
+    let content_json = serde_json::to_string(&analysis)
+        .map_err(|e| format!("Failed to serialize analysis: {}", e))?;
+    memory_storage::update_record_content_sync(record_id, &content_json)?;
+
+    tracing::info!(
+        "Reanalysis complete for record {}: {}",
+        record_id,
+        analysis.current_focus
+    );
+
+    Ok(analysis)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -377,6 +377,36 @@ pub fn delete_record_sync(id: i64) -> Result<(), String> {
     Ok(())
 }
 
+/// Get a single record by ID
+/// Used by reanalyze_record to fetch record details
+pub fn get_record_by_id_sync(id: i64) -> Result<Record, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let record = conn
+        .query_row(
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags
+             FROM records WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(Record {
+                    id: row.get(0)?,
+                    timestamp: row.get(1)?,
+                    source_type: row.get(2)?,
+                    content: row.get(3)?,
+                    screenshot_path: row.get(4)?,
+                    monitor_info: row.get(5)?,
+                    tags: row.get(6)?,
+                })
+            },
+        )
+        .map_err(|e| format!("Record with id {} not found: {}", id, e))?;
+
+    Ok(record)
+}
+
 /// Update the content of a record by ID
 /// Used by offline queue retry to update screenshot analysis results
 pub fn update_record_content_sync(id: i64, content: &str) -> Result<(), String> {

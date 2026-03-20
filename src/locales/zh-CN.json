@@ -204,7 +204,11 @@
     "currentFocus": "当前焦点",
     "activeSoftware": "使用软件",
     "keywords": "关键词",
-    "none": "无"
+    "none": "无",
+    "reanalyze": "重新分析",
+    "reanalyzing": "分析中...",
+    "reanalyzeSuccess": "重新分析完成",
+    "reanalyzeFailed": "重新分析失败: {error}"
   },
   "logViewer": {
     "title": "运行日志",

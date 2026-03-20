@@ -142,7 +142,12 @@
     </div>
 
     <!-- Screenshot detail modal -->
-    <ScreenshotModal v-if="showDetail && selectedScreenshot" :record="selectedScreenshot" @close="showDetail = false" />
+    <ScreenshotModal
+      v-if="showDetail && selectedScreenshot"
+      :record="selectedScreenshot"
+      @close="showDetail = false"
+      @updated="handleRecordUpdated"
+    />
   </div>
 </template>
 
@@ -285,6 +290,22 @@ const handleScroll = (event: Event) => {
 const openScreenshot = (screenshot: ScreenshotRecord) => {
   selectedScreenshot.value = screenshot
   showDetail.value = true
+}
+
+// FEAT-001: Handle record updated from reanalysis
+const handleRecordUpdated = (updatedRecord: LogRecord) => {
+  // Update the record in the screenshots array
+  const index = screenshots.value.findIndex(s => s.id === updatedRecord.id)
+  if (index !== -1) {
+    // Preserve the thumbnail
+    const thumbnail = screenshots.value[index].thumbnail
+    screenshots.value[index] = { ...updatedRecord, thumbnail } as ScreenshotRecord
+  }
+  // Also update the selected screenshot
+  if (selectedScreenshot.value && selectedScreenshot.value.id === updatedRecord.id) {
+    const thumbnail = selectedScreenshot.value.thumbnail
+    selectedScreenshot.value = { ...updatedRecord, thumbnail } as ScreenshotRecord
+  }
 }
 
 onMounted(() => {

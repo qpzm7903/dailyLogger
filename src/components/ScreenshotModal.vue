@@ -44,6 +44,20 @@
           <p v-if="record.content" class="text-sm text-gray-300 whitespace-pre-wrap">{{ parseContent(record.content) }}</p>
           <p v-else class="text-sm text-gray-500 italic">{{ t('screenshotModal.noAIAnalysis') }}</p>
         </div>
+
+        <!-- FEAT-001: Reanalyze Button -->
+        <div class="mt-4 flex justify-end">
+          <button
+            @click="handleReanalyze"
+            :disabled="isReanalyzing"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            :class="isReanalyzing
+              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'"
+          >
+            {{ isReanalyzing ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -53,6 +67,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import { showToast } from '../stores/toast'
 import type { LogRecord } from '../types/tauri'
 
 interface WindowInfo {
@@ -73,9 +88,13 @@ const props = defineProps<{
   record: LogRecord
 }>()
 
-const emit = defineEmits<{(e: 'close'): void}>()
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'updated', record: LogRecord): void
+}>()
 
 const screenshotData = ref('')
+const isReanalyzing = ref(false)
 
 const formatTime = (timestamp: string) => {
   const date = new Date(timestamp)
@@ -140,6 +159,30 @@ const loadScreenshot = async () => {
       console.error('Failed to load screenshot:', err)
       screenshotData.value = ''
     }
+  }
+}
+
+// FEAT-001: Handle reanalyze
+const handleReanalyze = async () => {
+  if (isReanalyzing.value) return
+
+  isReanalyzing.value = true
+  try {
+    const analysis = await invoke<ScreenAnalysis>('reanalyze_record', { recordId: props.record.id })
+
+    // Update the record content
+    const updatedRecord = {
+      ...props.record,
+      content: JSON.stringify(analysis)
+    }
+
+    showToast(t('screenshotModal.reanalyzeSuccess'), { type: 'success' })
+    emit('updated', updatedRecord)
+  } catch (err) {
+    const errorMsg = String(err)
+    showToast(t('screenshotModal.reanalyzeFailed', { error: errorMsg }), { type: 'error' })
+  } finally {
+    isReanalyzing.value = false
   }
 }
 

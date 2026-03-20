@@ -204,7 +204,11 @@
     "currentFocus": "Current Focus",
     "activeSoftware": "Active Software",
     "keywords": "Keywords",
-    "none": "None"
+    "none": "None",
+    "reanalyze": "Reanalyze",
+    "reanalyzing": "Analyzing...",
+    "reanalyzeSuccess": "Reanalysis complete",
+    "reanalyzeFailed": "Reanalysis failed: {error}"
   },
   "logViewer": {
     "title": "Runtime Logs",
