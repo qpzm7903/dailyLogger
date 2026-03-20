@@ -66,3 +66,8 @@ strip = true
 lto = true
 codegen-units = 1
 panic = "abort"
+
+# Patch libspa to fix compatibility with pipewire 0.3.48+
+# The newer pipewire removed the 'flags' field and changed modifier type to i64
+[patch.crates-io]
+libspa = { path = "../patches/libspa" }
