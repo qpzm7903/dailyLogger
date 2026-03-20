@@ -230,28 +230,31 @@ describe('Toast', () => {
       expect(toastStore.toasts.value.length).toBe(0)
     })
 
-    it('does not auto-dismiss error toasts (duration 0)', async () => {
+    it('auto-dismisses error toasts after 5000ms', async () => {
       const wrapper = mountWithToast()
       toastStore.add({ message: 'Error', type: 'error' })
       await nextTick()
       expect(toastStore.toasts.value.length).toBe(1)
 
-      // Advance time significantly
-      vi.advanceTimersByTime(10000)
+      // Error toasts should still be present at 4999ms
+      vi.advanceTimersByTime(4999)
       await nextTick()
-
-      // Error toasts should still be there
       expect(toastStore.toasts.value.length).toBe(1)
+
+      // Auto-dismiss after 5000ms
+      vi.advanceTimersByTime(1)
+      await nextTick()
+      expect(toastStore.toasts.value.length).toBe(0)
     })
 
-    it('auto-dismisses success toast after default duration', async () => {
+    it('auto-dismisses success toast after default duration (3000ms)', async () => {
       const wrapper = mountWithToast()
       toastStore.add({ message: 'Success', type: 'success' })
       await nextTick()
       expect(toastStore.toasts.value.length).toBe(1)
 
-      // Default success duration is 5000ms
-      vi.advanceTimersByTime(5000)
+      // Default success duration is 3000ms
+      vi.advanceTimersByTime(3000)
       await nextTick()
 
       expect(toastStore.toasts.value.length).toBe(0)

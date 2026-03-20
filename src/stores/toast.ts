@@ -48,7 +48,7 @@ export function useToastStore(): {
 } {
   const add = (toast: ToastOptions & { message: string }): number => {
     const id = ++toastId
-    const defaultDuration = toast.type === 'error' ? 0 : 5000 // Error toasts don't auto-dismiss
+    const defaultDuration = toast.type === 'error' ? 5000 : toast.type === 'success' ? 3000 : 5000
 
     const newToast: Toast = {
       id,
