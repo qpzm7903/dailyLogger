@@ -2,7 +2,7 @@
 
 > 最后更新: 2026-03-20
 > 当前版本: v1.24.0 ✅ 已发布
-> 下一版本: v1.25.0（待规划）
+> 下一版本: v1.25.0（依赖维护与更新）🚧 进行中
 
 ---
 
@@ -777,6 +777,26 @@ there is no reactor running, must be called from the context of a Tokio 1.x runt
 - Windows portable 版本正常启动
 - 网络状态监控功能正常工作
 - 所有 Rust 测试通过
+
+---
+
+## v1.25.0（依赖维护与更新）🚧 进行中
+
+**目标**: 更新依赖包，保持项目安全性。
+
+**版本类型**: PATCH（依赖更新）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| MAINT-002 | 更新 @tauri-apps/cli 至 2.10.1 | 1pt | MEDIUM | 🚧 进行中 |
+
+### MAINT-002: 更新 @tauri-apps/cli
+
+**问题**: @tauri-apps/cli 2.10.0 有 patch 版本更新至 2.10.1
+
+**修复**:
+- 更新 @tauri-apps/cli 从 2.10.0 到 2.10.1
+- 验证所有测试通过
 
 ---
 
