@@ -61,7 +61,7 @@
       </div>
 
       <!-- Results List -->
-      <div class="flex-1 overflow-auto p-4">
+      <div ref="scrollContainer" class="flex-1 overflow-auto p-4">
         <div v-if="isLoading" class="text-center py-8 text-gray-500">
           {{ t('searchPanel.searching') }}
         </div>
@@ -72,6 +72,45 @@
           {{ t('searchPanel.startHint') }}
         </div>
 
+        <!-- UX-022: Virtual scroll for large result sets -->
+        <div
+          v-else-if="shouldUseVirtualScroll"
+          class="relative"
+          :style="{ height: `${virtualizer.getTotalSize()}px` }"
+        >
+          <div
+            v-for="virtualItem in virtualItems"
+            :key="virtualItem.index"
+            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-darker/50 transition-colors border-b border-gray-700"
+            :style="{
+              height: `${virtualItem.size}px`,
+              transform: `translateY(${virtualItem.start}px)`,
+            }"
+            :data-index="virtualItem.index"
+          >
+            <template v-if="results[virtualItem.index]">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span
+                      :class="results[virtualItem.index].record.source_type === 'auto' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
+                      class="px-2 py-0.5 rounded text-xs"
+                    >
+                      {{ results[virtualItem.index].record.source_type === 'auto' ? t('searchPanel.auto') : t('searchPanel.manual') }}
+                    </span>
+                    <span class="text-xs text-gray-500">{{ formatTime(results[virtualItem.index].record.timestamp) }}</span>
+                    <span v-if="orderBy === 'rank'" class="text-xs text-gray-600">
+                      {{ t('searchPanel.relevanceScore', { rank: results[virtualItem.index].rank.toFixed(2) }) }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-300" v-html="results[virtualItem.index].snippet"></p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Non-virtual scroll for small result sets -->
         <div v-else class="flex flex-col divide-y divide-gray-700">
           <div
             v-for="result in results"
@@ -103,9 +142,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { showError } from '../stores/toast'
 import type { Record } from '../types/tauri'
 
@@ -118,12 +158,34 @@ interface SearchResult {
 const { t } = useI18n()
 const emit = defineEmits<{(e: 'close'): void}>()
 
+// UX-022: Virtual scroll configuration
+const VIRTUAL_SCROLL_CONFIG = {
+  itemHeight: 72,          // Fixed height per result (px)
+  overscan: 5,             // Render extra items outside viewport
+  threshold: 50            // Enable virtual scroll when results exceed this
+}
+
 // State
 const searchQuery = ref('')
 const results = ref<SearchResult[]>([])
 const isLoading = ref(false)
 const hasSearched = ref(false)
 const orderBy = ref<'rank' | 'time'>('rank')
+const scrollContainer = ref<HTMLElement | null>(null)
+
+// UX-022: Virtual scroll - only enable for large result sets
+const shouldUseVirtualScroll = computed(() => results.value.length > VIRTUAL_SCROLL_CONFIG.threshold)
+
+// UX-022: Virtualizer instance
+const virtualizer = useVirtualizer({
+  count: results.value.length,
+  getScrollElement: () => scrollContainer.value,
+  estimateSize: () => VIRTUAL_SCROLL_CONFIG.itemHeight,
+  overscan: VIRTUAL_SCROLL_CONFIG.overscan,
+})
+
+// UX-022: Virtual items to render
+const virtualItems = computed(() => virtualizer.value.getVirtualItems())
 
 function formatTime(timestamp: string) {
   const date = new Date(timestamp)
@@ -152,7 +214,7 @@ async function search() {
     const searchResults = await invoke<SearchResult[]>('search_records', {
       query: searchQuery.value.trim(),
       orderBy: orderBy.value,
-      limit: 50
+      limit: 200  // Increased limit for virtual scroll demo
     })
     results.value = searchResults
   } catch (error) {

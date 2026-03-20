@@ -126,7 +126,7 @@ describe('SearchPanel', () => {
     expect(invokeMock).toHaveBeenCalledWith('search_records', {
       query: 'test',
       orderBy: 'rank',
-      limit: 50
+      limit: 200
     })
     expect(wrapper.vm.results).toEqual(mockResults)
   })
