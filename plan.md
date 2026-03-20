@@ -1,8 +1,25 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.49.0 ✅ 已完成
-> 上个发布版本: v1.48.0 ✅ 已发布
+> 当前版本: v1.50.0 🔄 开发中
+> 上个发布版本: v1.49.0 ✅ 已发布
+
+---
+
+## v1.50.0（测试覆盖增强）🔄 开发中
+
+**目标**: 继续增加组件测试覆盖率，更新依赖
+
+**版本类型**: MINOR（测试改进 + 依赖更新）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| TEST-006 | 添加 PluginPanel 组件测试 | 2pts | MEDIUM | 🔄 进行中 | — |
+| DEP-002 | 更新 Rust 依赖 (rustls-webpki) | 1pt | LOW | ⏳ 待处理 | — |
+
+**进度**:
+- 🔄 PluginPanel.vue 测试开发中
+- ⏳ 依赖更新待处理
 
 ---
 
@@ -17,13 +34,14 @@
 | TEST-001 | 添加 OfflineBanner 组件测试 | 1pt | MEDIUM | ✅ 完成 | — |
 | TEST-002 | 添加 ReportHistoryViewer 组件测试 | 2pts | MEDIUM | ✅ 完成 | — |
 | TEST-003 | 添加 TimelineVisualization 组件测试 | 2pts | LOW | ✅ 完成 | — |
-| TEST-004 | 添加 QuickNoteWindow 组件测试 | 1pt | LOW | ⏳ 延后 | — |
-| TEST-005 | 添加 PluginPanel 组件测试 | 2pts | LOW | ⏳ 延后 | — |
+| TEST-004 | 添加 QuickNoteWindow 组件测试 | 1pt | LOW | ✅ 完成 | — |
+| TEST-005 | 添加 PluginPanel 组件测试 | 2pts | LOW | 🔄 延后至 v1.50.0 | — |
 
 **完成情况**:
 - ✅ OfflineBanner.test.ts（14 个测试用例）
 - ✅ ReportHistoryViewer.test.ts（18 个测试用例）
 - ✅ TimelineVisualization.test.ts（23 个测试用例）
+- ✅ QuickNoteWindow.spec.ts（9 个测试用例，已存在）
 - ✅ 前端测试总数提升至 650 个（新增 55 个）
 - ✅ Rust 测试 435 个通过
 - ✅ CI 通过
