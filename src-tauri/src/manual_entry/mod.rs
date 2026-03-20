@@ -187,6 +187,66 @@ pub async fn get_log_file_path() -> Result<String, String> {
         .ok_or_else(|| "Invalid log directory path".to_string())
 }
 
+/// FIX-007: Report file info for listing historical reports
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ReportFile {
+    pub name: String,
+    pub path: String,
+    pub modified_time: String,
+    pub size_bytes: u64,
+}
+
+/// FIX-007: List report files in the Obsidian output directory.
+/// Returns a list of markdown files sorted by modification time (newest first).
+#[command]
+pub async fn list_report_files() -> Result<Vec<ReportFile>, String> {
+    use crate::memory_storage::get_settings_sync;
+
+    let settings = get_settings_sync().map_err(|e| format!("Failed to get settings: {}", e))?;
+    let output_path = settings
+        .get_obsidian_output_path()
+        .map_err(|_| "Obsidian output path not configured".to_string())?;
+
+    let output_dir = std::path::Path::new(&output_path);
+    if !output_dir.exists() {
+        return Err(format!("Output directory does not exist: {}", output_path));
+    }
+
+    let mut files: Vec<ReportFile> = std::fs::read_dir(output_dir)
+        .map_err(|e| format!("Failed to read directory: {}", e))?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| {
+            entry
+                .path()
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .map(|ext| ext.eq_ignore_ascii_case("md"))
+                .unwrap_or(false)
+        })
+        .filter_map(|entry| {
+            let path = entry.path();
+            let metadata = entry.metadata().ok()?;
+            let name = path.file_name()?.to_string_lossy().to_string();
+            let modified = metadata.modified().ok()?;
+            let modified_time: chrono::DateTime<chrono::Utc> = modified.into();
+            let size = metadata.len();
+
+            Some(ReportFile {
+                name,
+                path: path.to_string_lossy().to_string(),
+                modified_time: modified_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+                size_bytes: size,
+            })
+        })
+        .collect();
+
+    // Sort by modification time, newest first
+    files.sort_by(|a, b| b.modified_time.cmp(&a.modified_time));
+
+    tracing::info!("Found {} report files in {}", files.len(), output_path);
+    Ok(files)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -668,5 +668,13 @@
     "alreadyShared": "This record is already shared to this team",
     "loadingTeams": "Loading teams...",
     "sharedBadge": "Shared"
+  },
+  "reportHistory": {
+    "title": "Report History",
+    "loading": "Loading...",
+    "noFiles": "No report files found",
+    "modified": "Modified",
+    "view": "View",
+    "viewSelected": "View Selected"
   }
 }

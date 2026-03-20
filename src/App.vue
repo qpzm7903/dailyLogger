@@ -245,9 +245,17 @@
         </div>
 
         <div class="bg-dark rounded-xl p-5 border border-gray-700">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="text-2xl">📁</span>
-            <h2 class="font-medium">输出文件</h2>
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">📁</span>
+              <h2 class="font-medium">输出文件</h2>
+            </div>
+            <button
+              @click="open('reportHistory')"
+              class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
+            >
+              {{ t('reportHistory.title') }}
+            </button>
           </div>
           <div v-if="summaryPath" class="bg-darker rounded-lg p-3 border border-gray-700 mb-3">
             <p class="text-xs text-gray-500 mb-1">日报</p>
@@ -309,6 +317,7 @@
     <CustomReportModal v-if="isOpen('customReport')" @close="close('customReport')" @generated="handleCustomReportGenerated" />
     <ReportComparisonModal v-if="isOpen('comparisonReport')" @close="close('comparisonReport')" @generated="handleComparisonReportGenerated" />
     <DailySummaryViewer v-if="isOpen('comparisonReportViewer')" :summaryPath="comparisonReportPath!" @close="close('comparisonReportViewer')" />
+    <ReportHistoryViewer v-if="isOpen('reportHistory')" @close="close('reportHistory')" @viewFile="handleViewReportFile" />
     <LogViewer v-if="isOpen('logViewer')" @close="close('logViewer')" />
     <HistoryViewer v-if="isOpen('historyViewer')" :initialTag="initialFilterTag" :currentUser="currentUser" @close="close('historyViewer'); initialFilterTag = null" />
     <SearchPanel v-if="isOpen('search')" @close="close('search')" />
@@ -337,6 +346,7 @@ import QuickNoteModal from './components/QuickNoteModal.vue'
 import ScreenshotModal from './components/ScreenshotModal.vue'
 import ScreenshotGallery from './components/ScreenshotGallery.vue'
 import DailySummaryViewer from './components/DailySummaryViewer.vue'
+import ReportHistoryViewer from './components/ReportHistoryViewer.vue'
 import LogViewer from './components/LogViewer.vue'
 import HistoryViewer from './components/HistoryViewer.vue'
 import SearchPanel from './components/SearchPanel.vue'
@@ -713,6 +723,12 @@ const handleCustomReportGenerated = (path: string) => {
 
 const handleComparisonReportGenerated = (path: string) => {
   comparisonReportPath.value = path
+}
+
+// FIX-007: Handle viewing historical report file
+const handleViewReportFile = (path: string) => {
+  summaryPath.value = path
+  open('summaryViewer')
 }
 
 const loadTodayRecords = async () => {

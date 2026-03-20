@@ -664,5 +664,13 @@
     "alreadyShared": "该记录已分享到此团队",
     "loadingTeams": "加载团队中...",
     "sharedBadge": "已分享"
+  },
+  "reportHistory": {
+    "title": "历史报告",
+    "loading": "加载中...",
+    "noFiles": "暂无报告文件",
+    "modified": "修改时间",
+    "view": "查看",
+    "viewSelected": "查看选中"
   }
 }
