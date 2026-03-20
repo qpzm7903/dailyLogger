@@ -7,11 +7,15 @@
  * Error type enumeration
  */
 export const ErrorType = {
-  NETWORK: 'NETWORK',
-  AUTH: 'AUTH',
-  QUOTA: 'QUOTA',
-  VALIDATION: 'VALIDATION',
-  UNKNOWN: 'UNKNOWN'
+  NETWORK: 'network',
+  AUTH: 'auth',
+  QUOTA: 'quota',
+  VALIDATION: 'validation',
+  DATABASE: 'database',
+  FILE_IO: 'fileIO',
+  SCREENSHOT: 'screenshot',
+  TIMEOUT: 'timeout',
+  UNKNOWN: 'unknown'
 } as const
 
 export type ErrorTypeValue = typeof ErrorType[keyof typeof ErrorType]
@@ -21,14 +25,51 @@ export type ErrorTypeValue = typeof ErrorType[keyof typeof ErrorType]
  * Order matters: more specific patterns should come first
  */
 const ERROR_PATTERNS: Record<ErrorTypeValue, string[]> = {
+  [ErrorType.TIMEOUT]: [
+    'timeout',
+    'timed out',
+    '请求超时',
+    '超时'
+  ],
+  [ErrorType.SCREENSHOT]: [
+    'screenshot',
+    'capture',
+    '截图',
+    '屏幕捕获',
+    'permission denied',
+    '权限被拒绝'
+  ],
+  [ErrorType.FILE_IO]: [
+    'file not found',
+    'enoent',
+    'eacces',
+    'permission denied',
+    '文件不存在',
+    '文件读写',
+    'cannot read',
+    'cannot write',
+    'failed to write',
+    'failed to read'
+  ],
+  [ErrorType.DATABASE]: [
+    'database',
+    'sqlite',
+    'sql',
+    '数据库',
+    'db locked',
+    'constraint',
+    'unique constraint',
+    'foreign key'
+  ],
   [ErrorType.NETWORK]: [
     'network',
-    'timeout',
-    'ECONNREFUSED',
-    'ENOTFOUND',
-    'ECONNRESET',
+    'econnrefused',
+    'enotfound',
+    'econnreset',
     'fetch failed',
-    'networkerror'
+    'networkerror',
+    '网络连接',
+    '连接失败'
   ],
   [ErrorType.AUTH]: [
     '401',
@@ -37,14 +78,20 @@ const ERROR_PATTERNS: Record<ErrorTypeValue, string[]> = {
     'api key',
     'authentication failed',
     'invalid api key',
-    'access denied'
+    'access denied',
+    '认证失败',
+    'api key 无效',
+    'api key 过期'
   ],
   [ErrorType.QUOTA]: [
     '429',
     'rate limit',
     'quota',
     'too many requests',
-    'usage limit'
+    'usage limit',
+    '配额',
+    '调用次数',
+    'rate_limit'
   ],
   [ErrorType.VALIDATION]: [
     'invalid',
@@ -52,31 +99,12 @@ const ERROR_PATTERNS: Record<ErrorTypeValue, string[]> = {
     'format',
     'required',
     'empty',
-    'cannot be empty'
+    'cannot be empty',
+    '验证失败',
+    '格式不正确',
+    '不能为空'
   ],
   [ErrorType.UNKNOWN]: []
-}
-
-/**
- * User-friendly error messages (in Chinese)
- */
-const ERROR_MESSAGES: Record<ErrorTypeValue, string> = {
-  [ErrorType.NETWORK]: '网络连接失败，请检查网络设置',
-  [ErrorType.AUTH]: 'API Key 无效或已过期',
-  [ErrorType.QUOTA]: 'API 调用次数已达上限',
-  [ErrorType.VALIDATION]: '输入内容格式不正确',
-  [ErrorType.UNKNOWN]: '操作失败，请稍后重试'
-}
-
-/**
- * Suggested actions for each error type
- */
-const SUGGESTED_ACTIONS: Record<ErrorTypeValue, string> = {
-  [ErrorType.NETWORK]: '重试',
-  [ErrorType.AUTH]: '检查设置',
-  [ErrorType.QUOTA]: '检查账户',
-  [ErrorType.VALIDATION]: '修改输入',
-  [ErrorType.UNKNOWN]: '重试'
 }
 
 /**
@@ -101,21 +129,21 @@ export function parseError(error: Error | string): ErrorTypeValue {
 }
 
 /**
- * Get user-friendly error message for an error type
+ * Get i18n key for error message
  * @param errorType - The error type from ErrorType enum
- * @returns User-friendly error message in Chinese
+ * @returns The i18n key for the error message
  */
-export function getErrorMessage(errorType: ErrorTypeValue): string {
-  return ERROR_MESSAGES[errorType] || ERROR_MESSAGES[ErrorType.UNKNOWN]
+export function getErrorMessageKey(errorType: ErrorTypeValue): string {
+  return `errors.messages.${errorType}`
 }
 
 /**
- * Get suggested action for an error type
+ * Get i18n key for suggested action
  * @param errorType - The error type from ErrorType enum
- * @returns Suggested action in Chinese
+ * @returns The i18n key for the suggested action
  */
-export function getSuggestedAction(errorType: ErrorTypeValue): string {
-  return SUGGESTED_ACTIONS[errorType] || SUGGESTED_ACTIONS[ErrorType.UNKNOWN]
+export function getSuggestedActionKey(errorType: ErrorTypeValue): string {
+  return `errors.suggestions.${errorType}`
 }
 
 /**
@@ -123,22 +151,22 @@ export function getSuggestedAction(errorType: ErrorTypeValue): string {
  */
 export interface ErrorInfo {
   type: ErrorTypeValue
-  message: string
-  suggestion: string
+  messageKey: string
+  suggestionKey: string
   originalError: string
 }
 
 /**
  * Create a structured error info object
  * @param error - The original error
- * @returns Structured error information
+ * @returns Structured error information with i18n keys
  */
 export function createErrorInfo(error: Error | string): ErrorInfo {
   const type = parseError(error)
   return {
     type,
-    message: getErrorMessage(type),
-    suggestion: getSuggestedAction(type),
+    messageKey: getErrorMessageKey(type),
+    suggestionKey: getSuggestedActionKey(type),
     originalError: error instanceof Error ? error.message : String(error)
   }
 }

@@ -41,6 +41,41 @@
     "saving": "保存中...",
     "save": "保存"
   },
+  "errors": {
+    "types": {
+      "network": "网络错误",
+      "auth": "认证错误",
+      "quota": "配额限制",
+      "validation": "验证错误",
+      "database": "数据库错误",
+      "fileIO": "文件操作错误",
+      "screenshot": "截图错误",
+      "timeout": "请求超时",
+      "unknown": "未知错误"
+    },
+    "messages": {
+      "network": "网络连接失败，请检查网络设置",
+      "auth": "API Key 无效或已过期",
+      "quota": "API 调用次数已达上限",
+      "validation": "输入内容格式不正确",
+      "database": "数据库操作失败",
+      "fileIO": "文件读写失败",
+      "screenshot": "截图捕获失败",
+      "timeout": "请求超时，请稍后重试",
+      "unknown": "操作失败，请稍后重试"
+    },
+    "suggestions": {
+      "network": "检查网络连接后重试",
+      "auth": "前往设置检查 API Key",
+      "quota": "检查账户余额或升级套餐",
+      "validation": "检查输入内容格式",
+      "database": "尝试重启应用",
+      "fileIO": "检查文件路径和权限",
+      "screenshot": "检查截图权限设置",
+      "timeout": "检查网络状况后重试",
+      "unknown": "重试或联系支持"
+    }
+  },
   "toast": {
     "suggestion": "建议：",
     "retry": "重试",

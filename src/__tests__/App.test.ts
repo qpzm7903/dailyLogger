@@ -14,7 +14,8 @@ vi.mock('@tauri-apps/api/event', () => ({
 
 vi.mock('../stores/toast.js', () => ({
   showSuccess: vi.fn(),
-  showError: vi.fn()
+  showError: vi.fn(),
+  initToastI18n: vi.fn()
 }))
 
 import { invoke } from '@tauri-apps/api/core'

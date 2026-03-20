@@ -41,6 +41,41 @@
     "saving": "Saving...",
     "save": "Save"
   },
+  "errors": {
+    "types": {
+      "network": "Network Error",
+      "auth": "Authentication Error",
+      "quota": "Quota Exceeded",
+      "validation": "Validation Error",
+      "database": "Database Error",
+      "fileIO": "File Operation Error",
+      "screenshot": "Screenshot Error",
+      "timeout": "Request Timeout",
+      "unknown": "Unknown Error"
+    },
+    "messages": {
+      "network": "Network connection failed, please check your network settings",
+      "auth": "API Key is invalid or has expired",
+      "quota": "API call limit reached",
+      "validation": "Invalid input format",
+      "database": "Database operation failed",
+      "fileIO": "File read/write failed",
+      "screenshot": "Screenshot capture failed",
+      "timeout": "Request timed out, please try again",
+      "unknown": "Operation failed, please try again later"
+    },
+    "suggestions": {
+      "network": "Check your network connection and retry",
+      "auth": "Go to Settings to check your API Key",
+      "quota": "Check your account balance or upgrade your plan",
+      "validation": "Check the input format",
+      "database": "Try restarting the application",
+      "fileIO": "Check file path and permissions",
+      "screenshot": "Check screenshot permission settings",
+      "timeout": "Check your network and retry",
+      "unknown": "Retry or contact support"
+    }
+  },
   "toast": {
     "suggestion": "Suggestion:",
     "retry": "Retry",

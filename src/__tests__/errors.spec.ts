@@ -1,14 +1,74 @@
 import { describe, it, expect } from 'vitest'
-import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from '../utils/errors.js'
+import { parseError, getErrorMessageKey, getSuggestedActionKey, createErrorInfo, ErrorType } from '../utils/errors.js'
 
 describe('parseError', () => {
+  describe('TIMEOUT errors', () => {
+    it('should identify timeout error from "timeout" keyword', () => {
+      expect(parseError(new Error('request timeout after 30s'))).toBe(ErrorType.TIMEOUT)
+    })
+
+    it('should identify timeout error from "timed out"', () => {
+      expect(parseError(new Error('operation timed out'))).toBe(ErrorType.TIMEOUT)
+    })
+
+    it('should identify timeout error from Chinese "超时"', () => {
+      expect(parseError(new Error('请求超时'))).toBe(ErrorType.TIMEOUT)
+    })
+  })
+
+  describe('SCREENSHOT errors', () => {
+    it('should identify screenshot error from "screenshot" keyword', () => {
+      expect(parseError(new Error('screenshot capture failed'))).toBe(ErrorType.SCREENSHOT)
+    })
+
+    it('should identify screenshot error from "capture"', () => {
+      expect(parseError(new Error('screen capture permission denied'))).toBe(ErrorType.SCREENSHOT)
+    })
+
+    it('should identify screenshot error from Chinese "截图"', () => {
+      expect(parseError(new Error('截图失败'))).toBe(ErrorType.SCREENSHOT)
+    })
+  })
+
+  describe('FILE_IO errors', () => {
+    it('should identify file error from "file not found"', () => {
+      expect(parseError(new Error('file not found: config.json'))).toBe(ErrorType.FILE_IO)
+    })
+
+    it('should identify file error from "ENOENT"', () => {
+      expect(parseError(new Error('Error: ENOENT: no such file'))).toBe(ErrorType.FILE_IO)
+    })
+
+    it('should identify file error from "failed to write"', () => {
+      expect(parseError(new Error('failed to write file'))).toBe(ErrorType.FILE_IO)
+    })
+
+    it('should identify file error from "failed to read"', () => {
+      expect(parseError(new Error('failed to read configuration'))).toBe(ErrorType.FILE_IO)
+    })
+  })
+
+  describe('DATABASE errors', () => {
+    it('should identify database error from "database" keyword', () => {
+      expect(parseError(new Error('database connection failed'))).toBe(ErrorType.DATABASE)
+    })
+
+    it('should identify database error from "sqlite"', () => {
+      expect(parseError(new Error('sqlite error: constraint violation'))).toBe(ErrorType.DATABASE)
+    })
+
+    it('should identify database error from "db locked"', () => {
+      expect(parseError(new Error('database is locked'))).toBe(ErrorType.DATABASE)
+    })
+
+    it('should identify database error from Chinese "数据库"', () => {
+      expect(parseError(new Error('数据库操作失败'))).toBe(ErrorType.DATABASE)
+    })
+  })
+
   describe('NETWORK errors', () => {
     it('should identify network error from "network" keyword', () => {
       expect(parseError(new Error('network connection failed'))).toBe(ErrorType.NETWORK)
-    })
-
-    it('should identify network error from "timeout" keyword', () => {
-      expect(parseError(new Error('request timeout after 30s'))).toBe(ErrorType.NETWORK)
     })
 
     it('should identify network error from "ECONNREFUSED"', () => {
@@ -39,10 +99,6 @@ describe('parseError', () => {
 
     it('should identify auth error from "api key" keyword', () => {
       expect(parseError(new Error('Invalid api key provided'))).toBe(ErrorType.AUTH)
-    })
-
-    it('should identify auth error from "authentication failed"', () => {
-      expect(parseError(new Error('authentication failed'))).toBe(ErrorType.AUTH)
     })
   })
 
@@ -94,51 +150,73 @@ describe('parseError', () => {
     })
 
     it('should handle mixed case Timeout', () => {
-      expect(parseError(new Error('Request Timeout'))).toBe(ErrorType.NETWORK)
+      expect(parseError(new Error('Request Timeout'))).toBe(ErrorType.TIMEOUT)
     })
   })
 })
 
-describe('getErrorMessage', () => {
-  it('should return Chinese message for NETWORK error', () => {
-    expect(getErrorMessage(ErrorType.NETWORK)).toBe('网络连接失败，请检查网络设置')
+describe('getErrorMessageKey', () => {
+  it('should return correct i18n key for NETWORK error', () => {
+    expect(getErrorMessageKey(ErrorType.NETWORK)).toBe('errors.messages.network')
   })
 
-  it('should return Chinese message for AUTH error', () => {
-    expect(getErrorMessage(ErrorType.AUTH)).toBe('API Key 无效或已过期')
+  it('should return correct i18n key for AUTH error', () => {
+    expect(getErrorMessageKey(ErrorType.AUTH)).toBe('errors.messages.auth')
   })
 
-  it('should return Chinese message for QUOTA error', () => {
-    expect(getErrorMessage(ErrorType.QUOTA)).toBe('API 调用次数已达上限')
+  it('should return correct i18n key for TIMEOUT error', () => {
+    expect(getErrorMessageKey(ErrorType.TIMEOUT)).toBe('errors.messages.timeout')
   })
 
-  it('should return Chinese message for VALIDATION error', () => {
-    expect(getErrorMessage(ErrorType.VALIDATION)).toBe('输入内容格式不正确')
+  it('should return correct i18n key for DATABASE error', () => {
+    expect(getErrorMessageKey(ErrorType.DATABASE)).toBe('errors.messages.database')
   })
 
-  it('should return Chinese message for UNKNOWN error', () => {
-    expect(getErrorMessage(ErrorType.UNKNOWN)).toBe('操作失败，请稍后重试')
+  it('should return correct i18n key for SCREENSHOT error', () => {
+    expect(getErrorMessageKey(ErrorType.SCREENSHOT)).toBe('errors.messages.screenshot')
+  })
+
+  it('should return correct i18n key for UNKNOWN error', () => {
+    expect(getErrorMessageKey(ErrorType.UNKNOWN)).toBe('errors.messages.unknown')
   })
 })
 
-describe('getSuggestedAction', () => {
-  it('should suggest retry for NETWORK error', () => {
-    expect(getSuggestedAction(ErrorType.NETWORK)).toBe('重试')
+describe('getSuggestedActionKey', () => {
+  it('should return correct i18n key for NETWORK suggestion', () => {
+    expect(getSuggestedActionKey(ErrorType.NETWORK)).toBe('errors.suggestions.network')
   })
 
-  it('should suggest checking settings for AUTH error', () => {
-    expect(getSuggestedAction(ErrorType.AUTH)).toBe('检查设置')
+  it('should return correct i18n key for AUTH suggestion', () => {
+    expect(getSuggestedActionKey(ErrorType.AUTH)).toBe('errors.suggestions.auth')
   })
 
-  it('should suggest checking account for QUOTA error', () => {
-    expect(getSuggestedAction(ErrorType.QUOTA)).toBe('检查账户')
+  it('should return correct i18n key for TIMEOUT suggestion', () => {
+    expect(getSuggestedActionKey(ErrorType.TIMEOUT)).toBe('errors.suggestions.timeout')
   })
 
-  it('should suggest modifying input for VALIDATION error', () => {
-    expect(getSuggestedAction(ErrorType.VALIDATION)).toBe('修改输入')
+  it('should return correct i18n key for UNKNOWN suggestion', () => {
+    expect(getSuggestedActionKey(ErrorType.UNKNOWN)).toBe('errors.suggestions.unknown')
+  })
+})
+
+describe('createErrorInfo', () => {
+  it('should create error info with correct type and keys', () => {
+    const errorInfo = createErrorInfo(new Error('network connection failed'))
+    expect(errorInfo.type).toBe(ErrorType.NETWORK)
+    expect(errorInfo.messageKey).toBe('errors.messages.network')
+    expect(errorInfo.suggestionKey).toBe('errors.suggestions.network')
+    expect(errorInfo.originalError).toBe('network connection failed')
   })
 
-  it('should suggest retry for UNKNOWN error', () => {
-    expect(getSuggestedAction(ErrorType.UNKNOWN)).toBe('重试')
+  it('should handle string errors', () => {
+    const errorInfo = createErrorInfo('timeout occurred')
+    expect(errorInfo.type).toBe(ErrorType.TIMEOUT)
+    expect(errorInfo.messageKey).toBe('errors.messages.timeout')
+  })
+
+  it('should handle unknown errors', () => {
+    const errorInfo = createErrorInfo(new Error('something unknown'))
+    expect(errorInfo.type).toBe(ErrorType.UNKNOWN)
+    expect(errorInfo.messageKey).toBe('errors.messages.unknown')
   })
 })

@@ -337,8 +337,7 @@ import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
 import LoginModal from './components/LoginModal.vue'
-import { showError, showSuccess } from './stores/toast'
-import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors'
+import { showError, showSuccess, initToastI18n } from './stores/toast'
 import type { LogRecord, Tag, User, Settings } from './types/tauri'
 
 const { t } = useI18n()
@@ -749,6 +748,9 @@ const handleLogout = async () => {
 }
 
 onMounted(async () => {
+  // Initialize toast i18n for error messages
+  initToastI18n(useI18n())
+
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
 

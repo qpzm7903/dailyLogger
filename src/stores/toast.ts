@@ -2,8 +2,9 @@
  * Toast notification state management
  * Provides centralized toast notification queue management
  */
-import { ref, computed, type Ref, type ComputedRef } from 'vue'
-import { parseError, getErrorMessage, getSuggestedAction, type ErrorTypeValue } from '../utils/errors'
+import { ref, type Ref } from 'vue'
+import { parseError, getErrorMessageKey, getSuggestedActionKey, type ErrorTypeValue } from '../utils/errors'
+import { useI18n } from 'vue-i18n'
 
 /**
  * Toast notification type
@@ -53,7 +54,7 @@ export function useToastStore(): {
       id,
       message: toast.message,
       type: toast.type || 'info',
-      suggestion: toast.suggestion || null,
+      suggestion: toast.suggestion,
       retryCallback: toast.retryCallback || null,
       duration: toast.duration ?? defaultDuration
     }
@@ -107,6 +108,64 @@ export function showToast(message: string, options: ToastOptions = {}): number {
 }
 
 /**
+ * Get i18n instance for error messages
+ * This is a workaround since we can't use useI18n() outside of setup()
+ */
+let i18nInstance: ReturnType<typeof useI18n> | null = null
+
+/**
+ * Initialize the i18n instance for toast errors
+ * Called from App.vue setup
+ */
+export function initToastI18n(i18n: ReturnType<typeof useI18n>): void {
+  i18nInstance = i18n
+}
+
+/**
+ * Get translated error message
+ */
+function getTranslatedErrorMessage(errorType: ErrorTypeValue): string {
+  if (i18nInstance) {
+    return i18nInstance.t(getErrorMessageKey(errorType))
+  }
+  // Fallback messages (Chinese)
+  const fallbackMessages: Record<ErrorTypeValue, string> = {
+    network: '网络连接失败，请检查网络设置',
+    auth: 'API Key 无效或已过期',
+    quota: 'API 调用次数已达上限',
+    validation: '输入内容格式不正确',
+    database: '数据库操作失败',
+    fileIO: '文件读写失败',
+    screenshot: '截图捕获失败',
+    timeout: '请求超时，请稍后重试',
+    unknown: '操作失败，请稍后重试'
+  }
+  return fallbackMessages[errorType] || fallbackMessages.unknown
+}
+
+/**
+ * Get translated suggestion
+ */
+function getTranslatedSuggestion(errorType: ErrorTypeValue): string {
+  if (i18nInstance) {
+    return i18nInstance.t(getSuggestedActionKey(errorType))
+  }
+  // Fallback suggestions (Chinese)
+  const fallbackSuggestions: Record<ErrorTypeValue, string> = {
+    network: '检查网络连接后重试',
+    auth: '前往设置检查 API Key',
+    quota: '检查账户余额或升级套餐',
+    validation: '检查输入内容格式',
+    database: '尝试重启应用',
+    fileIO: '检查文件路径和权限',
+    screenshot: '检查截图权限设置',
+    timeout: '检查网络状况后重试',
+    unknown: '重试或联系支持'
+  }
+  return fallbackSuggestions[errorType] || fallbackSuggestions.unknown
+}
+
+/**
  * Show an error toast with parsed error info
  * @param error - The error to display
  * @param retryCallback - Optional retry callback
@@ -114,8 +173,8 @@ export function showToast(message: string, options: ToastOptions = {}): number {
  */
 export function showError(error: unknown, retryCallback: (() => void) | null = null): number {
   const errorType = parseError(error instanceof Error ? error : String(error))
-  const message = getErrorMessage(errorType)
-  const suggestion = getSuggestedAction(errorType)
+  const message = getTranslatedErrorMessage(errorType)
+  const suggestion = getTranslatedSuggestion(errorType)
 
   return showToast(message, {
     type: 'error',
