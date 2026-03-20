@@ -9,7 +9,7 @@ use crate::utils::{
 #[cfg(feature = "v0_3_65")]
 use convert_case::{Case, Casing};
 
-use std::{ffi::CStr, fmt::Debug};
+use std::{ffi::CStr, fmt::Debug, mem::MaybeUninit};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct VideoFormat(pub spa_sys::spa_video_format);
@@ -226,26 +226,28 @@ pub struct VideoInfoRaw(spa_sys::spa_video_info_raw);
 
 impl VideoInfoRaw {
     pub fn new() -> Self {
-        Self(spa_sys::spa_video_info_raw {
-            format: VideoFormat::Unknown.as_raw(),
-            modifier: 0,
-            size: Rectangle {
-                width: 0,
-                height: 0,
-            },
-            framerate: Fraction { num: 0, denom: 0 },
-            max_framerate: Fraction { num: 0, denom: 0 },
-            views: 0,
-            interlace_mode: VideoInterlaceMode::Progressive.as_raw(),
-            pixel_aspect_ratio: Fraction { num: 0, denom: 0 },
-            multiview_mode: 0,
-            multiview_flags: 0,
-            chroma_site: 0,
-            color_range: 0,
-            color_matrix: 0,
-            transfer_function: 0,
-            color_primaries: 0,
-        })
+        // Use zeroed() for compatibility with different libspa versions
+        // (some versions have 'flags' field, some don't; modifier type varies)
+        let mut info: spa_sys::spa_video_info_raw = unsafe { MaybeUninit::zeroed().assume_init() };
+        info.format = VideoFormat::Unknown.as_raw();
+        info.modifier = 0;
+        info.size = Rectangle {
+            width: 0,
+            height: 0,
+        };
+        info.framerate = Fraction { num: 0, denom: 0 };
+        info.max_framerate = Fraction { num: 0, denom: 0 };
+        info.views = 0;
+        info.interlace_mode = VideoInterlaceMode::Progressive.as_raw();
+        info.pixel_aspect_ratio = Fraction { num: 0, denom: 0 };
+        info.multiview_mode = 0;
+        info.multiview_flags = 0;
+        info.chroma_site = 0;
+        info.color_range = 0;
+        info.color_matrix = 0;
+        info.transfer_function = 0;
+        info.color_primaries = 0;
+        Self(info)
     }
 
     pub fn set_format(&mut self, format: VideoFormat) {
@@ -257,10 +259,15 @@ impl VideoInfoRaw {
     }
 
     pub fn set_modifier(&mut self, modifier: u64) {
-        self.0.modifier = modifier as i64;
+        // Handle both u64 and i64 modifier types for compatibility
+        #[allow(clippy::unnecessary_cast)]
+        {
+            self.0.modifier = modifier as _;
+        }
     }
 
     pub fn modifier(self) -> u64 {
+        // Handle both u64 and i64 modifier types for compatibility
         self.0.modifier as u64
     }
 
