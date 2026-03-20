@@ -1,31 +1,12 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.29.0 ✅ 已发布
-> 下一版本: v1.30.0（TypeScript 基础设施）
+> 当前版本: v1.30.0 ✅ 已发布
+> 下一版本: v1.31.0（前端代码全量迁移至 TypeScript）
 
 ---
 
-## 下一迭代: v1.30.0（TypeScript 基础设施）🚧 待开发
-
-**目标**: 为前端引入 TypeScript 基础设施，为后续全量代码迁移做准备。
-
-**版本类型**: MINOR（技术基础设施升级）
-
-**背景**: 项目当前前端代码（`src/`）全部为 JavaScript（`.js`），缺乏类型安全保障，随着功能复杂度增长，维护风险上升。本版本完成基础设施层面的 TS 接入，下一版本（v1.31.0）完成代码层面的全量迁移。
-
-| ID | 需求 | 故事点 | 优先级 | 状态 |
-|----|------|--------|--------|------|
-| TS-001 | 安装 TypeScript 及相关依赖（typescript、vue-tsc、@vue/tsconfig、@types/node） | 1pt | HIGH | ⬜ 待开发 |
-| TS-002 | 创建 tsconfig.json（启用 strict 模式，allowJs: true 支持渐进迁移） | 1pt | HIGH | ⬜ 待开发 |
-| TS-003 | 更新 vite.config.js 支持 TypeScript 路径别名和类型检查 | 1pt | HIGH | ⬜ 待开发 |
-| TS-004 | 更新 vitest 配置，使测试文件支持 `.ts`/`.spec.ts` | 1pt | MEDIUM | ⬜ 待开发 |
-| TS-005 | 在 CI workflow 中增加 `vue-tsc --noEmit` 类型检查步骤 | 1pt | HIGH | ⬜ 待开发 |
-| TS-006 | 验证现有所有测试（531 frontend + 480 Rust）在新配置下仍通过 | 1pt | HIGH | ⬜ 待开发 |
-
----
-
-## 下下迭代: v1.31.0（前端代码全量迁移至 TypeScript）📋 规划中
+## 下一迭代: v1.31.0（前端代码全量迁移至 TypeScript）🚧 待开发
 
 **目标**: 将 `src/` 下所有 `.js` 文件迁移为 `.ts`，所有 Vue 组件添加 `lang="ts"`，建立完整的类型定义。
 
@@ -55,6 +36,21 @@
 ---
 
 ## 已完成版本
+
+### v1.30.0（TypeScript 基础设施）✅ 已发布
+
+**目标**: 为前端引入 TypeScript 基础设施，为后续全量代码迁移做准备。
+
+**版本类型**: MINOR（技术基础设施升级）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| TS-001 | 安装 TypeScript 及相关依赖（typescript、vue-tsc、@vue/tsconfig、@types/node） | 1pt | HIGH | ✅ 完成 |
+| TS-002 | 创建 tsconfig.json（启用 strict 模式，allowJs: true 支持渐进迁移） | 1pt | HIGH | ✅ 完成 |
+| TS-003 | 更新 vite.config.js 支持 TypeScript 路径别名和类型检查 | 1pt | HIGH | ✅ 完成 |
+| TS-004 | 更新 vitest 配置，使测试文件支持 `.ts`/`.spec.ts` | 1pt | MEDIUM | ✅ 完成 |
+| TS-005 | 在 CI workflow 中增加 `vue-tsc --noEmit` 类型检查步骤 | 1pt | HIGH | ✅ 完成 |
+| TS-006 | 验证现有所有测试（531 frontend + 480 Rust）在新配置下仍通过 | 1pt | HIGH | ✅ 完成 |
 
 ### v1.29.0（依赖维护）✅ 已发布
 

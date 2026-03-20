@@ -173,7 +173,16 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.28.0
+**最新版本**: v1.30.0
+- 引入 TypeScript 基础设施，为前端代码迁移做准备
+- 安装 TypeScript、vue-tsc、@vue/tsconfig、@types/node
+- 创建 tsconfig.json（strict 模式，allowJs 支持渐进迁移）
+- CI 中增加 vue-tsc 类型检查步骤
+
+v1.29.0 更新:
+- 更新 vitest 到 v4，jsdom 到 v29（依赖维护）
+
+v1.28.0 更新:
 - 迁移 vue-i18n 从 v9 到 v11，保持依赖处于受支持状态
 
 v1.27.0 更新:
