@@ -1,8 +1,35 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.48.0 🚧 规划中
-> 上个发布版本: v1.47.0 ✅ 已发布
+> 当前版本: v1.49.0 🚧 开发中
+> 上个发布版本: v1.48.0 ✅ 已发布
+
+---
+
+## v1.49.0（测试覆盖增强）🚧 开发中
+
+**目标**: 增加组件测试覆盖率，确保代码质量
+
+**版本类型**: PATCH（测试改进）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| TEST-001 | 添加 OfflineBanner 组件测试 | 1pt | MEDIUM | ⏳ 待开发 | — |
+| TEST-002 | 添加 ReportHistoryViewer 组件测试 | 2pts | MEDIUM | ⏳ 待开发 | — |
+| TEST-003 | 添加 TimelineVisualization 组件测试 | 2pts | LOW | ⏳ 待开发 | — |
+| TEST-004 | 添加 QuickNoteWindow 组件测试 | 1pt | LOW | ⏳ 待开发 | — |
+| TEST-005 | 添加 PluginPanel 组件测试 | 2pts | LOW | ⏳ 待开发 | — |
+
+**缺少测试的组件**:
+- OfflineBanner.vue（离线状态横幅）
+- ReportHistoryViewer.vue（历史报告查看）
+- TimelineVisualization.vue（时间线可视化）
+- QuickNoteWindow.vue（快速记录窗口）
+- PluginPanel.vue（插件面板）
+- settings/BasicSettings.vue
+- settings/AISettings.vue
+- settings/CaptureSettings.vue
+- settings/OutputSettings.vue
 
 ---
 
