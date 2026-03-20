@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.27.0 ✅ 已发布
-> 下一版本: v1.28.0（vue-i18n v11 迁移）
+> 当前版本: v1.28.0 ✅ 已发布
+> 下一版本: 待规划
 
 ---
 
@@ -25,9 +25,9 @@ npm warn deprecated vue-i18n@9.14.5: v9 and v10 no longer supported. please migr
 
 **修复**:
 - 更新 vue-i18n 从 9.14.5 到 11.3.0
-- 所有 531 个前端测试通过
-- 所有 480 个 Rust 测试通过
-- 无 clippy 警告
+- 验证所有前端测试通过 (531 tests ✅)
+- 验证所有 Rust 测试通过 (480 tests ✅)
+- CI 通过 ✅
 
 ---
 
