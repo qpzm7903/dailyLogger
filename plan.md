@@ -2,7 +2,7 @@
 
 > 最后更新: 2026-03-20
 > 当前版本: v1.25.0 ✅ 已发布
-> 下一版本: v1.26.0（待规划）
+> 下一版本: v1.26.0（代理绕过修复）🚧 进行中
 
 ---
 
@@ -797,6 +797,36 @@ there is no reactor running, must be called from the context of a Tokio 1.x runt
 **修复**:
 - 更新 @tauri-apps/cli 从 2.10.0 到 2.10.1
 - 验证所有测试通过（CI ✅）
+
+---
+
+## v1.26.0（本地请求代理绕过）🚧 进行中
+
+**目标**: 修复 Issue #47，让本地地址（localhost、127.0.0.1）的 API 请求绕过系统代理。
+
+**版本类型**: PATCH（Bug 修复）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| FIX-PROXY-001 | 本地地址 HTTP 请求绕过系统代理 | 2pts | HIGH | 🚧 进行中 |
+
+### FIX-PROXY-001: 本地地址 HTTP 请求绕过系统代理
+
+**问题**: 用户在 Windows portable 版本点击"测试连接"时，访问 localhost 的 LLM 服务被系统代理拦截。reqwest 默认会使用系统代理设置，导致本地请求也被代理。
+
+**修复**:
+- 在创建 `reqwest::Client` 时检测目标 URL 是否为本地地址
+- 如果是本地地址（localhost、127.0.0.1、::1 等），使用 `no_proxy()` 配置绕过代理
+- 涉及文件：
+  - `ollama.rs`: `test_api_connection_with_ollama()` 函数
+  - `ollama.rs`: `get_ollama_models()` 函数
+  - `synthesis/mod.rs`: `call_llm_api()` 函数
+  - 其他使用 `reqwest::Client` 的模块
+
+**验收条件**:
+- localhost 和 127.0.0.1 的请求不经过系统代理
+- 外部 URL 请求仍然可以使用系统代理
+- 所有测试通过
 
 ---
 

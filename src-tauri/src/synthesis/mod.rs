@@ -48,7 +48,10 @@ async fn call_llm_api(
     max_tokens: u32,
     caller: &str,
 ) -> Result<String, String> {
-    let client = reqwest::Client::new();
+    let endpoint = format!("{}/chat/completions", config.api_base_url);
+
+    // Create HTTP client with proxy bypass for local URLs
+    let client = crate::create_http_client(&endpoint, 120)?;
 
     let request_body = serde_json::json!({
         "model": config.model_name,
@@ -57,7 +60,6 @@ async fn call_llm_api(
     });
 
     let masked_key = crate::mask_api_key(&config.api_key);
-    let endpoint = format!("{}/chat/completions", config.api_base_url);
     tracing::info!(
         "{}",
         serde_json::json!({

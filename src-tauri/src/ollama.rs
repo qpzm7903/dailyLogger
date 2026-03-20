@@ -4,9 +4,8 @@
 //! allowing users to use locally deployed models for screenshot analysis and
 //! daily summary generation.
 
-use reqwest::Client;
+use crate::create_http_client;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use tauri::command;
 
 /// Detailed information about an Ollama model.
@@ -71,14 +70,11 @@ pub fn is_ollama_endpoint(url: &str) -> bool {
 /// The base_url should be the Ollama server URL (e.g., `http://localhost:11434`).
 #[command]
 pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, String> {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(10))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL: remove /v1 suffix if present, then append /api/tags
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/tags", base);
+
+    let client = create_http_client(&url, 10)?;
 
     tracing::info!("Fetching Ollama models from: {}", url);
 
@@ -203,14 +199,12 @@ pub async fn pull_ollama_model(
     model_name: String,
     quantization: Option<String>,
 ) -> Result<PullModelResult, String> {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(600)) // 10 minutes timeout for large models
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL: remove /v1 suffix if present, then append /api/pull
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/pull", base);
+
+    // 10 minutes timeout for large models
+    let client = create_http_client(&url, 600)?;
 
     tracing::info!(
         "Pulling Ollama model '{}' (quantization: {:?}) from: {}",
@@ -277,12 +271,11 @@ pub async fn delete_ollama_model(
     base_url: String,
     model_name: String,
 ) -> Result<DeleteModelResult, String> {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(30))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL: remove /v1 suffix if present, then append /api/delete
+    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let url = format!("{}/api/delete", base);
+
+    let client = create_http_client(&url, 30)?;
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/delete", base);
 
@@ -323,14 +316,11 @@ pub async fn delete_ollama_model(
 /// This helps users see which models are loaded in memory and their resource usage.
 #[command]
 pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult, String> {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(10))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL: remove /v1 suffix if present, then append /api/ps
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/ps", base);
+
+    let client = create_http_client(&url, 10)?;
 
     tracing::info!("Fetching running models from: {}", url);
 
@@ -408,10 +398,15 @@ pub async fn test_api_connection_with_ollama(
     let is_ollama = is_ollama_endpoint(&api_base_url);
     let effective_api_key = api_key.unwrap_or_default();
 
-    let client = Client::builder()
-        .timeout(Duration::from_secs(30))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+    // Build URL for the request
+    let url = if api_base_url.ends_with('/') {
+        format!("{}chat/completions", api_base_url)
+    } else {
+        format!("{}/chat/completions", api_base_url)
+    };
+
+    // Create client with proxy bypass for local URLs
+    let client = create_http_client(&url, 30)?;
 
     let start = std::time::Instant::now();
 
@@ -421,12 +416,6 @@ pub async fn test_api_connection_with_ollama(
         "messages": [{"role": "user", "content": "Say 'ok'"}],
         "max_tokens": 5
     });
-
-    let url = if api_base_url.ends_with('/') {
-        format!("{}chat/completions", api_base_url)
-    } else {
-        format!("{}/chat/completions", api_base_url)
-    };
 
     let mut request = client
         .post(&url)
@@ -602,14 +591,12 @@ pub async fn create_ollama_model(
     base_url: String,
     params: CreateModelParams,
 ) -> Result<CreateModelResult, String> {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(300)) // 5 minutes timeout for model creation
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL: remove /v1 suffix if present, then append /api/create
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/create", base);
+
+    // 5 minutes timeout for model creation
+    let client = create_http_client(&url, 300)?;
 
     let model_name = params.name.clone();
     tracing::info!(
@@ -686,14 +673,11 @@ pub async fn copy_ollama_model(
     source: String,
     destination: String,
 ) -> Result<CopyModelResult, String> {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(60))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL: remove /v1 suffix if present, then append /api/copy
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/copy", base);
+
+    let client = create_http_client(&url, 60)?;
 
     tracing::info!(
         "Copying Ollama model '{}' to '{}' at: {}",
@@ -760,14 +744,11 @@ pub async fn show_ollama_model(
     base_url: String,
     model_name: String,
 ) -> Result<ShowModelResult, String> {
-    let client = Client::builder()
-        .timeout(Duration::from_secs(30))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL: remove /v1 suffix if present, then append /api/show
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/show", base);
+
+    let client = create_http_client(&url, 30)?;
 
     tracing::info!(
         "Getting detailed info for Ollama model '{}' at: {}",

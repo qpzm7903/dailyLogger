@@ -42,9 +42,7 @@ pub async fn check_connectivity() -> bool {
 
 /// Lightweight connectivity probe: send a HEAD request with a short timeout.
 async fn ping_endpoint(base_url: &str) -> bool {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(5))
-        .build();
+    let client = crate::create_http_client(base_url, 5);
 
     let client = match client {
         Ok(c) => c,

@@ -3,7 +3,7 @@
 //! This module provides functionality to send report summaries to Slack channels
 //! using Incoming Webhooks.
 
-use reqwest::Client;
+use crate::create_http_client;
 use tauri::command;
 
 /// Check if Slack is configured in settings
@@ -29,7 +29,7 @@ pub async fn send_to_slack(
         return None;
     }
 
-    let client = Client::new();
+    let client = create_http_client(webhook_url, 30).ok()?;
 
     // Truncate content if too long (Slack has a 4000 character limit for message text)
     let truncated_content = if content.len() > 3900 {
@@ -91,7 +91,8 @@ pub async fn test_slack_connection() -> Result<bool, String> {
         _ => return Ok(false), // Not configured
     };
 
-    let client = Client::new();
+    let client = create_http_client(webhook_url, 30)
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
     // Send a test message
     let body = serde_json::json!({

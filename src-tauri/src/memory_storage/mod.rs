@@ -170,17 +170,15 @@ pub async fn get_model_info(
     api_key: String,
     model_name: String,
 ) -> Result<ModelInfo, String> {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // OpenAI compatible API /models endpoint
     let url = if api_base_url.ends_with('/') {
         format!("{}models/{}", api_base_url, model_name)
     } else {
         format!("{}/models/{}", api_base_url, model_name)
     };
+
+    // Create HTTP client with proxy bypass for local URLs
+    let client = crate::create_http_client(&url, 30)?;
 
     let response = client
         .get(&url)

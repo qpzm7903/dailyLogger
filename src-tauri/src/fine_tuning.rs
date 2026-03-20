@@ -177,8 +177,7 @@ pub async fn start_fine_tuning(
     base_url: String,
     config: FineTuningConfig,
 ) -> Result<FineTuningResult, String> {
-    use reqwest::Client;
-    use std::time::Duration;
+    use crate::create_http_client;
 
     tracing::info!(
         "Starting fine-tuning: base={}, output={}",
@@ -186,14 +185,12 @@ pub async fn start_fine_tuning(
         config.output_model_name
     );
 
-    let client = Client::builder()
-        .timeout(Duration::from_secs(300)) // 5 minute timeout for model creation
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
     // Normalize URL
     let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
     let url = format!("{}/api/create", base);
+
+    // 5 minute timeout for model creation
+    let client = create_http_client(&url, 300)?;
 
     // Build Modelfile content
     let mut modelfile_lines = vec![format!("FROM {}", config.base_model)];

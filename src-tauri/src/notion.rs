@@ -3,7 +3,7 @@
 //! This module provides functionality to write reports to Notion databases
 //! using the Notion API.
 
-use reqwest::Client;
+use crate::create_http_client;
 use serde::Deserialize;
 use tauri::command;
 
@@ -44,7 +44,8 @@ pub async fn write_report_to_notion(
         return None;
     }
 
-    let client = Client::new();
+    let url = format!("{}/pages", NOTION_API_BASE);
+    let client = create_http_client(&url, 30).ok()?;
 
     // Notion API requires the title property name to match the database's title property
     // Most databases use "Name" or "Title" as the title property
@@ -67,7 +68,7 @@ pub async fn write_report_to_notion(
     });
 
     let response = client
-        .post(format!("{}/pages", NOTION_API_BASE))
+        .post(&url)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Notion-Version", NOTION_API_VERSION)
         .header("Content-Type", "application/json")
@@ -122,11 +123,13 @@ pub async fn test_notion_connection() -> Result<bool, String> {
         _ => return Ok(false), // Not configured
     };
 
-    let client = Client::new();
+    let url = format!("{}/databases/{}", NOTION_API_BASE, database_id);
+    let client =
+        create_http_client(&url, 30).map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
     // Try to retrieve the database to verify access
     let response = client
-        .get(format!("{}/databases/{}", NOTION_API_BASE, database_id))
+        .get(&url)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Notion-Version", NOTION_API_VERSION)
         .send()

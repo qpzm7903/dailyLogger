@@ -28,12 +28,108 @@ pub mod window_info;
 pub mod work_time;
 
 use once_cell::sync::Lazy;
+use reqwest::{Client, Url};
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::time::Duration;
 
 pub static APP_STATE: Lazy<Mutex<AppState>> = Lazy::new(|| Mutex::new(AppState::default()));
+
+/// Check if a URL refers to a local address that should bypass system proxy.
+///
+/// Local addresses include:
+/// - localhost
+/// - 127.0.0.1
+/// - ::1 (IPv6 loopback)
+/// - 0.0.0.0
+/// - 192.168.x.x (private network)
+/// - 10.x.x.x (private network)
+/// - 172.16.x.x - 172.31.x.x (private network)
+pub fn is_local_url(url: &str) -> bool {
+    let url_lower = url.to_lowercase();
+
+    // Check for localhost
+    if url_lower.contains("localhost") {
+        return true;
+    }
+
+    // Check for 127.0.0.1 or ::1 (loopback)
+    if url_lower.contains("127.0.0.1") || url_lower.contains("[::1]") || url_lower.contains("::1") {
+        return true;
+    }
+
+    // Check for 0.0.0.0
+    if url_lower.contains("0.0.0.0") {
+        return true;
+    }
+
+    // Parse URL and check host
+    if let Ok(parsed) = Url::parse(url) {
+        if let Some(host) = parsed.host_str() {
+            // Check for loopback
+            if host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0" {
+                return true;
+            }
+
+            // Check for private IP ranges
+            if let Ok(ip) = host.parse::<std::net::IpAddr>() {
+                match ip {
+                    std::net::IpAddr::V4(ipv4) => {
+                        // 127.0.0.0/8 loopback
+                        if ipv4.is_loopback() {
+                            return true;
+                        }
+                        // 10.0.0.0/8 private
+                        if ipv4.octets()[0] == 10 {
+                            return true;
+                        }
+                        // 172.16.0.0/12 private
+                        let octets = ipv4.octets();
+                        if octets[0] == 172 && (16..=31).contains(&octets[1]) {
+                            return true;
+                        }
+                        // 192.168.0.0/16 private
+                        if octets[0] == 192 && octets[1] == 168 {
+                            return true;
+                        }
+                    }
+                    std::net::IpAddr::V6(ipv6) => {
+                        if ipv6.is_loopback() {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
+/// Create an HTTP client with appropriate proxy settings.
+///
+/// For local URLs (localhost, 127.0.0.1, private networks), the client is configured
+/// to bypass system proxy to avoid connection issues when the system has a proxy configured.
+///
+/// For external URLs, the client uses system proxy settings.
+pub fn create_http_client(target_url: &str, timeout_secs: u64) -> Result<Client, String> {
+    let mut builder = Client::builder().timeout(Duration::from_secs(timeout_secs));
+
+    // If target is a local URL, disable proxy to avoid interference
+    if is_local_url(target_url) {
+        tracing::info!(
+            "Creating HTTP client with proxy disabled for local URL: {}",
+            target_url
+        );
+        builder = builder.no_proxy();
+    }
+
+    builder
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))
+}
 
 /// Returns the application data directory: `<system_data_dir>/DailyLogger`.
 /// Used by all modules that need access to the app's persistent data.
@@ -216,5 +312,52 @@ mod tests {
     fn get_app_data_dir_returns_dailylogger_subdir() {
         let dir = get_app_data_dir();
         assert!(dir.ends_with("DailyLogger"));
+    }
+
+    // Tests for is_local_url function
+    #[test]
+    fn is_local_url_localhost() {
+        assert!(is_local_url("http://localhost:11434/v1"));
+        assert!(is_local_url("http://localhost:8080"));
+        assert!(is_local_url("https://localhost/api"));
+    }
+
+    #[test]
+    fn is_local_url_loopback_ipv4() {
+        assert!(is_local_url("http://127.0.0.1:11434/v1"));
+        assert!(is_local_url("http://127.0.0.1:8080"));
+    }
+
+    #[test]
+    fn is_local_url_loopback_ipv6() {
+        assert!(is_local_url("http://[::1]:11434/v1"));
+    }
+
+    #[test]
+    fn is_local_url_private_networks() {
+        // 10.x.x.x
+        assert!(is_local_url("http://10.0.0.1:11434"));
+        assert!(is_local_url("http://10.255.255.255:8080"));
+
+        // 172.16.x.x - 172.31.x.x
+        assert!(is_local_url("http://172.16.0.1:11434"));
+        assert!(is_local_url("http://172.31.255.255:8080"));
+
+        // 192.168.x.x
+        assert!(is_local_url("http://192.168.1.1:11434"));
+        assert!(is_local_url("http://192.168.0.100:8080"));
+    }
+
+    #[test]
+    fn is_local_url_external_not_local() {
+        assert!(!is_local_url("https://api.openai.com/v1"));
+        assert!(!is_local_url("https://example.com/api"));
+        assert!(!is_local_url("http://8.8.8.8:80"));
+    }
+
+    #[test]
+    fn is_local_url_case_insensitive() {
+        assert!(is_local_url("http://LOCALHOST:11434/v1"));
+        assert!(is_local_url("http://LocalHost:8080"));
     }
 }

@@ -3,8 +3,8 @@
 //! This module provides functionality to fetch commit and PR data from GitHub
 //! for calculating work time statistics.
 
+use crate::create_http_client;
 use chrono::Timelike;
-use reqwest::Client;
 use serde::Deserialize;
 use tauri::command;
 
@@ -96,11 +96,13 @@ pub async fn test_github_connection() -> Result<bool, String> {
         _ => return Ok(false), // Not configured
     };
 
-    let client = Client::new();
+    let url = format!("{}/user", GITHUB_API_BASE);
+    let client =
+        create_http_client(&url, 30).map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
     // Try to get the authenticated user to verify the token
     let response = client
-        .get(format!("{}/user", GITHUB_API_BASE))
+        .get(&url)
         .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "DailyLogger/1.0")
         .header("Accept", "application/vnd.github.v3+json")
@@ -125,8 +127,8 @@ pub async fn fetch_commits(
     since: Option<&str>,
     until: Option<&str>,
 ) -> Result<Vec<GitHubCommit>, String> {
-    let client = Client::new();
     let url = format!("{}/repos/{}/{}/commits", GITHUB_API_BASE, owner, repo);
+    let client = create_http_client(&url, 60)?;
 
     let mut query_params = vec![];
     if let Some(since) = since {
@@ -165,8 +167,8 @@ pub async fn fetch_pull_requests(
     repo: &str,
     state: &str,
 ) -> Result<Vec<GitHubPullRequest>, String> {
-    let client = Client::new();
     let url = format!("{}/repos/{}/{}/pulls", GITHUB_API_BASE, owner, repo);
+    let client = create_http_client(&url, 60)?;
 
     let response = client
         .get(&url)

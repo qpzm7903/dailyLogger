@@ -505,8 +505,6 @@ async fn analyze_screen(
     settings: &CaptureSettings,
     image_base64: &str,
 ) -> Result<ScreenAnalysis, String> {
-    let client = reqwest::Client::new();
-
     let prompt = settings
         .analysis_prompt
         .as_deref()
@@ -529,6 +527,10 @@ async fn analyze_screen(
 
     let masked_key = crate::mask_api_key(&settings.api_key);
     let endpoint = format!("{}/chat/completions", settings.api_base_url);
+
+    // Create HTTP client with proxy bypass for local URLs
+    let client = crate::create_http_client(&endpoint, 120)?;
+
     tracing::info!(
         "{}",
         serde_json::json!({
