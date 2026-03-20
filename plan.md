@@ -44,10 +44,11 @@
 - ✅ 依赖状态: Tailwind CSS v4 可用（3.4.19 → 4.2.2），需谨慎评估
 - ⏳ 等待用户反馈或新功能需求
 
-**需求来源检查 (2026-03-20 新 Session)**:
+**需求来源检查 (2026-03-20 Session 新会话)**:
 - ✅ GitHub Issues: 无未关闭问题
-- ✅ GitHub Actions: 最新 workflow 全部通过
+- ✅ GitHub Actions: 最新 5 个 workflow 全部通过
 - ✅ 代码质量: `cargo clippy -- -D warnings` 无警告
+- ✅ 前端测试: 583 个测试全部通过
 - ⏳ 等待用户反馈或新功能需求
 
 **潜在改进点（待用户确认）**:
