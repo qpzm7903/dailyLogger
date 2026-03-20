@@ -200,7 +200,7 @@
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.displaySettings') }}</h3>
       <div class="space-y-3">
         <!-- Multi-monitor capture mode -->
-        <div v-if="monitors?.length > 1" class="space-y-2">
+        <div v-if="(monitors?.length ?? 0) > 1" class="space-y-2">
           <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.captureMode') }}</label>
           <div class="flex flex-wrap gap-4">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -234,7 +234,7 @@
         </div>
 
         <!-- Monitor list -->
-        <div v-if="monitors?.length > 1" class="space-y-1">
+        <div v-if="(monitors?.length ?? 0) > 1" class="space-y-1">
           <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.connectedDisplays') }}</label>
           <div
             v-for="m in monitors"
