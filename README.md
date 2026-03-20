@@ -173,7 +173,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.30.0
+**最新版本**: v1.31.0
+- 完成前端代码全量 TypeScript 迁移
+- 所有 .js 文件迁移为 .ts，Vue 组件添加 `lang="ts"`
+- 建立完整的类型定义，提升代码质量和可维护性
+
+v1.30.0 更新:
 - 引入 TypeScript 基础设施，为前端代码迁移做准备
 - 安装 TypeScript、vue-tsc、@vue/tsconfig、@types/node
 - 创建 tsconfig.json（strict 模式，allowJs 支持渐进迁移）

@@ -1,41 +1,41 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.30.0 ✅ 已发布
-> 下一版本: v1.31.0（前端代码全量迁移至 TypeScript）
+> 当前版本: v1.31.0 ✅ 已发布
+> 下一版本: v1.32.0（待规划）
 
 ---
 
-## 下一迭代: v1.31.0（前端代码全量迁移至 TypeScript）🚧 待开发
+## 下一迭代: v1.32.0（待规划）🚧 待规划
+
+**目标**: 待规划
+
+**版本类型**: 待定
+
+---
+
+## 已完成版本
+
+### v1.31.0（前端代码全量迁移至 TypeScript）✅ 已发布
 
 **目标**: 将 `src/` 下所有 `.js` 文件迁移为 `.ts`，所有 Vue 组件添加 `lang="ts"`，建立完整的类型定义。
 
 **版本类型**: MINOR（代码质量提升）
 
-**迁移范围**（当前 JS 文件清单）:
+**迁移完成情况**:
 
 | 类别 | 文件 | 状态 |
 |------|------|------|
-| 入口 | `src/main.js` → `src/main.ts` | ⬜ 待迁移 |
-| 入口 | `src/quick-note.js` → `src/quick-note.ts` | ⬜ 待迁移 |
-| 国际化 | `src/i18n.js` → `src/i18n.ts` | ⬜ 待迁移 |
-| 测试配置 | `src/setupTests.js` → `src/setupTests.ts` | ⬜ 待迁移 |
-| Store | `src/stores/toast.js` → `src/stores/toast.ts` | ⬜ 待迁移 |
-| Composable | `src/composables/usePlatform.js` → `src/composables/usePlatform.ts` | ⬜ 待迁移 |
-| 工具函数 | `src/utils/errors.js` → `src/utils/errors.ts` | ⬜ 待迁移 |
-| Vue 组件 | `src/App.vue`（添加 `lang="ts"`） | ⬜ 待迁移 |
-| Vue 组件 | `src/components/*.vue`（添加 `lang="ts"`，约 15 个） | ⬜ 待迁移 |
-| 测试文件 | `src/**/__tests__/*.{spec,test}.js`（约 25 个） | ⬜ 待迁移 |
-
-**迁移原则**:
-- 迁移时为所有函数参数、返回值、组件 Props/Emits 补充类型标注
-- 使用 `interface` 定义 Tauri IPC 命令的入参和返回类型（集中放 `src/types/tauri.ts`）
-- 不允许使用 `any`（除极少数无法避免的第三方库边界情况，必须加 `// eslint-disable-next-line @typescript-eslint/no-explicit-any` 注释）
-- 每迁移一个文件须保证对应测试仍通过
-
----
-
-## 已完成版本
+| 入口 | `src/main.js` → `src/main.ts` | ✅ 已迁移 |
+| 入口 | `src/quick-note.js` → `src/quick-note.ts` | ✅ 已迁移 |
+| 国际化 | `src/i18n.js` → `src/i18n.ts` | ✅ 已迁移 |
+| 测试配置 | `src/setupTests.js` → `src/setupTests.ts` | ✅ 已迁移 |
+| Store | `src/stores/toast.js` → `src/stores/toast.ts` | ✅ 已迁移 |
+| Composable | `src/composables/usePlatform.js` → `src/composables/usePlatform.ts` | ✅ 已迁移 |
+| 工具函数 | `src/utils/errors.js` → `src/utils/errors.ts` | ✅ 已迁移 |
+| Vue 组件 | `src/App.vue`（添加 `lang="ts"`） | ✅ 已迁移 |
+| Vue 组件 | `src/components/*.vue`（添加 `lang="ts"`，约 15 个） | ✅ 已迁移 |
+| 测试文件 | `src/**/__tests__/*.{spec,test}.js`（约 25 个） | ✅ 已迁移 |
 
 ### v1.30.0（TypeScript 基础设施）✅ 已发布
 
