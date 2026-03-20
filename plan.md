@@ -1,8 +1,41 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.53.0 ✅ 已发布
-> 上个发布版本: v1.52.0 ✅ 已发布
+> 当前版本: v1.54.0 🔄 进行中
+> 上个发布版本: v1.53.0 ✅ 已发布
+
+---
+
+## v1.54.0（测试覆盖完善）🔄 进行中
+
+**目标**: 补充剩余缺少测试的组件，实现 100% 组件测试覆盖
+
+**版本类型**: MINOR（测试改进）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| TEST-012 | 添加 DailySummaryViewer 组件测试 | 2pts | MEDIUM | ✅ 完成 | — |
+| TEST-013 | 添加 LogViewer 组件测试 | 1pt | MEDIUM | ✅ 完成 | — |
+| TEST-014 | 添加 SearchPanel 组件测试 | 2pts | MEDIUM | ✅ 完成 | — |
+| TEST-015 | 添加 SettingsModal 容器组件测试 | 2pts | LOW | ✅ 完成 | — |
+| TEST-016 | 添加 TagBadge 组件测试 | 1pt | LOW | ✅ 完成 | — |
+
+**需求详情**:
+- **TEST-012**: DailySummaryViewer 组件测试 - 日报查看器
+- **TEST-013**: LogViewer 组件测试 - 日志查看器
+- **TEST-014**: SearchPanel 组件测试 - 搜索面板
+- **TEST-015**: SettingsModal 容器组件测试 - 设置模态框集成测试
+- **TEST-016**: TagBadge 组件测试 - 标签徽章组件
+
+**完成情况**:
+- ✅ DailySummaryViewer.test.ts（15 个测试用例）
+- ✅ LogViewer.test.ts（25 个测试用例）
+- ✅ SearchPanel.test.ts（26 个测试用例）
+- ✅ SettingsModal.test.ts（24 个测试用例）
+- ✅ TagBadge.test.ts（23 个测试用例）
+- ✅ 前端测试总数提升至 905 个（新增 113 个）
+- ✅ Rust 测试 435 个通过
+- ✅ CI 待验证
 
 ---
 
