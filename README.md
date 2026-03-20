@@ -173,7 +173,16 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.44.0
+**最新版本**: v1.45.0
+- 代码架构优化：SettingsModal.vue 组件拆分
+- 将 2750 行的 SettingsModal.vue 拆分为模块化子组件
+- BasicSettings.vue: API 配置、模型选择、Ollama 管理
+- AISettings.vue: 分析/报告模型配置、Prompt 设置
+- CaptureSettings.vue: 截图间隔、静默检测、窗口过滤
+- OutputSettings.vue: Obsidian、Logseq、Notion、GitHub、Slack 配置
+- 主 SettingsModal.vue 精简为 691 行容器组件
+
+v1.44.0 更新:
 - 代码质量优化：统一标签颜色系统、性能改进
 - 移除 App.vue 硬编码的 tagColors，创建统一的标签颜色工具
 - SearchPanel 添加虚拟滚动，支持大数据量搜索结果
@@ -223,10 +232,8 @@ v1.30.0 更新:
 v1.29.0 更新:
 - 更新 vitest 到 v4，jsdom 到 v29（依赖维护）
 
-v1.28.0 更新:
-- 迁移 vue-i18n 从 v9 到 v11，保持依赖处于受支持状态
-
-**早期版本 (v1.0.0 ~ v1.27.0)**:
+**早期版本 (v1.0.0 ~ v1.28.0)**:
+- v1.28.0: 迁移 vue-i18n 从 v9 到 v11
 - v1.27.0: 更新 jsdom 到 27.4.0
 - v1.26.0: 修复本地地址 API 请求被代理拦截问题 (#47)
 - v1.24.0~v1.25.0: 依赖更新、Windows 启动问题修复
