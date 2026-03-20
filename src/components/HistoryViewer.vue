@@ -65,6 +65,63 @@
           {{ t('historyViewer.noRecords') }}
         </div>
 
+        <!-- UX-012: Virtual scroll for large datasets -->
+        <div
+          v-else-if="shouldUseVirtualScroll"
+          class="relative"
+          :style="{ height: `${virtualizer.getTotalSize()}px` }"
+        >
+          <div
+            v-for="virtualItem in virtualItems"
+            :key="virtualItem.key"
+            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-darker/50 transition-colors group border-b border-gray-700"
+            :style="{
+              height: `${virtualItem.size}px`,
+              transform: `translateY(${virtualItem.start}px)`,
+            }"
+            :data-index="virtualItem.index"
+          >
+            <template v-if="records[virtualItem.index]">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span
+                      :class="records[virtualItem.index].source_type === 'auto' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
+                      class="px-2 py-0.5 rounded text-xs"
+                    >
+                      {{ records[virtualItem.index].source_type === 'auto' ? t('historyViewer.auto') : t('historyViewer.manual') }}
+                    </span>
+                    <span class="text-xs text-gray-500">{{ formatTime(records[virtualItem.index].timestamp) }}</span>
+                  </div>
+                  <p class="text-sm text-gray-300 truncate">{{ truncateContent(records[virtualItem.index].content) }}</p>
+                  <!-- Manual tags -->
+                  <div v-if="getRecordTags(records[virtualItem.index].id).length > 0" class="flex flex-wrap gap-1 mt-2">
+                    <TagBadge
+                      v-for="tag in getRecordTags(records[virtualItem.index].id)"
+                      :key="tag.id"
+                      :tag="tag"
+                    />
+                  </div>
+                </div>
+                <button
+                  @click="confirmDelete(records[virtualItem.index])"
+                  class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-sm px-2 py-1 transition-opacity"
+                >
+                  {{ t('historyViewer.delete') }}
+                </button>
+                <button
+                  v-if="currentUser"
+                  @click="openShareModal(records[virtualItem.index])"
+                  class="opacity-0 group-hover:opacity-100 text-primary hover:text-primary/80 text-sm px-2 py-1 transition-opacity"
+                >
+                  {{ t('team.share') }}
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Normal rendering for small datasets -->
         <div v-else class="flex flex-col divide-y divide-gray-700">
           <div
             v-for="record in records"
@@ -188,9 +245,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { showSuccess, showError } from '../stores/toast'
 import TagFilter from './TagFilter.vue'
 import TagBadge from './TagBadge.vue'
@@ -209,6 +267,13 @@ const props = defineProps<{
   initialTag?: Tag | null
   currentUser?: User | null
 }>()
+
+// UX-012: Virtual scroll configuration
+const VIRTUAL_SCROLL_CONFIG = {
+  itemHeight: 80,          // Fixed height per record (px)
+  overscan: 5,             // Render extra items outside viewport
+  threshold: 100,          // Enable virtual scroll above this count
+}
 
 // State
 const startDate = ref('')
@@ -233,6 +298,20 @@ const isSharing = ref(false)
 const showShareModal = ref(false)
 const userTeams = ref<TeamWithMembers[]>([])
 const isLoadingTeams = ref(false)
+
+// UX-012: Virtual scroll - only enable for large datasets
+const shouldUseVirtualScroll = computed(() => records.value.length > VIRTUAL_SCROLL_CONFIG.threshold)
+
+// UX-012: Virtualizer instance
+const virtualizer = useVirtualizer({
+  count: computed(() => records.value.length),
+  getScrollElement: () => scrollContainer.value,
+  estimateSize: () => VIRTUAL_SCROLL_CONFIG.itemHeight,
+  overscan: VIRTUAL_SCROLL_CONFIG.overscan,
+})
+
+// UX-012: Virtual items to render
+const virtualItems = computed(() => virtualizer.value.getVirtualItems())
 
 // Initialize dates to last 7 days
 onMounted(() => {
