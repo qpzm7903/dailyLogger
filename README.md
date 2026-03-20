@@ -173,7 +173,15 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.40.0
+**最新版本**: v1.41.0
+- 核心交互重构：状态管理优化 + 性能提升
+- useModal composable 替代分散的 showXxx ref，统一模态框管理
+- 报告生成入口整合为单一下拉菜单，简化操作流程
+- HistoryViewer 虚拟滚动，支持大数据量流畅渲染
+- 修复网络状态检测类型不匹配导致的离线状态问题 (#49)
+- 设置浮窗关闭前增加未保存更改确认 (#51)
+
+v1.40.0 更新:
 - UX 体验修复：5 项即时体验痛点全部解决
 - Toast 通知时长优化（错误 5s，成功 3s）
 - 报告生成按钮互锁 + 加载 spinner，防止重复提交
