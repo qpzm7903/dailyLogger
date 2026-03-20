@@ -26,6 +26,7 @@ export type ModalId =
   | 'loginModal'
   | 'pluginPanel'
   | 'teamPanel'
+  | 'reportHistory'
 
 // Module-level state (singleton pattern)
 const activeModal: Ref<ModalId | null> = ref(null)
