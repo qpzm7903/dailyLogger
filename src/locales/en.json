@@ -536,7 +536,11 @@
     "connectionSuccess": "Connection successful ({latency}ms)",
     "templateApplied": "Template applied: {name}",
     "exportFailedMsg": "Export failed: {error}",
-    "importFailedMsg": "Import failed: {error}"
+    "importFailedMsg": "Import failed: {error}",
+    "tabBasic": "Basic",
+    "tabAI": "AI & Reports",
+    "tabCapture": "Capture",
+    "tabOutput": "Output & Integrations"
   },
   "screenshotGallery": {
     "title": "Screenshot Gallery",

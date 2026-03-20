@@ -61,12 +61,20 @@ describe('SettingsModal', () => {
     const wrapper = mount(SettingsModal)
     await wrapper.vm.$nextTick()
 
+    // Switch to 'ai' tab where analysis prompt textarea is located
+    wrapper.vm.activeTab = 'ai'
+    await wrapper.vm.$nextTick()
+
     const textarea = wrapper.find('textarea')
     expect(textarea.exists()).toBe(true)
   })
 
   it('shows "View Default" and "Reset to Default" buttons', async () => {
     const wrapper = mount(SettingsModal)
+    await wrapper.vm.$nextTick()
+
+    // Switch to 'ai' tab where analysis prompt buttons are located
+    wrapper.vm.activeTab = 'ai'
     await wrapper.vm.$nextTick()
 
     const buttons = wrapper.findAll('button')

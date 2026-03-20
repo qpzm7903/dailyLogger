@@ -1,12 +1,28 @@
 <template>
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
-    <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-y-auto border border-gray-700">
+    <div class="bg-dark rounded-2xl w-[700px] max-h-[85vh] overflow-hidden border border-gray-700 flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
         <button @click="handleClose" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
-      <div class="p-6 space-y-6">
+      <!-- Tab Navigation -->
+      <div class="px-6 pt-4 border-b border-gray-700 flex gap-1">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          type="button"
+          class="px-4 py-2 text-sm rounded-t-lg transition-colors -mb-px border-b-2"
+          :class="activeTab === tab.id ? 'text-primary border-primary bg-darker' : 'text-gray-400 border-transparent hover:text-gray-200'"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- Tab 1: Basic Settings -->
+        <template v-if="activeTab === 'basic'">
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.apiConfig') }}</h3>
           <div class="space-y-3">
@@ -230,6 +246,41 @@
           </div>
         </div>
 
+        <div>
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.language') }}</h3>
+          <div class="space-y-3">
+            <div class="flex gap-2">
+              <button
+                @click="changeLanguage('en')"
+                type="button"
+                class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
+                :class="locale === 'en' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+              >
+                {{ $t('settings.languageEn') }}
+              </button>
+              <button
+                @click="changeLanguage('zh-CN')"
+                type="button"
+                class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
+                :class="locale === 'zh-CN' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+              >
+                {{ $t('settings.languageZhCN') }}
+              </button>
+            </div>
+            <p class="text-xs text-gray-500">{{ $t('settings.languageHint') }}</p>
+          </div>
+        </div>
+
+        <div v-if="isDesktop">
+          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
+          <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
+            {{ $t('settings.quickNoteShortcut') }}
+          </div>
+        </div>
+        </template>
+
+        <!-- Tab 2: AI & Reports -->
+        <template v-if="activeTab === 'ai'">
         <div v-if="isDesktop">
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.screenshotAnalysis') }}</h3>
           <div class="space-y-3">
@@ -411,7 +462,10 @@
             </div>
           </div>
         </div>
+        </template>
 
+        <!-- Tab 3: Capture Strategy -->
+        <template v-if="activeTab === 'capture'">
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.timeStrategy') }}</h3>
           <div class="space-y-3">
@@ -757,6 +811,10 @@
           </div>
         </div>
 
+        </template>
+
+        <!-- Tab 4: Output & Integrations -->
+        <template v-if="activeTab === 'output'">
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.outputConfig') }}</h3>
           <div class="space-y-3">
@@ -911,38 +969,6 @@
           </div>
         </div>
 
-        <div>
-          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.language') }}</h3>
-          <div class="space-y-3">
-            <div class="flex gap-2">
-              <button
-                @click="changeLanguage('en')"
-                type="button"
-                class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-                :class="locale === 'en' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
-              >
-                {{ $t('settings.languageEn') }}
-              </button>
-              <button
-                @click="changeLanguage('zh-CN')"
-                type="button"
-                class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-                :class="locale === 'zh-CN' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
-              >
-                {{ $t('settings.languageZhCN') }}
-              </button>
-            </div>
-            <p class="text-xs text-gray-500">{{ $t('settings.languageHint') }}</p>
-          </div>
-        </div>
-
-        <div v-if="isDesktop">
-          <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
-          <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
-            {{ $t('settings.quickNoteShortcut') }}
-          </div>
-        </div>
-
         <!-- Plugin Management -->
         <div>
           <PluginPanel />
@@ -966,6 +992,7 @@
             <span v-if="exportError" class="text-xs text-red-400 block">{{ exportError }}</span>
           </div>
         </div>
+        </template>
       </div>
 
       <!-- Default Prompt Modal -->
@@ -1521,6 +1548,16 @@ const { isDesktop } = usePlatform()
 const emit = defineEmits<{(e: 'close'): void}>()
 
 const showApiKey = ref(false)
+
+// FIX-006: Tab navigation for settings
+type SettingsTab = 'basic' | 'ai' | 'capture' | 'output'
+const activeTab = ref<SettingsTab>('basic')
+const tabs: { id: SettingsTab; label: string }[] = [
+  { id: 'basic', label: t('settings.tabBasic') },
+  { id: 'ai', label: t('settings.tabAI') },
+  { id: 'capture', label: t('settings.tabCapture') },
+  { id: 'output', label: t('settings.tabOutput') }
+]
 const isSaving = ref(false)
 const saveStatus = ref('')
 const saveError = ref('')

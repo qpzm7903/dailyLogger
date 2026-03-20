@@ -532,7 +532,11 @@
     "connectionSuccess": "连接成功 ({latency}ms)",
     "templateApplied": "已应用模板: {name}",
     "exportFailedMsg": "导出失败: {error}",
-    "importFailedMsg": "导入失败: {error}"
+    "importFailedMsg": "导入失败: {error}",
+    "tabBasic": "基础配置",
+    "tabAI": "AI 与报告",
+    "tabCapture": "捕获策略",
+    "tabOutput": "输出与集成"
   },
   "screenshotGallery": {
     "title": "截图画廊",

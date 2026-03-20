@@ -87,10 +87,13 @@ describe('SettingsModal', () => {
 
     await nextTick()
 
+    // Switch to 'ai' tab where include_manual_records checkbox is located
+    wrapper.vm.activeTab = 'ai'
+    await nextTick()
+
     // Find the checkbox
-    const checkbox = wrapper.find('input[type="checkbox"]')
+    const checkbox = wrapper.find('input[type="checkbox"]#include_manual_records')
     expect(checkbox.exists()).toBe(true)
-    expect(checkbox.attributes('id')).toBe('include_manual_records')
   })
 
   it('loads and displays settings with new fields', async () => {
@@ -161,7 +164,11 @@ describe('SettingsModal', () => {
     await nextTick()
     await nextTick()
 
-    const checkbox = wrapper.find('input[type="checkbox"]')
+    // Switch to 'ai' tab where include_manual_records checkbox is located
+    wrapper.vm.activeTab = 'ai'
+    await nextTick()
+
+    const checkbox = wrapper.find('input#include_manual_records')
     expect(checkbox.element.checked).toBe(true)
   })
 
@@ -181,7 +188,11 @@ describe('SettingsModal', () => {
     await nextTick()
     await nextTick()
 
-    const checkbox = wrapper.find('input[type="checkbox"]')
+    // Switch to 'ai' tab where include_manual_records checkbox is located
+    wrapper.vm.activeTab = 'ai'
+    await nextTick()
+
+    const checkbox = wrapper.find('input#include_manual_records')
     expect(checkbox.element.checked).toBe(false)
   })
 
@@ -202,6 +213,10 @@ describe('SettingsModal', () => {
       })
 
       await nextTick()
+      await nextTick()
+
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
       await nextTick()
 
       // Find window whitelist section by looking for section heading
@@ -226,6 +241,10 @@ describe('SettingsModal', () => {
       await nextTick()
       await nextTick()
 
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
+      await nextTick()
+
       // Find the use_whitelist_only checkbox
       const checkbox = wrapper.find('input#use_whitelist_only')
       expect(checkbox.exists()).toBe(true)
@@ -248,6 +267,10 @@ describe('SettingsModal', () => {
       await nextTick()
       await nextTick()
 
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
+      await nextTick()
+
       const checkbox = wrapper.find('input#use_whitelist_only')
       expect(checkbox.element.checked).toBe(true)
     })
@@ -266,6 +289,10 @@ describe('SettingsModal', () => {
       })
 
       await nextTick()
+      await nextTick()
+
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
       await nextTick()
 
       const checkbox = wrapper.find('input#use_whitelist_only')
@@ -289,6 +316,10 @@ describe('SettingsModal', () => {
       })
 
       await nextTick()
+      await nextTick()
+
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
       await nextTick()
 
       // Check whitelist tags are rendered
@@ -316,6 +347,10 @@ describe('SettingsModal', () => {
       await nextTick()
       await nextTick()
 
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
+      await nextTick()
+
       // Check blacklist tags are rendered
       const html = wrapper.html()
       expect(html).toContain('浏览器')
@@ -336,6 +371,10 @@ describe('SettingsModal', () => {
       })
 
       await nextTick()
+      await nextTick()
+
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
       await nextTick()
 
       // Find whitelist input and add tag
@@ -370,6 +409,10 @@ describe('SettingsModal', () => {
       })
 
       await nextTick()
+      await nextTick()
+
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
       await nextTick()
 
       // Verify both tags are present
@@ -454,6 +497,10 @@ describe('SettingsModal', () => {
       })
 
       await nextTick()
+      await nextTick()
+
+      // Switch to 'capture' tab where window filter settings are located
+      wrapper.vm.activeTab = 'capture'
       await nextTick()
 
       const checkbox = wrapper.find('input#use_whitelist_only')
