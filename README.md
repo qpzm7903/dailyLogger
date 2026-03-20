@@ -173,7 +173,14 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.48.0
+**最新版本**: v1.49.0
+- 测试覆盖增强：新增 55 个前端测试
+- 添加 OfflineBanner 组件测试（14 个测试用例）
+- 添加 ReportHistoryViewer 组件测试（18 个测试用例）
+- 添加 TimelineVisualization 组件测试（23 个测试用例）
+- 测试总数提升至 650 个前端测试 + 435 个 Rust 测试
+
+v1.48.0 更新:
 - 代码质量改进：版本同步 + 组件测试
 - 同步 tauri.conf.json 版本号到 1.46.0
 - 新增 ExportModal 组件测试（12 个测试用例）
