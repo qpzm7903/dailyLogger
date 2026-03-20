@@ -73,7 +73,7 @@
         >
           <div
             v-for="virtualItem in virtualItems"
-            :key="virtualItem.key"
+            :key="virtualItem.index"
             class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-darker/50 transition-colors group border-b border-gray-700"
             :style="{
               height: `${virtualItem.size}px`,
@@ -304,7 +304,7 @@ const shouldUseVirtualScroll = computed(() => records.value.length > VIRTUAL_SCR
 
 // UX-012: Virtualizer instance
 const virtualizer = useVirtualizer({
-  count: computed(() => records.value.length),
+  count: records.value.length,
   getScrollElement: () => scrollContainer.value,
   estimateSize: () => VIRTUAL_SCROLL_CONFIG.itemHeight,
   overscan: VIRTUAL_SCROLL_CONFIG.overscan,
