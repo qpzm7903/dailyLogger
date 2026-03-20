@@ -7,7 +7,7 @@
 
 ---
 
-## v1.47.0（版本同步 + 依赖维护）🚧 开发中
+## v1.47.0（版本同步 + 依赖维护）✅ 已发布
 
 **目标**: 同步版本号，添加前端 lint 脚本，更新 Rust 依赖
 
@@ -15,9 +15,18 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| MAINT-012 | 同步 package.json 和 Cargo.toml 版本号到 1.46.0 | 1pt | HIGH | ⏳ 待开发 | — |
-| MAINT-013 | 添加前端 lint/format 脚本 | 1pt | MEDIUM | ⏳ 待开发 | — |
-| MAINT-014 | 更新 Rust 依赖（10 个可更新） | 2pts | LOW | ⏳ 待开发 | — |
+| MAINT-012 | 同步 package.json 和 Cargo.toml 版本号到 1.46.0 | 1pt | HIGH | ✅ 完成 | — |
+| MAINT-013 | 添加前端 lint/format 脚本 | 1pt | MEDIUM | ✅ 完成 | — |
+| MAINT-014 | 更新 Rust 依赖（10 个可更新） | 2pts | LOW | ✅ 完成 | — |
+
+**完成情况**:
+- ✅ package.json 版本号同步到 1.46.0
+- ✅ Cargo.toml 版本号同步到 1.46.0
+- ✅ 添加 `npm run lint` 脚本（vue-tsc --noEmit）
+- ✅ 添加 `npm run typecheck` 脚本
+- ✅ 更新 Rust 依赖
+- ✅ 所有测试通过（583 frontend + 435 Rust）
+- ✅ CI 通过
 
 ---
 
