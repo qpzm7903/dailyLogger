@@ -1,12 +1,12 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.43.0（开发中）
+> 当前版本: v1.43.0（开发完成，待发布）
 > 上个发布版本: v1.42.0 ✅ 已发布
 
 ---
 
-## 当前迭代: v1.43.0（功能增强）
+## 当前迭代: v1.43.0（功能增强）✅ 已完成
 
 **目标**: 增强截图分析功能，移除不需要的登录注册模块
 
@@ -14,12 +14,12 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| FEAT-001 | 支持重新分析已分析的截图记录 (#53) | 3pts | HIGH | ⏳ 待开始 | [specs/FEAT-001-reanalyze-screenshot.md](specs/FEAT-001-reanalyze-screenshot.md) |
-| FEAT-002 | 移除登录/注册功能 (#55) | 3pts | MEDIUM | ⏳ 待开始 | [specs/FEAT-002-remove-auth.md](specs/FEAT-002-remove-auth.md) |
+| FEAT-001 | 支持重新分析已分析的截图记录 (#53) | 3pts | HIGH | ✅ 完成 | [specs/FEAT-001-reanalyze-screenshot.md](specs/FEAT-001-reanalyze-screenshot.md) |
+| FEAT-002 | 移除登录/注册功能 (#55) | 3pts | MEDIUM | ✅ 完成 | [specs/FEAT-002-remove-auth.md](specs/FEAT-002-remove-auth.md) |
 
 **需求详情**:
-- **FEAT-001 (#53)**: 用户希望能够重新分析已有的截图记录（如更换模型后）。需要在 UI 上添加"重新分析"按钮。
-- **FEAT-002 (#55)**: 用户反馈不需要登录/注册功能。此为较大的功能删除，需要评估影响范围后谨慎处理。
+- **FEAT-001 (#53)**: 用户希望能够重新分析已有的截图记录（如更换模型后）。已在 ScreenshotModal 中添加"重新分析"按钮。
+- **FEAT-002 (#55)**: 移除了登录/注册功能及团队协作模块，简化应用架构。
 
 ---
 
