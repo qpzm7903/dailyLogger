@@ -98,6 +98,7 @@
               <span class="text-xs text-gray-500">{{ t('quickNote.todayRecords', { count: quickNotesCount }) }}</span>
               <button
                 @click="openQuickNote"
+                :title="isDesktop ? t('quickNote.shortcut') : ''"
                 class="bg-primary hover:bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
               >
                 {{ t('quickNote.record') }}
