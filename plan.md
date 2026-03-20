@@ -1,12 +1,32 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.31.0 ✅ 已发布
-> 下一版本: v1.32.0（维护版本）
+> 当前版本: v1.40.0（开发中）
+> 上个发布版本: v1.32.0 ✅ 已发布
 
 ---
 
-## 下一迭代: v1.32.0（维护版本）📋 规划中
+## 当前迭代: v1.40.0（即时体验修复）🚀 开发中
+
+**目标**: 修复最影响日常使用的 UX 痛点，提升基础交互质量
+
+**版本类型**: MINOR（UX 优化）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| UX-001 | 改进错误提示和用户反馈（Toast 时长/错误处理修复） | 2pts | HIGH | 🚀 开发中 | [specs/UX-001-error-feedback.md](specs/UX-001-error-feedback.md) |
+| UX-002 | 报告生成按钮状态互锁 + 加载状态 | 2pts | HIGH | ⏳ 待开始 | [specs/UX-002-report-lock.md](specs/UX-002-report-lock.md) |
+| UX-003 | 离线状态改为顶部横幅 Banner | 1pt | MEDIUM | ⏳ 待开始 | [specs/UX-003-offline-banner.md](specs/UX-003-offline-banner.md) |
+| UX-004 | 截图分析完成显示简短应用摘要 | 2pts | MEDIUM | ⏳ 待开始 | [specs/UX-004-screenshot-summary.md](specs/UX-004-screenshot-summary.md) |
+| UX-005 | 标签过滤条超出时折叠为 "+N 个标签" | 1pt | LOW | ⏳ 待开始 | [specs/UX-005-tag-filter-collapse.md](specs/UX-005-tag-filter-collapse.md) |
+
+---
+
+## v1.32.0（维护版本）✅ 已发布
+
+**目标**: 代码质量改进、文档完善、用户体验优化
+
+**版本类型**: MINOR（维护优化）
 
 **目标**: 代码质量改进、文档完善、用户体验优化
 
