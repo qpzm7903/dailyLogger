@@ -1,6 +1,12 @@
 <template>
   <div class="h-screen bg-darker text-white flex flex-col">
-    <header class="bg-dark border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+    <!-- UX-003: Offline status top banner -->
+    <OfflineBanner :isOnline="isOnline" />
+
+    <header
+      :class="!isOnline ? 'mt-9' : ''"
+      class="bg-dark border-b border-gray-700 px-6 py-4 flex items-center justify-between transition-[margin] duration-300"
+    >
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
           <span class="text-lg">📝</span>
@@ -8,12 +14,9 @@
         <h1 class="text-xl font-semibold">DailyLogger</h1>
       </div>
       <div class="flex items-center gap-4">
-        <div v-if="!isOnline" class="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+        <div v-if="offlineQueueCount > 0" class="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
           <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
-          {{ t('header.offlineMode') }}
-          <span v-if="offlineQueueCount > 0" class="ml-1 px-1.5 py-0.5 bg-yellow-500/30 rounded-full">
-            {{ t('header.pendingSync', { count: offlineQueueCount }) }}
-          </span>
+          {{ t('header.pendingSync', { count: offlineQueueCount }) }}
         </div>
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
         <button @click="showLogViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
@@ -129,23 +132,29 @@
             <div class="flex items-center gap-2">
               <button
                 @click="generateSummary"
-                :disabled="isGenerating"
-                class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                :disabled="isAnyReportGenerating"
+                :class="isAnyReportGenerating && !isGenerating ? 'opacity-50 cursor-not-allowed' : ''"
+                class="bg-primary hover:bg-blue-600 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
               >
+                <span v-if="isGenerating" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 {{ isGenerating ? '生成中...' : '生成日报' }}
               </button>
               <button
                 @click="generateWeeklyReport"
-                :disabled="isGeneratingWeekly"
-                class="bg-green-600 hover:bg-green-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                :disabled="isAnyReportGenerating"
+                :class="isAnyReportGenerating && !isGeneratingWeekly ? 'opacity-50 cursor-not-allowed' : ''"
+                class="bg-green-600 hover:bg-green-700 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
               >
+                <span v-if="isGeneratingWeekly" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 {{ isGeneratingWeekly ? '生成中...' : '生成周报' }}
               </button>
               <button
                 @click="generateMonthlyReport"
-                :disabled="isGeneratingMonthly"
-                class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                :disabled="isAnyReportGenerating"
+                :class="isAnyReportGenerating && !isGeneratingMonthly ? 'opacity-50 cursor-not-allowed' : ''"
+                class="bg-purple-600 hover:bg-purple-700 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
               >
+                <span v-if="isGeneratingMonthly" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
               </button>
               <button
@@ -162,8 +171,8 @@
               </button>
             </div>
           </div>
-          <!-- AI-004: Tag filter -->
-          <div v-if="Object.keys(tagCounts).length > 0" class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-gray-700">
+          <!-- AI-004: Tag filter | UX-005: Tag collapse -->
+          <div v-if="tagEntries.length > 0" class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-gray-700">
             <button
               @click="selectedTagFilter = ''"
               :class="selectedTagFilter === '' ? 'bg-primary text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
@@ -172,7 +181,7 @@
               全部 ({{ todayRecords.length }})
             </button>
             <button
-              v-for="(count, tag) in tagCounts"
+              v-for="([tag, count]) in visibleTagEntries"
               :key="tag"
               @click="selectedTagFilter = tag"
               :class="[
@@ -182,6 +191,23 @@
               ]"
             >
               {{ tag }} ({{ count }})
+            </button>
+            <!-- UX-005: Overflow expand button -->
+            <button
+              v-if="hiddenTagCount > 0 && !tagFilterExpanded"
+              @click="tagFilterExpanded = true"
+              :class="hasHiddenSelectedTag ? 'text-primary font-medium' : 'text-blue-400 hover:text-blue-300'"
+              class="text-xs cursor-pointer whitespace-nowrap"
+            >
+              +{{ hiddenTagCount }} 个标签{{ hasHiddenSelectedTag ? ' (已选)' : '' }}
+            </button>
+            <!-- UX-005: Collapse button -->
+            <button
+              v-if="tagFilterExpanded && tagEntries.length > TAG_VISIBLE_THRESHOLD"
+              @click="tagFilterExpanded = false"
+              class="text-xs text-gray-400 hover:text-gray-300 cursor-pointer whitespace-nowrap"
+            >
+              收起
             </button>
           </div>
           <div v-if="filteredRecords.length === 0" class="text-center py-8 text-gray-500">
@@ -219,7 +245,11 @@
                   {{ getWindowInfo(record)?.title || getWindowInfo(record)?.process_name }}
                 </span>
               </div>
-              <p class="text-sm text-gray-300 line-clamp-3">{{ record.content }}</p>
+              <!-- UX-004: Show extracted summary for auto records, raw content for manual records -->
+              <p v-if="record.source_type === 'auto'" class="text-sm text-gray-300 line-clamp-1 truncate">
+                {{ extractSummary(record.content) || '分析完成' }}
+              </p>
+              <p v-else class="text-sm text-gray-300 line-clamp-3">{{ record.content }}</p>
               <!-- AI-004: Tag badges -->
               <div v-if="getRecordTags(record).length > 0" class="flex flex-wrap gap-1.5 mt-2">
                 <span
@@ -337,7 +367,9 @@ import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
 import LoginModal from './components/LoginModal.vue'
+import OfflineBanner from './components/OfflineBanner.vue'
 import { showError, showSuccess, initToastI18n } from './stores/toast'
+import { extractSummary } from './utils/contentUtils'
 import type { LogRecord, Tag, User, Settings } from './types/tauri'
 
 const { t } = useI18n()
@@ -389,6 +421,11 @@ const allTags = ref<Tag[]>([])
 const screenshotCount = computed<number>(() => {
   return todayRecords.value.filter(r => r.source_type === 'auto' && r.screenshot_path).length
 })
+
+// UX-002: Global report generation lock - prevents concurrent AI API calls
+const isAnyReportGenerating = computed<boolean>(() =>
+  isGenerating.value || isGeneratingWeekly.value || isGeneratingMonthly.value
+)
 
 // AI-004: Computed filtered records based on selected tag
 const filteredRecords = computed<LogRecord[]>(() => {
@@ -532,6 +569,30 @@ const getRecordTags = (record: LogRecord): string[] => {
   return []
 }
 
+// UX-005: Tag filter collapse state
+const TAG_VISIBLE_THRESHOLD = 6
+const tagFilterExpanded = ref(false)
+
+const tagEntries = computed<[string, number][]>(() => Object.entries(tagCounts.value) as [string, number][])
+
+const visibleTagEntries = computed<[string, number][]>(() => {
+  if (tagFilterExpanded.value || tagEntries.value.length <= TAG_VISIBLE_THRESHOLD) {
+    return tagEntries.value
+  }
+  return tagEntries.value.slice(0, TAG_VISIBLE_THRESHOLD)
+})
+
+const hiddenTagCount = computed<number>(() => {
+  if (tagEntries.value.length <= TAG_VISIBLE_THRESHOLD) return 0
+  return tagEntries.value.length - TAG_VISIBLE_THRESHOLD
+})
+
+const hasHiddenSelectedTag = computed<boolean>(() => {
+  if (!selectedTagFilter.value || tagFilterExpanded.value) return false
+  const visibleTagNames = visibleTagEntries.value.map(([tag]) => tag)
+  return !visibleTagNames.includes(selectedTagFilter.value)
+})
+
 const updateTime = () => {
   currentTime.value = new Date().toLocaleString('zh-CN', { 
     month: '2-digit', 
@@ -610,8 +671,10 @@ const handleQuickNote = async (content: string) => {
     await invoke('add_quick_note', { content })
     showQuickNote.value = false
     await loadTodayRecords()
+    showSuccess(t('quickNote.savedSuccess'))
   } catch (err) {
     console.error('Failed to save quick note:', err)
+    showError(String(err))
   }
 }
 
@@ -743,7 +806,8 @@ const handleLogout = async () => {
     currentUser.value = null
     showSuccess(t('auth.loggedOut'))
   } catch (err) {
-    showError(t('auth.loggedOut'))
+    console.error('Failed to logout:', err)
+    showError(String(err))
   }
 }
 

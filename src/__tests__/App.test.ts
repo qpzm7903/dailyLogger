@@ -150,9 +150,11 @@ describe('App.vue - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
       await waitFor(() => wrapper.vm.todayRecords.length > 0)
 
-      // Check that process name is displayed
+      // Check that window title is displayed in the window-info section
+      // (process_name 'idea64' is used for icon lookup, not shown as text;
+      //  the window title is the visible text in the window-info section)
       const html = wrapper.html()
-      expect(html).toContain('idea64')
+      expect(html).toContain('My Project - IntelliJ IDEA')
     })
 
     it('does not show window info section when active_window is missing', async () => {
