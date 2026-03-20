@@ -173,11 +173,18 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.51.0
+**最新版本**: v1.52.0
+- UX 优化：为快速记录按钮添加快捷键提示
+- 实现延后的 UX-013 任务
+- 悬停显示 "Alt + Space" 快捷键提示，提升功能发现性
+
+v1.51.0 更新:
 - 测试覆盖完善：补全最后一个缺少测试的组件
 - 添加 QuickNoteWindow.test.ts（22 个测试用例）
 - 前端测试总数提升至 695 个（新增 22 个）
 - 实现所有 Vue 组件 100% 测试覆盖
+
+v1.50.0 更新:
 
 v1.50.0 更新:
 - 测试覆盖增强：新增 55 个前端测试
