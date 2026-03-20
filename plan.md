@@ -1,8 +1,41 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.52.0 ✅ 已完成
-> 上个发布版本: v1.51.0 ✅ 已发布
+> 当前版本: v1.53.0 ✅ 已完成
+> 上个发布版本: v1.52.0 ✅ 已发布
+
+---
+
+## v1.53.0（测试覆盖完善）✅ 已完成
+
+**目标**: 为 SettingsModal 拆分出的子组件添加独立测试，更新依赖
+
+**版本类型**: MINOR（测试改进 + 依赖更新）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| TEST-008 | 添加 BasicSettings 组件测试 | 2pts | MEDIUM | ✅ 完成 | — |
+| TEST-009 | 添加 AISettings 组件测试 | 2pts | MEDIUM | ✅ 完成 | — |
+| TEST-010 | 添加 CaptureSettings 组件测试 | 2pts | MEDIUM | ✅ 完成 | — |
+| TEST-011 | 添加 OutputSettings 组件测试 | 2pts | MEDIUM | ✅ 完成 | — |
+| DEP-004 | 更新 Rust 依赖 | 1pt | LOW | ✅ 完成 | — |
+
+**需求详情**:
+- **TEST-008~011**: 为 v1.45.0 拆分出的 SettingsModal 子组件添加独立测试
+  - BasicSettings.vue: API 配置、模型选择、Ollama 管理
+  - AISettings.vue: 分析/报告模型配置、Prompt 设置
+  - CaptureSettings.vue: 截图间隔、静默检测、窗口过滤
+  - OutputSettings.vue: Obsidian、Logseq、Notion、GitHub、Slack 配置
+
+**完成情况**:
+- ✅ BasicSettings.test.ts（24 个测试用例）
+- ✅ AISettings.test.ts（23 个测试用例）
+- ✅ CaptureSettings.test.ts（23 个测试用例）
+- ✅ OutputSettings.test.ts（27 个测试用例）
+- ✅ 前端测试总数提升至 792 个（新增 97 个）
+- ✅ Rust 测试 435 个通过
+- ✅ Rust 依赖已检查（已是最新版本）
+- ✅ CI 通过
 
 ---
 
