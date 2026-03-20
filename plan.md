@@ -6,20 +6,22 @@
 
 ---
 
-## 当前迭代: v1.42.0（问题修复 + 功能增强）⏳ 开发中
+## 当前迭代: v1.42.0（问题修复 + 功能增强）✅ 已完成
 
 **目标**: 修复 Windows portable 版本生成日报崩溃的严重问题，增强历史报告查看功能，优化设置入口体验
 
-**版本类型**: PATCH（问题修复）→ 可能升级为 MINOR（含功能增强）
+**版本类型**: MINOR（问题修复 + 功能增强）
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
 | FIX-008 | Windows portable 生成日报崩溃 (#54) | 3pts | **CRITICAL** | ✅ 完成 | — |
-| FIX-006 | 设置入口功能整合优化 (#50) | 2pts | MEDIUM | ⏳ 待开始 | — |
-| FIX-007 | 历史报告输出文件查看 (#52) | 2pts | MEDIUM | ⏳ 待开始 | — |
+| FIX-006 | 设置入口功能整合优化 (#50) | 2pts | MEDIUM | ✅ 完成 | — |
+| FIX-007 | 历史报告输出文件查看 (#52) | 2pts | MEDIUM | ✅ 完成 | — |
 
-**关键问题分析**:
-- **FIX-008 (#54)**: 根因是 `notion.rs` 中的 `write_report_to_notion_sync` 在 async 上下文中创建新 runtime 导致嵌套崩溃。修复方案：在 synthesis 的 async 函数中直接使用 async 版本 `write_report_to_notion().await`。
+**功能详情**:
+- **FIX-006 (#50)**: SettingsModal 拆分为 4 个标签页（Basic、AI & Reports、Capture、Output），改善设置入口体验
+- **FIX-007 (#52)**: 历史报告文件查看器，支持浏览所有历史输出文件
+- **FIX-008 (#54)**: 修复 `notion.rs` 中的 runtime 嵌套崩溃问题
 
 ---
 
