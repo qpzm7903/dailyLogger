@@ -64,15 +64,29 @@ pub fn mask_api_key(key: &str) -> String {
 }
 
 pub fn init_app() -> tauri::Result<()> {
-    memory_storage::init_database().map_err(|e| tauri::Error::Anyhow(anyhow::anyhow!("{}", e)))?;
+    tracing::info!("init_app: Starting database initialization");
+
+    // Log the app data directory for debugging
+    let app_data_dir = get_app_data_dir();
+    tracing::info!("init_app: App data directory: {:?}", app_data_dir);
+
+    memory_storage::init_database().map_err(|e| {
+        tracing::error!("init_app: Database initialization failed: {}", e);
+        tauri::Error::Anyhow(anyhow::anyhow!("{}", e))
+    })?;
+
+    tracing::info!("init_app: Database initialized successfully");
 
     // Load persisted learning data (DEBT-005)
     if let Err(e) = silent_tracker::load_silent_pattern_stats() {
         tracing::warn!("Failed to load silent pattern stats: {}", e);
     }
+    tracing::info!("init_app: Silent pattern stats loaded");
+
     if let Err(e) = work_time::load_work_time_activity() {
         tracing::warn!("Failed to load work time activity: {}", e);
     }
+    tracing::info!("init_app: Work time activity loaded");
 
     tracing::info!("DailyLogger initialized successfully");
     Ok(())

@@ -332,6 +332,7 @@ fn main() {
     }
 
     write_diagnostic_file("Initializing app...");
+    tracing::info!("Starting init_app()");
     if let Err(e) = init_app() {
         write_diagnostic_file(&format!("Failed to initialize app: {}", e));
         tracing::error!("Failed to initialize app: {}", e);
@@ -340,6 +341,7 @@ fn main() {
         return;
     }
     write_diagnostic_file("App initialized successfully");
+    tracing::info!("init_app() completed successfully");
 
     write_diagnostic_file("Building Tauri application...");
 

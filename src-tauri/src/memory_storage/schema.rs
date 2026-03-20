@@ -10,12 +10,27 @@ fn get_db_path() -> PathBuf {
 }
 
 pub fn init_database() -> Result<(), String> {
+    tracing::info!("init_database: Starting");
+
     let db_dir = crate::get_app_data_dir().join("data");
-    std::fs::create_dir_all(&db_dir)
-        .map_err(|e| format!("Failed to create data directory: {}", e))?;
+    tracing::info!("init_database: Creating data directory: {:?}", db_dir);
+
+    std::fs::create_dir_all(&db_dir).map_err(|e| {
+        let msg = format!("Failed to create data directory {:?}: {}", db_dir, e);
+        tracing::error!("{}", msg);
+        msg
+    })?;
+    tracing::info!("init_database: Data directory ready");
 
     let db_path = get_db_path();
-    let conn = Connection::open(&db_path).map_err(|e| format!("Failed to open database: {}", e))?;
+    tracing::info!("init_database: Opening database at: {:?}", db_path);
+
+    let conn = Connection::open(&db_path).map_err(|e| {
+        let msg = format!("Failed to open database at {:?}: {}", db_path, e);
+        tracing::error!("{}", msg);
+        msg
+    })?;
+    tracing::info!("init_database: Database connection opened");
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS records (
@@ -27,7 +42,12 @@ pub fn init_database() -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create records table: {}", e))?;
+    .map_err(|e| {
+        let msg = format!("Failed to create records table: {}", e);
+        tracing::error!("{}", msg);
+        msg
+    })?;
+    tracing::info!("init_database: records table ready");
 
     // Migrate: add screenshot_path column if not exists (for existing databases)
     let _ = conn.execute("ALTER TABLE records ADD COLUMN screenshot_path TEXT", []);
@@ -219,6 +239,7 @@ pub fn init_database() -> Result<(), String> {
 
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
+    tracing::info!("init_database: Creating FTS5 table");
     conn.execute(
         "CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5(
             content,
@@ -228,7 +249,12 @@ pub fn init_database() -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create FTS5 table: {}", e))?;
+    .map_err(|e| {
+        let msg = format!("Failed to create FTS5 table: {}", e);
+        tracing::error!("{}", msg);
+        msg
+    })?;
+    tracing::info!("init_database: FTS5 table ready");
 
     // FTS5 triggers for automatic index sync
     conn.execute(
@@ -298,7 +324,9 @@ pub fn init_database() -> Result<(), String> {
     .map_err(|e| format!("Failed to create index on manual_tags: {}", e))?;
 
     // Create offline queue table
+    tracing::info!("init_database: Creating offline queue table");
     crate::offline_queue::create_offline_queue_table(&conn)?;
+    tracing::info!("init_database: Offline queue table ready");
 
     // DEBT-005: Learning data persistence tables
     // Silent pattern stats for SMART-002 auto-threshold adjustment
@@ -327,24 +355,38 @@ pub fn init_database() -> Result<(), String> {
     .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
 
     // Team collaboration: Users table for local authentication
+    tracing::info!("init_database: Creating users table");
     crate::auth::create_users_table(&conn)?;
+    tracing::info!("init_database: Users table ready");
 
     // Team collaboration: Sessions table for session persistence
+    tracing::info!("init_database: Creating sessions table");
     crate::auth::create_sessions_table(&conn)?;
+    tracing::info!("init_database: Sessions table ready");
 
     // Team collaboration: Teams and team_members tables
+    tracing::info!("init_database: Creating teams tables");
     crate::team::create_teams_tables(&conn)?;
+    tracing::info!("init_database: Teams tables ready");
 
     // Team collaboration: Shared records table
+    tracing::info!("init_database: Creating shared records table");
     crate::team::create_shared_records_table(&conn)?;
+    tracing::info!("init_database: Shared records table ready");
 
-    let mut db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let mut db = DB_CONNECTION.lock().map_err(|e| {
+        let msg = format!("Lock error: {}", e);
+        tracing::error!("{}", msg);
+        msg
+    })?;
+    tracing::info!("init_database: DB connection lock acquired");
     *db = Some(conn);
+    tracing::info!("init_database: DB connection stored");
 
     // Migrate plain text API key to encrypted storage
+    tracing::info!("init_database: Migrating API key if needed");
     migrate_plain_api_key()?;
+    tracing::info!("init_database: API key migration complete");
 
     tracing::info!("Database initialized at {:?}", db_path);
     Ok(())
