@@ -10,26 +10,39 @@ fn get_db_path() -> PathBuf {
 }
 
 pub fn init_database() -> Result<(), String> {
+    crate::write_diagnostic_file("init_database: Starting");
     tracing::info!("init_database: Starting");
 
     let db_dir = crate::get_app_data_dir().join("data");
+    crate::write_diagnostic_file(&format!(
+        "init_database: Creating data directory: {:?}",
+        db_dir
+    ));
     tracing::info!("init_database: Creating data directory: {:?}", db_dir);
 
     std::fs::create_dir_all(&db_dir).map_err(|e| {
         let msg = format!("Failed to create data directory {:?}: {}", db_dir, e);
+        crate::write_diagnostic_file(&format!("init_database: FAILED to create data dir: {}", e));
         tracing::error!("{}", msg);
         msg
     })?;
+    crate::write_diagnostic_file("init_database: Data directory ready");
     tracing::info!("init_database: Data directory ready");
 
     let db_path = get_db_path();
+    crate::write_diagnostic_file(&format!(
+        "init_database: Opening database at: {:?}",
+        db_path
+    ));
     tracing::info!("init_database: Opening database at: {:?}", db_path);
 
     let conn = Connection::open(&db_path).map_err(|e| {
         let msg = format!("Failed to open database at {:?}: {}", db_path, e);
+        crate::write_diagnostic_file(&format!("init_database: FAILED to open database: {}", e));
         tracing::error!("{}", msg);
         msg
     })?;
+    crate::write_diagnostic_file("init_database: Database connection opened");
     tracing::info!("init_database: Database connection opened");
 
     conn.execute(
@@ -324,8 +337,10 @@ pub fn init_database() -> Result<(), String> {
     .map_err(|e| format!("Failed to create index on manual_tags: {}", e))?;
 
     // Create offline queue table
+    crate::write_diagnostic_file("init_database: Creating offline queue table");
     tracing::info!("init_database: Creating offline queue table");
     crate::offline_queue::create_offline_queue_table(&conn)?;
+    crate::write_diagnostic_file("init_database: Offline queue table ready");
     tracing::info!("init_database: Offline queue table ready");
 
     // DEBT-005: Learning data persistence tables
@@ -355,39 +370,57 @@ pub fn init_database() -> Result<(), String> {
     .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
 
     // Team collaboration: Users table for local authentication
+    crate::write_diagnostic_file("init_database: Creating users table");
     tracing::info!("init_database: Creating users table");
     crate::auth::create_users_table(&conn)?;
+    crate::write_diagnostic_file("init_database: Users table ready");
     tracing::info!("init_database: Users table ready");
 
     // Team collaboration: Sessions table for session persistence
+    crate::write_diagnostic_file("init_database: Creating sessions table");
     tracing::info!("init_database: Creating sessions table");
     crate::auth::create_sessions_table(&conn)?;
+    crate::write_diagnostic_file("init_database: Sessions table ready");
     tracing::info!("init_database: Sessions table ready");
 
     // Team collaboration: Teams and team_members tables
+    crate::write_diagnostic_file("init_database: Creating teams tables");
     tracing::info!("init_database: Creating teams tables");
     crate::team::create_teams_tables(&conn)?;
+    crate::write_diagnostic_file("init_database: Teams tables ready");
     tracing::info!("init_database: Teams tables ready");
 
     // Team collaboration: Shared records table
+    crate::write_diagnostic_file("init_database: Creating shared records table");
     tracing::info!("init_database: Creating shared records table");
     crate::team::create_shared_records_table(&conn)?;
+    crate::write_diagnostic_file("init_database: Shared records table ready");
     tracing::info!("init_database: Shared records table ready");
 
+    crate::write_diagnostic_file("init_database: Acquiring DB connection lock");
     let mut db = DB_CONNECTION.lock().map_err(|e| {
         let msg = format!("Lock error: {}", e);
+        crate::write_diagnostic_file(&format!("init_database: Lock error: {}", e));
         tracing::error!("{}", msg);
         msg
     })?;
+    crate::write_diagnostic_file("init_database: DB connection lock acquired");
     tracing::info!("init_database: DB connection lock acquired");
     *db = Some(conn);
+    crate::write_diagnostic_file("init_database: DB connection stored");
     tracing::info!("init_database: DB connection stored");
 
     // Migrate plain text API key to encrypted storage
+    crate::write_diagnostic_file("init_database: Migrating API key if needed");
     tracing::info!("init_database: Migrating API key if needed");
     migrate_plain_api_key()?;
+    crate::write_diagnostic_file("init_database: API key migration complete");
     tracing::info!("init_database: API key migration complete");
 
+    crate::write_diagnostic_file(&format!(
+        "init_database: Database initialized at {:?}",
+        db_path
+    ));
     tracing::info!("Database initialized at {:?}", db_path);
     Ok(())
 }
