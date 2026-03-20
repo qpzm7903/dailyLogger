@@ -173,37 +173,36 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.52.0
+**最新版本**: v1.53.0
+- 测试覆盖完善：为 SettingsModal 子组件添加独立测试
+- 新增 BasicSettings、AISettings、CaptureSettings、OutputSettings 组件测试（97 个新测试）
+- 前端测试总数提升至 792 个
+
+v1.52.0 更新:
 - UX 优化：为快速记录按钮添加快捷键提示
-- 实现延后的 UX-013 任务
 - 悬停显示 "Alt + Space" 快捷键提示，提升功能发现性
 
 v1.51.0 更新:
-- 测试覆盖完善：补全最后一个缺少测试的组件
-- 添加 QuickNoteWindow.test.ts（22 个测试用例）
-- 前端测试总数提升至 695 个（新增 22 个）
+- 测试覆盖完善：补全 QuickNoteWindow 组件测试
+- 前端测试总数提升至 695 个
 - 实现所有 Vue 组件 100% 测试覆盖
 
 v1.50.0 更新:
+- 测试覆盖增强：新增 PluginPanel 组件测试（23 个测试用例）
+- 测试总数提升至 673 个前端测试 + 435 个 Rust 测试
 
-v1.50.0 更新:
-- 测试覆盖增强：新增 55 个前端测试
-- 添加 OfflineBanner 组件测试（14 个测试用例）
-- 添加 ReportHistoryViewer 组件测试（18 个测试用例）
-- 添加 TimelineVisualization 组件测试（23 个测试用例）
+v1.49.0 更新:
+- 测试覆盖增强：新增 OfflineBanner、ReportHistoryViewer、TimelineVisualization 组件测试
 - 测试总数提升至 650 个前端测试 + 435 个 Rust 测试
 
 v1.48.0 更新:
 - 代码质量改进：版本同步 + 组件测试
-- 同步 tauri.conf.json 版本号到 1.46.0
 - 新增 ExportModal 组件测试（12 个测试用例）
 - 测试总数提升至 595 个前端测试 + 435 个 Rust 测试
 
 v1.47.0 更新:
 - 维护优化：版本同步 + 依赖更新
-- 同步 package.json 和 Cargo.toml 版本号到 1.46.0
 - 添加 `npm run lint` 脚本（vue-tsc --noEmit 类型检查）
-- 更新 Rust 依赖
 
 v1.46.0 更新:
 - 依赖升级：Tailwind CSS v3 → v4
