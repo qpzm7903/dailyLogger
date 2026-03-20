@@ -173,13 +173,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.50.0
-- 测试覆盖增强：新增 PluginPanel 组件测试
-- 添加 PluginPanel.test.ts（23 个测试用例）
-- 更新 Rust 依赖（rustls-webpki）
-- 测试总数提升至 673 个前端测试 + 435 个 Rust 测试
+**最新版本**: v1.51.0
+- 测试覆盖完善：补全最后一个缺少测试的组件
+- 添加 QuickNoteWindow.test.ts（22 个测试用例）
+- 前端测试总数提升至 695 个（新增 22 个）
+- 实现所有 Vue 组件 100% 测试覆盖
 
-v1.49.0 更新:
+v1.50.0 更新:
 - 测试覆盖增强：新增 55 个前端测试
 - 添加 OfflineBanner 组件测试（14 个测试用例）
 - 添加 ReportHistoryViewer 组件测试（18 个测试用例）
@@ -245,28 +245,12 @@ v1.40.0 更新:
 - 截图分析完成后显示简短应用摘要，替代原始 JSON
 - 标签过滤条超出 6 个时折叠为"+N 个标签"
 
-v1.32.0 更新:
-- 改进错误提示和用户反馈（i18n 支持，完善 Toast 逻辑）
-- 更新 README.md 版本历史
-- 检查并清理未使用的代码/依赖
-
-v1.31.0 更新:
-- 完成前端代码全量 TypeScript 迁移
-- 所有 .js 文件迁移为 .ts，Vue 组件添加 `lang="ts"`
-- 建立完整的类型定义，提升代码质量和可维护性
-
-v1.30.0 更新:
-- 引入 TypeScript 基础设施，为前端代码迁移做准备
-- 安装 TypeScript、vue-tsc、@vue/tsconfig、@types/node
-- 创建 tsconfig.json（strict 模式，allowJs 支持渐进迁移）
-- CI 中增加 vue-tsc 类型检查步骤
-
-v1.29.0 更新:
-- 更新 vitest 到 v4，jsdom 到 v29（依赖维护）
-
-**早期版本 (v1.0.0 ~ v1.28.0)**:
+**早期版本 (v1.0.0 ~ v1.39.0)**:
+- v1.32.0: 改进错误提示和用户反馈（i18n 支持）
+- v1.31.0: 前端代码全量 TypeScript 迁移
+- v1.30.0: 引入 TypeScript 基础设施
+- v1.29.0: 更新 vitest 到 v4，jsdom 到 v29
 - v1.28.0: 迁移 vue-i18n 从 v9 到 v11
-- v1.27.0: 更新 jsdom 到 27.4.0
 - v1.26.0: 修复本地地址 API 请求被代理拦截问题 (#47)
 - v1.24.0~v1.25.0: 依赖更新、Windows 启动问题修复
 - v1.20.0~v1.23.0: 团队协作、本地 AI 微调、Ollama 管理
