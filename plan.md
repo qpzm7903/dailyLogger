@@ -2,7 +2,7 @@
 
 > 最后更新: 2026-03-20
 > 当前版本: v1.22.0 ✅ 已发布
-> 下一版本: v1.23.0（待规划）
+> 下一版本: v1.23.0（进行中 - libspa 兼容性修复）
 
 ---
 
@@ -718,6 +718,34 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 - npm audit 显示 0 vulnerabilities
 - 所有 531 个前端测试通过
 - 所有 474 个 Rust 测试通过
+
+---
+
+## v1.23.0（libspa 兼容性修复）🚧 进行中
+
+**目标**: 修复 libspa crate 与 pipewire 0.3.48+ 的兼容性问题。
+
+**版本类型**: PATCH（依赖兼容性修复）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| FIX-DEPS-001 | libspa 与 pipewire 0.3.48+ 兼容性修复 | 2pts | HIGH | ✅ 完成 |
+
+### FIX-DEPS-001: libspa 与 pipewire 0.3.48+ 兼容性修复
+
+**问题**: `libspa` v0.9.2 crate 与系统安装的 pipewire 0.3.48+ 不兼容：
+- `spa_video_info_raw` 结构体中 `flags` 字段已被移除
+- `modifier` 字段类型从 `u64` 变为 `int64_t` (i64)
+
+**修复**:
+- 创建本地 patch 修复 `libspa` crate
+- 移除 `flags` 字段相关代码
+- 修复 `modifier` 类型转换 (`u64` <-> `i64`)
+- 在 `Cargo.toml` 中添加 `[patch.crates-io]` 指向本地 patch
+
+**验证**:
+- 所有 474 个 Rust 测试通过
+- 所有 531 个前端测试通过
 
 ---
 
