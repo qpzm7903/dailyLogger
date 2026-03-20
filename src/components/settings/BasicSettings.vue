@@ -239,10 +239,10 @@
 import { ref, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
-import { showError, showSuccess } from '@/stores/toast'
-import { setLocale } from '@/i18n'
+import { showError, showSuccess } from '../../stores/toast'
+import { setLocale } from '../../i18n'
 import type { Locale } from '@/i18n'
-import { usePlatform } from '@/composables/usePlatform'
+import { usePlatform } from '../../composables/usePlatform'
 import {
   isOllamaEndpoint,
   formatModelSize,

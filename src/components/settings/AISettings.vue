@@ -190,8 +190,8 @@
 import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
-import { showError, showSuccess } from '@/stores/toast'
-import { usePlatform } from '@/composables/usePlatform'
+import { showError, showSuccess } from '../../stores/toast'
+import { usePlatform } from '../../composables/usePlatform'
 import { type ModelInfo } from './shared/types'
 
 // Props

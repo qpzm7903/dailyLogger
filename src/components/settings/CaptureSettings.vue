@@ -253,7 +253,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { usePlatform } from '@/composables/usePlatform'
+import { usePlatform } from '../../composables/usePlatform'
 
 // Props
 interface Monitor {
