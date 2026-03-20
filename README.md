@@ -173,7 +173,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.53.0
+**最新版本**: v1.54.0
+- 测试覆盖完善：补充剩余未测试组件
+- 新增 DailySummaryViewer、LogViewer、SearchPanel、SettingsModal、TagBadge 组件测试（113 个新测试）
+- 前端测试总数提升至 905 个，实现所有组件 100% 测试覆盖
+
+v1.53.0 更新:
 - 测试覆盖完善：为 SettingsModal 子组件添加独立测试
 - 新增 BasicSettings、AISettings、CaptureSettings、OutputSettings 组件测试（97 个新测试）
 - 前端测试总数提升至 792 个
