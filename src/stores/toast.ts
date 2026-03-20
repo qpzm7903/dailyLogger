@@ -54,7 +54,7 @@ export function useToastStore(): {
       id,
       message: toast.message,
       type: toast.type || 'info',
-      suggestion: toast.suggestion,
+      suggestion: toast.suggestion ?? null,
       retryCallback: toast.retryCallback || null,
       duration: toast.duration ?? defaultDuration
     }
@@ -111,22 +111,22 @@ export function showToast(message: string, options: ToastOptions = {}): number {
  * Get i18n instance for error messages
  * This is a workaround since we can't use useI18n() outside of setup()
  */
-let i18nInstance: ReturnType<typeof useI18n> | null = null
+let i18nT: ((key: string) => string) | null = null
 
 /**
  * Initialize the i18n instance for toast errors
  * Called from App.vue setup
  */
-export function initToastI18n(i18n: ReturnType<typeof useI18n>): void {
-  i18nInstance = i18n
+export function initToastI18n(i18n: { t: (key: string) => string }): void {
+  i18nT = i18n.t.bind(i18n)
 }
 
 /**
  * Get translated error message
  */
 function getTranslatedErrorMessage(errorType: ErrorTypeValue): string {
-  if (i18nInstance) {
-    return i18nInstance.t(getErrorMessageKey(errorType))
+  if (i18nT) {
+    return i18nT(getErrorMessageKey(errorType))
   }
   // Fallback messages (Chinese)
   const fallbackMessages: Record<ErrorTypeValue, string> = {
@@ -147,8 +147,8 @@ function getTranslatedErrorMessage(errorType: ErrorTypeValue): string {
  * Get translated suggestion
  */
 function getTranslatedSuggestion(errorType: ErrorTypeValue): string {
-  if (i18nInstance) {
-    return i18nInstance.t(getSuggestedActionKey(errorType))
+  if (i18nT) {
+    return i18nT(getSuggestedActionKey(errorType))
   }
   // Fallback suggestions (Chinese)
   const fallbackSuggestions: Record<ErrorTypeValue, string> = {
