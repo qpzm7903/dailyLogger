@@ -61,7 +61,7 @@ async fn ping_endpoint(base_url: &str) -> bool {
 /// and emits `network-status-changed` events to the frontend when status changes.
 /// When connectivity is restored, automatically triggers offline queue processing.
 pub fn start_network_monitor(app: tauri::AppHandle) {
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         tracing::info!(
             "Network monitor started (interval: {}s)",
             CHECK_INTERVAL_SECS

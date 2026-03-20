@@ -2,7 +2,7 @@
 
 > 最后更新: 2026-03-20
 > 当前版本: v1.23.0 ✅ 已发布
-> 下一版本: v1.24.0（待规划）
+> 下一版本: v1.24.0（Windows 启动崩溃修复）
 
 ---
 
@@ -749,6 +749,37 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
+## v1.24.0（Windows 启动崩溃修复）🚧 开发中
+
+**目标**: 修复 Windows portable 版本启动时因 Tokio runtime 上下文缺失导致的崩溃问题。
+
+**版本类型**: PATCH（致命 Bug 修复）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| FIX-TOKIO-001 | network_status.rs tokio::spawn 改用 tauri::async_runtime::spawn | 1pt | HIGH | 🚧 开发中 |
+
+### FIX-TOKIO-001: Windows portable 启动崩溃修复
+
+**问题**: `network_status.rs:64` 使用 `tokio::spawn` 启动后台任务，但 Tauri v2 的 setup 闭包运行在非 Tokio runtime 上下文中，导致 Windows portable 版本启动时崩溃。
+
+**错误信息**:
+```
+PANIC: panicked at src\network_status.rs:64:5:
+there is no reactor running, must be called from the context of a Tokio 1.x runtime
+```
+
+**修复**:
+- 将 `tokio::spawn` 改为 `tauri::async_runtime::spawn`
+- 与 main.rs 中其他异步任务保持一致（第 636、659、692 行均使用 `tauri::async_runtime::spawn`）
+
+**验收条件**:
+- Windows portable 版本正常启动
+- 网络状态监控功能正常工作
+- 所有 Rust 测试通过
+
+---
+
 ## 长期规划: v2.0.0+（集成与扩展）
 
 **目标**: 与第三方工具集成，扩展应用场景。
@@ -795,6 +826,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | TagCloud 标签选择未传递到 HistoryViewer | 点击标签后需手动重新选择过滤条件 | v1.5.0+ | ✅ 已修复 (v1.12.0 FIX-003) |
 | HistoryViewer 标签加载 N+1 查询 | 每条记录单独查询标签，页面加载慢 | v1.5.0+ | ✅ 已修复 (v1.12.0 PERF-001) |
 | Windows portable 启动死锁（API key 迁移） | v1.21.2 Windows portable 版本启动后崩溃 | v1.21.2 | ✅ 已修复 (v1.22.0 FIX-DEADLOCK-001, #44, #45) |
+| Windows portable 启动崩溃（Tokio runtime 缺失） | v1.23.0 Windows portable 版本启动崩溃 | v1.23.0 | 🚧 修复中 (v1.24.0 FIX-TOKIO-001, #46) |
 
 ---
 
