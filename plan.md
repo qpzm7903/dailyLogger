@@ -14,16 +14,16 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| MAINT-010 | 移除 App.vue 中硬编码的 tagColors，统一使用手动标签系统 | 2pts | MEDIUM | ⏳ 待开始 | — |
-| MAINT-011 | SettingsModal.vue 拆分为独立子组件（当前 2750 行） | 5pts | LOW | ⏳ 待开始 | — |
-| UX-022 | SearchPanel 虚拟滚动 | 2pts | LOW | ⏳ 待开始 | — |
-| UX-023 | ScreenshotGallery 懒加载缩略图 | 2pts | LOW | ⏳ 待开始 | — |
+| MAINT-010 | 移除 App.vue 中硬编码的 tagColors，统一使用手动标签系统 | 2pts | MEDIUM | ✅ 完成 | — |
+| MAINT-011 | SettingsModal.vue 拆分为独立子组件（当前 2750 行） | 5pts | LOW | ⏳ 延后 | — |
+| UX-022 | SearchPanel 虚拟滚动 | 2pts | LOW | ✅ 完成 | — |
+| UX-023 | ScreenshotGallery 懒加载缩略图 | 2pts | LOW | ✅ 完成 | — |
 
 **需求详情**:
-- **MAINT-010**: App.vue 中存在硬编码的 tagColors 对象，应移除并统一使用后端 manual_tags 表的标签颜色系统
-- **MAINT-011**: SettingsModal.vue 已有 2750 行，需拆分为独立的子组件提升可维护性
-- **UX-022**: SearchPanel 在大数据量下需虚拟滚动优化性能
-- **UX-023**: ScreenshotGallery 需要懒加载缩略图优化内存使用
+- **MAINT-010** ✅: 已创建统一的标签颜色系统 (src/utils/tagColors.ts)，App.vue 和 TagCloud.vue 已迁移
+- **MAINT-011** ⏳: 大型重构任务（5pts），延后至后续版本
+- **UX-022** ✅: SearchPanel 已添加虚拟滚动，搜索结果上限提升至 200 条
+- **UX-023** ✅: ScreenshotGallery 实现缩略图懒加载，仅加载可见页的缩略图
 
 ---
 
