@@ -17,12 +17,14 @@
 - 进一步优化 SettingsModal.vue（将模态框逻辑提取为独立组件）
 - 性能优化或用户体验改进
 
-**需求来源检查 (2026-03-20 20:04 最新)**:
+**需求来源检查 (2026-03-20 当前)**:
 - ✅ GitHub Issues: 无未关闭问题
 - ✅ GitHub Actions: 最新 workflow 全部通过（Build and Release + Test）
 - ✅ 代码质量: `cargo clippy -- -D warnings` 无警告
 - ✅ 前端测试: 583 个测试全部通过
+- ✅ Rust 测试: 435 个测试全部通过
 - ✅ 安全审计: npm audit 显示 0 个漏洞
+- ✅ 依赖状态: Tailwind CSS 有大版本更新可用（3.4.19 → 4.2.2）
 - ⏳ 等待用户反馈或新功能需求
 
 ---
