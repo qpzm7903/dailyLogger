@@ -473,7 +473,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
     write_report_to_logseq(&settings, &filename, &summary);
 
     // INT-001: Also write to Notion if configured
-    if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
+    if let Some(notion_url) = notion::write_report_to_notion(&settings, &filename, &summary).await {
         tracing::info!("Report also written to Notion: {}", notion_url);
     }
 
