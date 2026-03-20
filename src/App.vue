@@ -19,25 +19,25 @@
           {{ t('header.pendingSync', { count: offlineQueueCount }) }}
         </div>
         <span class="text-sm text-gray-400">{{ currentTime }}</span>
-        <button @click="showLogViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('logViewer')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           🗒️ {{ t('header.log') }}
         </button>
-        <button @click="showHistoryViewer = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('historyViewer')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           📚 {{ t('header.history') }}
         </button>
-        <button @click="showSearch = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('search')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           🔍 {{ t('header.search') }}
         </button>
-        <button @click="showTagCloud = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('tagCloud')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           🏷️ {{ t('header.tags') }}
         </button>
-        <button @click="showExport = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('export')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           📤 {{ t('header.export') }}
         </button>
-        <button @click="showTimeline = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('timeline')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           📈 {{ t('header.timeline') }}
         </button>
-        <button @click="showBackup = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('backup')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           💾 {{ t('header.backup') }}
         </button>
         <!-- Auth buttons -->
@@ -47,10 +47,10 @@
             {{ t('auth.logout') }}
           </button>
         </div>
-        <button v-else @click="showLoginModal = true" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+        <button v-else @click="open('loginModal')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           {{ t('auth.login') }}
         </button>
-        <button @click="showSettings = true" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+        <button @click="open('settings')" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
       </div>
@@ -123,7 +123,7 @@
               <h2 class="font-medium">今日工作流</h2>
               <button
                 v-if="screenshotCount > 0"
-                @click="showScreenshotGallery = true"
+                @click="open('screenshotGallery')"
                 class="ml-2 text-xs text-primary hover:underline"
               >
                 (📷 {{ screenshotCount }} 张截图)
@@ -158,13 +158,13 @@
                 {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
               </button>
               <button
-                @click="showCustomReport = true"
+                @click="open('customReport')"
                 class="bg-orange-600 hover:bg-orange-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
               >
                 自定义报告
               </button>
               <button
-                @click="showComparisonReport = true"
+                @click="open('comparisonReport')"
                 class="bg-teal-600 hover:bg-teal-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
               >
                 对比分析
@@ -273,7 +273,7 @@
           <div v-if="summaryPath" class="bg-darker rounded-lg p-3 border border-gray-700 mb-3">
             <p class="text-xs text-gray-500 mb-1">日报</p>
             <p
-              @click="showSummaryViewer = true"
+              @click="open('summaryViewer')"
               class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
             >{{ summaryPath }}</p>
           </div>
@@ -283,7 +283,7 @@
           <div v-if="weeklyReportPath" class="bg-darker rounded-lg p-3 border border-gray-700">
             <p class="text-xs text-gray-500 mb-1">周报</p>
             <p
-              @click="showWeeklyReportViewer = true"
+              @click="open('weeklyReportViewer')"
               class="text-sm text-gray-300 cursor-pointer hover:text-green-400 hover:underline"
             >{{ weeklyReportPath }}</p>
           </div>
@@ -293,7 +293,7 @@
           <div v-if="monthlyReportPath" class="bg-darker rounded-lg p-3 border border-gray-700">
             <p class="text-xs text-gray-500 mb-1">月报</p>
             <p
-              @click="showMonthlyReportViewer = true"
+              @click="open('monthlyReportViewer')"
               class="text-sm text-gray-300 cursor-pointer hover:text-purple-400 hover:underline"
             >{{ monthlyReportPath }}</p>
           </div>
@@ -303,14 +303,14 @@
           <div v-if="customReportPath" class="bg-darker rounded-lg p-3 border border-gray-700">
             <p class="text-xs text-gray-500 mb-1">自定义报告</p>
             <p
-              @click="showCustomReportViewer = true"
+              @click="open('customReportViewer')"
               class="text-sm text-gray-300 cursor-pointer hover:text-orange-400 hover:underline"
             >{{ customReportPath }}</p>
           </div>
           <div v-if="comparisonReportPath" class="bg-darker rounded-lg p-3 border border-gray-700">
             <p class="text-xs text-gray-500 mb-1">对比分析报告</p>
             <p
-              @click="showComparisonReportViewer = true"
+              @click="open('comparisonReportViewer')"
               class="text-sm text-gray-300 cursor-pointer hover:text-teal-400 hover:underline"
             >{{ comparisonReportPath }}</p>
           </div>
@@ -318,29 +318,29 @@
       </div>
     </main>
 
-    <SettingsModal v-if="showSettings" @close="showSettings = false" />
-    <BackupModal v-if="showBackup" @close="showBackup = false" />
-    <QuickNoteModal v-if="showQuickNote" @close="showQuickNote = false" @save="handleQuickNote" />
-    <ScreenshotModal v-if="showScreenshot" :record="selectedScreenshot!" @close="showScreenshot = false" />
-    <ScreenshotGallery v-if="showScreenshotGallery" @close="showScreenshotGallery = false" />
-    <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath!" @close="showSummaryViewer = false" />
-    <DailySummaryViewer v-if="showWeeklyReportViewer" :summaryPath="weeklyReportPath!" @close="showWeeklyReportViewer = false" />
-    <DailySummaryViewer v-if="showMonthlyReportViewer" :summaryPath="monthlyReportPath!" @close="showMonthlyReportViewer = false" />
-    <DailySummaryViewer v-if="showCustomReportViewer" :summaryPath="customReportPath!" @close="showCustomReportViewer = false" />
-    <CustomReportModal v-if="showCustomReport" @close="showCustomReport = false" @generated="handleCustomReportGenerated" />
-    <ReportComparisonModal v-if="showComparisonReport" @close="showComparisonReport = false" @generated="handleComparisonReportGenerated" />
-    <DailySummaryViewer v-if="showComparisonReportViewer" :summaryPath="comparisonReportPath!" @close="showComparisonReportViewer = false" />
-    <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
-    <HistoryViewer v-if="showHistoryViewer" :initialTag="initialFilterTag" :currentUser="currentUser" @close="showHistoryViewer = false; initialFilterTag = null" />
-    <SearchPanel v-if="showSearch" @close="showSearch = false" />
-    <TagCloud v-if="showTagCloud" @close="showTagCloud = false" @tagSelected="handleTagSelected" />
-    <ExportModal v-if="showExport" @close="showExport = false" />
+    <SettingsModal v-if="isOpen('settings')" @close="close('settings')" />
+    <BackupModal v-if="isOpen('backup')" @close="close('backup')" />
+    <QuickNoteModal v-if="isOpen('quickNote')" @close="close('quickNote')" @save="handleQuickNote" />
+    <ScreenshotModal v-if="isOpen('screenshot')" :record="selectedScreenshot!" @close="close('screenshot')" />
+    <ScreenshotGallery v-if="isOpen('screenshotGallery')" @close="close('screenshotGallery')" />
+    <DailySummaryViewer v-if="isOpen('summaryViewer')" :summaryPath="summaryPath!" @close="close('summaryViewer')" />
+    <DailySummaryViewer v-if="isOpen('weeklyReportViewer')" :summaryPath="weeklyReportPath!" @close="close('weeklyReportViewer')" />
+    <DailySummaryViewer v-if="isOpen('monthlyReportViewer')" :summaryPath="monthlyReportPath!" @close="close('monthlyReportViewer')" />
+    <DailySummaryViewer v-if="isOpen('customReportViewer')" :summaryPath="customReportPath!" @close="close('customReportViewer')" />
+    <CustomReportModal v-if="isOpen('customReport')" @close="close('customReport')" @generated="handleCustomReportGenerated" />
+    <ReportComparisonModal v-if="isOpen('comparisonReport')" @close="close('comparisonReport')" @generated="handleComparisonReportGenerated" />
+    <DailySummaryViewer v-if="isOpen('comparisonReportViewer')" :summaryPath="comparisonReportPath!" @close="close('comparisonReportViewer')" />
+    <LogViewer v-if="isOpen('logViewer')" @close="close('logViewer')" />
+    <HistoryViewer v-if="isOpen('historyViewer')" :initialTag="initialFilterTag" :currentUser="currentUser" @close="close('historyViewer'); initialFilterTag = null" />
+    <SearchPanel v-if="isOpen('search')" @close="close('search')" />
+    <TagCloud v-if="isOpen('tagCloud')" @close="close('tagCloud')" @tagSelected="handleTagSelected" />
+    <ExportModal v-if="isOpen('export')" @close="close('export')" />
     <TimelineVisualization
-      v-if="showTimeline"
-      @close="showTimeline = false"
+      v-if="isOpen('timeline')"
+      @close="close('timeline')"
       @viewScreenshot="handleTimelineViewScreenshot"
     />
-    <LoginModal v-if="showLoginModal" @close="showLoginModal = false" @loggedIn="handleLogin" />
+    <LoginModal v-if="isOpen('loginModal')" @close="close('loginModal')" @loggedIn="handleLogin" />
     <Toast />
   </div>
 </template>
@@ -351,6 +351,7 @@ import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { usePlatform } from './composables/usePlatform'
+import { useModal } from './composables/useModal'
 import SettingsModal from './components/SettingsModal.vue'
 import BackupModal from './components/BackupModal.vue'
 import QuickNoteModal from './components/QuickNoteModal.vue'
@@ -388,29 +389,14 @@ const isCapturing = ref(false)
 const summaryPath = ref('')
 const weeklyReportPath = ref('')
 const monthlyReportPath = ref('')
-const showSettings = ref(false)
-const showBackup = ref(false)
-const showQuickNote = ref(false)
-const showScreenshot = ref(false)
-const showScreenshotGallery = ref(false)
-const showSummaryViewer = ref(false)
-const showWeeklyReportViewer = ref(false)
-const showMonthlyReportViewer = ref(false)
-const showCustomReport = ref(false)
+
+// UX-010: useModal for centralized modal management
+const { isOpen, open, close } = useModal()
+
 const customReportPath = ref('')
-const showCustomReportViewer = ref(false)
-const showComparisonReport = ref(false)
 const comparisonReportPath = ref('')
-const showComparisonReportViewer = ref(false)
-const showLogViewer = ref(false)
-const showHistoryViewer = ref(false)
-const showSearch = ref(false)
-const showTagCloud = ref(false)
-const showExport = ref(false)
-const showTimeline = ref(false)
 const selectedScreenshot = ref<LogRecord | null>(null)
 const initialFilterTag = ref<Tag | null>(null)
-const showLoginModal = ref(false)
 const currentUser = ref<User | null>(null)
 
 // AI-004: Tag filtering state
@@ -627,7 +613,7 @@ const takeScreenshot = async () => {
       content: '',
       source_type: 'auto'
     }
-    showScreenshot.value = true
+    open('screenshot')
   } catch (err) {
     console.error('Failed to take screenshot:', err)
     showError(String(err), takeScreenshot)
@@ -652,24 +638,24 @@ const triggerCapture = async () => {
 }
 
 const openQuickNote = () => {
-  showQuickNote.value = true
+  open('quickNote')
 }
 
 const openScreenshot = (record: LogRecord) => {
   selectedScreenshot.value = record
-  showScreenshot.value = true
+  open('screenshot')
 }
 
 const handleTimelineViewScreenshot = (record: LogRecord) => {
-  showTimeline.value = false
+  close('timeline')
   selectedScreenshot.value = record
-  showScreenshot.value = true
+  open('screenshot')
 }
 
 const handleQuickNote = async (content: string) => {
   try {
     await invoke('add_quick_note', { content })
-    showQuickNote.value = false
+    close('quickNote')
     await loadTodayRecords()
     showSuccess(t('quickNote.savedSuccess'))
   } catch (err) {
@@ -680,9 +666,9 @@ const handleQuickNote = async (content: string) => {
 
 // Handle tag selection from TagCloud
 const handleTagSelected = (tag: Tag | null) => {
-  showTagCloud.value = false
+  close('tagCloud')
   initialFilterTag.value = tag
-  showHistoryViewer.value = true
+  open('historyViewer')
 }
 
 const generateSummary = async () => {
@@ -852,12 +838,12 @@ onMounted(async () => {
 
   // Listen for tray-open-settings event
   unlistenTrayOpenSettings = await listen('tray-open-settings', () => {
-    showSettings.value = true
+    open('settings')
   })
 
   // Listen for tray-open-quick-note event
   unlistenTrayOpenQuickNote = await listen('tray-open-quick-note', () => {
-    showQuickNote.value = true
+    open('quickNote')
   })
 
   await loadSettings()
