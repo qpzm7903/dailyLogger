@@ -124,7 +124,7 @@ pub fn init_app() -> tauri::Result<()> {
         .create(true)
         .append(true)
         .open(std::env::temp_dir().join("dailylogger-startup.log"))
-        .and_then(|mut f| {
+        .map(|mut f| {
             use std::io::Write;
             let _ = f.write_all(
                 format!(
@@ -134,7 +134,6 @@ pub fn init_app() -> tauri::Result<()> {
                 .as_bytes(),
             );
             let _ = f.flush();
-            Ok(())
         });
 
     write_diagnostic_file("init_app: Starting database initialization");
