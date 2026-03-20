@@ -173,7 +173,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.46.0
+**最新版本**: v1.47.0
+- 维护优化：版本同步 + 依赖更新
+- 同步 package.json 和 Cargo.toml 版本号到 1.46.0
+- 添加 `npm run lint` 脚本（vue-tsc --noEmit 类型检查）
+- 更新 Rust 依赖
+
+v1.46.0 更新:
 - 依赖升级：Tailwind CSS v3 → v4
 - 升级 Tailwind CSS 从 3.4.19 到 4.2.2，获得显著性能提升
 - 配置迁移：tailwind.config.js → CSS @theme 块
