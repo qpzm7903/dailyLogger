@@ -173,7 +173,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.25.0
+**最新版本**: v1.26.0
+- 修复本地地址（localhost、127.0.0.1）的 API 请求被系统代理拦截的问题 (Issue #47)
+
+v1.25.0 更新:
 - 更新 @tauri-apps/cli 至 2.10.1
 
 v1.24.0 更新:
