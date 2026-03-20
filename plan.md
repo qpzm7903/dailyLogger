@@ -28,6 +28,50 @@
 
 ---
 
+## 后续版本规划
+
+### v1.40.0 — 即时体验修复 📋 规划中
+
+**目标**: 修复最影响日常使用的 UX 痛点，提升基础交互质量
+
+**版本类型**: MINOR（UX 优化）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| UX-001 | 改进错误提示和用户反馈（完成 MAINT-009） | 2pts | HIGH | ⏳ 待开始 | [specs/UX-001-error-feedback.md](specs/UX-001-error-feedback.md) |
+| UX-002 | 报告生成按钮状态互锁 + 加载状态 | 2pts | HIGH | ⏳ 待开始 | [specs/UX-002-report-lock.md](specs/UX-002-report-lock.md) |
+| UX-003 | 离线状态改为顶部横幅 Banner | 1pt | MEDIUM | ⏳ 待开始 | [specs/UX-003-offline-banner.md](specs/UX-003-offline-banner.md) |
+| UX-004 | 截图分析完成显示简短应用摘要 | 2pts | MEDIUM | ⏳ 待开始 | [specs/UX-004-screenshot-summary.md](specs/UX-004-screenshot-summary.md) |
+| UX-005 | 标签过滤条超出时折叠为 "+N 个标签" | 1pt | LOW | ⏳ 待开始 | [specs/UX-005-tag-filter-collapse.md](specs/UX-005-tag-filter-collapse.md) |
+
+### v1.41.0 — 核心交互重构 📋 规划中
+
+**目标**: 重构状态管理模式，消除模态对话框管理混乱，提升大数据量下的渲染性能
+
+**版本类型**: MINOR（架构优化）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| UX-010 | useModal composable 替代 21 个 showXxx ref | 3pts | HIGH | ⏳ 待开始 | [specs/UX-010-use-modal.md](specs/UX-010-use-modal.md) |
+| UX-011 | 报告生成入口整合为单一下拉菜单 | 2pts | HIGH | ⏳ 待开始 | [specs/UX-011-report-dropdown.md](specs/UX-011-report-dropdown.md) |
+| UX-012 | HistoryViewer 虚拟滚动 | 3pts | MEDIUM | ⏳ 待开始 | [specs/UX-012-history-virtual-scroll.md](specs/UX-012-history-virtual-scroll.md) |
+| UX-013 | 快速记录键盘快捷键气泡提示 | 1pt | LOW | ⏳ 待开始 | — |
+
+### v1.42.0 — 设置体验与标签系统 📋 规划中
+
+**目标**: 重构设置界面结构，将标签颜色从硬编码改为后端可配置，提升大搜索结果渲染性能
+
+**版本类型**: MINOR（功能增强）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| UX-020 | SettingsModal 拆分为 4 个标签页子组件 | 3pts | HIGH | ⏳ 待开始 | [specs/UX-020-settings-split.md](specs/UX-020-settings-split.md) |
+| UX-021 | 标签颜色移除硬编码，改为后端可配置 | 3pts | MEDIUM | ⏳ 待开始 | [specs/UX-021-tag-color-config.md](specs/UX-021-tag-color-config.md) |
+| UX-022 | SearchPanel 虚拟滚动 | 2pts | MEDIUM | ⏳ 待开始 | — |
+| UX-023 | ScreenshotGallery 懒加载缩略图 | 2pts | LOW | ⏳ 待开始 | — |
+
+---
+
 ## 已完成版本
 
 ### v1.31.0（前端代码全量迁移至 TypeScript）✅ 已发布
