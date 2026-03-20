@@ -6,7 +6,22 @@
 
 ---
 
-## 当前迭代: v1.41.0（核心交互重构）⏳ 开发中
+## 当前迭代: v1.42.0（问题修复与体验优化）⏳ 开发中
+
+**目标**: 修复用户反馈的关键问题，优化设置体验
+
+**版本类型**: MINOR（问题修复）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| FIX-004 | Windows portable 版本离线状态问题 (#49) | 3pts | HIGH | ⏳ 待开始 | — |
+| FIX-005 | 设置浮窗点击外部关闭导致内容丢失 (#51) | 2pts | HIGH | ⏳ 待开始 | — |
+| FIX-006 | 设置入口功能整合优化 (#50) | 2pts | MEDIUM | ⏳ 待开始 | — |
+| FIX-007 | 历史报告输出文件查看 (#52) | 2pts | MEDIUM | ⏳ 待开始 | — |
+
+---
+
+## v1.41.0（核心交互重构）✅ 已发布
 
 **目标**: 重构状态管理模式，消除模态对话框管理混乱，提升大数据量下的渲染性能
 
@@ -14,10 +29,10 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| UX-010 | useModal composable 替代 21 个 showXxx ref | 3pts | HIGH | ⏳ 待开始 | [specs/UX-010-use-modal.md](specs/UX-010-use-modal.md) |
-| UX-011 | 报告生成入口整合为单一下拉菜单 | 2pts | HIGH | ⏳ 待开始 | [specs/UX-011-report-dropdown.md](specs/UX-011-report-dropdown.md) |
-| UX-012 | HistoryViewer 虚拟滚动 | 3pts | MEDIUM | ⏳ 待开始 | [specs/UX-012-history-virtual-scroll.md](specs/UX-012-history-virtual-scroll.md) |
-| UX-013 | 快速记录键盘快捷键气泡提示 | 1pt | LOW | ⏳ 待开始 | — |
+| UX-010 | useModal composable 替代 21 个 showXxx ref | 3pts | HIGH | ✅ 完成 | [specs/UX-010-use-modal.md](specs/UX-010-use-modal.md) |
+| UX-011 | 报告生成入口整合为单一下拉菜单 | 2pts | HIGH | ✅ 完成 | [specs/UX-011-report-dropdown.md](specs/UX-011-report-dropdown.md) |
+| UX-012 | HistoryViewer 虚拟滚动 | 3pts | MEDIUM | ✅ 完成 | [specs/UX-012-history-virtual-scroll.md](specs/UX-012-history-virtual-scroll.md) |
+| UX-013 | 快速记录键盘快捷键气泡提示 | 1pt | LOW | ⏳ 延后 | — |
 
 ---
 

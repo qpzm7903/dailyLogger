@@ -1,9 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
     <div class="bg-dark rounded-2xl w-[500px] max-h-[80vh] overflow-y-auto border border-gray-700">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="handleClose" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
       <div class="p-6 space-y-6">
@@ -1389,6 +1389,31 @@
         </div>
       </div>
     </div>
+
+    <!-- FIX-005: Close confirmation dialog -->
+    <div
+      v-if="showCloseConfirm"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
+    >
+      <div class="bg-dark rounded-xl p-6 max-w-sm border border-gray-700">
+        <h3 class="text-lg font-semibold mb-4">{{ t('settings.unsavedChanges') }}</h3>
+        <p class="text-gray-400 mb-6">{{ t('settings.unsavedChangesMessage') }}</p>
+        <div class="flex justify-end gap-3">
+          <button
+            @click="cancelClose"
+            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+          >
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            @click="confirmClose"
+            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-400 transition-colors"
+          >
+            {{ t('settings.discardAndClose') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1635,6 +1660,42 @@ const settings = ref({
   slack_webhook_url: null
 })
 
+// FIX-005: Track initial settings for unsaved changes detection
+const initialSettings = ref<string>('')
+const showCloseConfirm = ref(false)
+
+// FIX-005: Check if there are unsaved changes
+const hasUnsavedChanges = computed(() => {
+  if (!initialSettings.value) return false
+  const currentSnapshot = JSON.stringify({
+    settings: settings.value,
+    vaults: vaults.value,
+    graphs: graphs.value,
+    whitelistTags: whitelistTags.value,
+    blacklistTags: blacklistTags.value,
+    tagCategoriesText: tagCategoriesText.value
+  })
+  return currentSnapshot !== initialSettings.value
+})
+
+// FIX-005: Handle close with confirmation
+const handleClose = () => {
+  if (hasUnsavedChanges.value) {
+    showCloseConfirm.value = true
+  } else {
+    emit('close')
+  }
+}
+
+const confirmClose = () => {
+  showCloseConfirm.value = false
+  emit('close')
+}
+
+const cancelClose = () => {
+  showCloseConfirm.value = false
+}
+
 // SMART-003: Work time status for learning progress display
 const workTimeStatus = ref<WorkTimeStatus | null>(null)
 
@@ -1735,6 +1796,15 @@ const loadSettings = async () => {
     await loadWorkTimeStatus()
     // SMART-004: Load monitors
     await loadMonitors()
+    // FIX-005: Save initial snapshot for unsaved changes detection
+    initialSettings.value = JSON.stringify({
+      settings: settings.value,
+      vaults: vaults.value,
+      graphs: graphs.value,
+      whitelistTags: whitelistTags.value,
+      blacklistTags: blacklistTags.value,
+      tagCategoriesText: tagCategoriesText.value
+    })
   } catch (err) {
     console.error('Failed to load settings:', err)
   }

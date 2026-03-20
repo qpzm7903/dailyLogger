@@ -723,11 +723,11 @@ const loadTodayRecords = async () => {
 
     // CORE-007: Check network status and queue
     try {
-      const status = await invoke<string>('check_network_status')
-      isOnline.value = status === 'Online'
+      const status = await invoke<boolean>('check_network_status')
+      isOnline.value = status
 
-      const queueStatus = await invoke<{ pending_tasks: number }>('get_offline_queue_status')
-      offlineQueueCount.value = queueStatus.pending_tasks
+      const queueStatus = await invoke<{ pending_count: number }>('get_offline_queue_status')
+      offlineQueueCount.value = queueStatus.pending_count
     } catch (e) {
       console.error('Failed to check network status:', e)
       isOnline.value = false
