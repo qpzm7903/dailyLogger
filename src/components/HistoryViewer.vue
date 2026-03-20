@@ -109,13 +109,6 @@
                 >
                   {{ t('historyViewer.delete') }}
                 </button>
-                <button
-                  v-if="currentUser"
-                  @click="openShareModal(records[virtualItem.index])"
-                  class="opacity-0 group-hover:opacity-100 text-primary hover:text-primary/80 text-sm px-2 py-1 transition-opacity"
-                >
-                  {{ t('team.share') }}
-                </button>
               </div>
             </template>
           </div>
@@ -155,13 +148,6 @@
               >
                 {{ t('historyViewer.delete') }}
               </button>
-              <button
-                v-if="currentUser"
-                @click="openShareModal(record)"
-                class="opacity-0 group-hover:opacity-100 text-primary hover:text-primary/80 text-sm px-2 py-1 transition-opacity"
-              >
-                {{ t('team.share') }}
-              </button>
             </div>
           </div>
         </div>
@@ -198,49 +184,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Share Record Modal -->
-    <div
-      v-if="showShareModal && recordToShare"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
-    >
-      <div class="bg-dark rounded-xl p-6 max-w-sm w-full mx-4 border border-gray-700">
-        <h3 class="text-lg font-semibold mb-4">{{ t('team.shareRecord') }}</h3>
-        <p class="text-gray-400 text-sm mb-4 truncate">
-          {{ truncateContent(recordToShare.content) }}
-        </p>
-
-        <div v-if="isLoadingTeams" class="text-center py-4 text-gray-500">
-          {{ t('team.loadingTeams') }}
-        </div>
-        <div v-else-if="userTeams.length === 0" class="text-center py-4 text-gray-500">
-          {{ t('team.noTeamsToShare') }}
-        </div>
-        <div v-else class="space-y-2 max-h-60 overflow-auto">
-          <button
-            v-for="teamWithMembers in userTeams"
-            :key="teamWithMembers.team.id"
-            @click="shareRecord(teamWithMembers.team.id)"
-            :disabled="isSharing"
-            class="w-full text-left px-4 py-3 bg-darker rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
-          >
-            <div class="font-medium">{{ teamWithMembers.team.name }}</div>
-            <div class="text-xs text-gray-500 mt-1">
-              {{ t('team.members') }}: {{ teamWithMembers.members.length }}
-            </div>
-          </button>
-        </div>
-
-        <div class="flex justify-end gap-3 mt-6">
-          <button
-            @click="closeShareModal"
-            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
-          >
-            {{ t('common.cancel') }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -252,12 +195,7 @@ import { useVirtualizer } from '@tanstack/vue-virtual'
 import { showSuccess, showError } from '../stores/toast'
 import TagFilter from './TagFilter.vue'
 import TagBadge from './TagBadge.vue'
-import type { LogRecord, Tag, User, Team } from '../types/tauri'
-
-interface TeamWithMembers {
-  team: Team
-  members: Array<{ user_id: number; username: string; role: string }>
-}
+import type { LogRecord, Tag } from '../types/tauri'
 
 const { t } = useI18n()
 
@@ -265,7 +203,6 @@ const emit = defineEmits<{(e: 'close'): void}>()
 
 const props = defineProps<{
   initialTag?: Tag | null
-  currentUser?: User | null
 }>()
 
 // UX-012: Virtual scroll configuration
@@ -291,13 +228,6 @@ const scrollContainer = ref<HTMLElement | null>(null)
 const recordToDelete = ref<LogRecord | null>(null)
 const isDeleting = ref(false)
 const tagFilterRef = ref<InstanceType<typeof TagFilter> | null>(null)
-
-// Share state
-const recordToShare = ref<LogRecord | null>(null)
-const isSharing = ref(false)
-const showShareModal = ref(false)
-const userTeams = ref<TeamWithMembers[]>([])
-const isLoadingTeams = ref(false)
 
 // UX-012: Virtual scroll - only enable for large datasets
 const shouldUseVirtualScroll = computed(() => records.value.length > VIRTUAL_SCROLL_CONFIG.threshold)
@@ -494,59 +424,6 @@ async function deleteRecord() {
     showError(t('historyViewer.deleteFailed', { error }))
   } finally {
     isDeleting.value = false
-  }
-}
-
-// Share record functions
-async function openShareModal(record: LogRecord) {
-  if (!props.currentUser) return
-
-  recordToShare.value = record
-  showShareModal.value = true
-  isLoadingTeams.value = true
-
-  try {
-    const teams = await invoke<TeamWithMembers[]>('get_user_teams', { userId: props.currentUser.id })
-    userTeams.value = teams
-  } catch (error) {
-    showError(t('team.shareFailed', { error }))
-    closeShareModal()
-  } finally {
-    isLoadingTeams.value = false
-  }
-}
-
-function closeShareModal() {
-  showShareModal.value = false
-  recordToShare.value = null
-  userTeams.value = []
-}
-
-async function shareRecord(teamId: number) {
-  if (!recordToShare.value || !props.currentUser) return
-
-  isSharing.value = true
-
-  try {
-    await invoke('share_record_to_team', {
-      params: {
-        teamId: teamId,
-        recordId: recordToShare.value.id
-      },
-      currentUserId: props.currentUser.id
-    })
-
-    showSuccess(t('team.recordShared'))
-    closeShareModal()
-  } catch (error) {
-    const errorMsg = String(error)
-    if (errorMsg.includes('already shared')) {
-      showError(t('team.alreadyShared'))
-    } else {
-      showError(t('team.shareFailed', { error }))
-    }
-  } finally {
-    isSharing.value = false
   }
 }
 </script>

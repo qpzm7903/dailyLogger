@@ -23,9 +23,7 @@ export type ModalId =
   | 'tagCloud'
   | 'export'
   | 'timeline'
-  | 'loginModal'
   | 'pluginPanel'
-  | 'teamPanel'
   | 'reportHistory'
 
 // Module-level state (singleton pattern)

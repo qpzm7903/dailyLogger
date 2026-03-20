@@ -471,34 +471,6 @@ fn main() {
             daily_logger_lib::fine_tuning::prepare_training_data,
             daily_logger_lib::fine_tuning::start_fine_tuning,
             daily_logger_lib::fine_tuning::get_default_fine_tuning_config,
-            // Team collaboration: User authentication
-            daily_logger_lib::auth::register_user,
-            daily_logger_lib::auth::login_user,
-            daily_logger_lib::auth::get_user_by_id,
-            daily_logger_lib::auth::get_all_users,
-            daily_logger_lib::auth::delete_user,
-            daily_logger_lib::auth::has_any_user,
-            daily_logger_lib::auth::get_current_session,
-            daily_logger_lib::auth::logout,
-            // Team collaboration: Team management
-            daily_logger_lib::team::create_team,
-            daily_logger_lib::team::get_team,
-            daily_logger_lib::team::get_team_by_invite_code,
-            daily_logger_lib::team::update_team,
-            daily_logger_lib::team::delete_team,
-            daily_logger_lib::team::join_team,
-            daily_logger_lib::team::leave_team,
-            daily_logger_lib::team::invite_member,
-            daily_logger_lib::team::update_member_role,
-            daily_logger_lib::team::remove_member,
-            daily_logger_lib::team::get_user_teams,
-            daily_logger_lib::team::get_team_members,
-            daily_logger_lib::team::regenerate_invite_code,
-            // Team collaboration: Phase 3 - Record sharing
-            daily_logger_lib::team::share_record_to_team,
-            daily_logger_lib::team::unshare_record_from_team,
-            daily_logger_lib::team::get_team_shared_records,
-            daily_logger_lib::team::get_user_shared_records,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");

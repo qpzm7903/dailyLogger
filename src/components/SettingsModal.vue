@@ -974,11 +974,6 @@
           <PluginPanel />
         </div>
 
-        <!-- Team Collaboration -->
-        <div>
-          <TeamPanel />
-        </div>
-
         <div>
           <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.debugTools') }}</h3>
           <div class="space-y-3">
@@ -1455,7 +1450,6 @@ import type { Locale } from '../i18n'
 import { useI18n } from 'vue-i18n'
 import { usePlatform } from '../composables/usePlatform'
 import PluginPanel from './PluginPanel.vue'
-import TeamPanel from './TeamPanel.vue'
 import type { Settings } from '../types/tauri'
 
 interface ModelInfo {

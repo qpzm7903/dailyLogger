@@ -369,34 +369,6 @@ pub fn init_database() -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
 
-    // Team collaboration: Users table for local authentication
-    crate::write_diagnostic_file("init_database: Creating users table");
-    tracing::info!("init_database: Creating users table");
-    crate::auth::create_users_table(&conn)?;
-    crate::write_diagnostic_file("init_database: Users table ready");
-    tracing::info!("init_database: Users table ready");
-
-    // Team collaboration: Sessions table for session persistence
-    crate::write_diagnostic_file("init_database: Creating sessions table");
-    tracing::info!("init_database: Creating sessions table");
-    crate::auth::create_sessions_table(&conn)?;
-    crate::write_diagnostic_file("init_database: Sessions table ready");
-    tracing::info!("init_database: Sessions table ready");
-
-    // Team collaboration: Teams and team_members tables
-    crate::write_diagnostic_file("init_database: Creating teams tables");
-    tracing::info!("init_database: Creating teams tables");
-    crate::team::create_teams_tables(&conn)?;
-    crate::write_diagnostic_file("init_database: Teams tables ready");
-    tracing::info!("init_database: Teams tables ready");
-
-    // Team collaboration: Shared records table
-    crate::write_diagnostic_file("init_database: Creating shared records table");
-    tracing::info!("init_database: Creating shared records table");
-    crate::team::create_shared_records_table(&conn)?;
-    crate::write_diagnostic_file("init_database: Shared records table ready");
-    tracing::info!("init_database: Shared records table ready");
-
     // Migrate plain text API key to encrypted storage BEFORE moving conn
     // This avoids deadlock (no need to lock DB_CONNECTION again)
     crate::write_diagnostic_file("init_database: Migrating API key if needed");
@@ -629,18 +601,6 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         [],
     )
     .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
-
-    // Team collaboration: Users table for local authentication
-    crate::auth::create_users_table(conn)?;
-
-    // Team collaboration: Sessions table for session persistence
-    crate::auth::create_sessions_table(conn)?;
-
-    // Team collaboration: Teams and team_members tables
-    crate::team::create_teams_tables(conn)?;
-
-    // Team collaboration: Shared records table
-    crate::team::create_shared_records_table(conn)?;
 
     Ok(())
 }

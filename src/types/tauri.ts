@@ -213,54 +213,6 @@ export interface PluginInfo {
 }
 
 // ============================================
-// Team Types
-// ============================================
-
-export interface Team {
-  id: number
-  name: string
-  description: string
-  invite_code: string
-  created_at: string
-}
-
-export interface TeamMember {
-  id: number
-  team_id: number
-  user_id: number
-  role: 'admin' | 'member' | 'viewer'
-  joined_at: string
-}
-
-export interface User {
-  id: number
-  username: string
-  email: string
-  created_at: string
-}
-
-// ============================================
-// Auth Types
-// ============================================
-
-export interface LoginArgs {
-  username: string
-  password: string
-}
-
-export interface RegisterArgs {
-  username: string
-  email: string
-  password: string
-}
-
-export interface AuthResult {
-  success: boolean
-  user?: User
-  error?: string
-}
-
-// ============================================
 // Notion Integration Types
 // ============================================
 

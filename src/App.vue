@@ -40,16 +40,6 @@
         <button @click="open('backup')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
           💾 {{ t('header.backup') }}
         </button>
-        <!-- Auth buttons -->
-        <div v-if="currentUser" class="flex items-center gap-2">
-          <span class="text-sm text-gray-400">{{ currentUser.username }}</span>
-          <button @click="handleLogout" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-            {{ t('auth.logout') }}
-          </button>
-        </div>
-        <button v-else @click="open('loginModal')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-          {{ t('auth.login') }}
-        </button>
         <button @click="open('settings')" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           ⚙️
         </button>
@@ -319,7 +309,7 @@
     <DailySummaryViewer v-if="isOpen('comparisonReportViewer')" :summaryPath="comparisonReportPath!" @close="close('comparisonReportViewer')" />
     <ReportHistoryViewer v-if="isOpen('reportHistory')" @close="close('reportHistory')" @viewFile="handleViewReportFile" />
     <LogViewer v-if="isOpen('logViewer')" @close="close('logViewer')" />
-    <HistoryViewer v-if="isOpen('historyViewer')" :initialTag="initialFilterTag" :currentUser="currentUser" @close="close('historyViewer'); initialFilterTag = null" />
+    <HistoryViewer v-if="isOpen('historyViewer')" :initialTag="initialFilterTag" @close="close('historyViewer'); initialFilterTag = null" />
     <SearchPanel v-if="isOpen('search')" @close="close('search')" />
     <TagCloud v-if="isOpen('tagCloud')" @close="close('tagCloud')" @tagSelected="handleTagSelected" />
     <ExportModal v-if="isOpen('export')" @close="close('export')" />
@@ -328,7 +318,6 @@
       @close="close('timeline')"
       @viewScreenshot="handleTimelineViewScreenshot"
     />
-    <LoginModal v-if="isOpen('loginModal')" @close="close('loginModal')" @loggedIn="handleLogin" />
     <Toast />
   </div>
 </template>
@@ -356,12 +345,11 @@ import CustomReportModal from './components/CustomReportModal.vue'
 import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
-import LoginModal from './components/LoginModal.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
 import ReportDropdown from './components/ReportDropdown.vue'
 import { showError, showSuccess, initToastI18n } from './stores/toast'
 import { extractSummary } from './utils/contentUtils'
-import type { LogRecord, Tag, User, Settings } from './types/tauri'
+import type { LogRecord, Tag, Settings } from './types/tauri'
 
 const { t } = useI18n()
 const { isDesktop } = usePlatform()
@@ -387,7 +375,6 @@ const customReportPath = ref('')
 const comparisonReportPath = ref('')
 const selectedScreenshot = ref<LogRecord | null>(null)
 const initialFilterTag = ref<Tag | null>(null)
-const currentUser = ref<User | null>(null)
 
 // AI-004: Tag filtering state
 const selectedTagFilter = ref('')
@@ -766,44 +753,6 @@ const loadSettings = async () => {
   }
 }
 
-// Auth functions
-interface Session {
-  user_id: number
-  username: string
-}
-
-const loadSession = async () => {
-  try {
-    const session = await invoke<Session | null>('get_current_session')
-    if (session) {
-      currentUser.value = { id: session.user_id, username: session.username, email: '', created_at: '' } as User
-    }
-  } catch (err) {
-    console.error('Failed to load session:', err)
-  }
-}
-
-const handleLogin = (user: { id: string | number; username: string }) => {
-  currentUser.value = {
-    id: typeof user.id === 'string' ? parseInt(user.id) : user.id,
-    username: user.username,
-    email: '',
-    created_at: ''
-  } as User
-  showSuccess(t('auth.welcomeBack', { username: user.username }))
-}
-
-const handleLogout = async () => {
-  try {
-    await invoke('logout')
-    currentUser.value = null
-    showSuccess(t('auth.loggedOut'))
-  } catch (err) {
-    console.error('Failed to logout:', err)
-    showError(String(err))
-  }
-}
-
 onMounted(async () => {
   // Initialize toast i18n for error messages
   initToastI18n(useI18n())
@@ -855,7 +804,6 @@ onMounted(async () => {
 
   await loadSettings()
   await loadTodayRecords()
-  await loadSession()
 })
 
 onUnmounted(() => {
