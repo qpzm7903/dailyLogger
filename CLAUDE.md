@@ -148,7 +148,10 @@ Always use `params![]` macro for parameterized queries. Never string-interpolate
 - Tests in `#[cfg(test)]` blocks within the same file as the code under test
 
 **Vue 3**
-- Use `<script setup>` syntax
+- **All frontend code MUST be TypeScript** — new files use `.ts` extension, Vue components use `<script setup lang="ts">`
+- No `.js` files allowed in `src/` — any new frontend file created as `.js` must be rejected and rewritten as `.ts`
+- Define Tauri IPC parameter and return types in `src/types/tauri.ts`; do not use `any` (use `unknown` + type narrowing instead)
+- Use `<script setup lang="ts">` syntax for all Vue components
 - TailwindCSS only — no inline styles, no CSS files per component
 - Custom theme colors: `bg-dark`, `bg-darker`, `text-primary` (defined in `tailwind.config.js`)
 
