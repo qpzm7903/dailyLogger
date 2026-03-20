@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.25.0 ✅ 已发布
-> 下一版本: v1.26.0（代理绕过修复）🚧 进行中
+> 当前版本: v1.26.0 ✅ 已发布
+> 下一版本: v1.27.0（待规划）
 
 ---
 
@@ -800,7 +800,7 @@ there is no reactor running, must be called from the context of a Tokio 1.x runt
 
 ---
 
-## v1.26.0（本地请求代理绕过）🚧 进行中
+## v1.26.0（本地请求代理绕过）✅ 已发布
 
 **目标**: 修复 Issue #47，让本地地址（localhost、127.0.0.1）的 API 请求绕过系统代理。
 
@@ -808,25 +808,33 @@ there is no reactor running, must be called from the context of a Tokio 1.x runt
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
-| FIX-PROXY-001 | 本地地址 HTTP 请求绕过系统代理 | 2pts | HIGH | 🚧 进行中 |
+| FIX-PROXY-001 | 本地地址 HTTP 请求绕过系统代理 | 2pts | HIGH | ✅ 完成 |
 
 ### FIX-PROXY-001: 本地地址 HTTP 请求绕过系统代理
 
 **问题**: 用户在 Windows portable 版本点击"测试连接"时，访问 localhost 的 LLM 服务被系统代理拦截。reqwest 默认会使用系统代理设置，导致本地请求也被代理。
 
 **修复**:
-- 在创建 `reqwest::Client` 时检测目标 URL 是否为本地地址
-- 如果是本地地址（localhost、127.0.0.1、::1 等），使用 `no_proxy()` 配置绕过代理
-- 涉及文件：
-  - `ollama.rs`: `test_api_connection_with_ollama()` 函数
-  - `ollama.rs`: `get_ollama_models()` 函数
-  - `synthesis/mod.rs`: `call_llm_api()` 函数
-  - 其他使用 `reqwest::Client` 的模块
+- 在 `lib.rs` 中新增 `is_local_url()` 函数检测本地地址（localhost、127.0.0.1、::1、私有网络地址）
+- 在 `lib.rs` 中新增 `create_http_client()` 函数创建带代理绑过配置的 HTTP 客户端
+- 更新所有使用 `reqwest::Client` 的模块使用新函数：
+  - `ollama.rs`: test_api_connection_with_ollama, get_ollama_models, pull_ollama_model, delete_ollama_model, get_running_models, create_ollama_model, copy_ollama_model, show_ollama_model
+  - `synthesis/mod.rs`: call_llm_api
+  - `auto_perception/mod.rs`: analyze_screen
+  - `notion.rs`: write_report_to_notion, test_notion_connection
+  - `slack.rs`: send_to_slack, test_slack_connection
+  - `github.rs`: test_github_connection, fetch_commits, fetch_pull_requests
+  - `fine_tuning.rs`: start_fine_tuning
+  - `network_status.rs`: ping_endpoint
+  - `memory_storage/mod.rs`: get_model_info
+- 新增 8 个单元测试验证 `is_local_url()` 函数
 
 **验收条件**:
-- localhost 和 127.0.0.1 的请求不经过系统代理
-- 外部 URL 请求仍然可以使用系统代理
-- 所有测试通过
+- ✅ localhost 和 127.0.0.1 的请求不经过系统代理
+- ✅ 外部 URL 请求仍然可以使用系统代理
+- ✅ 所有 480 个 Rust 测试通过
+- ✅ 所有 531 个前端测试通过
+- ✅ CI 通过
 
 ---
 
