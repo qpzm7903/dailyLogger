@@ -173,7 +173,11 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.23.0
+**最新版本**: v1.24.0
+- 修复 Windows portable 版本启动崩溃问题（Tokio runtime 缺失）
+- 将 network_status.rs 中的 tokio::spawn 改为 tauri::async_runtime::spawn
+
+v1.23.0 更新:
 - 修复 libspa 与 pipewire 0.3.48+ 兼容性问题
 - 改进 CI 工作流，支持覆盖已有 release 资源
 
