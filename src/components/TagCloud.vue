@@ -80,6 +80,7 @@ import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
+import { getColorClassInteractive } from '../utils/tagColors'
 import type { Tag } from '../types/tauri'
 
 interface TagWithUsage extends Tag {
@@ -96,18 +97,6 @@ const selectedTag = ref<TagWithUsage | null>(null)
 const tagToDelete = ref<TagWithUsage | null>(null)
 const isDeleting = ref(false)
 
-// Color mapping
-const colorClasses: Record<string, string> = {
-  blue: 'bg-blue-500/30 text-blue-300 hover:bg-blue-500/50',
-  green: 'bg-green-500/30 text-green-300 hover:bg-green-500/50',
-  yellow: 'bg-yellow-400/30 text-yellow-200 hover:bg-yellow-400/50',
-  red: 'bg-red-500/30 text-red-300 hover:bg-red-500/50',
-  purple: 'bg-purple-500/30 text-purple-300 hover:bg-purple-500/50',
-  pink: 'bg-pink-500/30 text-pink-300 hover:bg-pink-500/50',
-  cyan: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
-  orange: 'bg-orange-500/30 text-orange-300 hover:bg-orange-500/50'
-}
-
 // Get tag size based on usage count
 function getTagSize(tag: TagWithUsage) {
   const count = tag.usage_count || 0
@@ -116,9 +105,9 @@ function getTagSize(tag: TagWithUsage) {
   return 'text-xs'
 }
 
-// Get tag color classes
+// Get tag color classes - uses unified color system
 function getTagColor(color: string) {
-  return colorClasses[color] || colorClasses.blue
+  return getColorClassInteractive(color)
 }
 
 // Load all tags

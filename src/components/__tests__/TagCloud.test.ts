@@ -326,12 +326,13 @@ describe('TagCloud', () => {
     expect(modalDeleteButton.attributes('disabled')).toBeDefined()
   })
 
-  it('uses default blue color for unknown colors', () => {
+  it('uses default gray color for unknown colors', () => {
     invoke.mockResolvedValue([])
     const wrapper = mount(TagCloud)
 
     const colorClass = wrapper.vm.getTagColor('unknown')
-    expect(colorClass).toBe(wrapper.vm.getTagColor('blue'))
+    // Unknown colors should return the default gray style
+    expect(colorClass).toBe('bg-gray-500/30 text-gray-300 hover:bg-gray-500/50')
   })
 
   it('calculates tag size correctly for edge cases', () => {

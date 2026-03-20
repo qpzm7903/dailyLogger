@@ -349,6 +349,7 @@ import OfflineBanner from './components/OfflineBanner.vue'
 import ReportDropdown from './components/ReportDropdown.vue'
 import { showError, showSuccess, initToastI18n } from './stores/toast'
 import { extractSummary } from './utils/contentUtils'
+import { getTagColorClass } from './utils/tagColors'
 import type { LogRecord, Tag, Settings } from './types/tauri'
 
 const { t } = useI18n()
@@ -485,24 +486,9 @@ const getWindowIcon = (processName?: string): string => {
   return '🖥️'
 }
 
-// AI-004: Tag color mapping
-const tagColors: Record<string, string> = {
-  '开发': 'bg-blue-500/20 text-blue-400',
-  '会议': 'bg-purple-500/20 text-purple-400',
-  '写作': 'bg-green-500/20 text-green-400',
-  '学习': 'bg-yellow-500/20 text-yellow-400',
-  '研究': 'bg-cyan-500/20 text-cyan-400',
-  '沟通': 'bg-orange-500/20 text-orange-400',
-  '规划': 'bg-pink-500/20 text-pink-400',
-  '文档': 'bg-indigo-500/20 text-indigo-400',
-  '测试': 'bg-red-500/20 text-red-400',
-  '设计': 'bg-teal-500/20 text-teal-400',
-}
-const defaultTagColor = 'bg-gray-500/20 text-gray-400'
-
-// AI-004: Get tag color class
+// AI-004: Get tag color class - uses unified tag color system
 const getTagColor = (tag: string): string => {
-  return tagColors[tag] || defaultTagColor
+  return getTagColorClass(tag)
 }
 
 // AI-004: Parse tags from record
