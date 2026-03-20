@@ -48,16 +48,21 @@ pub fn get_app_data_dir() -> PathBuf {
 /// 1. Next to executable (portable mode)
 /// 2. App data directory
 /// 3. User home directory as fallback
+/// 4. Temp directory as last resort
 pub fn write_diagnostic_file(message: &str) {
-    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    // Use Utc instead of Local to avoid timezone lookup issues on Windows
+    let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f UTC");
     let diagnostic_message = format!("[{}] {}\n", timestamp, message);
+
+    // Get executable path once to avoid repeated calls
+    let exe_path = std::env::current_exe().ok();
+    let exe_dir = exe_path.as_ref().and_then(|p| p.parent());
 
     // Try multiple locations in order of preference
     let locations: Vec<PathBuf> = vec![
         // 1. Next to executable (portable mode)
-        std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|d| d.join("dailylogger-startup.log")))
+        exe_dir
+            .map(|d| d.join("dailylogger-startup.log"))
             .unwrap_or_default(),
         // 2. App data directory
         get_app_data_dir().join("startup.log"),
@@ -65,23 +70,39 @@ pub fn write_diagnostic_file(message: &str) {
         dirs::home_dir()
             .map(|h| h.join("dailylogger-startup.log"))
             .unwrap_or_default(),
+        // 4. Temp directory as last resort
+        std::env::temp_dir().join("dailylogger-startup.log"),
     ];
 
+    let mut last_error = String::new();
     for location in &locations {
         if location.as_os_str().is_empty() {
             continue;
         }
         match OpenOptions::new().create(true).append(true).open(location) {
             Ok(mut file) => {
-                if file.write_all(diagnostic_message.as_bytes()).is_ok() {
-                    return; // Successfully wrote
+                match file.write_all(diagnostic_message.as_bytes()) {
+                    Ok(()) => {
+                        // Flush to ensure data is written to disk
+                        if file.flush().is_ok() {
+                            return; // Successfully wrote
+                        }
+                    }
+                    Err(e) => {
+                        last_error = format!("Write failed to {:?}: {}", location, e);
+                    }
                 }
             }
-            Err(_) => continue,
+            Err(e) => {
+                last_error = format!("Open failed for {:?}: {}", location, e);
+            }
         }
     }
     // Last resort: try to print to stderr (may be invisible on Windows GUI mode)
     eprintln!("{}", diagnostic_message);
+    if !last_error.is_empty() {
+        eprintln!("Diagnostic write error: {}", last_error);
+    }
 }
 
 #[derive(Default)]
