@@ -1,12 +1,12 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.45.0 ✅ 已发布
-> 上个发布版本: v1.44.0 ✅ 已发布
+> 当前版本: v1.46.0 ✅ 已发布
+> 上个发布版本: v1.45.0 ✅ 已发布
 
 ---
 
-## v1.46.0（Tailwind CSS v4 升级）⏳ 开发中
+## v1.46.0（Tailwind CSS v4 升级）✅ 已发布
 
 **目标**: 将 Tailwind CSS 从 v3.4.19 升级到 v4.2.2，获得性能提升和新特性
 
@@ -14,21 +14,15 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| DEP-001 | 升级 Tailwind CSS 从 v3.4.19 到 v4.2.2 | 3pts | MEDIUM | ⏳ 进行中 | [specs/DEP-001-tailwind-v4.md](specs/DEP-001-tailwind-v4.md) |
+| DEP-001 | 升级 Tailwind CSS 从 v3.4.19 到 v4.2.2 | 3pts | MEDIUM | ✅ 完成 | [specs/DEP-001-tailwind-v4.md](specs/DEP-001-tailwind-v4.md) |
 
-**迁移清单**:
-- [ ] 安装 Tailwind CSS v4 和 @tailwindcss/vite 插件
-- [ ] 更新 `src/styles/main.css` 使用 `@import "tailwindcss"`
-- [ ] 迁移 `tailwind.config.js` 自定义颜色到 CSS `@theme` 块
-- [ ] 更新 `bg-gradient-to-r` 为 `bg-linear-to-r`（2处）
-- [ ] 验证所有测试通过
-- [ ] 验证 CI 通过
-
-**评估结果**:
-- 受影响文件: `src/styles/main.css`, `tailwind.config.js`, `src/components/settings/BasicSettings.vue`
-- 破坏性变更: `bg-gradient-*` → `bg-linear-*`（项目中有 2 处使用）
-- 性能提升: 增量构建快 182 倍
-- 风险等级: 中等（范围可控）
+**迁移完成**:
+- ✅ 安装 Tailwind CSS v4 和 @tailwindcss/vite 插件
+- ✅ 更新 `src/styles/main.css` 使用 `@import "tailwindcss"`
+- ✅ 迁移自定义颜色到 CSS `@theme` 块
+- ✅ 更新 `bg-gradient-to-r` 为 `bg-linear-to-r`（2处）
+- ✅ 所有 583 个前端测试 + 435 个 Rust 测试通过
+- ✅ CI 通过
 
 ---
 
