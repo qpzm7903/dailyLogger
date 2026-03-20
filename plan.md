@@ -685,15 +685,26 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 
 ---
 
-## v1.22.0（依赖更新与维护）✅ 已完成
+## v1.22.0（依赖更新与维护）✅ 已发布
 
-**目标**: 更新依赖以修复安全漏洞，进行代码维护和优化。
+**目标**: 更新依赖以修复安全漏洞，修复 Windows 版本启动死锁问题。
 
 **版本类型**: MINOR（依赖更新和维护）
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
+| FIX-DEADLOCK-001 | init_database API key 迁移死锁修复 | 2pts | HIGH | ✅ 完成 |
 | MAINT-001 | 更新 Vite 以修复 esbuild 安全漏洞 | 2pts | HIGH | ✅ 完成 |
+
+### FIX-DEADLOCK-001: init_database API key 迁移死锁修复
+
+**问题**: `init_database()` 在持有 `DB_CONNECTION` mutex 时调用 `get_settings_sync()` 和 `save_settings_sync()`，而这两个函数内部也会尝试获取同一个 mutex，导致死锁。
+
+**修复**:
+- 将 API key 迁移逻辑移到 mutex lock 之外执行
+- 先读取旧的 plaintext API key，释放 mutex 后再进行加密迁移
+- 迁移完成后再获取 mutex 更新 settings
+- 关闭 Issue #44 和 Issue #45
 
 ### MAINT-001: 更新 Vite 以修复 esbuild 安全漏洞
 
@@ -755,6 +766,7 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 | App.vue 自动刷新定时器未清理（内存泄漏） | 组件卸载后定时器继续运行 | v1.0.0+ | ✅ 已修复 (v1.12.0 FIX-002) |
 | TagCloud 标签选择未传递到 HistoryViewer | 点击标签后需手动重新选择过滤条件 | v1.5.0+ | ✅ 已修复 (v1.12.0 FIX-003) |
 | HistoryViewer 标签加载 N+1 查询 | 每条记录单独查询标签，页面加载慢 | v1.5.0+ | ✅ 已修复 (v1.12.0 PERF-001) |
+| Windows portable 启动死锁（API key 迁移） | v1.21.2 Windows portable 版本启动后崩溃 | v1.21.2 | ✅ 已修复 (v1.22.0 FIX-DEADLOCK-001, #44, #45) |
 
 ---
 
