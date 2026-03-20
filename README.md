@@ -173,11 +173,11 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.22.0
-- 更新 Vite 到 8.0.1 修复 esbuild 安全漏洞
-- 更新前端依赖，消除 npm audit 警告
+**最新版本**: v1.23.0
+- 修复 libspa 与 pipewire 0.3.48+ 兼容性问题
+- 改进 CI 工作流，支持覆盖已有 release 资源
 
-v1.21.2 更新:
+v1.22.0 更新:
 - 修复 API Key 迁移死锁问题
 - 改进 Windows 免安装版本启动诊断
 - 新增团队协作功能
