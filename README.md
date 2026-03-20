@@ -173,7 +173,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.41.0
+**最新版本**: v1.42.0
+- 设置入口优化：拆分为 4 个标签页（Basic、AI、Capture、Output），解决功能过于集中问题 (#50)
+- 历史报告查看：支持浏览所有历史输出文件 (#52)
+- 修复 Windows portable 版本日报生成崩溃问题 (#54)
+
+v1.41.0 更新:
 - 核心交互重构：状态管理优化 + 性能提升
 - useModal composable 替代分散的 showXxx ref，统一模态框管理
 - 报告生成入口整合为单一下拉菜单，简化操作流程
@@ -214,21 +219,11 @@ v1.28.0 更新:
 v1.27.0 更新:
 - 更新 jsdom 到 27.4.0（依赖维护）
 
-v1.26.0 更新:
-- 修复本地地址（localhost、127.0.0.1）的 API 请求被系统代理拦截的问题 (Issue #47)
-
-v1.25.0 更新:
-- 更新 @tauri-apps/cli 至 2.10.1
-
-v1.24.0 更新:
-- 修复 Windows portable 版本启动崩溃问题（Tokio runtime 缺失）
-- 将 network_status.rs 中的 tokio::spawn 改为 tauri::async_runtime::spawn
-
-**早期版本 (v1.0.0 ~ v1.23.0)**:
-- v1.22.0~v1.23.0: 团队协作功能、API Key 迁移死锁修复、性能优化
-- v1.20.0: 本地 AI 模型微调功能（JSONL 导出、Ollama 微调）
-- v1.19.x: Ollama 模型管理增强、Windows 启动问题修复
-- v1.0.0 ~ v1.18.0: 核心功能实现（自动捕获、手动记录、AI 日报、多平台支持等）
+**早期版本 (v1.0.0 ~ v1.26.0)**:
+- v1.26.0: 修复本地地址 API 请求被代理拦截问题 (#47)
+- v1.24.0~v1.25.0: 依赖更新、Windows 启动问题修复
+- v1.20.0~v1.23.0: 团队协作、本地 AI 微调、Ollama 管理
+- v1.0.0 ~ v1.19.0: 核心功能实现（自动捕获、手动记录、AI 日报、多平台支持等）
 
 ## 贡献
 
