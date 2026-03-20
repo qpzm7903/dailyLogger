@@ -173,7 +173,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.49.0
+**最新版本**: v1.50.0
+- 测试覆盖增强：新增 PluginPanel 组件测试
+- 添加 PluginPanel.test.ts（23 个测试用例）
+- 更新 Rust 依赖（rustls-webpki）
+- 测试总数提升至 673 个前端测试 + 435 个 Rust 测试
+
+v1.49.0 更新:
 - 测试覆盖增强：新增 55 个前端测试
 - 添加 OfflineBanner 组件测试（14 个测试用例）
 - 添加 ReportHistoryViewer 组件测试（18 个测试用例）
