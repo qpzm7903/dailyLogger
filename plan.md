@@ -14,12 +14,12 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| FIX-008 | Windows portable 生成日报崩溃 (#54) | 3pts | **CRITICAL** | ⏳ 待开始 | — |
+| FIX-008 | Windows portable 生成日报崩溃 (#54) | 3pts | **CRITICAL** | ✅ 完成 | — |
 | FIX-006 | 设置入口功能整合优化 (#50) | 2pts | MEDIUM | ⏳ 待开始 | — |
 | FIX-007 | 历史报告输出文件查看 (#52) | 2pts | MEDIUM | ⏳ 待开始 | — |
 
 **关键问题分析**:
-- **FIX-008 (#54)**: 根因是 `notion.rs` 和 `slack.rs` 中的 `block_on` 在 async 上下文中导致 runtime 嵌套崩溃。修复方案：在 synthesis 的 async 函数中直接使用 async 版本。
+- **FIX-008 (#54)**: 根因是 `notion.rs` 中的 `write_report_to_notion_sync` 在 async 上下文中创建新 runtime 导致嵌套崩溃。修复方案：在 synthesis 的 async 函数中直接使用 async 版本 `write_report_to_notion().await`。
 
 ---
 
@@ -123,6 +123,21 @@
 | UX-021 | 标签颜色移除硬编码，改为后端可配置 | 3pts | MEDIUM | ⏳ 待开始 | [specs/UX-021-tag-color-config.md](specs/UX-021-tag-color-config.md) |
 | UX-022 | SearchPanel 虚拟滚动 | 2pts | MEDIUM | ⏳ 待开始 | — |
 | UX-023 | ScreenshotGallery 懒加载缩略图 | 2pts | LOW | ⏳ 待开始 | — |
+
+### v1.43.0 — 功能增强 📋 规划中
+
+**目标**: 增强截图分析功能，优化用户体验
+
+**版本类型**: MINOR（功能增强）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| FEAT-001 | 支持重新分析已分析的截图记录 (#53) | 3pts | MEDIUM | ⏳ 待开始 | — |
+| FEAT-002 | 移除登录/注册功能 (#55) | 3pts | LOW | ⏳ 待开始 | — |
+
+**备注**:
+- **FEAT-001 (#53)**: 用户希望能够重新分析已有的截图记录（如更换模型后）。需要在 UI 上添加"重新分析"按钮。
+- **FEAT-002 (#55)**: 用户反馈不需要登录/注册功能。此为较大的功能删除，需要评估影响范围后谨慎处理。
 
 ---
 
