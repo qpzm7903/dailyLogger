@@ -130,33 +130,12 @@
               </button>
             </div>
             <div class="flex items-center gap-2">
-              <button
-                @click="generateSummary"
-                :disabled="isAnyReportGenerating"
-                :class="isAnyReportGenerating && !isGenerating ? 'opacity-50 cursor-not-allowed' : ''"
-                class="bg-primary hover:bg-blue-600 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
-              >
-                <span v-if="isGenerating" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isGenerating ? '生成中...' : '生成日报' }}
-              </button>
-              <button
-                @click="generateWeeklyReport"
-                :disabled="isAnyReportGenerating"
-                :class="isAnyReportGenerating && !isGeneratingWeekly ? 'opacity-50 cursor-not-allowed' : ''"
-                class="bg-green-600 hover:bg-green-700 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
-              >
-                <span v-if="isGeneratingWeekly" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isGeneratingWeekly ? '生成中...' : '生成周报' }}
-              </button>
-              <button
-                @click="generateMonthlyReport"
-                :disabled="isAnyReportGenerating"
-                :class="isAnyReportGenerating && !isGeneratingMonthly ? 'opacity-50 cursor-not-allowed' : ''"
-                class="bg-purple-600 hover:bg-purple-700 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
-              >
-                <span v-if="isGeneratingMonthly" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isGeneratingMonthly ? '生成中...' : '生成月报' }}
-              </button>
+              <ReportDropdown
+                :isGeneratingDaily="isGenerating"
+                :isGeneratingWeekly="isGeneratingWeekly"
+                :isGeneratingMonthly="isGeneratingMonthly"
+                @generate="handleReportGenerate"
+              />
               <button
                 @click="open('customReport')"
                 class="bg-orange-600 hover:bg-orange-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
@@ -369,6 +348,7 @@ import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
 import LoginModal from './components/LoginModal.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
+import ReportDropdown from './components/ReportDropdown.vue'
 import { showError, showSuccess, initToastI18n } from './stores/toast'
 import { extractSummary } from './utils/contentUtils'
 import type { LogRecord, Tag, User, Settings } from './types/tauri'
@@ -669,6 +649,17 @@ const handleTagSelected = (tag: Tag | null) => {
   close('tagCloud')
   initialFilterTag.value = tag
   open('historyViewer')
+}
+
+// UX-011: Handle report generation from dropdown
+const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
+  if (type === 'daily') {
+    generateSummary()
+  } else if (type === 'weekly') {
+    generateWeeklyReport()
+  } else if (type === 'monthly') {
+    generateMonthlyReport()
+  }
 }
 
 const generateSummary = async () => {
