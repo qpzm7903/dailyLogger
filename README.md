@@ -173,7 +173,20 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.31.0
+**最新版本**: v1.40.0
+- UX 体验修复：5 项即时体验痛点全部解决
+- Toast 通知时长优化（错误 5s，成功 3s）
+- 报告生成按钮互锁 + 加载 spinner，防止重复提交
+- 离线状态改为顶部横幅 Banner，不遮挡内容
+- 截图分析完成后显示简短应用摘要，替代原始 JSON
+- 标签过滤条超出 6 个时折叠为"+N 个标签"
+
+v1.32.0 更新:
+- 改进错误提示和用户反馈（i18n 支持，完善 Toast 逻辑）
+- 更新 README.md 版本历史
+- 检查并清理未使用的代码/依赖
+
+v1.31.0 更新:
 - 完成前端代码全量 TypeScript 迁移
 - 所有 .js 文件迁移为 .ts，Vue 组件添加 `lang="ts"`
 - 建立完整的类型定义，提升代码质量和可维护性
@@ -203,19 +216,8 @@ v1.24.0 更新:
 - 修复 Windows portable 版本启动崩溃问题（Tokio runtime 缺失）
 - 将 network_status.rs 中的 tokio::spawn 改为 tauri::async_runtime::spawn
 
-v1.23.0 更新:
-- 性能优化和 bug 修复
-
-v1.22.0 更新:
-- 修复 API Key 迁移死锁问题
-- 改进 Windows 免安装版本启动诊断
-- 新增团队协作功能
-  - 用户注册/登录（Argon2 密码哈希）
-  - 团队创建/加入/邀请（邀请码）
-  - 角色管理（Admin/Member/Viewer）
-  - 记录共享到团队
-
-**早期版本 (v1.0.0 ~ v1.21.0)**:
+**早期版本 (v1.0.0 ~ v1.23.0)**:
+- v1.22.0~v1.23.0: 团队协作功能、API Key 迁移死锁修复、性能优化
 - v1.20.0: 本地 AI 模型微调功能（JSONL 导出、Ollama 微调）
 - v1.19.x: Ollama 模型管理增强、Windows 启动问题修复
 - v1.0.0 ~ v1.18.0: 核心功能实现（自动捕获、手动记录、AI 日报、多平台支持等）
