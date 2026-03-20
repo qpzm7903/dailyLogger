@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
-> 最后更新: 2026-03-19
-> 当前版本: v1.21.0 ✅ 已发布
-> 下一版本: v1.22.0（待规划）
+> 最后更新: 2026-03-20
+> 当前版本: v1.22.0 ✅ 已发布
+> 下一版本: v1.23.0（待规划）
 
 ---
 
@@ -650,6 +650,63 @@ Sprint 1 完成了 5 大 Epic（87 故事点，24 个 Story），覆盖核心功
 **前端变更** (`src/`):
 - `HistoryViewer.vue`: 新增分享按钮
 - 分享弹窗选择目标团队
+
+---
+
+## v1.21.1（Windows Portable 诊断日志）✅ 已发布
+
+**目标**: 改进 Windows 免安装版本的启动诊断功能，添加更详细的日志输出。
+
+| ID | 需求 | 状态 |
+|----|------|------|
+| FIX-WIN-002 | Windows Portable 启动诊断日志增强 | ✅ 完成 |
+
+**变更**:
+- `main.rs`: 添加更细粒度的诊断日志
+- 诊断文件写入多个位置（exe 目录、AppData、用户主目录）以提高成功率
+- 启动各阶段进度跟踪
+
+---
+
+## v1.21.2（API Key 迁移死锁修复）✅ 已发布
+
+**目标**: 修复 `init_database` 中 API key 迁移逻辑的死锁问题。
+
+| ID | 需求 | 状态 |
+|----|------|------|
+| FIX-DEADLOCK-001 | init_database API key 迁移死锁修复 | ✅ 完成 |
+
+**问题**: `init_database()` 在持有 `DB_CONNECTION` mutex 时调用 `get_settings_sync()` 和 `save_settings_sync()`，而这两个函数内部也会尝试获取同一个 mutex，导致死锁。
+
+**修复**:
+- 将 API key 迁移逻辑移到 mutex lock 之外执行
+- 先读取旧的 plaintext API key，释放 mutex 后再进行加密迁移
+- 迁移完成后再获取 mutex 更新 settings
+
+---
+
+## v1.22.0（依赖更新与维护）✅ 已完成
+
+**目标**: 更新依赖以修复安全漏洞，进行代码维护和优化。
+
+**版本类型**: MINOR（依赖更新和维护）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| MAINT-001 | 更新 Vite 以修复 esbuild 安全漏洞 | 2pts | HIGH | ✅ 完成 |
+
+### MAINT-001: 更新 Vite 以修复 esbuild 安全漏洞
+
+**问题**: npm audit 显示 2 个 moderate 级别漏洞：
+- esbuild <=0.24.2 存在开发服务器请求走私漏洞 (GHSA-67mh-4wv8-2f99)
+- vite 0.11.0 - 6.1.6 受影响
+
+**修复**:
+- 更新 vite 从 5.4.21 到 8.0.1
+- esbuild 从 0.21.5 更新到 0.27.4
+- npm audit 显示 0 vulnerabilities
+- 所有 531 个前端测试通过
+- 所有 474 个 Rust 测试通过
 
 ---
 
