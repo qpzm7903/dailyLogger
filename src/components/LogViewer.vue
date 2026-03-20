@@ -57,24 +57,30 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-defineEmits(['close'])
+defineEmits<{(e: 'close'): void}>()
 
-const logContainer = ref(null)
-const rawLines = ref([])
+const logContainer = ref<HTMLElement | null>(null)
+const rawLines = ref<string[]>([])
 const loading = ref(false)
 const autoRefresh = ref(false)
-const activelevels = ref(new Set(['INFO', 'WARN', 'ERROR']))
+const activelevels = ref<Set<string>>(new Set(['INFO', 'WARN', 'ERROR']))
 
 const logPath = 'DailyLogger/logs/daily-logger.log'
 
-const levels = [
+interface LevelOption {
+  key: string
+  label: string
+  activeClass: string
+}
+
+const levels: LevelOption[] = [
   { key: 'INFO',  label: 'INFO',  activeClass: 'bg-blue-900/60 text-blue-300' },
   { key: 'WARN',  label: 'WARN',  activeClass: 'bg-yellow-900/60 text-yellow-300' },
   { key: 'ERROR', label: 'ERROR', activeClass: 'bg-red-900/60 text-red-300' },
@@ -94,14 +100,14 @@ const filteredLines = computed(() => {
   })
 })
 
-const lineClass = (line) => {
+const lineClass = (line: string) => {
   if (line.includes(' ERROR ') || line.includes(' ERROR\t')) return 'text-red-400'
   if (line.includes(' WARN ')  || line.includes(' WARN\t'))  return 'text-yellow-400'
   if (line.includes(' INFO ')  || line.includes(' INFO\t'))  return 'text-gray-300'
   return 'text-gray-500'
 }
 
-const toggleLevel = (key) => {
+const toggleLevel = (key: string) => {
   const s = new Set(activelevels.value)
   s.has(key) ? s.delete(key) : s.add(key)
   // Keep at least one level active
@@ -118,7 +124,7 @@ const scrollToBottom = async () => {
 const loadLogs = async () => {
   loading.value = true
   try {
-    const content = await invoke('get_recent_logs', { lines: 500 })
+    const content = await invoke<string>('get_recent_logs', { lines: 500 })
     rawLines.value = content ? content.split('\n') : []
     await scrollToBottom()
   } catch (err) {
@@ -128,13 +134,13 @@ const loadLogs = async () => {
   }
 }
 
-let refreshTimer = null
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 watch(autoRefresh, (val) => {
-  clearInterval(refreshTimer)
+  clearInterval(refreshTimer!)
   if (val) refreshTimer = setInterval(loadLogs, 3000)
 })
 
 onMounted(() => loadLogs())
-onUnmounted(() => clearInterval(refreshTimer))
+onUnmounted(() => clearInterval(refreshTimer!))
 </script>

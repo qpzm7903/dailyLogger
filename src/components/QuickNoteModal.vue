@@ -42,17 +42,17 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePlatform } from '../composables/usePlatform'
 
 const { locale } = useI18n()
 const { isDesktop } = usePlatform()
-const emit = defineEmits(['close', 'save'])
+const emit = defineEmits<{(e: 'close'): void; (e: 'save', content: string): void}>()
 
 const content = ref('')
-const inputRef = ref(null)
+const inputRef = ref<HTMLTextAreaElement | null>(null)
 const currentTime = ref('')
 
 const updateTime = () => {

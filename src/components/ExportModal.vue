@@ -95,13 +95,19 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 
+interface ExportResult {
+  record_count: number
+  file_size: number
+  path: string
+}
+
 const { t } = useI18n()
-const emit = defineEmits(['close'])
+const emit = defineEmits<{(e: 'close'): void}>()
 
 // Date range - default to last 7 days
 const today = new Date()
@@ -110,9 +116,9 @@ weekAgo.setDate(weekAgo.getDate() - 7)
 
 const startDate = ref(formatDate(weekAgo))
 const endDate = ref(formatDate(today))
-const exportFormat = ref('json')
+const exportFormat = ref<'json' | 'markdown'>('json')
 const isExporting = ref(false)
-const exportResult = ref(null)
+const exportResult = ref<ExportResult | null>(null)
 const exportError = ref('')
 
 const dateError = computed(() => {
@@ -121,14 +127,14 @@ const dateError = computed(() => {
   return ''
 })
 
-function formatDate(date) {
+function formatDate(date: Date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
 
-function formatFileSize(bytes) {
+function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
@@ -142,7 +148,7 @@ async function doExport() {
   exportError.value = ''
 
   try {
-    const result = await invoke('export_records', {
+    const result = await invoke<ExportResult>('export_records', {
       request: {
         start_date: startDate.value,
         end_date: endDate.value,
@@ -151,7 +157,7 @@ async function doExport() {
     })
     exportResult.value = result
   } catch (e) {
-    exportError.value = typeof e === 'string' ? e : e.message || t('exportModal.exportFailed')
+    exportError.value = typeof e === 'string' ? e : (e as Error).message || t('exportModal.exportFailed')
   } finally {
     isExporting.value = false
   }

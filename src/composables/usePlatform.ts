@@ -1,7 +1,7 @@
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, type Ref } from 'vue'
 import { platform } from '@tauri-apps/plugin-os'
 
-const currentPlatform = ref(null)
+const currentPlatform = ref<string | null>(null)
 const isMobile = ref(false)
 const isDesktop = ref(true)
 
@@ -11,9 +11,13 @@ const isDesktop = ref(true)
  * Uses Tauri's os plugin to detect the platform at runtime.
  * Provides isMobile and isDesktop refs for conditional rendering.
  *
- * @returns {{ platform: import('vue').Ref<string|null>, isMobile: import('vue').Ref<boolean>, isDesktop: import('vue').Ref<boolean> }}
+ * @returns Platform detection refs
  */
-export function usePlatform() {
+export function usePlatform(): {
+  platform: Ref<string | null>
+  isMobile: Ref<boolean>
+  isDesktop: Ref<boolean>
+} {
   onMounted(async () => {
     try {
       currentPlatform.value = await platform()

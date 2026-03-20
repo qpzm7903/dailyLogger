@@ -49,32 +49,42 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import type { LogRecord } from '../types/tauri'
+
+interface WindowInfo {
+  title?: string
+  process_name?: string
+}
+
+interface ScreenAnalysis {
+  current_focus?: string
+  active_software?: string
+  context_keywords?: string[]
+  active_window?: WindowInfo
+}
 
 const { t, locale } = useI18n()
 
-const props = defineProps({
-  record: {
-    type: Object,
-    required: true
-  }
-})
+const props = defineProps<{
+  record: LogRecord
+}>()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits<{(e: 'close'): void}>()
 
 const screenshotData = ref('')
 
-const formatTime = (timestamp) => {
+const formatTime = (timestamp: string) => {
   const date = new Date(timestamp)
   return date.toLocaleString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US')
 }
 
-const parseContent = (content) => {
+const parseContent = (content: string) => {
   try {
-    const parsed = JSON.parse(content)
+    const parsed = JSON.parse(content) as ScreenAnalysis
     return `${t('screenshotModal.currentFocus')}: ${parsed.current_focus}\n${t('screenshotModal.activeSoftware')}: ${parsed.active_software}\n${t('screenshotModal.keywords')}: ${parsed.context_keywords?.join(', ') || t('screenshotModal.none')}`
   } catch {
     return content
@@ -82,10 +92,10 @@ const parseContent = (content) => {
 }
 
 // SMART-001 Task 6: Extract window info from content JSON
-const windowInfo = computed(() => {
+const windowInfo = computed<WindowInfo | null>(() => {
   if (!props.record.content) return null
   try {
-    const parsed = JSON.parse(props.record.content)
+    const parsed = JSON.parse(props.record.content) as ScreenAnalysis
     return parsed.active_window || null
   } catch {
     return null
@@ -93,7 +103,7 @@ const windowInfo = computed(() => {
 })
 
 // SMART-001 Task 6: Get icon based on process name
-const getWindowIcon = (processName) => {
+const getWindowIcon = (processName?: string) => {
   if (!processName) return '🖥️'
   const name = processName.toLowerCase()
 
@@ -125,7 +135,7 @@ const getWindowIcon = (processName) => {
 const loadScreenshot = async () => {
   if (props.record.screenshot_path) {
     try {
-      screenshotData.value = await invoke('get_screenshot', { path: props.record.screenshot_path })
+      screenshotData.value = await invoke<string>('get_screenshot', { path: props.record.screenshot_path })
     } catch (err) {
       console.error('Failed to load screenshot:', err)
       screenshotData.value = ''

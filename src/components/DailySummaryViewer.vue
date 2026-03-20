@@ -34,7 +34,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-shell'
@@ -42,14 +42,11 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const props = defineProps({
-  summaryPath: {
-    type: String,
-    required: true
-  }
-})
+const props = defineProps<{
+  summaryPath: string
+}>()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits<{(e: 'close'): void}>()
 
 const content = ref('')
 const loading = ref(true)
@@ -63,7 +60,7 @@ const loadSummary = async () => {
   }
 
   try {
-    content.value = await invoke('read_file', { path: props.summaryPath })
+    content.value = await invoke<string>('read_file', { path: props.summaryPath })
   } catch (err) {
     error.value = t('dailySummaryViewer.loadFailed', { error: err })
     console.error('Failed to load summary:', err)

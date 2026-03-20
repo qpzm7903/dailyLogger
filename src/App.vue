@@ -211,7 +211,7 @@
               </div>
               <!-- Window Info Display (SMART-001 Task 6) -->
               <div
-                v-if="getWindowInfo(record) && (getWindowInfo(record).title || getWindowInfo(record).process_name)"
+                v-if="getWindowInfo(record)?.title || getWindowInfo(record)?.process_name"
                 class="window-info flex items-center gap-1.5 mb-1.5 text-xs text-gray-400"
               >
                 <span>{{ getWindowIcon(getWindowInfo(record)?.process_name) }}</span>
@@ -291,15 +291,15 @@
     <SettingsModal v-if="showSettings" @close="showSettings = false" />
     <BackupModal v-if="showBackup" @close="showBackup = false" />
     <QuickNoteModal v-if="showQuickNote" @close="showQuickNote = false" @save="handleQuickNote" />
-    <ScreenshotModal v-if="showScreenshot" :record="selectedScreenshot" @close="showScreenshot = false" />
+    <ScreenshotModal v-if="showScreenshot" :record="selectedScreenshot!" @close="showScreenshot = false" />
     <ScreenshotGallery v-if="showScreenshotGallery" @close="showScreenshotGallery = false" />
-    <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath" @close="showSummaryViewer = false" />
-    <DailySummaryViewer v-if="showWeeklyReportViewer" :summaryPath="weeklyReportPath" @close="showWeeklyReportViewer = false" />
-    <DailySummaryViewer v-if="showMonthlyReportViewer" :summaryPath="monthlyReportPath" @close="showMonthlyReportViewer = false" />
-    <DailySummaryViewer v-if="showCustomReportViewer" :summaryPath="customReportPath" @close="showCustomReportViewer = false" />
+    <DailySummaryViewer v-if="showSummaryViewer" :summaryPath="summaryPath!" @close="showSummaryViewer = false" />
+    <DailySummaryViewer v-if="showWeeklyReportViewer" :summaryPath="weeklyReportPath!" @close="showWeeklyReportViewer = false" />
+    <DailySummaryViewer v-if="showMonthlyReportViewer" :summaryPath="monthlyReportPath!" @close="showMonthlyReportViewer = false" />
+    <DailySummaryViewer v-if="showCustomReportViewer" :summaryPath="customReportPath!" @close="showCustomReportViewer = false" />
     <CustomReportModal v-if="showCustomReport" @close="showCustomReport = false" @generated="handleCustomReportGenerated" />
     <ReportComparisonModal v-if="showComparisonReport" @close="showComparisonReport = false" @generated="handleComparisonReportGenerated" />
-    <DailySummaryViewer v-if="showComparisonReportViewer" :summaryPath="comparisonReportPath" @close="showComparisonReportViewer = false" />
+    <DailySummaryViewer v-if="showComparisonReportViewer" :summaryPath="comparisonReportPath!" @close="showComparisonReportViewer = false" />
     <LogViewer v-if="showLogViewer" @close="showLogViewer = false" />
     <HistoryViewer v-if="showHistoryViewer" :initialTag="initialFilterTag" :currentUser="currentUser" @close="showHistoryViewer = false; initialFilterTag = null" />
     <SearchPanel v-if="showSearch" @close="showSearch = false" />
@@ -315,11 +315,11 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { usePlatform } from './composables/usePlatform'
 import SettingsModal from './components/SettingsModal.vue'
 import BackupModal from './components/BackupModal.vue'
@@ -337,8 +337,9 @@ import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
 import LoginModal from './components/LoginModal.vue'
-import { showError, showSuccess } from './stores/toast.js'
-import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors.js'
+import { showError, showSuccess } from './stores/toast'
+import { parseError, getErrorMessage, getSuggestedAction, ErrorType } from './utils/errors'
+import type { LogRecord, Tag, User, Settings } from './types/tauri'
 
 const { t } = useI18n()
 const { isDesktop } = usePlatform()
@@ -348,7 +349,7 @@ const isOnline = ref(true)
 const offlineQueueCount = ref(0)
 const autoCaptureEnabled = ref(false)
 const quickNotesCount = ref(0)
-const todayRecords = ref([])
+const todayRecords = ref<LogRecord[]>([])
 const isGenerating = ref(false)
 const isGeneratingWeekly = ref(false)
 const isGeneratingMonthly = ref(false)
@@ -376,22 +377,22 @@ const showSearch = ref(false)
 const showTagCloud = ref(false)
 const showExport = ref(false)
 const showTimeline = ref(false)
-const selectedScreenshot = ref(null)
-const initialFilterTag = ref(null)
+const selectedScreenshot = ref<LogRecord | null>(null)
+const initialFilterTag = ref<Tag | null>(null)
 const showLoginModal = ref(false)
-const currentUser = ref(null)
+const currentUser = ref<User | null>(null)
 
 // AI-004: Tag filtering state
 const selectedTagFilter = ref('')
-const allTags = ref([])
+const allTags = ref<Tag[]>([])
 
 // Computed
-const screenshotCount = computed(() => {
+const screenshotCount = computed<number>(() => {
   return todayRecords.value.filter(r => r.source_type === 'auto' && r.screenshot_path).length
 })
 
 // AI-004: Computed filtered records based on selected tag
-const filteredRecords = computed(() => {
+const filteredRecords = computed<LogRecord[]>(() => {
   if (!selectedTagFilter.value) {
     return todayRecords.value
   }
@@ -402,8 +403,8 @@ const filteredRecords = computed(() => {
 })
 
 // AI-004: Computed tag counts for filter display
-const tagCounts = computed(() => {
-  const counts = {}
+const tagCounts = computed<Record<string, number>>(() => {
+  const counts: Record<string, number> = {}
   todayRecords.value.forEach(record => {
     const tags = getRecordTags(record)
     tags.forEach(tag => {
@@ -413,15 +414,15 @@ const tagCounts = computed(() => {
   return counts
 })
 
-let timeInterval = null
-let recordsRefreshInterval = null
-let unlistenTrayOpenSettings = null
-let unlistenTrayOpenQuickNote = null
-let unlistenNetworkStatus = null
-let unlistenQueueUpdated = null
-let networkCheckInterval = null
+let timeInterval: ReturnType<typeof setInterval> | null = null
+let recordsRefreshInterval: ReturnType<typeof setInterval> | null = null
+let unlistenTrayOpenSettings: UnlistenFn | null = null
+let unlistenTrayOpenQuickNote: UnlistenFn | null = null
+let unlistenNetworkStatus: UnlistenFn | null = null
+let unlistenQueueUpdated: UnlistenFn | null = null
+let networkCheckInterval: ReturnType<typeof setInterval> | null = null
 
-const formatTime = (timestamp) => {
+const formatTime = (timestamp: string): string => {
   const date = new Date(timestamp)
   if (isNaN(date.getTime())) return '--:--'
   // Use getHours/getMinutes (always local time) instead of toLocaleTimeString,
@@ -432,10 +433,23 @@ const formatTime = (timestamp) => {
 }
 
 // SMART-001 Task 6: Helper to parse window info from record content
-const getWindowInfo = (record) => {
+interface WindowInfo {
+  title?: string
+  process_name?: string
+}
+
+interface ScreenAnalysis {
+  current_focus?: string
+  active_software?: string
+  context_keywords?: string[]
+  active_window?: WindowInfo
+  tags?: string[]
+}
+
+const getWindowInfo = (record: LogRecord): WindowInfo | null => {
   if (!record.content) return null
   try {
-    const parsed = JSON.parse(record.content)
+    const parsed = JSON.parse(record.content) as ScreenAnalysis
     return parsed.active_window || null
   } catch {
     return null
@@ -443,7 +457,7 @@ const getWindowInfo = (record) => {
 }
 
 // SMART-001 Task 6: Get icon based on process name
-const getWindowIcon = (processName) => {
+const getWindowIcon = (processName?: string): string => {
   if (!processName) return '🖥️'
   const name = processName.toLowerCase()
 
@@ -473,7 +487,7 @@ const getWindowIcon = (processName) => {
 }
 
 // AI-004: Tag color mapping
-const tagColors = {
+const tagColors: Record<string, string> = {
   '开发': 'bg-blue-500/20 text-blue-400',
   '会议': 'bg-purple-500/20 text-purple-400',
   '写作': 'bg-green-500/20 text-green-400',
@@ -488,16 +502,16 @@ const tagColors = {
 const defaultTagColor = 'bg-gray-500/20 text-gray-400'
 
 // AI-004: Get tag color class
-const getTagColor = (tag) => {
+const getTagColor = (tag: string): string => {
   return tagColors[tag] || defaultTagColor
 }
 
 // AI-004: Parse tags from record
-const getRecordTags = (record) => {
+const getRecordTags = (record: LogRecord): string[] => {
   // First check if tags field exists (new records from AI-004)
-  if (record.tags) {
+  if ((record as LogRecord & { tags?: string }).tags) {
     try {
-      const tags = JSON.parse(record.tags)
+      const tags = JSON.parse((record as LogRecord & { tags?: string }).tags as string)
       if (Array.isArray(tags) && tags.length > 0) {
         return tags.slice(0, 3) // Limit to 3 tags
       }
@@ -508,7 +522,7 @@ const getRecordTags = (record) => {
   // Fallback: try to parse tags from content (for auto records with ScreenAnalysis)
   if (record.source_type === 'auto' && record.content) {
     try {
-      const parsed = JSON.parse(record.content)
+      const parsed = JSON.parse(record.content) as ScreenAnalysis
       if (parsed.tags && Array.isArray(parsed.tags) && parsed.tags.length > 0) {
         return parsed.tags.slice(0, 3)
       }
@@ -545,16 +559,18 @@ const takeScreenshot = async () => {
   if (isCapturing.value) return
   isCapturing.value = true
   try {
-    const path = await invoke('take_screenshot')
+    const path = await invoke<string>('take_screenshot')
     selectedScreenshot.value = {
+      id: 0,
       screenshot_path: path,
       timestamp: new Date().toISOString(),
-      content: null,
+      content: '',
+      source_type: 'auto'
     }
     showScreenshot.value = true
   } catch (err) {
     console.error('Failed to take screenshot:', err)
-    showError(err, takeScreenshot)
+    showError(String(err), takeScreenshot)
   } finally {
     isCapturing.value = false
   }
@@ -569,7 +585,7 @@ const triggerCapture = async () => {
     showSuccess('截图分析完成')
   } catch (err) {
     console.error('Failed to trigger capture:', err)
-    showError(err, triggerCapture)
+    showError(String(err), triggerCapture)
   } finally {
     isCapturing.value = false
   }
@@ -579,18 +595,18 @@ const openQuickNote = () => {
   showQuickNote.value = true
 }
 
-const openScreenshot = (record) => {
+const openScreenshot = (record: LogRecord) => {
   selectedScreenshot.value = record
   showScreenshot.value = true
 }
 
-const handleTimelineViewScreenshot = (record) => {
+const handleTimelineViewScreenshot = (record: LogRecord) => {
   showTimeline.value = false
   selectedScreenshot.value = record
   showScreenshot.value = true
 }
 
-const handleQuickNote = async (content) => {
+const handleQuickNote = async (content: string) => {
   try {
     await invoke('add_quick_note', { content })
     showQuickNote.value = false
@@ -601,7 +617,7 @@ const handleQuickNote = async (content) => {
 }
 
 // Handle tag selection from TagCloud
-const handleTagSelected = (tag) => {
+const handleTagSelected = (tag: Tag | null) => {
   showTagCloud.value = false
   initialFilterTag.value = tag
   showHistoryViewer.value = true
@@ -611,12 +627,12 @@ const generateSummary = async () => {
   if (isGenerating.value) return
   isGenerating.value = true
   try {
-    const result = await invoke('generate_daily_summary')
+    const result = await invoke<string>('generate_daily_summary')
     summaryPath.value = result
     showSuccess('日报生成成功')
   } catch (err) {
     console.error('Failed to generate summary:', err)
-    showError(err, generateSummary)
+    showError(String(err), generateSummary)
   } finally {
     isGenerating.value = false
   }
@@ -626,12 +642,12 @@ const generateWeeklyReport = async () => {
   if (isGeneratingWeekly.value) return
   isGeneratingWeekly.value = true
   try {
-    const result = await invoke('generate_weekly_report')
+    const result = await invoke<string>('generate_weekly_report')
     weeklyReportPath.value = result
     showSuccess('周报生成成功')
   } catch (err) {
     console.error('Failed to generate weekly report:', err)
-    showError(err, generateWeeklyReport)
+    showError(String(err), generateWeeklyReport)
   } finally {
     isGeneratingWeekly.value = false
   }
@@ -641,37 +657,37 @@ const generateMonthlyReport = async () => {
   if (isGeneratingMonthly.value) return
   isGeneratingMonthly.value = true
   try {
-    const result = await invoke('generate_monthly_report')
+    const result = await invoke<string>('generate_monthly_report')
     monthlyReportPath.value = result
     showSuccess('月报生成成功')
   } catch (err) {
     console.error('Failed to generate monthly report:', err)
-    showError(err, generateMonthlyReport)
+    showError(String(err), generateMonthlyReport)
   } finally {
     isGeneratingMonthly.value = false
   }
 }
 
-const handleCustomReportGenerated = (path) => {
+const handleCustomReportGenerated = (path: string) => {
   customReportPath.value = path
 }
 
-const handleComparisonReportGenerated = (path) => {
+const handleComparisonReportGenerated = (path: string) => {
   comparisonReportPath.value = path
 }
 
 const loadTodayRecords = async () => {
   try {
-    const records = await invoke('get_today_records')
+    const records = await invoke<LogRecord[]>('get_today_records')
     todayRecords.value = records
     quickNotesCount.value = records.filter(r => r.source_type === 'manual').length
 
     // CORE-007: Check network status and queue
     try {
-      const status = await invoke('check_network_status')
+      const status = await invoke<string>('check_network_status')
       isOnline.value = status === 'Online'
 
-      const queueStatus = await invoke('get_offline_queue_status')
+      const queueStatus = await invoke<{ pending_tasks: number }>('get_offline_queue_status')
       offlineQueueCount.value = queueStatus.pending_tasks
     } catch (e) {
       console.error('Failed to check network status:', e)
@@ -684,31 +700,41 @@ const loadTodayRecords = async () => {
 
 const loadSettings = async () => {
   try {
-    const settings = await invoke('get_settings')
+    const settings = await invoke<Settings>('get_settings')
     autoCaptureEnabled.value = settings.auto_capture_enabled || false
     summaryPath.value = settings.last_summary_path || ''
-    weeklyReportPath.value = settings.last_weekly_report_path || ''
-    monthlyReportPath.value = settings.last_monthly_report_path || ''
-    customReportPath.value = settings.last_custom_report_path || ''
+    weeklyReportPath.value = (settings as Settings & { last_weekly_report_path?: string }).last_weekly_report_path || ''
+    monthlyReportPath.value = (settings as Settings & { last_monthly_report_path?: string }).last_monthly_report_path || ''
+    customReportPath.value = (settings as Settings & { last_custom_report_path?: string }).last_custom_report_path || ''
   } catch (err) {
     console.error('Failed to load settings:', err)
   }
 }
 
 // Auth functions
+interface Session {
+  user_id: number
+  username: string
+}
+
 const loadSession = async () => {
   try {
-    const session = await invoke('get_current_session')
+    const session = await invoke<Session | null>('get_current_session')
     if (session) {
-      currentUser.value = { id: session.user_id, username: session.username }
+      currentUser.value = { id: session.user_id, username: session.username, email: '', created_at: '' } as User
     }
   } catch (err) {
     console.error('Failed to load session:', err)
   }
 }
 
-const handleLogin = (user) => {
-  currentUser.value = user
+const handleLogin = (user: { id: string | number; username: string }) => {
+  currentUser.value = {
+    id: typeof user.id === 'string' ? parseInt(user.id) : user.id,
+    username: user.username,
+    email: '',
+    created_at: ''
+  } as User
   showSuccess(t('auth.welcomeBack', { username: user.username }))
 }
 
@@ -731,29 +757,29 @@ onMounted(async () => {
 
   // CORE-007: Network status monitoring
   try {
-    isOnline.value = await invoke('get_network_status')
+    isOnline.value = await invoke<boolean>('get_network_status')
   } catch { /* ignore */ }
 
   // CORE-007: Load initial queue status
   try {
-    const queueStatus = await invoke('get_offline_queue_status')
+    const queueStatus = await invoke<{ pending_count: number }>('get_offline_queue_status')
     offlineQueueCount.value = queueStatus.pending_count || 0
   } catch { /* ignore */ }
 
-  unlistenNetworkStatus = await listen('network-status-changed', (event) => {
+  unlistenNetworkStatus = await listen<boolean>('network-status-changed', (event) => {
     isOnline.value = event.payload
   })
 
   // Listen for offline queue updates
-  unlistenQueueUpdated = await listen('offline-queue-updated', (event) => {
+  unlistenQueueUpdated = await listen<{ pending_count: number }>('offline-queue-updated', (event) => {
     offlineQueueCount.value = event.payload?.pending_count || 0
   })
 
   // Also poll network status every 60s as a fallback
   networkCheckInterval = setInterval(async () => {
     try {
-      isOnline.value = await invoke('check_network_status')
-      const queueStatus = await invoke('get_offline_queue_status')
+      isOnline.value = await invoke<boolean>('check_network_status')
+      const queueStatus = await invoke<{ pending_count: number }>('get_offline_queue_status')
       offlineQueueCount.value = queueStatus.pending_count || 0
     } catch { /* ignore */ }
   }, 60000)

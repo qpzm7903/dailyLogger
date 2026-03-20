@@ -220,27 +220,48 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 
-const { t } = useI18n()
-const emit = defineEmits(['close'])
+interface BackupInfo {
+  path: string
+  created_at: string
+  size_bytes: number
+  record_count: number
+  screenshot_count: number
+}
 
-const activeTab = ref('backup')
+interface BackupResult {
+  path: string
+  size_bytes: number
+  record_count: number
+  screenshot_count: number
+}
+
+interface RestoreResult {
+  record_count: number
+  screenshot_count: number
+  auto_backup_created: boolean
+}
+
+const { t } = useI18n()
+const emit = defineEmits<{(e: 'close'): void}>()
+
+const activeTab = ref<'backup' | 'restore' | 'history'>('backup')
 const backupDir = ref('')
 const isBackingUp = ref(false)
-const backupResult = ref(null)
+const backupResult = ref<BackupResult | null>(null)
 
-const selectedBackup = ref(null)
+const selectedBackup = ref<BackupInfo | null>(null)
 const showConfirm = ref(false)
 const isRestoring = ref(false)
-const restoreResult = ref(null)
+const restoreResult = ref<RestoreResult | null>(null)
 
 const isLoadingBackups = ref(false)
-const backups = ref([])
+const backups = ref<BackupInfo[]>([])
 
 // Load backups on mount
 onMounted(() => {
@@ -250,7 +271,7 @@ onMounted(() => {
 async function loadBackups() {
   isLoadingBackups.value = true
   try {
-    backups.value = await invoke('list_backups')
+    backups.value = await invoke<BackupInfo[]>('list_backups')
   } catch (e) {
     console.error('Failed to load backups:', e)
   } finally {
@@ -278,7 +299,7 @@ async function createBackup() {
   backupResult.value = null
   try {
     const dir = backupDir.value || null
-    backupResult.value = await invoke('create_backup', { backupDir: dir })
+    backupResult.value = await invoke<BackupResult>('create_backup', { backupDir: dir })
     await loadBackups()
   } catch (e) {
     console.error('Failed to create backup:', e)
@@ -296,7 +317,7 @@ async function selectBackupFile() {
       title: t('backup.selectBackupFile')
     })
     if (selected) {
-      selectedBackup.value = await invoke('get_backup_info', { backupPath: selected })
+      selectedBackup.value = await invoke<BackupInfo>('get_backup_info', { backupPath: selected })
     }
   } catch (e) {
     console.error('Failed to select backup file:', e)
@@ -308,7 +329,7 @@ async function confirmRestore() {
 
   isRestoring.value = true
   try {
-    restoreResult.value = await invoke('restore_backup', { backupPath: selectedBackup.value.path })
+    restoreResult.value = await invoke<RestoreResult>('restore_backup', { backupPath: selectedBackup.value.path })
     showConfirm.value = false
     selectedBackup.value = null
   } catch (e) {
@@ -319,12 +340,12 @@ async function confirmRestore() {
   }
 }
 
-async function restoreFromHistory(backup) {
+async function restoreFromHistory(backup: BackupInfo) {
   selectedBackup.value = backup
   activeTab.value = 'restore'
 }
 
-async function deleteBackupFile(path) {
+async function deleteBackupFile(path: string) {
   if (!confirm(t('backup.confirmDeleteBackup'))) return
 
   try {
@@ -336,14 +357,14 @@ async function deleteBackupFile(path) {
   }
 }
 
-function formatSize(bytes) {
+function formatSize(bytes: number) {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
   return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
 }
 
-function formatDate(isoString) {
+function formatDate(isoString: string) {
   try {
     const date = new Date(isoString)
     return date.toLocaleString('zh-CN')

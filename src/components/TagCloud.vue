@@ -75,24 +75,29 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, computed } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
+import type { Tag } from '../types/tauri'
+
+interface TagWithUsage extends Tag {
+  usage_count?: number
+}
 
 const { t } = useI18n()
-const emit = defineEmits(['tagSelected', 'close'])
+const emit = defineEmits<{(e: 'tagSelected', tag: Tag | null): void; (e: 'close'): void}>()
 
 // State
-const tags = ref([])
+const tags = ref<TagWithUsage[]>([])
 const isLoading = ref(false)
-const selectedTag = ref(null)
-const tagToDelete = ref(null)
+const selectedTag = ref<TagWithUsage | null>(null)
+const tagToDelete = ref<TagWithUsage | null>(null)
 const isDeleting = ref(false)
 
 // Color mapping
-const colorClasses = {
+const colorClasses: Record<string, string> = {
   blue: 'bg-blue-500/30 text-blue-300 hover:bg-blue-500/50',
   green: 'bg-green-500/30 text-green-300 hover:bg-green-500/50',
   yellow: 'bg-yellow-400/30 text-yellow-200 hover:bg-yellow-400/50',
@@ -104,7 +109,7 @@ const colorClasses = {
 }
 
 // Get tag size based on usage count
-function getTagSize(tag) {
+function getTagSize(tag: TagWithUsage) {
   const count = tag.usage_count || 0
   if (count >= 10) return 'text-base'
   if (count >= 5) return 'text-sm'
@@ -112,7 +117,7 @@ function getTagSize(tag) {
 }
 
 // Get tag color classes
-function getTagColor(color) {
+function getTagColor(color: string) {
   return colorClasses[color] || colorClasses.blue
 }
 
@@ -120,7 +125,7 @@ function getTagColor(color) {
 async function loadTags() {
   isLoading.value = true
   try {
-    tags.value = await invoke('get_all_manual_tags')
+    tags.value = await invoke<TagWithUsage[]>('get_all_manual_tags')
   } catch (e) {
     showError(t('tagCloud.loadFailed', { error: e }))
   } finally {
@@ -129,7 +134,7 @@ async function loadTags() {
 }
 
 // Toggle select tag
-function toggleSelect(tag) {
+function toggleSelect(tag: TagWithUsage) {
   if (selectedTag.value?.id === tag.id) {
     selectedTag.value = null
     emit('tagSelected', null)
@@ -140,7 +145,7 @@ function toggleSelect(tag) {
 }
 
 // Request delete
-function requestDelete(tag) {
+function requestDelete(tag: TagWithUsage) {
   tagToDelete.value = tag
 }
 
@@ -151,7 +156,7 @@ async function confirmDelete() {
   isDeleting.value = true
   try {
     await invoke('delete_manual_tag', { id: tagToDelete.value.id })
-    tags.value = tags.value.filter(t => t.id !== tagToDelete.value.id)
+    tags.value = tags.value.filter(t => t.id !== tagToDelete.value!.id)
     if (selectedTag.value?.id === tagToDelete.value.id) {
       selectedTag.value = null
       emit('tagSelected', null)

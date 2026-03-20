@@ -16,24 +16,25 @@
   </span>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
+import type { Tag } from '../types/tauri'
 
-const props = defineProps({
-  tag: {
-    type: Object,
-    required: true
-  },
-  removable: {
-    type: Boolean,
-    default: false
-  }
+interface Props {
+  tag: Tag
+  removable?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  removable: false
 })
 
-defineEmits(['remove'])
+defineEmits<{
+  remove: []
+}>()
 
 // Color mapping
-const colorMap = {
+const colorMap: Record<string, string> = {
   blue: 'bg-blue-500 text-white',
   green: 'bg-green-500 text-white',
   yellow: 'bg-yellow-400 text-slate-800',

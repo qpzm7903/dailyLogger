@@ -187,51 +187,51 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
 import TagFilter from './TagFilter.vue'
 import TagBadge from './TagBadge.vue'
+import type { LogRecord, Tag, User, Team } from '../types/tauri'
+
+interface TeamWithMembers {
+  team: Team
+  members: Array<{ user_id: number; username: string; role: string }>
+}
 
 const { t } = useI18n()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits<{(e: 'close'): void}>()
 
-const props = defineProps({
-  initialTag: {
-    type: Object,
-    default: null
-  },
-  currentUser: {
-    type: Object,
-    default: null
-  }
-})
+const props = defineProps<{
+  initialTag?: Tag | null
+  currentUser?: User | null
+}>()
 
 // State
 const startDate = ref('')
 const endDate = ref('')
-const sourceType = ref(null)
-const selectedTags = ref([])
-const records = ref([])
-const recordTags = ref({}) // Map of record id to tags
+const sourceType = ref<'auto' | 'manual' | null>(null)
+const selectedTags = ref<Tag[]>([])
+const records = ref<LogRecord[]>([])
+const recordTags = ref<Record<number, Tag[]>>({}) // Map of record id to tags
 const isLoading = ref(false)
 const isLoadingMore = ref(false)
 const page = ref(0)
 const pageSize = 50
 const hasMore = ref(true)
-const scrollContainer = ref(null)
-const recordToDelete = ref(null)
+const scrollContainer = ref<HTMLElement | null>(null)
+const recordToDelete = ref<LogRecord | null>(null)
 const isDeleting = ref(false)
-const tagFilterRef = ref(null)
+const tagFilterRef = ref<InstanceType<typeof TagFilter> | null>(null)
 
 // Share state
-const recordToShare = ref(null)
+const recordToShare = ref<LogRecord | null>(null)
 const isSharing = ref(false)
 const showShareModal = ref(false)
-const userTeams = ref([])
+const userTeams = ref<TeamWithMembers[]>([])
 const isLoadingTeams = ref(false)
 
 // Initialize dates to last 7 days
@@ -256,11 +256,11 @@ watch(selectedTags, () => {
   loadRecords()
 }, { deep: true })
 
-function formatDate(date) {
+function formatDate(date: Date) {
   return date.toISOString().split('T')[0]
 }
 
-function formatTime(timestamp) {
+function formatTime(timestamp: string) {
   const date = new Date(timestamp)
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
@@ -271,11 +271,11 @@ function formatTime(timestamp) {
   })
 }
 
-function truncateContent(content) {
+function truncateContent(content: string) {
   if (!content) return ''
   // Try to parse JSON content
   try {
-    const parsed = JSON.parse(content)
+    const parsed = JSON.parse(content) as { summary?: string; note?: string }
     if (parsed.summary) return parsed.summary
     if (parsed.note) return parsed.note
     return content
@@ -295,7 +295,7 @@ async function loadRecords() {
     // If tags are selected, use tag-based filtering
     if (selectedTags.value.length > 0) {
       const tagIds = selectedTags.value.map(t => t.id)
-      const result = await invoke('get_records_by_manual_tags', {
+      const result = await invoke<LogRecord[]>('get_records_by_manual_tags', {
         tagIds: tagIds,
         startDate: startDate.value,
         endDate: endDate.value,
@@ -306,7 +306,7 @@ async function loadRecords() {
       hasMore.value = false // Tag-based query doesn't support pagination
     } else {
       // Regular date/source filtering
-      const result = await invoke('get_history_records', {
+      const result = await invoke<LogRecord[]>('get_history_records', {
         startDate: startDate.value,
         endDate: endDate.value,
         sourceType: sourceType.value,
@@ -333,7 +333,7 @@ async function loadRecordTags() {
   if (ids.length === 0) return
 
   try {
-    const tagsMap = await invoke('get_tags_for_records', { recordIds: ids })
+    const tagsMap = await invoke<Record<number, Tag[]>>('get_tags_for_records', { recordIds: ids })
     recordTags.value = tagsMap
   } catch (e) {
     console.error('Failed to load tags for records:', e)
@@ -342,7 +342,7 @@ async function loadRecordTags() {
 }
 
 // Get tags for a specific record
-function getRecordTags(recordId) {
+function getRecordTags(recordId: number) {
   return recordTags.value[recordId] || []
 }
 
@@ -354,7 +354,7 @@ async function loadMoreRecords() {
   page.value += 1
 
   try {
-    const result = await invoke('get_history_records', {
+    const result = await invoke<LogRecord[]>('get_history_records', {
       startDate: startDate.value,
       endDate: endDate.value,
       sourceType: sourceType.value,
@@ -369,7 +369,7 @@ async function loadMoreRecords() {
     const newIds = result.map(r => r.id)
     if (newIds.length > 0) {
       try {
-        const tagsMap = await invoke('get_tags_for_records', { recordIds: newIds })
+        const tagsMap = await invoke<Record<number, Tag[]>>('get_tags_for_records', { recordIds: newIds })
         Object.assign(recordTags.value, tagsMap)
       } catch (e) {
         console.error('Failed to load tags for new records:', e)
@@ -394,7 +394,7 @@ function handleScroll() {
   }
 }
 
-function confirmDelete(record) {
+function confirmDelete(record: LogRecord) {
   recordToDelete.value = record
 }
 
@@ -407,7 +407,7 @@ async function deleteRecord() {
     await invoke('delete_record', { id: recordToDelete.value.id })
 
     // Remove from local list
-    records.value = records.value.filter(r => r.id !== recordToDelete.value.id)
+    records.value = records.value.filter(r => r.id !== recordToDelete.value!.id)
 
     showSuccess(t('historyViewer.recordDeleted'))
     recordToDelete.value = null
@@ -419,7 +419,7 @@ async function deleteRecord() {
 }
 
 // Share record functions
-async function openShareModal(record) {
+async function openShareModal(record: LogRecord) {
   if (!props.currentUser) return
 
   recordToShare.value = record
@@ -427,7 +427,7 @@ async function openShareModal(record) {
   isLoadingTeams.value = true
 
   try {
-    const teams = await invoke('get_user_teams', { userId: props.currentUser.id })
+    const teams = await invoke<TeamWithMembers[]>('get_user_teams', { userId: props.currentUser.id })
     userTeams.value = teams
   } catch (error) {
     showError(t('team.shareFailed', { error }))
@@ -443,7 +443,7 @@ function closeShareModal() {
   userTeams.value = []
 }
 
-async function shareRecord(teamId) {
+async function shareRecord(teamId: number) {
   if (!recordToShare.value || !props.currentUser) return
 
   isSharing.value = true
@@ -460,7 +460,7 @@ async function shareRecord(teamId) {
     showSuccess(t('team.recordShared'))
     closeShareModal()
   } catch (error) {
-    const errorMsg = error.toString()
+    const errorMsg = String(error)
     if (errorMsg.includes('already shared')) {
       showError(t('team.alreadyShared'))
     } else {

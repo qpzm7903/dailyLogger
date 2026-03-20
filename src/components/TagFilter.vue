@@ -57,27 +57,31 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError } from '../stores/toast'
 import TagBadge from './TagBadge.vue'
+import type { Tag } from '../types/tauri'
+
+interface TagWithUsage extends Tag {
+  usage_count?: number
+}
 
 const { t } = useI18n()
 
-const props = defineProps({
-  modelValue: {
-    type: Array,
-    default: () => []
-  }
+const props = withDefaults(defineProps<{
+  modelValue?: Tag[]
+}>(), {
+  modelValue: () => []
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{(e: 'update:modelValue', value: Tag[]): void}>()
 
 // State
 const showDropdown = ref(false)
-const allTags = ref([])
+const allTags = ref<TagWithUsage[]>([])
 
 // Selected tag IDs
 const selectedTags = computed(() => props.modelValue)
@@ -89,7 +93,7 @@ const availableTags = computed(() => {
 })
 
 // Color dots
-const colorDots = {
+const colorDots: Record<string, string> = {
   blue: 'w-2 h-2 rounded-full bg-blue-500',
   green: 'w-2 h-2 rounded-full bg-green-500',
   yellow: 'w-2 h-2 rounded-full bg-yellow-400',
@@ -100,27 +104,27 @@ const colorDots = {
   orange: 'w-2 h-2 rounded-full bg-orange-500'
 }
 
-function getDotClass(color) {
+function getDotClass(color: string) {
   return colorDots[color] || colorDots.blue
 }
 
 // Load all tags
 async function loadTags() {
   try {
-    allTags.value = await invoke('get_all_manual_tags')
+    allTags.value = await invoke<TagWithUsage[]>('get_all_manual_tags')
   } catch (e) {
     showError(t('tagFilter.loadFailed'))
   }
 }
 
 // Add tag to selection
-function addTag(tag) {
+function addTag(tag: Tag) {
   emit('update:modelValue', [...selectedTags.value, tag])
   showDropdown.value = false
 }
 
 // Remove tag from selection
-function removeTag(tagId) {
+function removeTag(tagId: number) {
   emit('update:modelValue', selectedTags.value.filter(t => t.id !== tagId))
 }
 
@@ -130,8 +134,8 @@ function clearAll() {
 }
 
 // Close dropdown on outside click
-function handleClickOutside(e) {
-  if (!e.target.closest('.relative')) {
+function handleClickOutside(e: MouseEvent) {
+  if (!(e.target as HTMLElement).closest('.relative')) {
     showDropdown.value = false
   }
 }

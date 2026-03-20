@@ -106,14 +106,14 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
-import { showError, showSuccess } from '../stores/toast.js'
+import { showError, showSuccess } from '../stores/toast'
 
 const { t } = useI18n()
-const emit = defineEmits(['close', 'generated'])
+const emit = defineEmits<{(e: 'close'): void; (e: 'generated', path: string): void}>()
 
 const startDate = ref('')
 const endDate = ref('')
@@ -123,16 +123,16 @@ const isGenerating = ref(false)
 const resultPath = ref('')
 const errorMsg = ref('')
 
-const dayCount = computed(() => {
+const dayCount = computed<number>(() => {
   if (!startDate.value || !endDate.value) return 0
   const start = new Date(startDate.value)
   const end = new Date(endDate.value)
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0
-  const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1
+  const diff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
   return diff > 0 ? diff : 0
 })
 
-const dateError = computed(() => {
+const dateError = computed<string>(() => {
   if (!startDate.value || !endDate.value) return ''
   if (new Date(endDate.value) < new Date(startDate.value)) {
     return t('customReport.endDateBeforeStart')
@@ -140,13 +140,13 @@ const dateError = computed(() => {
   return ''
 })
 
-const applyPreset = (preset) => {
+const applyPreset = (preset: 'biweekly' | 'quarterly' | 'custom') => {
   activePreset.value = preset
   errorMsg.value = ''
   resultPath.value = ''
 
   const today = new Date()
-  const formatDate = (d) => d.toISOString().split('T')[0]
+  const formatDate = (d: Date) => d.toISOString().split('T')[0]
 
   if (preset === 'biweekly') {
     const start = new Date(today)
@@ -174,7 +174,7 @@ const generateReport = async () => {
   resultPath.value = ''
 
   try {
-    const result = await invoke('generate_custom_report', {
+    const result = await invoke<string>('generate_custom_report', {
       startDate: startDate.value,
       endDate: endDate.value,
       reportName: reportName.value || null,
@@ -185,7 +185,7 @@ const generateReport = async () => {
   } catch (err) {
     console.error('Failed to generate custom report:', err)
     errorMsg.value = typeof err === 'string' ? err : String(err)
-    showError(err, generateReport)
+    showError(String(err), generateReport)
   } finally {
     isGenerating.value = false
   }

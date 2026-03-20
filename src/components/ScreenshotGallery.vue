@@ -78,7 +78,7 @@
                 <img
                   v-if="screenshot.thumbnail"
                   :src="screenshot.thumbnail"
-                  :alt="screenshot.id"
+                  :alt="String(screenshot.id)"
                   class="w-full h-full object-cover"
                 />
                 <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
@@ -105,7 +105,7 @@
                 <img
                   v-if="screenshot.thumbnail"
                   :src="screenshot.thumbnail"
-                  :alt="screenshot.id"
+                  :alt="String(screenshot.id)"
                   class="w-full h-full object-cover"
                 />
               </div>
@@ -142,29 +142,34 @@
     </div>
 
     <!-- Screenshot detail modal -->
-    <ScreenshotModal v-if="showDetail" :record="selectedScreenshot" @close="showDetail = false" />
+    <ScreenshotModal v-if="showDetail && selectedScreenshot" :record="selectedScreenshot" @close="showDetail = false" />
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import ScreenshotModal from './ScreenshotModal.vue'
+import type { LogRecord } from '../types/tauri'
+
+interface ScreenshotRecord extends LogRecord {
+  thumbnail?: string
+}
 
 const { t } = useI18n()
-const emit = defineEmits(['close'])
+const emit = defineEmits<{(e: 'close'): void}>()
 
-const screenshots = ref([])
+const screenshots = ref<ScreenshotRecord[]>([])
 const showDetail = ref(false)
-const selectedScreenshot = ref(null)
-const viewMode = ref('grid') // 'grid' or 'list'
+const selectedScreenshot = ref<ScreenshotRecord | null>(null)
+const viewMode = ref<'grid' | 'list'>('grid') // 'grid' or 'list'
 const startDate = ref('')
 const endDate = ref('')
 const currentPage = ref(1)
 const pageSize = 20
 const isLoadingMore = ref(false)
-const scrollContainer = ref(null)
+const scrollContainer = ref<HTMLElement | null>(null)
 
 // Computed: paginated screenshots for AC4
 const paginatedScreenshots = computed(() => {
@@ -182,7 +187,7 @@ const remainingCount = computed(() => {
   return Math.max(0, screenshots.value.length - currentPage.value * pageSize)
 })
 
-const formatTimeShort = (timestamp) => {
+const formatTimeShort = (timestamp: string) => {
   const date = new Date(timestamp)
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
@@ -190,9 +195,9 @@ const formatTimeShort = (timestamp) => {
   return `${hours}:${minutes}:${seconds}`
 }
 
-const parseContent = (content) => {
+const parseContent = (content: string) => {
   try {
-    const parsed = JSON.parse(content)
+    const parsed = JSON.parse(content) as { current_focus?: string; active_software?: string }
     const text = parsed.current_focus || parsed.active_software || t('screenshotGallery.unknown')
     return text.length > 50 ? text.substring(0, 50) + '...' : text
   } catch {
@@ -200,10 +205,10 @@ const parseContent = (content) => {
   }
 }
 
-const loadThumbnails = async (records) => {
+const loadThumbnails = async (records: ScreenshotRecord[]) => {
   for (const record of records) {
     try {
-      const thumbnail = await invoke('get_screenshot', { path: record.screenshot_path })
+      const thumbnail = await invoke<string>('get_screenshot', { path: record.screenshot_path })
       record.thumbnail = thumbnail
     } catch (err) {
       console.error('Failed to load thumbnail:', err)
@@ -213,9 +218,9 @@ const loadThumbnails = async (records) => {
 
 const loadScreenshots = async () => {
   try {
-    const records = await invoke('get_today_records')
+    const records = await invoke<LogRecord[]>('get_today_records')
     // Filter only auto records with screenshots
-    const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path)
+    const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path) as ScreenshotRecord[]
 
     // Load thumbnails
     await loadThumbnails(autoRecords)
@@ -233,12 +238,12 @@ const applyFilter = async () => {
   }
 
   try {
-    const records = await invoke('get_records_by_date_range', {
+    const records = await invoke<LogRecord[]>('get_records_by_date_range', {
       startDate: startDate.value,
       endDate: endDate.value
     })
     // Filter only auto records with screenshots
-    const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path)
+    const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path) as ScreenshotRecord[]
 
     // Load thumbnails
     await loadThumbnails(autoRecords)
@@ -267,8 +272,8 @@ const loadMore = () => {
   }
 }
 
-const handleScroll = (event) => {
-  const target = event.target
+const handleScroll = (event: Event) => {
+  const target = event.target as HTMLElement
   const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight
 
   // Load more when user scrolls to bottom (within 100px threshold)
@@ -277,7 +282,7 @@ const handleScroll = (event) => {
   }
 }
 
-const openScreenshot = (screenshot) => {
+const openScreenshot = (screenshot: ScreenshotRecord) => {
   selectedScreenshot.value = screenshot
   showDetail.value = true
 }

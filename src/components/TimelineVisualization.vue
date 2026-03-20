@@ -133,27 +133,49 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from 'vue-i18n';
+import type { LogRecord, Tag } from '../types/tauri';
+
+interface TimelineEvent {
+  record: LogRecord
+  time_str: string
+  event_type: 'auto' | 'manual'
+  preview: string
+}
+
+interface HourGroup {
+  hour: number
+  label: string
+  count: number
+  events: TimelineEvent[]
+}
+
+interface TimelineData {
+  total_events: number
+  active_hours: number
+  work_time_estimate: number
+  hour_groups: HourGroup[]
+}
 
 const { t } = useI18n();
 
-const props = defineProps({
-  initialDate: {
-    type: String,
-    default: null
-  }
-});
+const props = defineProps<{
+  initialDate?: string | null
+}>();
 
-const emit = defineEmits(['close', 'viewScreenshot']);
+const emit = defineEmits<{
+  (e: 'close'): void;
+  (e: 'viewScreenshot', record: LogRecord): void;
+}>();
 
 const selectedDate = ref('');
-const timelineData = ref(null);
+const timelineData = ref<TimelineData | null>(null);
 const loading = ref(false);
-const error = ref(null);
-const expandedHours = ref(new Set());
+const error = ref<string | null>(null);
+const expandedHours = ref<Set<number>>(new Set());
 
 // Initialize with today's date or provided initial date
 onMounted(() => {
@@ -177,18 +199,18 @@ async function loadTimelineData() {
   error.value = null;
 
   try {
-    const result = await invoke('get_timeline_for_date', { date: selectedDate.value });
+    const result = await invoke<TimelineData>('get_timeline_for_date', { date: selectedDate.value });
     timelineData.value = result;
     // Auto-expand all hours with events
     expandedHours.value = new Set(result.hour_groups.map(g => g.hour));
   } catch (e) {
-    error.value = e.toString();
+    error.value = String(e);
   } finally {
     loading.value = false;
   }
 }
 
-function toggleHour(hour) {
+function toggleHour(hour: number) {
   const newSet = new Set(expandedHours.value);
   if (newSet.has(hour)) {
     newSet.delete(hour);
@@ -198,7 +220,7 @@ function toggleHour(hour) {
   expandedHours.value = newSet;
 }
 
-function getHourIcon(hour) {
+function getHourIcon(hour: number) {
   if (hour >= 6 && hour < 12) return '🌅';
   if (hour >= 12 && hour < 14) return '☀️';
   if (hour >= 14 && hour < 18) return '🌤️';
@@ -222,7 +244,7 @@ function goToToday() {
   selectedDate.value = new Date().toISOString().split('T')[0];
 }
 
-function handleEventClick(event) {
+function handleEventClick(event: TimelineEvent) {
   if (event.record.screenshot_path) {
     emit('viewScreenshot', event.record);
   }

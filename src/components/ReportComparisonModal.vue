@@ -102,15 +102,15 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
-import { showError, showSuccess } from '../stores/toast.js'
+import { showError, showSuccess } from '../stores/toast'
 
 const { t } = useI18n()
 
-const emit = defineEmits(['close', 'generated'])
+const emit = defineEmits<{(e: 'close'): void; (e: 'generated', path: string): void}>()
 
 const startDateA = ref('')
 const endDateA = ref('')
@@ -120,19 +120,19 @@ const isGenerating = ref(false)
 const resultPath = ref('')
 const errorMsg = ref('')
 
-const calcDays = (start, end) => {
+const calcDays = (start: string, end: string): number => {
   if (!start || !end) return 0
   const s = new Date(start)
   const e = new Date(end)
   if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0
-  const diff = Math.floor((e - s) / (1000 * 60 * 60 * 24)) + 1
+  const diff = Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1
   return diff > 0 ? diff : 0
 }
 
-const dayCountA = computed(() => calcDays(startDateA.value, endDateA.value))
-const dayCountB = computed(() => calcDays(startDateB.value, endDateB.value))
+const dayCountA = computed<number>(() => calcDays(startDateA.value, endDateA.value))
+const dayCountB = computed<number>(() => calcDays(startDateB.value, endDateB.value))
 
-const dateError = computed(() => {
+const dateError = computed<string>(() => {
   if (startDateA.value && endDateA.value && new Date(endDateA.value) < new Date(startDateA.value)) {
     return t('reportComparison.periodAEndBeforeStart')
   }
@@ -142,9 +142,9 @@ const dateError = computed(() => {
   return ''
 })
 
-const formatDate = (d) => d.toISOString().split('T')[0]
+const formatDate = (d: Date) => d.toISOString().split('T')[0]
 
-const applyPreset = (preset) => {
+const applyPreset = (preset: 'week' | 'month') => {
   errorMsg.value = ''
   resultPath.value = ''
   const today = new Date()
@@ -184,7 +184,7 @@ const generateComparison = async () => {
   resultPath.value = ''
 
   try {
-    const result = await invoke('compare_reports', {
+    const result = await invoke<string>('compare_reports', {
       startDateA: startDateA.value,
       endDateA: endDateA.value,
       startDateB: startDateB.value,
@@ -196,7 +196,7 @@ const generateComparison = async () => {
   } catch (err) {
     console.error('Failed to generate comparison report:', err)
     errorMsg.value = typeof err === 'string' ? err : String(err)
-    showError(err, generateComparison)
+    showError(String(err), generateComparison)
   } finally {
     isGenerating.value = false
   }

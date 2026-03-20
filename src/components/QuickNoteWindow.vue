@@ -41,7 +41,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -52,7 +52,7 @@ const { t } = useI18n()
 const { isDesktop } = usePlatform()
 
 const content = ref('')
-const inputRef = ref(null)
+const inputRef = ref<HTMLTextAreaElement | null>(null)
 const currentTime = ref('')
 const isSaving = ref(false)
 
@@ -84,7 +84,7 @@ const save = async () => {
   }
 }
 
-let timeInterval = null
+let timeInterval: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   updateTime()

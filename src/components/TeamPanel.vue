@@ -236,7 +236,7 @@
             </div>
             <div v-if="selectedTeam.current_user_role === 'admin' && member.user_id !== currentUserId" class="flex gap-1">
               <select
-                @change="handleUpdateRole(selectedTeam.team.id, member.user_id, $event.target.value)"
+                @change="handleUpdateRole(selectedTeam.team.id, member.user_id, ($event.target as HTMLSelectElement).value)"
                 :value="member.role"
                 class="text-xs bg-gray-700 border border-gray-600 rounded px-1 py-0.5 text-white"
               >
@@ -268,17 +268,24 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, computed } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
-import { showSuccess, showError } from '../stores/toast.js'
+import { showSuccess, showError } from '../stores/toast'
+import type { Team, TeamMember } from '../types/tauri'
+
+interface TeamWithMembers {
+  team: Team & { owner_id: number }
+  members: Array<{ user_id: number; username: string; role: string }>
+  current_user_role: string
+}
 
 const { t } = useI18n()
 
-const teams = ref([])
+const teams = ref<TeamWithMembers[]>([])
 const loading = ref(true)
-const currentUserId = ref(null)
+const currentUserId = ref<number | null>(null)
 
 // Dialog states
 const showCreateDialog = ref(false)
@@ -288,13 +295,13 @@ const showDetailsDialog = ref(false)
 // Form data
 const createForm = ref({ name: '', description: '' })
 const joinCode = ref('')
-const selectedTeam = ref(null)
+const selectedTeam = ref<TeamWithMembers | null>(null)
 
 // Loading states
 const creating = ref(false)
 const joining = ref(false)
-const leavingTeam = ref(null)
-const deletingTeam = ref(null)
+const leavingTeam = ref<number | null>(null)
+const deletingTeam = ref<number | null>(null)
 const regeneratingCode = ref(false)
 
 // Error states
@@ -305,10 +312,10 @@ async function loadTeams() {
   loading.value = true
   try {
     // Get current session to get user ID
-    const session = await invoke('get_current_session')
+    const session = await invoke<{ user_id: number } | null>('get_current_session')
     if (session) {
       currentUserId.value = session.user_id
-      const result = await invoke('get_user_teams', { userId: session.user_id })
+      const result = await invoke<TeamWithMembers[]>('get_user_teams', { userId: session.user_id })
       teams.value = Array.isArray(result) ? result : []
     } else {
       teams.value = []
@@ -343,7 +350,7 @@ async function handleCreateTeam() {
     createForm.value = { name: '', description: '' }
     await loadTeams()
   } catch (error) {
-    createError.value = error.toString()
+    createError.value = String(error)
   } finally {
     creating.value = false
   }
@@ -367,13 +374,13 @@ async function handleJoinTeam() {
     joinCode.value = ''
     await loadTeams()
   } catch (error) {
-    joinError.value = error.toString()
+    joinError.value = String(error)
   } finally {
     joining.value = false
   }
 }
 
-async function handleLeaveTeam(teamId) {
+async function handleLeaveTeam(teamId: number) {
   if (!confirm(t('team.confirmLeave'))) return
 
   leavingTeam.value = teamId
@@ -385,13 +392,13 @@ async function handleLeaveTeam(teamId) {
     showSuccess(t('team.leftSuccess'))
     await loadTeams()
   } catch (error) {
-    showError(error.toString())
+    showError(String(error))
   } finally {
     leavingTeam.value = null
   }
 }
 
-async function handleDeleteTeam(teamId) {
+async function handleDeleteTeam(teamId: number) {
   if (!confirm(t('team.confirmDelete'))) return
 
   deletingTeam.value = teamId
@@ -403,29 +410,31 @@ async function handleDeleteTeam(teamId) {
     showSuccess(t('team.deletedSuccess'))
     await loadTeams()
   } catch (error) {
-    showError(error.toString())
+    showError(String(error))
   } finally {
     deletingTeam.value = null
   }
 }
 
-async function handleRegenerateCode(teamId) {
+async function handleRegenerateCode(teamId: number) {
   regeneratingCode.value = true
   try {
-    const newCode = await invoke('regenerate_invite_code', {
+    const newCode = await invoke<string>('regenerate_invite_code', {
       teamId,
       currentUserId: currentUserId.value
     })
-    selectedTeam.value.team.invite_code = newCode
+    if (selectedTeam.value) {
+      selectedTeam.value.team.invite_code = newCode
+    }
     showSuccess(t('team.codeRegenerated'))
   } catch (error) {
-    showError(error.toString())
+    showError(String(error))
   } finally {
     regeneratingCode.value = false
   }
 }
 
-async function handleUpdateRole(teamId, userId, newRole) {
+async function handleUpdateRole(teamId: number, userId: number, newRole: string) {
   try {
     await invoke('update_member_role', {
       teamId,
@@ -441,11 +450,11 @@ async function handleUpdateRole(teamId, userId, newRole) {
       selectedTeam.value = team
     }
   } catch (error) {
-    showError(error.toString())
+    showError(String(error))
   }
 }
 
-async function handleRemoveMember(teamId, userId) {
+async function handleRemoveMember(teamId: number, userId: number) {
   if (!confirm(t('team.confirmRemove'))) return
 
   try {
@@ -462,21 +471,21 @@ async function handleRemoveMember(teamId, userId) {
       selectedTeam.value = team
     }
   } catch (error) {
-    showError(error.toString())
+    showError(String(error))
   }
 }
 
-function showTeamDetails(team) {
+function showTeamDetails(team: TeamWithMembers) {
   selectedTeam.value = team
   showDetailsDialog.value = true
 }
 
-function showInviteCode(team) {
+function showInviteCode(team: TeamWithMembers) {
   selectedTeam.value = team
   showDetailsDialog.value = true
 }
 
-function getRoleLabel(role) {
+function getRoleLabel(role: string) {
   switch (role) {
     case 'admin': return t('team.roleAdmin')
     case 'member': return t('team.roleMember')
@@ -485,7 +494,7 @@ function getRoleLabel(role) {
   }
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr: string) {
   try {
     const date = new Date(dateStr)
     return date.toLocaleDateString()

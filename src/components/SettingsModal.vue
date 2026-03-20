@@ -119,26 +119,26 @@
                 <div v-if="ollamaModels.length > 0" class="flex flex-wrap gap-2">
                   <div
                     v-for="model in ollamaModels"
-                    :key="model"
+                    :key="model.name"
                     class="flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors"
-                    :class="settings.model_name === model ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+                    :class="settings.model_name === model.name ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
                   >
                     <button
-                      @click="selectOllamaModel(model)"
+                      @click="selectOllamaModel(model.name)"
                       type="button"
                       class="hover:text-white transition-colors"
                     >
-                      {{ model }}<span v-if="getModelSize(model)" class="text-gray-400 ml-1">({{ getModelSize(model) }})</span>
+                      {{ model.name }}<span v-if="model.size" class="text-gray-400 ml-1">({{ model.size }})</span>
                     </button>
                     <button
-                      @click="openCopyModelModal(model)"
+                      @click="openCopyModelModal(model.name)"
                       type="button"
                       class="ml-1 text-gray-400 hover:text-blue-400 transition-colors"
                       :title="$t('settings.copyModel')"
                     >⧉</button>
                     <button
-                      @click="deleteModel(model)"
-                      :disabled="isDeletingModel === model"
+                      @click="deleteModel(model.name)"
+                      :disabled="isDeletingModel === model.name"
                       type="button"
                       class="ml-1 text-gray-400 hover:text-red-400 disabled:opacity-50 transition-colors"
                       :title="$t('settings.deleteModel')"
@@ -720,7 +720,7 @@
                 <span v-if="m.is_primary" class="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">{{ $t('settings.primary') }}</span>
                 <!-- 副显示器模式下可选择 -->
                 <button
-                  v-if="settings.capture_mode === 'secondary' && !m.is_primary"
+                  v-if="settings.capture_mode === 'secondary' && !m.is_primary && m.index !== undefined"
                   type="button"
                   @click="settings.selected_monitor_index = m.index"
                   :class="[
@@ -1102,7 +1102,7 @@
                 class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
               >
                 <option value="" disabled>{{ $t('settings.createModelBasePlaceholder') }}</option>
-                <option v-for="model in ollamaModels" :key="model" :value="model">{{ model }}</option>
+                <option v-for="model in ollamaModels" :key="model.name" :value="model.name">{{ model.name }}</option>
               </select>
             </div>
             <div>
@@ -1265,7 +1265,7 @@
                   class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
                 >
                   <option value="" disabled>{{ $t('settings.fineTuningSelectBaseModel') }}</option>
-                  <option v-for="model in ollamaModels" :key="model" :value="model">{{ model }}</option>
+                  <option v-for="model in ollamaModels" :key="model.name" :value="model.name">{{ model.name }}</option>
                 </select>
               </div>
               <div>
@@ -1392,22 +1392,108 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeFile, writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
-import { showError, showSuccess } from '../stores/toast.js'
-import { setLocale } from '../i18n.js'
+import { showError, showSuccess } from '../stores/toast'
+import { setLocale } from '../i18n'
+import type { Locale } from '../i18n'
 import { useI18n } from 'vue-i18n'
 import { usePlatform } from '../composables/usePlatform'
 import PluginPanel from './PluginPanel.vue'
 import TeamPanel from './TeamPanel.vue'
+import type { Settings } from '../types/tauri'
+
+interface ModelInfo {
+  context_window: number
+}
+
+interface ConnectionTestResult {
+  success: boolean
+  message: string
+  latency_ms?: number
+}
+
+interface Monitor {
+  id: number
+  name: string
+  width: number
+  height: number
+  is_primary: boolean
+  index?: number
+  resolution?: string
+}
+
+interface ObsidianVault {
+  name: string
+  path: string
+  is_default?: boolean
+}
+
+interface LogseqGraph {
+  name: string
+  path: string
+  is_default?: boolean
+}
+
+interface WorkTimeStatus {
+  learning_progress: { days_learned: number; min_days_required: number }
+  detected_periods?: Array<{ start: number; end: number }>
+  current_threshold?: number
+  is_work_time?: boolean
+}
+
+interface Template {
+  id: string
+  name: string
+  description: string
+  content: string | null
+}
+
+interface OllamaModel {
+  name: string
+  size?: string
+  modified_at?: string
+  size_vram?: number
+}
+
+interface OllamaModelsResult {
+  success: boolean
+  models: OllamaModel[]
+  model_details?: OllamaModel[]
+  message?: string
+}
+
+interface OllamaOperationResult {
+  success: boolean
+  message: string
+}
+
+interface RunningModelsResult {
+  success: boolean
+  running_models?: RunningModel[]
+  message?: string
+}
+
+interface TrainingDataResult {
+  path: string
+  record_count: number
+  entries_count?: number
+  success?: boolean
+  message?: string
+}
+
+interface RunningModel {
+  name: string
+  size_vram?: number
+}
 
 const { t, locale } = useI18n()
 const { isDesktop } = usePlatform()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits<{(e: 'close'): void}>()
 
 const showApiKey = ref(false)
 const isSaving = ref(false)
@@ -1422,33 +1508,33 @@ const defaultSummaryPromptContent = ref('')
 const showTemplateLibraryModal = ref(false)
 
 // Language switching
-function changeLanguage(lang) {
+function changeLanguage(lang: Locale) {
   setLocale(lang)
   locale.value = lang
 }
 
 // API Connection test state
 const isTestingConnection = ref(false)
-const connectionTestResult = ref(null)
+const connectionTestResult = ref<ConnectionTestResult | null>(null)
 
 // Model info state
 const isLoadingModelInfo = ref(false)
-const analysisModelInfo = ref(null)
-const summaryModelInfo = ref(null)
+const analysisModelInfo = ref<ModelInfo | null>(null)
+const summaryModelInfo = ref<ModelInfo | null>(null)
 
 // Window whitelist/blacklist tag management
-const whitelistTags = ref([])
-const blacklistTags = ref([])
+const whitelistTags = ref<string[]>([])
+const blacklistTags = ref<string[]>([])
 const newWhitelistTag = ref('')
 const newBlacklistTag = ref('')
 
 // AI-004: Tag categories
 const tagCategoriesText = ref('')
 const showDefaultTagCategoriesModal = ref(false)
-const defaultTagCategoriesContent = ref([])
+const defaultTagCategoriesContent = ref<string[]>([])
 
 // Preset templates for summary prompt
-const presetTemplates = [
+const presetTemplates: Template[] = [
   {
     id: 'default',
     name: t('settings.templateDefaultName'),
@@ -1550,21 +1636,21 @@ const settings = ref({
 })
 
 // SMART-003: Work time status for learning progress display
-const workTimeStatus = ref(null)
+const workTimeStatus = ref<WorkTimeStatus | null>(null)
 
 // SMART-004: Monitor settings
-const monitors = ref([])
+const monitors = ref<Monitor[]>([])
 const isLoadingMonitors = ref(false)
 const monitorError = ref('')
 const isScreenshotEnabled = ref(true) // Will be set based on backend capability
 
 // DATA-006: Multi Obsidian Vault support
-const vaults = ref([])
+const vaults = ref<ObsidianVault[]>([])
 const newVaultName = ref('')
 const newVaultPath = ref('')
 
 // INT-002: Logseq graph support
-const graphs = ref([])
+const graphs = ref<LogseqGraph[]>([])
 const newGraphName = ref('')
 const newGraphPath = ref('')
 
@@ -1596,15 +1682,15 @@ const githubReposText = computed({
   }
 })
 
-const updateGithubRepos = (event) => {
-  const target = event.target
+const updateGithubRepos = (event: Event) => {
+  const target = event.target as HTMLTextAreaElement
   githubReposText.value = target.value
 }
 
 const loadSettings = async () => {
   try {
-    const loaded = await invoke('get_settings')
-    settings.value = { ...settings.value, ...loaded }
+    const loaded = await invoke<Partial<Settings>>('get_settings')
+    settings.value = { ...settings.value, ...loaded } as typeof settings.value
     // DATA-006: Parse obsidian_vaults JSON
     try {
       const parsed = JSON.parse(settings.value.obsidian_vaults || '[]')
@@ -1657,7 +1743,7 @@ const loadSettings = async () => {
 // SMART-003: Load work time status for learning progress display
 const loadWorkTimeStatus = async () => {
   try {
-    workTimeStatus.value = await invoke('get_work_time_status')
+    workTimeStatus.value = await invoke<WorkTimeStatus>('get_work_time_status')
   } catch (err) {
     console.error('Failed to load work time status:', err)
     // Don't show error to user - this is optional info
@@ -1669,7 +1755,7 @@ const loadMonitors = async () => {
   isLoadingMonitors.value = true
   monitorError.value = ''
   try {
-    monitors.value = await invoke('get_monitors')
+    monitors.value = await invoke<Monitor[]>('get_monitors')
   } catch (err) {
     console.error('Failed to load monitors:', err)
     // If get_monitors is not available, screenshot feature is likely disabled
@@ -1684,7 +1770,7 @@ const loadMonitors = async () => {
 }
 
 // SMART-003: Format work time periods for display
-const formatWorkTimePeriods = (periods) => {
+const formatWorkTimePeriods = (periods?: Array<{ start: number; end: number }>) => {
   if (!periods || periods.length === 0) {
     return t('settings.notDetected')
   }
@@ -1704,7 +1790,7 @@ const addWhitelistTag = () => {
   }
 }
 
-const removeWhitelistTag = (index) => {
+const removeWhitelistTag = (index: number) => {
   whitelistTags.value.splice(index, 1)
 }
 
@@ -1716,11 +1802,11 @@ const addBlacklistTag = () => {
   }
 }
 
-const removeBlacklistTag = (index) => {
+const removeBlacklistTag = (index: number) => {
   blacklistTags.value.splice(index, 1)
 }
 
-const validateSettings = () => {
+const validateSettings = (): string | null => {
   // Validate API URL format
   if (settings.value.api_base_url && settings.value.api_base_url.trim()) {
     try {
@@ -1849,7 +1935,7 @@ const addVault = () => {
   newVaultPath.value = ''
 }
 
-const removeVault = (index) => {
+const removeVault = (index: number) => {
   const wasDefault = vaults.value[index].is_default
   vaults.value.splice(index, 1)
   if (wasDefault && vaults.value.length > 0) {
@@ -1857,7 +1943,7 @@ const removeVault = (index) => {
   }
 }
 
-const setDefaultVault = (index) => {
+const setDefaultVault = (index: number) => {
   vaults.value.forEach((v, i) => { v.is_default = i === index })
 }
 
@@ -1872,7 +1958,7 @@ const addGraph = () => {
   newGraphPath.value = ''
 }
 
-const removeGraph = (index) => {
+const removeGraph = (index: number) => {
   const wasDefault = graphs.value[index].is_default
   graphs.value.splice(index, 1)
   if (wasDefault && graphs.value.length > 0) {
@@ -1880,7 +1966,7 @@ const removeGraph = (index) => {
   }
 }
 
-const setDefaultGraph = (index) => {
+const setDefaultGraph = (index: number) => {
   graphs.value.forEach((g, i) => { g.is_default = i === index })
 }
 
@@ -1890,7 +1976,7 @@ const exportLogs = async () => {
 
   try {
     // Get log content
-    const logContent = await invoke('get_logs_for_export')
+    const logContent = await invoke<string>('get_logs_for_export')
 
     // Open save dialog
     const filePath = await save({
@@ -1969,7 +2055,7 @@ const testConnection = async () => {
   connectionTestResult.value = null
 
   try {
-    const result = await invoke('test_api_connection_with_ollama', {
+    const result = await invoke<ConnectionTestResult>('test_api_connection_with_ollama', {
       apiBaseUrl: settings.value.api_base_url,
       apiKey: settings.value.api_key || null,
       modelName: settings.value.model_name
@@ -1990,7 +2076,7 @@ const testConnection = async () => {
 }
 
 // Get model info
-const getModelInfo = async (type) => {
+const getModelInfo = async (type: 'analysis' | 'summary') => {
   const modelName = type === 'analysis' ? settings.value.model_name : settings.value.summary_model_name
   if (!modelName) {
     showError(t('settings.modelNameRequired'))
@@ -2000,21 +2086,21 @@ const getModelInfo = async (type) => {
   isLoadingModelInfo.value = true
 
   try {
-    const result = await invoke('get_model_info', {
+    const result = await invoke<ModelInfo | { error: string; context_window?: number }>('get_model_info', {
       apiBaseUrl: settings.value.api_base_url,
       apiKey: settings.value.api_key,
       modelName: modelName
     })
 
     if (type === 'analysis') {
-      analysisModelInfo.value = result
+      analysisModelInfo.value = result as ModelInfo
     } else {
-      summaryModelInfo.value = result
+      summaryModelInfo.value = result as ModelInfo
     }
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       showError(result.error)
-    } else if (result.context_window) {
+    } else if ('context_window' in result && result.context_window) {
       showSuccess(t('settings.modelContextWindow', { model: modelName, size: result.context_window / 1000 }))
     } else {
       showSuccess(t('settings.modelInfoUnavailable'))
@@ -2028,8 +2114,8 @@ const getModelInfo = async (type) => {
 }
 
 // AI-005: Ollama support
-const ollamaModels = ref([])
-const ollamaModelDetails = ref([])
+const ollamaModels = ref<OllamaModel[]>([])
+const ollamaModelDetails = ref<OllamaModel[]>([])
 const isLoadingOllamaModels = ref(false)
 const ollamaModelError = ref('')
 const pullModelName = ref('')
@@ -2038,7 +2124,7 @@ const isPullingModel = ref(false)
 const isDeletingModel = ref('')
 
 // Running models state
-const runningModels = ref([])
+const runningModels = ref<RunningModel[]>([])
 const isLoadingRunningModels = ref(false)
 
 // Create custom model state
@@ -2063,7 +2149,11 @@ const copyModelDestination = ref('')
 const showFineTuningModal = ref(false)
 const isFineTuning = ref(false)
 const isExportingTrainingData = ref(false)
-const trainingDataResult = ref(null)
+interface TrainingDataResult {
+  path: string
+  record_count: number
+}
+const trainingDataResult = ref<TrainingDataResult | null>(null)
 const fineTuningParams = ref({
   baseModel: '',
   outputModelName: '',
@@ -2077,7 +2167,7 @@ const fineTuningParams = ref({
 })
 
 // Check if the current endpoint is an Ollama endpoint
-const isOllamaEndpoint = (url) => {
+const isOllamaEndpoint = (url: string): boolean => {
   if (!url) return false
   const urlLower = url.toLowerCase()
   return urlLower.includes('localhost:11434') ||
@@ -2100,7 +2190,7 @@ const fetchOllamaModels = async () => {
   ollamaModelError.value = ''
 
   try {
-    const result = await invoke('get_ollama_models', {
+    const result = await invoke<OllamaModelsResult>('get_ollama_models', {
       baseUrl: settings.value.api_base_url
     })
 
@@ -2113,8 +2203,8 @@ const fetchOllamaModels = async () => {
         showSuccess(t('settings.ollamaModelsFound', { count: result.models.length }))
       }
     } else {
-      ollamaModelError.value = result.message
-      showError(result.message)
+      ollamaModelError.value = result.message || ''
+      showError(result.message || '')
     }
   } catch (err) {
     console.error('Failed to fetch Ollama models:', err)
@@ -2126,7 +2216,7 @@ const fetchOllamaModels = async () => {
 }
 
 // Select an Ollama model
-const selectOllamaModel = (modelName) => {
+const selectOllamaModel = (modelName: string): void => {
   settings.value.model_name = modelName
 }
 
@@ -2146,7 +2236,7 @@ const pullModel = async () => {
   ollamaModelError.value = ''
 
   try {
-    const result = await invoke('pull_ollama_model', {
+    const result = await invoke<OllamaOperationResult>('pull_ollama_model', {
       baseUrl: settings.value.api_base_url,
       modelName: pullModelName.value.trim(),
       quantization: pullModelQuantization.value.trim() || null
@@ -2170,7 +2260,7 @@ const pullModel = async () => {
 }
 
 // Delete a model from Ollama
-const deleteModel = async (modelName) => {
+const deleteModel = async (modelName: string) => {
   if (!confirm(t('settings.confirmDeleteModel', { model: modelName }))) {
     return
   }
@@ -2178,7 +2268,7 @@ const deleteModel = async (modelName) => {
   isDeletingModel.value = modelName
 
   try {
-    const result = await invoke('delete_ollama_model', {
+    const result = await invoke<OllamaOperationResult>('delete_ollama_model', {
       baseUrl: settings.value.api_base_url,
       modelName: modelName
     })
@@ -2203,7 +2293,7 @@ const deleteModel = async (modelName) => {
 }
 
 // Format model size to human readable format
-const formatModelSize = (bytes) => {
+const formatModelSize = (bytes: number | undefined) => {
   if (!bytes) return ''
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -2212,9 +2302,12 @@ const formatModelSize = (bytes) => {
 }
 
 // Get model size by name
-const getModelSize = (modelName) => {
+const getModelSize = (modelName: string) => {
   const detail = ollamaModelDetails.value.find(d => d.name === modelName)
-  return detail?.size ? formatModelSize(detail.size) : ''
+  // size is a string, return it directly or use size_vram for formatting
+  if (detail?.size) return detail.size
+  if (detail?.size_vram) return formatModelSize(detail.size_vram)
+  return ''
 }
 
 // Fetch running models from Ollama
@@ -2226,7 +2319,7 @@ const fetchRunningModels = async () => {
   isLoadingRunningModels.value = true
 
   try {
-    const result = await invoke('get_running_models', {
+    const result = await invoke<RunningModelsResult>('get_running_models', {
       baseUrl: settings.value.api_base_url
     })
 
@@ -2259,7 +2352,7 @@ const createCustomModel = async () => {
 
   try {
     // Build parameters object (only include non-null values)
-    const parameters = {}
+    const parameters: { temperature?: number; num_ctx?: number } = {}
     if (createModelParams.value.temperature !== null) {
       parameters.temperature = createModelParams.value.temperature
     }
@@ -2267,7 +2360,7 @@ const createCustomModel = async () => {
       parameters.num_ctx = createModelParams.value.num_ctx
     }
 
-    const result = await invoke('create_ollama_model', {
+    const result = await invoke<OllamaOperationResult & { model_name?: string }>('create_ollama_model', {
       baseUrl: settings.value.api_base_url,
       params: {
         name: createModelParams.value.name.trim(),
@@ -2304,7 +2397,7 @@ const createCustomModel = async () => {
 }
 
 // Open copy model modal for a specific model
-const openCopyModelModal = (modelName) => {
+const openCopyModelModal = (modelName: string) => {
   copyModelSource.value = modelName
   copyModelDestination.value = ''
   showCopyModelModal.value = true
@@ -2324,7 +2417,7 @@ const copyModel = async () => {
   isCopyingModel.value = true
 
   try {
-    const result = await invoke('copy_ollama_model', {
+    const result = await invoke<OllamaOperationResult>('copy_ollama_model', {
       baseUrl: settings.value.api_base_url,
       source: copyModelSource.value,
       destination: copyModelDestination.value.trim()
@@ -2369,7 +2462,7 @@ const exportTrainingData = async () => {
     })
 
     if (filePath) {
-      const result = await invoke('prepare_training_data', {
+      const result = await invoke<TrainingDataResult>('prepare_training_data', {
         outputPath: filePath,
         includeAutoRecords: fineTuningParams.value.includeAutoRecords,
         includeManualRecords: fineTuningParams.value.includeManualRecords,
@@ -2382,7 +2475,7 @@ const exportTrainingData = async () => {
     }
   } catch (err) {
     console.error('Failed to export training data:', err)
-    trainingDataResult.value = { success: false, message: String(err) }
+    trainingDataResult.value = { path: '', record_count: 0, success: false, message: String(err) }
     showError(err)
   } finally {
     isExportingTrainingData.value = false
@@ -2408,7 +2501,7 @@ const startFineTuning = async () => {
   isFineTuning.value = true
 
   try {
-    const result = await invoke('start_fine_tuning', {
+    const result = await invoke<OllamaOperationResult & { model_name?: string }>('start_fine_tuning', {
       baseUrl: settings.value.api_base_url,
       config: {
         base_model: fineTuningParams.value.baseModel,
@@ -2456,7 +2549,7 @@ const resetSummaryPrompt = () => {
 const showTemplateLibrary = async () => {
   // Load default template content from backend
   try {
-    const defaultPrompt = await invoke('get_default_summary_prompt')
+    const defaultPrompt = await invoke<string | null>('get_default_summary_prompt')
     presetTemplates[0].content = defaultPrompt
   } catch (err) {
     console.error('Failed to get default summary prompt:', err)
@@ -2464,7 +2557,7 @@ const showTemplateLibrary = async () => {
   showTemplateLibraryModal.value = true
 }
 
-const applyTemplate = (template) => {
+const applyTemplate = (template: Template) => {
   if (template.content) {
     settings.value.summary_prompt = template.content
     showTemplateLibraryModal.value = false

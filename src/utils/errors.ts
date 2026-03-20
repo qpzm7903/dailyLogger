@@ -12,13 +12,15 @@ export const ErrorType = {
   QUOTA: 'QUOTA',
   VALIDATION: 'VALIDATION',
   UNKNOWN: 'UNKNOWN'
-}
+} as const
+
+export type ErrorTypeValue = typeof ErrorType[keyof typeof ErrorType]
 
 /**
  * Patterns for identifying error types
  * Order matters: more specific patterns should come first
  */
-const ERROR_PATTERNS = {
+const ERROR_PATTERNS: Record<ErrorTypeValue, string[]> = {
   [ErrorType.NETWORK]: [
     'network',
     'timeout',
@@ -51,13 +53,14 @@ const ERROR_PATTERNS = {
     'required',
     'empty',
     'cannot be empty'
-  ]
+  ],
+  [ErrorType.UNKNOWN]: []
 }
 
 /**
  * User-friendly error messages (in Chinese)
  */
-const ERROR_MESSAGES = {
+const ERROR_MESSAGES: Record<ErrorTypeValue, string> = {
   [ErrorType.NETWORK]: '网络连接失败，请检查网络设置',
   [ErrorType.AUTH]: 'API Key 无效或已过期',
   [ErrorType.QUOTA]: 'API 调用次数已达上限',
@@ -68,7 +71,7 @@ const ERROR_MESSAGES = {
 /**
  * Suggested actions for each error type
  */
-const SUGGESTED_ACTIONS = {
+const SUGGESTED_ACTIONS: Record<ErrorTypeValue, string> = {
   [ErrorType.NETWORK]: '重试',
   [ErrorType.AUTH]: '检查设置',
   [ErrorType.QUOTA]: '检查账户',
@@ -78,10 +81,10 @@ const SUGGESTED_ACTIONS = {
 
 /**
  * Parse an error and return its type
- * @param {Error|string} error - The error to parse
- * @returns {string} The error type from ErrorType enum
+ * @param error - The error to parse
+ * @returns The error type from ErrorType enum
  */
-export function parseError(error) {
+export function parseError(error: Error | string): ErrorTypeValue {
   const errorMessage = error instanceof Error
     ? error.message.toLowerCase()
     : String(error).toLowerCase()
@@ -89,7 +92,7 @@ export function parseError(error) {
   for (const [type, patterns] of Object.entries(ERROR_PATTERNS)) {
     for (const pattern of patterns) {
       if (errorMessage.includes(pattern.toLowerCase())) {
-        return type
+        return type as ErrorTypeValue
       }
     }
   }
@@ -99,28 +102,38 @@ export function parseError(error) {
 
 /**
  * Get user-friendly error message for an error type
- * @param {string} errorType - The error type from ErrorType enum
- * @returns {string} User-friendly error message in Chinese
+ * @param errorType - The error type from ErrorType enum
+ * @returns User-friendly error message in Chinese
  */
-export function getErrorMessage(errorType) {
+export function getErrorMessage(errorType: ErrorTypeValue): string {
   return ERROR_MESSAGES[errorType] || ERROR_MESSAGES[ErrorType.UNKNOWN]
 }
 
 /**
  * Get suggested action for an error type
- * @param {string} errorType - The error type from ErrorType enum
- * @returns {string} Suggested action in Chinese
+ * @param errorType - The error type from ErrorType enum
+ * @returns Suggested action in Chinese
  */
-export function getSuggestedAction(errorType) {
+export function getSuggestedAction(errorType: ErrorTypeValue): string {
   return SUGGESTED_ACTIONS[errorType] || SUGGESTED_ACTIONS[ErrorType.UNKNOWN]
 }
 
 /**
- * Create a structured error info object
- * @param {Error|string} error - The original error
- * @returns {{type: string, message: string, suggestion: string, originalError: string}}
+ * Structured error info object
  */
-export function createErrorInfo(error) {
+export interface ErrorInfo {
+  type: ErrorTypeValue
+  message: string
+  suggestion: string
+  originalError: string
+}
+
+/**
+ * Create a structured error info object
+ * @param error - The original error
+ * @returns Structured error information
+ */
+export function createErrorInfo(error: Error | string): ErrorInfo {
   const type = parseError(error)
   return {
     type,

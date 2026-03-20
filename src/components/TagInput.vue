@@ -74,41 +74,42 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
 import TagBadge from './TagBadge.vue'
+import type { Tag } from '../types/tauri'
+
+interface TagWithUsage extends Tag {
+  usage_count?: number
+}
+
+interface ColorOption {
+  name: string
+  bgClass: string
+}
 
 const { t } = useI18n()
 
-const props = defineProps({
-  modelValue: {
-    type: Array,
-    default: () => []
-  },
-  recordId: {
-    type: Number,
-    required: true
-  },
-  placeholder: {
-    type: String,
-    default: ''
-  }
-})
+const props = defineProps<{
+  modelValue: Tag[]
+  recordId: number
+  placeholder?: string
+}>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{(e: 'update:modelValue', value: Tag[]): void}>()
 
 // State
 const searchQuery = ref('')
 const showDropdown = ref(false)
 const selectedColor = ref('blue')
-const allTags = ref([])
+const allTags = ref<TagWithUsage[]>([])
 const isCreating = ref(false)
 
 // Preset colors
-const colors = [
+const colors: ColorOption[] = [
   { name: 'blue', bgClass: 'bg-blue-500' },
   { name: 'green', bgClass: 'bg-green-500' },
   { name: 'yellow', bgClass: 'bg-yellow-400' },
@@ -132,7 +133,7 @@ const filteredTags = computed(() => {
 })
 
 // Get dot class for color
-function getDotClass(color) {
+function getDotClass(color: string) {
   const colorObj = colors.find(c => c.name === color)
   return colorObj ? `w-2 h-2 rounded-full ${colorObj.bgClass}` : 'w-2 h-2 rounded-full bg-blue-500'
 }
@@ -140,14 +141,14 @@ function getDotClass(color) {
 // Load all tags
 async function loadAllTags() {
   try {
-    allTags.value = await invoke('get_all_manual_tags')
+    allTags.value = await invoke<TagWithUsage[]>('get_all_manual_tags')
   } catch (e) {
     console.error('Failed to load tags:', e)
   }
 }
 
 // Select existing tag
-async function selectTag(tag) {
+async function selectTag(tag: Tag) {
   if (props.modelValue.length >= 10) {
     showError(t('tagInput.maxTagsError'))
     return
@@ -159,7 +160,7 @@ async function selectTag(tag) {
     searchQuery.value = ''
     showDropdown.value = false
   } catch (e) {
-    showError(e)
+    showError(String(e))
   }
 }
 
@@ -189,7 +190,7 @@ async function createOrSelectTag() {
   // Create new tag
   isCreating.value = true
   try {
-    const newTag = await invoke('create_manual_tag', {
+    const newTag = await invoke<Tag>('create_manual_tag', {
       name: name,
       color: selectedColor.value
     })
@@ -205,25 +206,25 @@ async function createOrSelectTag() {
     showDropdown.value = false
     showSuccess(t('tagInput.tagCreated'))
   } catch (e) {
-    showError(e)
+    showError(String(e))
   } finally {
     isCreating.value = false
   }
 }
 
 // Remove tag from record
-async function removeTag(tagId) {
+async function removeTag(tagId: number) {
   try {
     await invoke('remove_tag_from_record', { recordId: props.recordId, tagId })
     emit('update:modelValue', props.modelValue.filter(t => t.id !== tagId))
   } catch (e) {
-    showError(e)
+    showError(String(e))
   }
 }
 
 // Close dropdown when clicking outside
-function handleClickOutside(e) {
-  if (!e.target.closest('.relative')) {
+function handleClickOutside(e: MouseEvent) {
+  if (!(e.target as HTMLElement).closest('.relative')) {
     showDropdown.value = false
   }
 }
@@ -234,7 +235,6 @@ onMounted(() => {
 })
 
 // Cleanup
-import { onUnmounted } from 'vue'
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })

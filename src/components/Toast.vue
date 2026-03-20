@@ -61,14 +61,15 @@
   </Teleport>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useToastStore } from '../stores/toast.js'
+import { useToastStore } from '../stores/toast'
+import type { Toast } from '../stores/toast'
 
 const { t } = useI18n()
 const { toasts, remove } = useToastStore()
 
-const handleRetry = (toast) => {
+const handleRetry = (toast: Toast): void => {
   if (toast.retryCallback) {
     toast.retryCallback()
   }

@@ -65,21 +65,31 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 
+interface Plugin {
+  id: string
+  name: string
+  description: string
+  version: string
+  author: string
+  enabled: boolean
+  status: 'ready' | 'disabled' | 'error'
+}
+
 const { t } = useI18n()
 
-const plugins = ref([])
+const plugins = ref<Plugin[]>([])
 const loading = ref(true)
-const toggling = ref(null)
+const toggling = ref<string | null>(null)
 
 async function loadPlugins() {
   loading.value = true
   try {
-    const result = await invoke('list_discovered_plugins')
+    const result = await invoke<Plugin[]>('list_discovered_plugins')
     plugins.value = Array.isArray(result) ? result : []
   } catch (error) {
     console.error('Failed to load plugins:', error)
@@ -89,7 +99,7 @@ async function loadPlugins() {
   }
 }
 
-async function togglePlugin(plugin) {
+async function togglePlugin(plugin: Plugin) {
   toggling.value = plugin.id
   try {
     if (plugin.enabled) {
@@ -113,7 +123,7 @@ async function openPluginsDir() {
   }
 }
 
-function getStatusLabel(plugin) {
+function getStatusLabel(plugin: Plugin) {
   if (plugin.status === 'error') {
     return t('plugin.statusError')
   }

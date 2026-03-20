@@ -102,23 +102,30 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError } from '../stores/toast'
+import type { Record } from '../types/tauri'
+
+interface SearchResult {
+  record: Record
+  snippet: string
+  rank: number
+}
 
 const { t } = useI18n()
-const emit = defineEmits(['close'])
+const emit = defineEmits<{(e: 'close'): void}>()
 
 // State
 const searchQuery = ref('')
-const results = ref([])
+const results = ref<SearchResult[]>([])
 const isLoading = ref(false)
 const hasSearched = ref(false)
-const orderBy = ref('rank')
+const orderBy = ref<'rank' | 'time'>('rank')
 
-function formatTime(timestamp) {
+function formatTime(timestamp: string) {
   const date = new Date(timestamp)
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
@@ -142,7 +149,7 @@ async function search() {
   hasSearched.value = true
 
   try {
-    const searchResults = await invoke('search_records', {
+    const searchResults = await invoke<SearchResult[]>('search_records', {
       query: searchQuery.value.trim(),
       orderBy: orderBy.value,
       limit: 50
@@ -155,7 +162,7 @@ async function search() {
   }
 }
 
-async function setOrderBy(newOrderBy) {
+async function setOrderBy(newOrderBy: 'rank' | 'time') {
   if (orderBy.value === newOrderBy) return
   orderBy.value = newOrderBy
 
