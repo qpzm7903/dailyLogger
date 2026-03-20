@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-20
-> 当前版本: v1.24.0 ✅ 已发布
-> 下一版本: v1.25.0（依赖维护与更新）🚧 进行中
+> 当前版本: v1.25.0 ✅ 已发布
+> 下一版本: v1.26.0（待规划）
 
 ---
 
@@ -780,7 +780,7 @@ there is no reactor running, must be called from the context of a Tokio 1.x runt
 
 ---
 
-## v1.25.0（依赖维护与更新）🚧 进行中
+## v1.25.0（依赖维护与更新）✅ 已发布
 
 **目标**: 更新依赖包，保持项目安全性。
 
@@ -788,7 +788,7 @@ there is no reactor running, must be called from the context of a Tokio 1.x runt
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
-| MAINT-002 | 更新 @tauri-apps/cli 至 2.10.1 | 1pt | MEDIUM | 🚧 进行中 |
+| MAINT-002 | 更新 @tauri-apps/cli 至 2.10.1 | 1pt | MEDIUM | ✅ 完成 |
 
 ### MAINT-002: 更新 @tauri-apps/cli
 
@@ -796,7 +796,7 @@ there is no reactor running, must be called from the context of a Tokio 1.x runt
 
 **修复**:
 - 更新 @tauri-apps/cli 从 2.10.0 到 2.10.1
-- 验证所有测试通过
+- 验证所有测试通过（CI ✅）
 
 ---
 
