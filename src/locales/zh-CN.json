@@ -632,5 +632,25 @@
       "weekly_report": "周报生成",
       "monthly_report": "月报生成"
     }
+  },
+  "reanalyze": {
+    "title": "按日期重新分析",
+    "selectDate": "选择日期",
+    "dateHint": "选择要重新分析的日期，将重新处理该日期所有带截图的记录",
+    "preview": "预览信息",
+    "selectedDate": "选中日期",
+    "loadingCount": "正在统计记录数...",
+    "recordCount": "带截图的记录: {count} 条",
+    "complete": "重新分析完成",
+    "totalRecords": "总记录数",
+    "successCount": "成功",
+    "failedCount": "失败",
+    "errors": "错误详情",
+    "moreErrors": "还有 {count} 个错误...",
+    "processing": "分析中...",
+    "start": "开始分析",
+    "successMessage": "成功重新分析 {count} 条记录",
+    "allFailed": "所有记录分析失败",
+    "errorMessage": "重新分析失败，请检查 API 配置"
   }
 }

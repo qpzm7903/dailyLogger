@@ -109,8 +109,14 @@
               对比分析
             </button>
             <button
-              @click="$emit('reanalyzeToday')"
+              @click="$emit('open', 'reanalyzeByDate')"
               class="bg-purple-600 hover:bg-purple-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              按日期重新分析
+            </button>
+            <button
+              @click="$emit('reanalyzeToday')"
+              class="bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             >
               重新分析今天
             </button>

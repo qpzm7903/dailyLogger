@@ -454,6 +454,8 @@ fn main() {
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::reanalyze_today_records,
             #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::reanalyze_records_by_date,
+            #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::get_default_analysis_prompt,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::get_auto_capture_status,

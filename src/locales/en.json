@@ -636,5 +636,25 @@
       "weekly_report": "Weekly Report",
       "monthly_report": "Monthly Report"
     }
+  },
+  "reanalyze": {
+    "title": "Reanalyze by Date",
+    "selectDate": "Select Date",
+    "dateHint": "Select a date to reanalyze all records with screenshots for that day",
+    "preview": "Preview",
+    "selectedDate": "Selected date",
+    "loadingCount": "Counting records...",
+    "recordCount": "Records with screenshots: {count}",
+    "complete": "Reanalysis Complete",
+    "totalRecords": "Total records",
+    "successCount": "Success",
+    "failedCount": "Failed",
+    "errors": "Errors",
+    "moreErrors": "{count} more errors...",
+    "processing": "Processing...",
+    "start": "Start Analysis",
+    "successMessage": "Successfully reanalyzed {count} records",
+    "allFailed": "All records failed to analyze",
+    "errorMessage": "Reanalysis failed, please check API configuration"
   }
 }

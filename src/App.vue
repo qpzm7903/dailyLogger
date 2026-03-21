@@ -112,6 +112,9 @@
       <Transition name="slide-up" mode="out-in">
         <OfflineQueueModal v-if="isOpen('offlineQueue')" @close="close('offlineQueue')" />
       </Transition>
+      <Transition name="scale" mode="out-in">
+        <ReanalyzeByDateModal v-if="isOpen('reanalyzeByDate')" @close="close('reanalyzeByDate')" @reanalyzed="handleReanalyzedByDate" />
+      </Transition>
       <Toast />
     </Teleport>
   </div>
@@ -150,6 +153,7 @@ import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
 import OfflineQueueModal from './components/OfflineQueueModal.vue'
+import ReanalyzeByDateModal from './components/ReanalyzeByDateModal.vue'
 
 import { showError, showSuccess, initToastI18n } from './stores/toast'
 import type { LogRecord, Tag, Settings } from './types/tauri'
@@ -374,6 +378,12 @@ const handleCustomReportGenerated = (path: string) => {
 
 const handleComparisonReportGenerated = (path: string) => {
   comparisonReportPath.value = path
+}
+
+// FEAT-004 (#64): Handle reanalysis by date completion
+const handleReanalyzedByDate = async () => {
+  // Refresh records after reanalysis
+  await loadTodayRecords()
 }
 
 const handleViewReportFile = (path: string) => {

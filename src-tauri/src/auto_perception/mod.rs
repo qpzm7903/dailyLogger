@@ -1324,6 +1324,120 @@ pub async fn reanalyze_today_records() -> Result<ReanalyzeTodayResult, String> {
     })
 }
 
+/// FEAT-004 (#64): Batch reanalyze all records with screenshots for a specific date.
+/// Accepts a date string in "YYYY-MM-DD" format.
+#[command]
+pub async fn reanalyze_records_by_date(date: String) -> Result<ReanalyzeTodayResult, String> {
+    // Validate date format
+    if chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").is_err() {
+        return Err(format!(
+            "Invalid date format: {}. Expected YYYY-MM-DD",
+            date
+        ));
+    }
+
+    // Get all records from the specified date
+    let records = memory_storage::get_records_by_date_range_sync(date.clone(), date.clone())?;
+
+    // Filter records with screenshots
+    let records_with_screenshots: Vec<_> = records
+        .into_iter()
+        .filter(|r| r.screenshot_path.is_some())
+        .collect();
+
+    let total = records_with_screenshots.len();
+
+    if total == 0 {
+        return Ok(ReanalyzeTodayResult {
+            total: 0,
+            success: 0,
+            failed: 0,
+            errors: vec![format!("No records with screenshots found for {}", date)],
+        });
+    }
+
+    // Load capture settings once
+    let settings = load_capture_settings();
+
+    if settings.api_key.is_empty() {
+        return Err("API Key 未配置，请先在设置中配置 API Key".to_string());
+    }
+
+    // Reanalyze each record
+    let mut success = 0;
+    let mut failed = 0;
+    let mut errors = Vec::new();
+
+    for record in records_with_screenshots {
+        let record_id = record.id;
+        let screenshot_path = record.screenshot_path.unwrap();
+
+        // Read screenshot
+        let image_data = match std::fs::read(&screenshot_path) {
+            Ok(data) => data,
+            Err(e) => {
+                failed += 1;
+                errors.push(format!(
+                    "Record {}: Failed to read screenshot: {}",
+                    record_id, e
+                ));
+                continue;
+            }
+        };
+
+        let image_base64 =
+            base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
+
+        // Call AI analysis
+        tracing::info!("Batch reanalyzing record {} for date {}", record_id, date);
+        match analyze_screen(&settings, &image_base64).await {
+            Ok(analysis) => {
+                // Update record content
+                let content_json = match serde_json::to_string(&analysis) {
+                    Ok(json) => json,
+                    Err(e) => {
+                        failed += 1;
+                        errors.push(format!("Record {}: Failed to serialize: {}", record_id, e));
+                        continue;
+                    }
+                };
+
+                if let Err(e) = memory_storage::update_record_content_sync(record_id, &content_json)
+                {
+                    failed += 1;
+                    errors.push(format!("Record {}: Failed to update: {}", record_id, e));
+                    continue;
+                }
+
+                success += 1;
+                tracing::info!(
+                    "Batch reanalysis complete for record {}: {}",
+                    record_id,
+                    analysis.current_focus
+                );
+            }
+            Err(e) => {
+                failed += 1;
+                errors.push(format!("Record {}: AI analysis failed: {}", record_id, e));
+            }
+        }
+    }
+
+    tracing::info!(
+        "Batch reanalysis complete for {}: {}/{} records processed successfully",
+        date,
+        success,
+        total
+    );
+
+    Ok(ReanalyzeTodayResult {
+        total,
+        success,
+        failed,
+        errors,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
