@@ -2,6 +2,7 @@
 pub mod auto_perception;
 pub mod backup;
 pub mod crypto;
+pub mod dingtalk;
 pub mod export;
 pub mod github;
 #[cfg(feature = "screenshot")]

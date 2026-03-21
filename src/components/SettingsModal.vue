@@ -329,7 +329,8 @@ const settings = ref({
   notion_database_id: null as string | null,
   github_token: null as string | null,
   github_repositories: '[]',
-  slack_webhook_url: null as string | null
+  slack_webhook_url: null as string | null,
+  dingtalk_webhook_url: null as string | null
 })
 
 // Derived state for sub-components
@@ -371,7 +372,8 @@ const outputSettings = computed(() => ({
   notion_database_id: settings.value.notion_database_id as string | null,
   github_token: settings.value.github_token as string | null,
   github_repositories: settings.value.github_repositories,
-  slack_webhook_url: settings.value.slack_webhook_url as string | null
+  slack_webhook_url: settings.value.slack_webhook_url as string | null,
+  dingtalk_webhook_url: settings.value.dingtalk_webhook_url as string | null
 }))
 
 // Auxiliary state
@@ -408,6 +410,7 @@ function updateOutputSettings(newSettings: typeof outputSettings.value) {
   settings.value.github_token = newSettings.github_token
   settings.value.github_repositories = newSettings.github_repositories
   settings.value.slack_webhook_url = newSettings.slack_webhook_url
+  settings.value.dingtalk_webhook_url = newSettings.dingtalk_webhook_url
 }
 
 // Save state

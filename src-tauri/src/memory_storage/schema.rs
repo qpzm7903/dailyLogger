@@ -265,6 +265,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // INT-004: DingTalk 通知配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN dingtalk_webhook_url TEXT",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     tracing::info!("init_database: Creating FTS5 table");
@@ -506,6 +512,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             github_token TEXT,
             github_repositories TEXT DEFAULT '[]',
             slack_webhook_url TEXT,
+            dingtalk_webhook_url TEXT,
             capture_only_mode INTEGER DEFAULT 0,
             custom_headers TEXT DEFAULT '[]'
         )",

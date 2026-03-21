@@ -2,8 +2,10 @@ use chrono::Datelike;
 use std::path::PathBuf;
 use tauri::command;
 
+use crate::dingtalk;
 use crate::memory_storage::{self, Record, Settings};
 use crate::notion;
+use crate::slack;
 
 /// API configuration extracted from Settings for LLM calls.
 #[derive(Debug)]
@@ -231,6 +233,29 @@ fn write_report_to_logseq(
             }
         }
         Err(_) => None, // Logseq not configured, silently skip
+    }
+}
+
+/// INT-004: Send report notifications to Slack and DingTalk.
+/// This function sends notifications to configured channels after a report is generated.
+/// Errors are logged but do not affect the main report generation flow.
+fn send_report_notifications(settings: &Settings, title: &str, content: &str) {
+    // Send to Slack if configured
+    if slack::is_slack_configured(settings) {
+        match slack::send_to_slack_sync(settings, title, content) {
+            Some(true) => tracing::info!("Report sent to Slack: {}", title),
+            Some(false) => tracing::warn!("Failed to send report to Slack"),
+            None => tracing::debug!("Slack not configured or send returned None"),
+        }
+    }
+
+    // Send to DingTalk if configured
+    if dingtalk::is_dingtalk_configured(settings) {
+        match dingtalk::send_to_dingtalk_sync(settings, title, content) {
+            Some(true) => tracing::info!("Report sent to DingTalk: {}", title),
+            Some(false) => tracing::warn!("Failed to send report to DingTalk"),
+            None => tracing::debug!("DingTalk not configured or send returned None"),
+        }
     }
 }
 
@@ -518,6 +543,15 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         tracing::info!("Report also written to Notion: {}", notion_url);
     }
 
+    // INT-004: Send notifications to Slack/DingTalk if configured
+    let title = settings
+        .summary_title_format
+        .as_ref()
+        .filter(|s| !s.is_empty())
+        .map(|fmt| format_summary_title(fmt))
+        .unwrap_or_else(|| format_summary_title(DEFAULT_TITLE_FORMAT));
+    send_report_notifications(&settings, &title, &summary);
+
     let mut updated_settings = settings.clone();
     updated_settings.last_summary_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
@@ -591,6 +625,7 @@ mod tests {
             github_token: None,
             github_repositories: None,
             slack_webhook_url: None,
+            dingtalk_webhook_url: None,
             capture_only_mode: None,
             custom_headers: None,
         }
@@ -1352,6 +1387,10 @@ pub async fn generate_weekly_report() -> Result<String, String> {
         tracing::info!("Weekly report also written to Notion: {}", notion_url);
     }
 
+    // INT-004: Send notifications to Slack/DingTalk if configured
+    let title = filename.trim_end_matches(".md");
+    send_report_notifications(&settings, title, &summary);
+
     let mut updated_settings = settings.clone();
     updated_settings.last_weekly_report_path = Some(path_str.clone());
     memory_storage::save_settings_sync(&updated_settings)
@@ -1405,6 +1444,10 @@ pub async fn generate_monthly_report() -> Result<String, String> {
     if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
         tracing::info!("Monthly report also written to Notion: {}", notion_url);
     }
+
+    // INT-004: Send notifications to Slack/DingTalk if configured
+    let title = filename.trim_end_matches(".md");
+    send_report_notifications(&settings, title, &summary);
 
     let mut updated_settings = settings.clone();
     updated_settings.last_monthly_report_path = Some(path_str.clone());
@@ -1522,6 +1565,10 @@ pub async fn generate_custom_report(
     if let Some(notion_url) = notion::write_report_to_notion_sync(&settings, &filename, &summary) {
         tracing::info!("Custom report also written to Notion: {}", notion_url);
     }
+
+    // INT-004: Send notifications to Slack/DingTalk if configured
+    let title = filename.trim_end_matches(".md");
+    send_report_notifications(&settings, title, &summary);
 
     let mut updated_settings = settings.clone();
     updated_settings.last_custom_report_path = Some(path_str.clone());
@@ -1677,6 +1724,7 @@ mod benchmarks {
             github_token: None,
             github_repositories: None,
             slack_webhook_url: None,
+            dingtalk_webhook_url: None,
             capture_only_mode: None,
             custom_headers: None,
         }

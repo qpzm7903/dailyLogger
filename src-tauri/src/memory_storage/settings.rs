@@ -26,7 +26,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 comparison_report_prompt, logseq_graphs,
                 notion_api_key, notion_database_id,
                 github_token, github_repositories,
-                slack_webhook_url, capture_only_mode, custom_headers
+                slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -90,6 +90,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 github_token: row.get("github_token")?,
                 github_repositories: row.get("github_repositories")?,
                 slack_webhook_url: row.get("slack_webhook_url")?,
+                dingtalk_webhook_url: row.get("dingtalk_webhook_url")?,
                 capture_only_mode: row
                     .get::<_, Option<i32>>("capture_only_mode")?
                     .map(|v| v != 0),
@@ -304,6 +305,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             github_token = :github_token,
             github_repositories = :github_repositories,
             slack_webhook_url = :slack_webhook_url,
+            dingtalk_webhook_url = :dingtalk_webhook_url,
             capture_only_mode = :capture_only_mode,
             custom_headers = :custom_headers
          WHERE id = 1",
@@ -352,6 +354,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":github_token": encrypted_github_token,
             ":github_repositories": settings.github_repositories,
             ":slack_webhook_url": settings.slack_webhook_url,
+            ":dingtalk_webhook_url": settings.dingtalk_webhook_url,
             ":capture_only_mode": settings.capture_only_mode.map(|v| if v { 1 } else { 0 }),
             ":custom_headers": encrypted_custom_headers,
         },
