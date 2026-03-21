@@ -35,6 +35,9 @@ const mockT = vi.fn((key: string) => {
     'settings.whitelistPlaceholder': 'Add app name...',
     'settings.blacklistPlaceholder': 'Add app name...',
     'settings.whitelistOnly': 'Whitelist Only',
+    'settings.captureOnlyMode': 'Capture Only Mode',
+    'settings.captureOnlyModeLabel': 'Capture only, delay analysis',
+    'settings.captureOnlyModeHint': 'When enabled, auto-capture only saves screenshots without AI analysis.',
     'settings.displaySettings': 'Display Settings',
     'settings.captureMode': 'Capture Mode',
     'settings.primaryMonitor': 'Primary Monitor',
@@ -66,7 +69,8 @@ describe('CaptureSettings', () => {
       custom_work_time_end: '18:00',
       use_whitelist_only: false,
       capture_mode: 'primary',
-      selected_monitor_index: 0
+      selected_monitor_index: 0,
+      capture_only_mode: false
     },
     whitelistTags: ['VSCode', 'Chrome'],
     blacklistTags: ['Spotify'],
@@ -164,7 +168,8 @@ describe('CaptureSettings', () => {
     it('toggles auto adjust silent checkbox', async () => {
       const wrapper = mount(CaptureSettings, { props: defaultProps })
       const checkboxes = wrapper.findAll('input[type="checkbox"]')
-      const autoAdjustCheckbox = checkboxes[0]
+      // Index 0 = capture_only_mode, Index 1 = auto_adjust_silent
+      const autoAdjustCheckbox = checkboxes[1]
       await autoAdjustCheckbox?.setValue(true)
 
       expect(wrapper.vm.localSettings.auto_adjust_silent).toBe(true)
@@ -173,7 +178,8 @@ describe('CaptureSettings', () => {
     it('toggles auto detect work time checkbox', async () => {
       const wrapper = mount(CaptureSettings, { props: defaultProps })
       const checkboxes = wrapper.findAll('input[type="checkbox"]')
-      const workTimeCheckbox = checkboxes[1]
+      // Index 0 = capture_only_mode, Index 1 = auto_adjust_silent, Index 2 = auto_detect_work_time
+      const workTimeCheckbox = checkboxes[2]
       await workTimeCheckbox?.setValue(true)
 
       expect(wrapper.vm.localSettings.auto_detect_work_time).toBe(true)
@@ -258,12 +264,12 @@ describe('CaptureSettings', () => {
       const wrapper = mount(CaptureSettings, { props: defaultProps })
       const checkboxes = wrapper.findAll('input[type="checkbox"]')
 
-      // Enable auto_detect_work_time
-      await checkboxes[1]?.setValue(true)
+      // Enable auto_detect_work_time (index 2: 0=capture_only_mode, 1=auto_adjust_silent, 2=auto_detect_work_time)
+      await checkboxes[2]?.setValue(true)
       await wrapper.vm.$nextTick()
 
-      // Enable use_custom_work_time
-      const customWorkTimeCheckbox = wrapper.findAll('input[type="checkbox"]')[2]
+      // Enable use_custom_work_time (index 3)
+      const customWorkTimeCheckbox = wrapper.findAll('input[type="checkbox"]')[3]
       await customWorkTimeCheckbox?.setValue(true)
       await wrapper.vm.$nextTick()
 

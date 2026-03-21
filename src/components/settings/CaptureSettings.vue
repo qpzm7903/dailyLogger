@@ -1,5 +1,26 @@
 <template>
   <div class="space-y-6">
+    <!-- Capture Only Mode -->
+    <div>
+      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.captureOnlyMode') }}</h3>
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <input
+            v-model="localSettings.capture_only_mode"
+            type="checkbox"
+            id="capture_only_mode"
+            class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+          />
+          <label for="capture_only_mode" class="text-xs text-gray-300 cursor-pointer">
+            {{ $t('settings.captureOnlyModeLabel') }}
+          </label>
+        </div>
+        <span class="text-xs text-gray-500 block">
+          {{ $t('settings.captureOnlyModeHint') }}
+        </span>
+      </div>
+    </div>
+
     <!-- Time Strategy -->
     <div>
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.timeStrategy') }}</h3>
@@ -280,6 +301,7 @@ interface Props {
     use_whitelist_only: boolean
     capture_mode: string
     selected_monitor_index: number
+    capture_only_mode: boolean
   }
   whitelistTags: string[]
   blacklistTags: string[]

@@ -150,6 +150,8 @@ pub struct CaptureSettings {
     // SMART-004: Multi-monitor capture settings
     pub capture_mode: String,
     pub selected_monitor_index: usize,
+    // FEAT-006: Capture only mode (#65)
+    pub capture_only_mode: bool,
 }
 
 impl Default for CaptureSettings {
@@ -168,6 +170,8 @@ impl Default for CaptureSettings {
             // SMART-004: Default to primary monitor
             capture_mode: "primary".to_string(),
             selected_monitor_index: 0,
+            // FEAT-006: Default to false (analyze after capture)
+            capture_only_mode: false,
         }
     }
 }
@@ -657,6 +661,8 @@ fn load_capture_settings() -> CaptureSettings {
             // SMART-004: Load multi-monitor settings
             capture_mode: s.capture_mode.unwrap_or_else(|| "primary".to_string()),
             selected_monitor_index: s.selected_monitor_index.unwrap_or(0) as usize,
+            // FEAT-006: Load capture only mode setting
+            capture_only_mode: s.capture_only_mode.unwrap_or(false),
         },
         Err(_) => CaptureSettings::default(),
     }
@@ -863,6 +869,54 @@ async fn capture_and_store() -> Result<(), String> {
     }
 
     let screenshot_path = save_screenshot(&image_base64);
+
+    // FEAT-006: Capture only mode - skip AI analysis (#65)
+    if settings.capture_only_mode {
+        tracing::info!("Capture only mode: saving screenshot without AI analysis");
+
+        // Save record with placeholder content, marked for later analysis
+        let content = serde_json::json!({
+            "current_focus": "仅截图模式 - 待分析",
+            "active_software": active_window.process_name,
+            "context_keywords": [],
+            "active_window": {
+                "title": active_window.title,
+                "process_name": active_window.process_name
+            },
+            "monitor_info": {
+                "count": monitor_info.count,
+                "capture_mode": capture_mode.to_string()
+            },
+            "offline_pending": true,
+            "capture_only": true
+        })
+        .to_string();
+
+        let monitor_info_json = serde_json::to_string(&monitor_info).ok();
+        let record_id = memory_storage::add_record(
+            "auto",
+            &content,
+            screenshot_path.as_deref(),
+            monitor_info_json.as_deref(),
+            None,
+        )?;
+
+        // Queue for later analysis (can be triggered manually)
+        if let Some(ref path) = screenshot_path {
+            let payload = serde_json::json!({
+                "screenshot_path": path,
+                "record_id": record_id,
+            })
+            .to_string();
+            let _ = crate::offline_queue::enqueue_task(
+                &crate::offline_queue::OfflineTaskType::ScreenshotAnalysis,
+                &payload,
+                Some(record_id),
+            );
+        }
+
+        return Ok(());
+    }
 
     // CORE-007: Check network status before AI analysis
     if !crate::network_status::is_online() {
@@ -1841,6 +1895,8 @@ mod tests {
             // SMART-004: New fields
             capture_mode: "all".to_string(),
             selected_monitor_index: 1,
+            // FEAT-006: Capture only mode
+            capture_only_mode: false,
         };
         assert_eq!(settings.window_whitelist, vec!["VS Code"]);
         assert_eq!(settings.window_blacklist, vec!["Chrome"]);

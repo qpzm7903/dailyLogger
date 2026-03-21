@@ -743,10 +743,7 @@ pub async fn search_records(
 /// Update user notes for a record
 /// FEAT-005: User can add manual notes to screenshot records (#66)
 #[command]
-pub async fn update_record_user_notes(
-    id: i64,
-    user_notes: Option<String>,
-) -> Result<(), String> {
+pub async fn update_record_user_notes(id: i64, user_notes: Option<String>) -> Result<(), String> {
     update_record_user_notes_sync(id, user_notes.as_deref())
 }
 
@@ -815,7 +812,14 @@ mod tests {
                 last_custom_report_path TEXT,
                 last_monthly_report_path TEXT,
                 obsidian_vaults TEXT DEFAULT '[]',
-                comparison_report_prompt TEXT
+                comparison_report_prompt TEXT,
+                logseq_graphs TEXT DEFAULT '[]',
+                notion_api_key TEXT,
+                notion_database_id TEXT,
+                github_token TEXT,
+                github_repositories TEXT DEFAULT '[]',
+                slack_webhook_url TEXT,
+                capture_only_mode INTEGER DEFAULT 0
             )",
             [],
         )
@@ -1841,7 +1845,14 @@ mod benchmarks {
                 last_custom_report_path TEXT,
                 last_monthly_report_path TEXT,
                 obsidian_vaults TEXT DEFAULT '[]',
-                comparison_report_prompt TEXT
+                comparison_report_prompt TEXT,
+                logseq_graphs TEXT DEFAULT '[]',
+                notion_api_key TEXT,
+                notion_database_id TEXT,
+                github_token TEXT,
+                github_repositories TEXT DEFAULT '[]',
+                slack_webhook_url TEXT,
+                capture_only_mode INTEGER DEFAULT 0
             )",
             [],
         )

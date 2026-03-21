@@ -550,6 +550,7 @@ mod tests {
             github_token: None,
             github_repositories: None,
             slack_webhook_url: None,
+            capture_only_mode: None,
         }
     }
 
@@ -1524,6 +1525,7 @@ mod benchmarks {
             github_token: None,
             github_repositories: None,
             slack_webhook_url: None,
+            capture_only_mode: None,
         }
     }
 

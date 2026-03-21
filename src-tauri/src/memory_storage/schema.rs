@@ -253,6 +253,12 @@ pub fn init_database() -> Result<(), String> {
     // INT-004: Slack 通知配置
     let _ = conn.execute("ALTER TABLE settings ADD COLUMN slack_webhook_url TEXT", []);
 
+    // FEAT-006: 仅截图模式 (#65)
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN capture_only_mode INTEGER DEFAULT 0",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     tracing::info!("init_database: Creating FTS5 table");
@@ -493,7 +499,8 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             notion_database_id TEXT,
             github_token TEXT,
             github_repositories TEXT DEFAULT '[]',
-            slack_webhook_url TEXT
+            slack_webhook_url TEXT,
+            capture_only_mode INTEGER DEFAULT 0
         )",
         [],
     )

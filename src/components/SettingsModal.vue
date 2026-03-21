@@ -345,6 +345,7 @@ const settings = ref({
   learned_work_time: null,
   capture_mode: 'primary',
   selected_monitor_index: 0,
+  capture_only_mode: false,
   tag_categories: '',
   is_ollama: false,
   obsidian_vaults: '[]',
@@ -386,7 +387,8 @@ const captureSettings = computed(() => ({
   custom_work_time_end: settings.value.custom_work_time_end,
   use_whitelist_only: settings.value.use_whitelist_only,
   capture_mode: settings.value.capture_mode,
-  selected_monitor_index: settings.value.selected_monitor_index
+  selected_monitor_index: settings.value.selected_monitor_index,
+  capture_only_mode: settings.value.capture_only_mode
 }))
 
 const outputSettings = computed(() => ({

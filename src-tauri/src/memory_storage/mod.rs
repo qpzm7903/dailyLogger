@@ -85,6 +85,8 @@ pub struct Settings {
     pub github_repositories: Option<String>, // JSON: ["owner/repo", ...] repos to track
     // INT-004: Slack 通知配置
     pub slack_webhook_url: Option<String>, // Slack Incoming Webhook URL
+    // FEAT-006: 仅截图模式 (#65)
+    pub capture_only_mode: Option<bool>, // Only capture screenshots without AI analysis
 }
 
 /// DATA-006: Vault entry for multi-vault support
