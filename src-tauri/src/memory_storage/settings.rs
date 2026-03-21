@@ -137,7 +137,10 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                                     match crypto::decrypt_api_key(&header.value) {
                                         Ok(decrypted) => header.value = decrypted,
                                         Err(e) => {
-                                            tracing::error!("Failed to decrypt custom header: {}", e)
+                                            tracing::error!(
+                                                "Failed to decrypt custom header: {}",
+                                                e
+                                            )
                                         }
                                     }
                                 }
