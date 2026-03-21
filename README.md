@@ -173,20 +173,20 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.105.0
+**最新版本**: v1.106.0
 - 维护检查：CI 全部通过，测试覆盖完善
 - 无开放 Issues，依赖最新，Clippy 无警告
 - 前端测试 939 个，Rust 测试 435 个
+
+v1.105.0 更新:
+- 维护检查：CI 全部通过，测试覆盖完善
+- 无开放 Issues，依赖最新，Clippy 无警告
 
 v1.104.0 更新:
 - 维护检查：CI 全部通过，测试覆盖完善
 - 无开放 Issues，依赖最新，Clippy 无警告
 
 v1.102.0 更新:
-- 维护检查：CI 全部通过，测试覆盖完善
-- 无开放 Issues，依赖最新，Clippy 无警告
-
-v1.101.0 更新:
 - 维护检查：CI 全部通过，测试覆盖完善
 - 无开放 Issues，依赖最新，Clippy 无警告
 
