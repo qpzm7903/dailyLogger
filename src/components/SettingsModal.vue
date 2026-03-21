@@ -27,7 +27,6 @@
           :settings="basicSettings"
           @update:settings="updateBasicSettings"
           @show-create-model-modal="showCreateModelModal = true"
-          @show-fine-tuning-modal="showFineTuningModal = true"
           @show-copy-model-modal="openCopyModelModal"
         />
 
@@ -237,30 +236,6 @@
       </div>
     </div>
 
-    <!-- Fine-tuning Modal -->
-    <div v-if="showFineTuningModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-60">
-      <div class="bg-dark rounded-xl p-6 max-w-md border border-gray-700">
-        <h3 class="text-lg font-semibold mb-4">{{ $t('settings.fineTuning') }}</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.baseModel') }}</label>
-            <input v-model="fineTuningParams.baseModel" type="text" class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none" />
-          </div>
-          <div>
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.outputModelName') }}</label>
-            <input v-model="fineTuningParams.outputModelName" type="text" class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none" />
-          </div>
-        </div>
-        <div class="mt-4 flex justify-end gap-3">
-          <button @click="showFineTuningModal = false" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
-            {{ $t('common.cancel') }}
-          </button>
-          <button @click="startFineTuning" :disabled="isFineTuning" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80 disabled:opacity-50 transition-colors">
-            {{ isFineTuning ? $t('settings.fineTuning') : $t('settings.start') }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -457,9 +432,6 @@ const showCopyModelModal = ref(false)
 const isCopyingModel = ref(false)
 const copyModelSource = ref('')
 const copyModelDestination = ref('')
-const showFineTuningModal = ref(false)
-const isFineTuning = ref(false)
-const fineTuningParams = ref({ baseModel: '', outputModelName: '', epochs: 3, systemPrompt: '', temperature: 0.7, numCtx: 4096 })
 
 // Preset templates
 const presetTemplates: Template[] = [
@@ -668,37 +640,6 @@ async function createCustomModel() {
   }
 }
 
-async function startFineTuning() {
-  if (!fineTuningParams.value.baseModel.trim() || !fineTuningParams.value.outputModelName.trim()) {
-    showError(t('settings.modelNameRequired'))
-    return
-  }
-
-  isFineTuning.value = true
-  try {
-    const result = await invoke<{ success: boolean; message: string; model_name?: string }>('start_fine_tuning', {
-      baseUrl: settings.value.api_base_url,
-      config: {
-        base_model: fineTuningParams.value.baseModel,
-        output_model_name: fineTuningParams.value.outputModelName.trim(),
-        epochs: fineTuningParams.value.epochs,
-        system_prompt: fineTuningParams.value.systemPrompt || null,
-        temperature: fineTuningParams.value.temperature,
-        num_ctx: fineTuningParams.value.numCtx
-      }
-    })
-    if (result.success) {
-      showSuccess(t('settings.fineTuningSuccess', { model: result.model_name }))
-      showFineTuningModal.value = false
-    } else {
-      showError(t('settings.fineTuningFailed', { error: result.message }))
-    }
-  } catch (err) {
-    showError(t('settings.fineTuningFailed', { error: String(err) }))
-  } finally {
-    isFineTuning.value = false
-  }
-}
 
 onMounted(() => {
   loadSettings()

@@ -469,15 +469,6 @@ fn main() {
             daily_logger_lib::timeline::get_timeline_today,
             daily_logger_lib::timeline::get_timeline_for_date,
             daily_logger_lib::timeline::get_timeline_for_range,
-            // Plugin system
-            daily_logger_lib::plugin::list_discovered_plugins,
-            daily_logger_lib::plugin::enable_plugin,
-            daily_logger_lib::plugin::disable_plugin,
-            daily_logger_lib::plugin::open_plugins_directory,
-            // FUTURE-003: Model fine-tuning
-            daily_logger_lib::fine_tuning::prepare_training_data,
-            daily_logger_lib::fine_tuning::start_fine_tuning,
-            daily_logger_lib::fine_tuning::get_default_fine_tuning_config,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");

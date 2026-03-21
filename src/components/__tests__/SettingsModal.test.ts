@@ -47,14 +47,6 @@ vi.mock('vue-i18n', () => ({
         'settings.newModelName': 'New Model Name',
         'settings.copy': 'Copy',
         'settings.copying': 'Copying...',
-        'settings.fineTuning': 'Fine Tuning',
-        'settings.baseModel': 'Base Model',
-        'settings.outputModelName': 'Output Model Name',
-        'settings.start': 'Start',
-        'settings.templateApplied': `Template "${params?.name || ''}" applied`,
-        'settings.modelNameRequired': 'Model name is required',
-        'settings.fineTuningSuccess': `Fine tuning completed: ${params?.model || ''}`,
-        'settings.fineTuningFailed': `Fine tuning failed: ${params?.error || ''}`,
         'common.cancel': 'Cancel',
         'common.close': 'Close',
         'common.templateLibrary': 'Template Library',
@@ -479,37 +471,4 @@ describe('SettingsModal', () => {
     })
   })
 
-  describe('fine tuning', () => {
-    it('can start fine tuning', async () => {
-      const { invoke } = await import('@tauri-apps/api/core')
-      const { showSuccess } = await import('../../stores/toast')
-      vi.mocked(invoke).mockResolvedValueOnce({}) // get_settings
-      vi.mocked(invoke).mockResolvedValueOnce({
-        success: true,
-        message: 'Fine tuning started',
-        model_name: 'fine-tuned-model',
-      })
-
-      const wrapper = mount(SettingsModal)
-
-      wrapper.vm.fineTuningParams = {
-        baseModel: 'llama3',
-        outputModelName: 'fine-tuned-model',
-        epochs: 3,
-        systemPrompt: '',
-        temperature: 0.7,
-        numCtx: 4096,
-      }
-
-      await wrapper.vm.startFineTuning()
-
-      expect(invoke).toHaveBeenCalledWith('start_fine_tuning', expect.objectContaining({
-        config: expect.objectContaining({
-          base_model: 'llama3',
-          output_model_name: 'fine-tuned-model',
-        }),
-      }))
-      expect(showSuccess).toHaveBeenCalled()
-    })
-  })
 })

@@ -3,7 +3,6 @@ pub mod auto_perception;
 pub mod backup;
 pub mod crypto;
 pub mod export;
-pub mod fine_tuning;
 pub mod github;
 #[cfg(feature = "screenshot")]
 pub mod hardware;
@@ -17,7 +16,6 @@ pub mod notion;
 pub mod offline_queue;
 pub mod ollama;
 pub mod performance;
-pub mod plugin;
 pub mod silent_tracker;
 pub mod slack;
 pub mod synthesis;

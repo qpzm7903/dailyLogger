@@ -183,16 +183,7 @@
             </button>
           </div>
 
-          <!-- Fine-tuning button -->
-          <div class="mt-2">
-            <button
-              @click="showFineTuningModal = true"
-              type="button"
-              class="w-full px-3 py-2 text-xs bg-linear-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 rounded-lg transition-colors"
-            >
-              {{ $t('settings.fineTuning') }}
-            </button>
-          </div>
+
 
           <p v-if="ollamaModelError" class="text-xs text-red-400 mt-1">{{ ollamaModelError }}</p>
         </div>
@@ -266,7 +257,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'update:settings', value: Props['settings']): void
   (e: 'show-create-model-modal'): void
-  (e: 'show-fine-tuning-modal'): void
   (e: 'show-copy-model-modal', source: string): void
 }>()
 
@@ -303,7 +293,6 @@ const isDeletingModel = ref('')
 const runningModels = ref<RunningModel[]>([])
 const isLoadingRunningModels = ref(false)
 const showCreateModelModal = ref(false)
-const showFineTuningModal = ref(false)
 
 // Computed
 const isOllama = computed(() => isOllamaEndpoint(localSettings.value.api_base_url))
