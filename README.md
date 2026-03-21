@@ -173,7 +173,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.99.0
+**最新版本**: v1.100.0
+- 新增：仅截图模式 - 启动后只记录截图，延迟 AI 分析 (#65)
+- 新增：截图支持用户手动补充备注 (#66)
+- 修复：Release 发布时包含版本变更内容 (#67)
+- 前端测试 939 个，Rust 测试 435 个
+
+v1.99.0 更新:
 - 新增：按日期重新分析记录功能 (#64)
 - 创建 ReanalyzeByDateModal 组件，支持选择任意日期重新分析
 - 前端测试提升至 939 个，Rust 测试 435 个
