@@ -84,12 +84,14 @@ impl MockScreenshotProvider {
     }
 
     /// Set the monitors to report.
+    #[allow(dead_code)]
     pub fn set_monitors(&self, monitors: Vec<MonitorDetail>) {
         let mut m = self.monitors.lock().unwrap();
         *m = monitors;
     }
 
     /// Get the number of times `capture_screen()` was called.
+    #[allow(dead_code)]
     pub fn call_count(&self) -> usize {
         self.call_count.load(Ordering::SeqCst)
     }
@@ -145,6 +147,7 @@ impl Default for MockDisplayProvider {
 
 impl MockDisplayProvider {
     /// Set the monitors to report.
+    #[allow(dead_code)]
     pub fn set_monitors(&self, monitors: Vec<MonitorDetail>) {
         let mut m = self.monitors.lock().unwrap();
         *m = monitors;

@@ -1691,8 +1691,9 @@ mod tests {
 
         // Verify the status has expected fields
         // Since we don't know the current time, we just verify the structure
+        // is_work_time is a bool, so it's either true or false
         assert!(
-            status.is_work_time || !status.is_work_time,
+            matches!(status.is_work_time, true | false),
             "is_work_time should be a boolean"
         );
         // learning_progress should be 0.0 initially (f64, range 0.0..=1.0)
