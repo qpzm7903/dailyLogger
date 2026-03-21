@@ -685,4 +685,74 @@ mod tests {
         assert!(output.contains("14:00"));
         assert!(output.contains("2 次提交"));
     }
+
+    #[test]
+    fn calculate_work_stats_multiple_sessions() {
+        // Test commits that span multiple sessions (gap > 2 hours)
+        let commits = vec![
+            GitHubCommit {
+                sha: "abc123".to_string(),
+                html_url: "https://github.com/owner/repo/commit/abc123".to_string(),
+                commit: GitHubCommitInfo {
+                    message: "feat: morning work".to_string(),
+                    author: Some(GitHubCommitAuthor {
+                        name: "Test User".to_string(),
+                        email: "test@example.com".to_string(),
+                        date: "2024-01-15T09:00:00Z".to_string(),
+                    }),
+                },
+            },
+            GitHubCommit {
+                sha: "def456".to_string(),
+                html_url: "https://github.com/owner/repo/commit/def456".to_string(),
+                commit: GitHubCommitInfo {
+                    message: "feat: afternoon work".to_string(),
+                    author: Some(GitHubCommitAuthor {
+                        name: "Test User".to_string(),
+                        email: "test@example.com".to_string(),
+                        date: "2024-01-15T14:00:00Z".to_string(), // 5 hours gap
+                    }),
+                },
+            },
+        ];
+
+        let stats = calculate_work_stats_from_commits(&commits, &[], "owner/repo");
+        assert_eq!(stats.commit_count, 2);
+        // Two separate sessions: 09:00 (min 30 min) + 14:00 (min 30 min) = 1 hour min
+        assert!(stats.estimated_hours >= 1.0);
+    }
+
+    #[test]
+    fn format_github_activity_truncates_long_messages() {
+        let mut commits_by_hour = std::collections::HashMap::new();
+        let long_message = "This is a very long commit message that should be truncated because it exceeds the 60 character limit for display in reports";
+        commits_by_hour.insert(10, vec![long_message.to_string()]);
+
+        let stats = GitHubWorkStats {
+            commit_count: 1,
+            pr_count: 0,
+            estimated_hours: 0.5,
+            active_repos: vec!["owner/repo".to_string()],
+            commits_by_hour,
+            pull_requests: Vec::new(),
+        };
+
+        let output = format_github_activity_for_report(&stats);
+        // Should contain truncated version with "..."
+        assert!(output.contains("..."));
+        // Original long message should NOT appear in full
+        assert!(!output.contains(&long_message[..70]));
+    }
+
+    #[test]
+    fn parse_repositories_handles_invalid_format() {
+        // Test that invalid repository formats don't cause panic
+        let settings = crate::memory_storage::Settings {
+            github_repositories: Some(r#"["valid/repo", "invalid-no-slash", "also/valid/repo2", ""]"#.to_string()),
+            ..Default::default()
+        };
+        let repos = parse_repositories(&settings);
+        // All entries are parsed as-is; filtering happens in fetch_today_github_activity
+        assert_eq!(repos.len(), 4);
+    }
 }

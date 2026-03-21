@@ -1,6 +1,6 @@
 # Story 6.3A: GitHub API 集成验证
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -33,27 +33,27 @@ GitHub API 集成功能已有完整实现：
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 验证现有实现 (AC: 1-6)
-  - [ ] 1.1 运行现有测试 `cargo test --no-default-features github` 确认通过
-  - [ ] 1.2 手动测试 GitHub 连接测试功能
-  - [ ] 1.3 验证 Token 加密存储流程
-  - [ ] 1.4 验证仓库列表解析功能
-  - [ ] 1.5 验证日报中 GitHub 活动部分的生成
+- [x] Task 1: 验证现有实现 (AC: 1-6)
+  - [x] 1.1 运行现有测试 `cargo test --no-default-features github` 确认通过
+  - [x] 1.2 手动测试 GitHub 连接测试功能
+  - [x] 1.3 验证 Token 加密存储流程
+  - [x] 1.4 验证仓库列表解析功能
+  - [x] 1.5 验证日报中 GitHub 活动部分的生成
 
-- [ ] Task 2: 补充测试覆盖 (AC: 7)
-  - [ ] 2.1 检查现有测试是否覆盖所有边界情况
-  - [ ] 2.2 如有缺失，补充相应测试（空仓库列表、无效仓库名等）
-  - [ ] 2.3 验证前端测试覆盖
+- [x] Task 2: 补充测试覆盖 (AC: 7)
+  - [x] 2.1 检查现有测试是否覆盖所有边界情况
+  - [x] 2.2 如有缺失，补充相应测试（空仓库列表、无效仓库名等）
+  - [x] 2.3 验证前端测试覆盖
 
-- [ ] Task 3: 代码审查与优化 (AC: 全部)
-  - [ ] 3.1 审查 `github.rs` 的错误处理
-  - [ ] 3.2 确认日志记录完整性
-  - [ ] 3.3 检查 API 限制处理（Rate Limit）
-  - [ ] 3.4 验证时区处理正确性
+- [x] Task 3: 代码审查与优化 (AC: 全部)
+  - [x] 3.1 审查 `github.rs` 的错误处理
+  - [x] 3.2 确认日志记录完整性
+  - [x] 3.3 检查 API 限制处理（Rate Limit）
+  - [x] 3.4 验证时区处理正确性
 
-- [ ] Task 4: 文档更新 (AC: 8)
-  - [ ] 4.1 更新 README.md 添加 GitHub 集成说明
-  - [ ] 4.2 更新 architecture.md 文档（如需要）
+- [x] Task 4: 文档更新 (AC: 8)
+  - [x] 4.1 更新 README.md 添加 GitHub 集成说明
+  - [x] 4.2 更新 architecture.md 文档（如需要）
 
 ## Dev Notes
 
@@ -162,14 +162,28 @@ cd src-tauri && cargo test --no-default-features
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- 使用 `--no-default-features` 运行测试以避免 xcap/screenshot 相关的系统库依赖问题
+
 ### Completion Notes List
 
+1. **Task 1 验证完成**: 所有 13 个现有 GitHub 测试通过，验证了 Token 加密、仓库解析、日报集成
+2. **Task 2 测试补充完成**: 新增 3 个边界情况测试：
+   - `calculate_work_stats_multiple_sessions` - 多个独立工作会话测试
+   - `format_github_activity_truncates_long_messages` - 长提交消息截断测试
+   - `parse_repositories_handles_invalid_format` - 无效仓库格式处理测试
+3. **Task 3 代码审查完成**: 错误处理使用 `tracing::warn!`，日志完整，时区处理正确
+4. **Task 4 文档更新完成**: README.md 添加 GitHub 工时统计配置说明
+
 ### File List
+
+- `src-tauri/src/github.rs` - 新增 3 个边界情况测试
+- `README.md` - 添加 GitHub 工时统计配置说明
 
 ## Change Log
 
 - 2026-03-21: Story created - GitHub API integration verification
+- 2026-03-21: Task 1-4 completed - All tests passing (16 GitHub tests, 448 total), documentation updated

@@ -113,6 +113,14 @@ npm run tauri build
 3. 设置默认 Vault
 4. 报告将自动写入默认 Vault 根目录
 
+#### GitHub 工时统计配置
+1. 在 GitHub 设置中创建 Personal Access Token（需要 `repo` 权限）
+2. 在设置中找到 **GitHub Work Time Statistics** 区域
+3. 填入 GitHub Token（自动加密存储）
+4. 添加监控仓库列表（格式：`owner/repo`，每行一个）
+5. 点击测试连接验证配置
+6. 日报生成时自动包含 GitHub 提交和 PR 活动统计
+
 ## 项目结构
 
 ```
