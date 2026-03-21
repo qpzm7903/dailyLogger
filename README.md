@@ -98,20 +98,39 @@ npm run tauri build
 src/                        # Vue 3 前端
   ├── App.vue               # 主界面
   └── components/           # UI 组件
+      ├── layout/           # 布局组件
+      │   ├── Sidebar.vue
+      │   ├── Header.vue
+      │   └── Dashboard.vue
+      ├── settings/         # 设置子组件
+      │   ├── BasicSettings.vue
+      │   ├── AISettings.vue
+      │   ├── CaptureSettings.vue
+      │   └── OutputSettings.vue
       ├── SettingsModal.vue
       ├── QuickNoteModal.vue
+      ├── QuickNoteWindow.vue
       ├── ScreenshotModal.vue
       ├── ScreenshotGallery.vue
       ├── DailySummaryViewer.vue
       ├── HistoryViewer.vue
       ├── TagCloud.vue
+      ├── TagBadge.vue
+      ├── TagFilter.vue
+      ├── TagInput.vue
+      ├── SearchPanel.vue
+      ├── ReportDropdown.vue
+      ├── ReportHistoryViewer.vue
       ├── ReportComparisonModal.vue
-      ├── LogViewer.vue
+      ├── CustomReportModal.vue
+      ├── ReanalyzeByDateModal.vue
       ├── TimelineVisualization.vue
-      ├── PluginPanel.vue
       ├── BackupModal.vue
-      ├── LoginModal.vue
-      └── TeamPanel.vue
+      ├── ExportModal.vue
+      ├── OfflineBanner.vue
+      ├── OfflineQueueModal.vue
+      ├── LogViewer.vue
+      └── Toast.vue
 
 src-tauri/src/              # Rust 后端
   ├── main.rs               # 应用入口、托盘、日志初始化
@@ -120,15 +139,22 @@ src-tauri/src/              # Rust 后端
   ├── manual_entry/         # 速记 + 文件读取
   ├── memory_storage/       # SQLite CRUD + 全文搜索
   ├── synthesis/            # AI 日报/周报/月报生成
-  ├── offline_queue/        # 离线任务队列
+  ├── offline_queue.rs      # 离线任务队列
   ├── backup/               # 数据备份恢复
   ├── crypto/               # API Key 加密存储
   ├── hardware/             # 硬件抽象层（跨平台支持）
+  ├── window_info/          # 窗口信息获取
+  ├── export/               # 数据导出
   ├── notion.rs             # Notion API 集成
   ├── slack.rs              # Slack Webhook 集成
   ├── github.rs             # GitHub API 集成
   ├── ollama.rs             # Ollama 本地模型管理
-  └── timeline.rs           # 时间线数据生成
+  ├── timeline.rs           # 时间线数据生成
+  ├── silent_tracker.rs     # 智能静默检测
+  ├── work_time.rs          # 工作时间计算
+  ├── performance.rs        # 性能监控
+  ├── monitor.rs            # 多显示器支持
+  └── network_status.rs     # 网络状态检测
 ```
 
 ## 开发

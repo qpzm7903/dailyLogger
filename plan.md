@@ -6,7 +6,7 @@
 
 ---
 
-## v2.0.0（架构瘦身）🔄 进行中
+## v2.0.0（架构瘦身）✅ 完成
 
 **目标**: 移除不需要的模块，压缩项目规划文件，优化开发流程，采用 milestone 驱动的版本号策略
 
@@ -18,8 +18,8 @@
 | SLIM-002 | 移除 plugin 模块（902 行 Rust + 138 行 Vue + 测试） | 2pts | HIGH | ✅ 完成 | — |
 | SLIM-003 | 清理 TeamPanel 残余引用 | 1pt | MEDIUM | ✅ 完成 | — |
 | SLIM-004 | 压缩 plan.md（从 1540 行瘦身到 ~200 行） | 1pt | HIGH | ✅ 完成 | — |
-| SLIM-005 | 优化 prompt.md（milestone 驱动版本 + 验证环节） | 2pts | HIGH | 🔄 进行中 | — |
-| SLIM-006 | 更新 README.md（移除已删功能描述） | 1pt | MEDIUM | ⏳ 待开始 | — |
+| SLIM-005 | 优化 prompt.md（milestone 驱动版本 + 验证环节） | 2pts | HIGH | ✅ 完成 | — |
+| SLIM-006 | 更新 README.md（移除已删功能描述） | 1pt | MEDIUM | ✅ 完成 | — |
 
 ---
 
