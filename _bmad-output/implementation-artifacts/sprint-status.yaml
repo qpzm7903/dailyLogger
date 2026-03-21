@@ -1,5 +1,5 @@
-# generated: 2026-03-19
-# last_updated: 2026-03-19T13:00:00Z
+# generated: 2026-03-21
+# last_updated: 2026-03-21
 # project: dailylogger
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,239 +33,68 @@
 # - Stories can be worked in parallel if team capacity allows
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
-# - Sprint 1-6 completed (v1.0.0 ~ v1.18.1 released)
-# - Latest release: v1.18.1
 
-generated: 2026-03-19
-last_updated: "2026-03-21T18:00:00Z"
+generated: 2026-03-21
+last_updated: 2026-03-21
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
-story_location: "_bmad-output/implementation-artifacts"
-
-# Sprint tracking
-currentSprint: 7
-previousSprint: 6
-sprint1:
-  startDate: "2026-03-13"
-  endDate: "2026-03-15"
-  status: completed
-  velocity: 87
-sprint2:
-  startDate: "2026-03-16"
-  endDate: "2026-03-16"
-  status: completed
-  velocity: 21
-sprint3:
-  startDate: "2026-03-17"
-  endDate: "2026-03-17"
-  status: completed
-  velocity: 16
-sprint4:
-  startDate: "2026-03-17"
-  endDate: "2026-03-18"
-  status: completed
-  velocity: 8
-sprint5:
-  startDate: "2026-03-18"
-  endDate: "2026-03-18"
-  status: completed
-  velocity: 5
-sprint6:
-  startDate: "2026-03-18"
-  endDate: "2026-03-19"
-  status: completed
-  velocity: 13
-sprint7:
-  startDate: "2026-03-19"
-  endDate: "2026-03-21"
-  status: completed
-  plannedPoints: 3
-  completedPoints: 3
+story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  # ========================================
-  # Epic 1: 核心功能完善 (MVP+) - P0
-  # ========================================
-  epic-1-core: done
-  CORE-001: done        # 设置界面优化 [3pts]
-  CORE-002: done        # 截图画廊增强 [5pts]
-  CORE-003: done        # 日报生成模板优化 [3pts]
-  CORE-004: done        # 错误处理与用户提示 [3pts]
-  CORE-005: done        # 系统托盘菜单完善 [2pts]
-  CORE-006: done        # API Key 加密存储 [3pts]
-  CORE-007: done        # 离线模式支持 [5pts]
-  CORE-008: done        # 跨平台兼容性测试 [3pts]
+  # Epic 1: 核心功能完善 (CORE)
+  epic-1: done
+  CORE-001: done
+  CORE-002: done
+  CORE-003: done
+  CORE-004: done
+  CORE-005: done
+  CORE-006: done
+  CORE-007: done
+  CORE-008: done
   epic-1-retrospective: done
 
-  # ========================================
-  # Epic 2: 智能捕获优化 - P1
-  # ========================================
-  epic-2-smart: done
-  SMART-001: done       # 应用窗口识别 [5pts]
-  SMART-002: done       # 静默时段智能调整 [3pts]
-  SMART-003: done       # 工作时间自动识别 [3pts]
-  SMART-004: done       # 多显示器支持优化 [2pts]
+  # Epic 2: 智能捕获优化 (SMART)
+  epic-2: done
+  SMART-001: done
+  SMART-002: done
+  SMART-003: done
+  SMART-004: done
   epic-2-retrospective: done
 
-  # ========================================
-  # Epic 3: AI 能力提升 - P1
-  # ========================================
-  epic-3-ai: done
-  AI-001: done          # 多模型支持配置 [3pts]
-  AI-002: done          # 自定义分析 Prompt [2pts]
-  AI-003: done          # 自定义日报模板 [3pts]
-  AI-004: done          # 工作分类标签生成 [5pts]
-  AI-005: done          # 本地模型支持 Ollama (API集成+配置界面) [8pts]
-  AI-006: done # 自定义 API Headers [3pts] (#68)
+  # Epic 3: AI 能力提升 (AI)
+  epic-3: done
+  AI-001: done
+  AI-002: done
+  AI-003: done
+  AI-004: done
+  AI-005: done
+  AI-006: done
   epic-3-retrospective: done
 
-  # ========================================
-  # Epic 4: 数据管理与检索 - P2
-  # ========================================
-  epic-4-data: done
-  DATA-001: done        # 历史记录浏览 [3pts]
-  DATA-002: done        # 全文搜索功能 [5pts]
-  DATA-003: done        # 标签系统 [5pts]
-  DATA-004: done        # 数据导出 JSON/MD [3pts]
-  DATA-005: done        # 数据备份与恢复 [3pts]
-  DATA-006: done        # 多 Obsidian Vault 支持 [3pts] (v1.11.0)
+  # Epic 4: 数据管理与检索 (DATA)
+  epic-4: in-progress
+  DATA-001: done
+  DATA-002: done
+  DATA-003: review
+  DATA-004: done
+  DATA-005: done
+  DATA-006: backlog
   epic-4-retrospective: done
 
-  # ========================================
-  # Epic 5: 周报月报功能 - P2
-  # ========================================
-  epic-5-report: done
-  REPORT-001: done      # 周报生成 [5pts]
-  REPORT-002: done      # 月报生成 [5pts]
-  REPORT-003: done      # 自定义报告周期 [3pts]
-  REPORT-004: done      # 报告对比分析 [5pts] (v1.11.0)
+  # Epic 5: 周报月报功能 (REPORT)
+  epic-5: done
+  REPORT-001: done
+  REPORT-002: done
+  REPORT-003: done
+  REPORT-004: backlog
   epic-5-retrospective: done
 
-  # ========================================
-  # Epic 6: 集成与扩展 - P3
-  # ========================================
-  epic-6-integration: done
-  INT-001: done         # Notion 导出支持 [5pts] (v1.15.0)
-  INT-002: done         # Logseq 导出支持 [3pts] (v1.14.0)
-  INT-003: done         # GitHub 工时统计 [8pts] (v1.16.0)
-  INT-004: done         # Slack 通知 [5pts] (v1.17.0)
+  # Epic 6: 集成与扩展 (INT)
+  epic-6: backlog
+  INT-001: backlog
+  INT-002: backlog
+  INT-003A: backlog
+  INT-003B: backlog
+  INT-004: backlog
   epic-6-retrospective: optional
-
-  # ========================================
-  # Epic 7: 插件系统 - P3
-  # ========================================
-  epic-7-plugin: done
-  PLUGIN-001: done      # 插件系统核心架构 [5pts] (v1.18.0)
-  PLUGIN-002: done      # 插件加载与发现机制 [3pts] (v1.18.0)
-  PLUGIN-003: done      # 插件配置管理 UI [3pts] (v1.18.0)
-  epic-7-retrospective: optional
-
-  # ========================================
-  # Epic 8: 用户体验增强 - P2
-  # ========================================
-  epic-8-ux: done
-  UX-001: done          # 时间线可视化 [5pts] (v1.17.0)
-  UX-002: done          # 多语言支持 i18n [5pts] (v1.17.0)
-  UX-003: done          # Ollama 模型管理 [3pts] (v1.17.0)
-  epic-8-retrospective: optional
-
-  # ========================================
-  # Epic 9: 未来规划 (v2.0.0+) - Backlog
-  # ========================================
-  epic-9-future: backlog
-  FUTURE-001: backlog   # 移动端适配 (Tauri Mobile) [?pts]
-  FUTURE-002: backlog   # 团队协作模式 [?pts]
-  FUTURE-003: backlog   # 本地 AI 模型深度集成（模型管理、微调）[?pts]
-  epic-9-retrospective: optional
-
-# Epic Retrospectives
-retrospectives:
-  - epic: 核心功能完善
-    prefix: CORE
-    status: done
-    date: "2026-03-15"
-    file: "CORE-retrospective.md"
-  - epic: 智能捕获优化
-    prefix: SMART
-    status: done
-    date: "2026-03-15"
-    file: "SMART-retrospective.md"
-  - epic: AI 能力提升
-    prefix: AI
-    status: done
-    date: "2026-03-15"
-    file: "AI-retrospective.md"
-  - epic: 数据管理与检索
-    prefix: DATA
-    status: done
-    date: "2026-03-15"
-    file: "DATA-retrospective.md"
-  - epic: 周报月报功能
-    prefix: REPORT
-    status: done
-    date: "2026-03-15"
-    file: "REPORT-retrospective.md"
-
-# Velocity tracking
-velocityHistory:
-  - sprint: 1
-    planned: 87
-    completed: 87
-    startDate: "2026-03-13"
-    endDate: "2026-03-15"
-  - sprint: 2
-    planned: 21
-    completed: 21
-    startDate: "2026-03-16"
-    endDate: "2026-03-16"
-  - sprint: 3
-    planned: 16
-    completed: 16
-    startDate: "2026-03-17"
-    endDate: "2026-03-17"
-  - sprint: 4
-    planned: 8
-    completed: 8
-    startDate: "2026-03-17"
-    endDate: "2026-03-18"
-  - sprint: 5
-    planned: 5
-    completed: 5
-    startDate: "2026-03-18"
-    endDate: "2026-03-18"
-  - sprint: 6
-    planned: 13
-    completed: 13
-    startDate: "2026-03-18"
-    endDate: "2026-03-19"
-
-# Metrics
-metrics:
-  totalPoints: 150
-  completedPoints: 150
-  backlogPoints: 0
-  storiesDone: 36
-  storiesBacklog: 3
-  epicsDone: 8
-  epicsInProgress: 0
-  epicsBacklog: 1
-
-# v1.19.0 Planning
-v19Planning:
-  status: "backlog_empty"
-  recommendation: "等待用户反馈和新需求"
-  candidates: []
-  futureFeatures:
-    - id: FUTURE-001
-      title: 移动端适配 (Tauri Mobile)
-      status: backlog
-      notes: 需要评估 Tauri Mobile 成熟度
-    - id: FUTURE-002
-      title: 团队协作模式
-      status: backlog
-      notes: 需要后端服务支持，架构变化大
-    - id: FUTURE-003
-      title: 本地 AI 模型深度集成
-      status: backlog
-      notes: Ollama 已支持，微调需要额外开发
