@@ -173,6 +173,9 @@ pub fn init_database() -> Result<(), String> {
         [],
     ); // JSON array of custom tag categories
 
+    // FEAT-005: 用户手动备注字段 (#66)
+    let _ = conn.execute("ALTER TABLE records ADD COLUMN user_notes TEXT", []);
+
     // AI-005: Ollama 本地模型支持
     let _ = conn.execute(
         "ALTER TABLE settings ADD COLUMN is_ollama INTEGER DEFAULT 0",

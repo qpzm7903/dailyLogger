@@ -226,6 +226,7 @@ mod tests {
             screenshot_path: None,
             monitor_info: None,
             tags: None,
+            user_notes: None,
         }
     }
 

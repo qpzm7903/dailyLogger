@@ -16,6 +16,8 @@ pub struct Record {
     pub monitor_info: Option<String>, // JSON: MonitorInfo serialized
     // AI-004: 工作分类标签
     pub tags: Option<String>, // JSON: Vec<String> serialized
+    // FEAT-005: 用户手动备注 (#66)
+    pub user_notes: Option<String>,
 }
 
 /// Full-text search result with highlighting
@@ -67,7 +69,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
          WHERE timestamp >= ?1 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -82,6 +84,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
+                user_notes: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -126,7 +129,7 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -141,6 +144,7 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
+                user_notes: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -187,7 +191,7 @@ pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
          WHERE timestamp >= ?1 AND timestamp < ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -202,6 +206,7 @@ pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
+                user_notes: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -278,7 +283,7 @@ pub fn get_records_by_date_range_sync(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -293,6 +298,7 @@ pub fn get_records_by_date_range_sync(
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
+                user_notes: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -334,7 +340,7 @@ pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Re
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp ASC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -349,6 +355,7 @@ pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Re
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
+                user_notes: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -387,7 +394,7 @@ pub fn get_record_by_id_sync(id: i64) -> Result<Record, String> {
 
     let record = conn
         .query_row(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes
              FROM records WHERE id = ?1",
             params![id],
             |row| {
@@ -399,6 +406,7 @@ pub fn get_record_by_id_sync(id: i64) -> Result<Record, String> {
                     screenshot_path: row.get(4)?,
                     monitor_info: row.get(5)?,
                     tags: row.get(6)?,
+                    user_notes: row.get(7)?,
                 })
             },
         )
@@ -481,11 +489,11 @@ pub fn get_history_records_sync(
                 st
             ));
         }
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
          ORDER BY timestamp DESC LIMIT ?4 OFFSET ?5"
     } else {
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2
          ORDER BY timestamp DESC LIMIT ?3 OFFSET ?4"
     };
@@ -504,6 +512,7 @@ pub fn get_history_records_sync(
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
+                user_notes: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -519,6 +528,7 @@ pub fn get_history_records_sync(
                 screenshot_path: row.get(4)?,
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
+                user_notes: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -565,7 +575,7 @@ pub fn search_records_sync(
         // Use LIKE search for CJK queries
         // Note: Both time and rank order use the same SQL since LIKE doesn't have relevance score
         let sql = "SELECT
-                id, timestamp, source_type, content, screenshot_path, monitor_info, tags
+                id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes
             FROM records
             WHERE content LIKE ?1
             ORDER BY timestamp DESC
@@ -591,6 +601,7 @@ pub fn search_records_sync(
                         screenshot_path: row.get(4)?,
                         monitor_info: row.get(5)?,
                         tags: row.get(6)?,
+                        user_notes: row.get(7)?,
                     },
                     snippet,
                     rank: 0.0, // LIKE search doesn't have relevance score
@@ -607,7 +618,7 @@ pub fn search_records_sync(
 
         let sql = if order_by == "time" {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -617,7 +628,7 @@ pub fn search_records_sync(
             LIMIT ?2"
         } else {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -645,9 +656,10 @@ pub fn search_records_sync(
                         screenshot_path: row.get(4)?,
                         monitor_info: row.get(5)?,
                         tags: row.get(6)?,
+                        user_notes: row.get(7)?,
                     },
-                    snippet: row.get(7)?,
-                    rank: row.get(8)?,
+                    snippet: row.get(8)?,
+                    rank: row.get(9)?,
                 })
             })
             .map_err(|e| format!("Failed to search records: {}", e))?
@@ -724,7 +736,8 @@ mod tests {
                 content TEXT NOT NULL,
                 screenshot_path TEXT,
                 monitor_info TEXT,
-                tags TEXT
+                tags TEXT,
+                user_notes TEXT
             )",
             [],
         )
@@ -1403,6 +1416,7 @@ mod tests {
             screenshot_path: None,
             monitor_info: None,
             tags: None,
+            user_notes: None,
         };
 
         let result = SearchResult {
@@ -1428,6 +1442,7 @@ mod tests {
             screenshot_path: Some("/path/to/screenshot.png".to_string()),
             monitor_info: Some(r#"{"name":"Display 1"}"#.to_string()),
             tags: Some(r#"["work"]"#.to_string()),
+            user_notes: None,
         };
 
         let json = serde_json::to_string(&record).unwrap();
@@ -1453,6 +1468,7 @@ mod tests {
             screenshot_path: None,
             monitor_info: None,
             tags: None,
+            user_notes: None,
         };
 
         let cloned = record.clone();
@@ -1470,6 +1486,7 @@ mod tests {
             screenshot_path: None,
             monitor_info: None,
             tags: None,
+            user_notes: None,
         };
 
         let debug_str = format!("{:?}", record);
@@ -1745,7 +1762,8 @@ mod benchmarks {
                 content TEXT NOT NULL,
                 screenshot_path TEXT,
                 monitor_info TEXT,
-                tags TEXT
+                tags TEXT,
+                user_notes TEXT
             )",
             [],
         )
