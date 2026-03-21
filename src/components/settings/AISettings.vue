@@ -294,16 +294,26 @@ function showDefaultPrompt() {
   emit('show-default-prompt-modal')
 }
 
-function resetPrompt() {
-  localSettings.value.analysis_prompt = ''
+async function resetPrompt() {
+  try {
+    localSettings.value.analysis_prompt = await invoke('get_default_analysis_prompt')
+  } catch (err) {
+    console.error('Failed to get default analysis prompt:', err)
+    localSettings.value.analysis_prompt = ''
+  }
 }
 
 function showDefaultSummaryPrompt() {
   emit('show-default-summary-prompt-modal')
 }
 
-function resetSummaryPrompt() {
-  localSettings.value.summary_prompt = ''
+async function resetSummaryPrompt() {
+  try {
+    localSettings.value.summary_prompt = await invoke('get_default_summary_prompt')
+  } catch (err) {
+    console.error('Failed to get default summary prompt:', err)
+    localSettings.value.summary_prompt = ''
+  }
 }
 
 function showTemplateLibrary() {

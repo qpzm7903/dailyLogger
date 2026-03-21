@@ -266,12 +266,17 @@ describe('AISettings', () => {
     })
 
     it('resets analysis prompt when reset clicked', async () => {
+      const mockDefaultPrompt = 'Default analysis prompt content'
+      vi.mocked(invoke).mockResolvedValueOnce(mockDefaultPrompt)
+
       const wrapper = mount(AISettings, { props: defaultProps })
       const buttons = wrapper.findAll('button')
       const resetButton = buttons.find(b => b.text() === 'Reset to Default')
       await resetButton?.trigger('click')
+      await flushPromises()
 
-      expect(wrapper.vm.localSettings.analysis_prompt).toBe('')
+      expect(invoke).toHaveBeenCalledWith('get_default_analysis_prompt')
+      expect(wrapper.vm.localSettings.analysis_prompt).toBe(mockDefaultPrompt)
     })
 
     it('emits show-default-summary-prompt-modal when view default summary clicked', async () => {

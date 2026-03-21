@@ -512,6 +512,18 @@ async function loadSettings() {
     // Load monitors
     try { monitors.value = await invoke<Monitor[]>('get_monitors') } catch { /* ignore */ }
 
+    // Load default prompts if custom prompts are empty (Issue #56)
+    if (!settings.value.analysis_prompt || settings.value.analysis_prompt.trim() === '') {
+      try {
+        settings.value.analysis_prompt = await invoke('get_default_analysis_prompt')
+      } catch { /* ignore */ }
+    }
+    if (!settings.value.summary_prompt || settings.value.summary_prompt.trim() === '') {
+      try {
+        settings.value.summary_prompt = await invoke('get_default_summary_prompt')
+      } catch { /* ignore */ }
+    }
+
     // Save initial snapshot
     initialSettings.value = JSON.stringify({
       settings: settings.value,
