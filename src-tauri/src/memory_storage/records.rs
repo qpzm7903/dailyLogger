@@ -438,6 +438,29 @@ pub fn update_record_content_sync(id: i64, content: &str) -> Result<(), String> 
     Ok(())
 }
 
+/// Update user notes for a specific record
+/// FEAT-005: User can add manual notes to screenshot records (#66)
+pub fn update_record_user_notes_sync(id: i64, user_notes: Option<&str>) -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let rows_affected = conn
+        .execute(
+            "UPDATE records SET user_notes = ?1 WHERE id = ?2",
+            params![user_notes, id],
+        )
+        .map_err(|e| format!("Failed to update user notes: {}", e))?;
+
+    if rows_affected == 0 {
+        return Err(format!("Record with id {} not found", id));
+    }
+
+    tracing::info!("Updated user notes for record {}", id);
+    Ok(())
+}
+
 /// Get history records with filtering and pagination
 /// - start_date/end_date: YYYY-MM-DD format (local timezone)
 /// - source_type: None for all, Some("auto") or Some("manual") for filtering
@@ -715,6 +738,16 @@ pub async fn search_records(
     let order_by = order_by.unwrap_or_else(|| "rank".to_string());
     let limit = limit.unwrap_or(50);
     search_records_sync(&query, &order_by, limit)
+}
+
+/// Update user notes for a record
+/// FEAT-005: User can add manual notes to screenshot records (#66)
+#[command]
+pub async fn update_record_user_notes(
+    id: i64,
+    user_notes: Option<String>,
+) -> Result<(), String> {
+    update_record_user_notes_sync(id, user_notes.as_deref())
 }
 
 // ── Tests ──
