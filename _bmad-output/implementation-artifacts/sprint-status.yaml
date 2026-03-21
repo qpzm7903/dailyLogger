@@ -76,11 +76,11 @@ development_status:
   epic-4: in-progress
   DATA-001: done
   DATA-002: done
-  DATA-003: review
+  DATA-003: done
   DATA-004: done
   DATA-005: done
   DATA-006: backlog
-  epic-4-retrospective: done
+  DATA-003-retrospective: done
 
   # Epic 5: 周报月报功能 (REPORT)
   epic-5: done
