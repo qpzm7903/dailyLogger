@@ -1,40 +1,16 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-21
-> 当前版本: v1.77.0 🔄 规划中
+> 当前版本: v1.58.0 🔄 规划中
 > 上个发布版本: v1.57.0 ✅ 已发布
 
 ---
 
-## v1.77.1（Bug 修复）✅ 已完成
+## v1.58.0（前端界面与交互重构 + Bug 修复）✅ 已完成
 
-**目标**: 修复两个关键 Bug（Issue #57, #58）
+**目标**: 对前端架构进行拆分，将顶部导航移至侧边栏，并全面升级为现代化深色玻璃态 UI，同时修复关键 Bug。
 
-**版本类型**: PATCH（Bug 修复）
-
-| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
-|----|------|--------|--------|------|------|
-| FIX-007 | 修复启动分析后没有截图出现 (#57) | 2pts | HIGH | ✅ 完成 | — |
-| FIX-008 | 修复 Windows 上闪念胶囊快捷键无效 (#58) | 2pts | HIGH | ✅ 完成 | — |
-
-**完成情况**:
-- ✅ 添加 global-shortcut 权限到 capabilities
-- ✅ 在前端注册 Alt+Space 全局快捷键
-- ✅ 持久化 auto_capture_enabled 状态到数据库
-- ✅ 启动自动捕获时显示错误消息
-- ✅ 启动自动捕获后刷新记录列表
-- ✅ 安装 @tauri-apps/plugin-global-shortcut 包
-- ✅ 前端测试通过（905 个）
-- ✅ Rust 测试通过（435 个）
-- ✅ CI 通过
-
----
-
-## v1.77.0（前端界面与交互重构）🔄 进行中
-
-**目标**: 对前端架构进行拆分，将顶部导航移至侧边栏，并全面升级为现代化深色玻璃态 UI，实现极致用户体验。
-
-**版本类型**: MINOR（UI/UX 重构）
+**版本类型**: MINOR（UI/UX 重构 + Bug 修复）
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
@@ -42,6 +18,8 @@
 | UX-025 | 旗舰级视觉美化与组件重塑 | 5pts | HIGH | ✅ 完成 | [specs/v1.77.0-ui-optimization.md](specs/v1.77.0-ui-optimization.md) |
 | UX-026 | 动态微交互与时间轴视觉化 | 3pts | MEDIUM | ✅ 完成 | [specs/v1.77.0-ui-optimization.md](specs/v1.77.0-ui-optimization.md) |
 | UX-027 | 弹窗管理器重构 (Teleport) | 2pts | MEDIUM | ✅ 完成 | [specs/v1.77.0-ui-optimization.md](specs/v1.77.0-ui-optimization.md) |
+| FIX-007 | 修复启动分析后没有截图出现 (#57) | 2pts | HIGH | ✅ 完成 | — |
+| FIX-008 | 修复 Windows 上闪念胶囊快捷键无效 (#58) | 2pts | HIGH | ✅ 完成 | — |
 
 **实施阶段**:
 1. ✅ 架构拆分: 创建 Sidebar, Header, Dashboard 组件
@@ -56,8 +34,14 @@
 - ✅ 重构 App.vue 为布局容器（使用新组件组装）
 - ✅ 升级 main.css（玻璃态样式、自定义滚动条、过渡动画）
 - ✅ 添加 Teleport 和 Transition 到所有模态框
+- ✅ 添加 global-shortcut 权限到 capabilities
+- ✅ 在前端注册 Alt+Space 全局快捷键
+- ✅ 持久化 auto_capture_enabled 状态到数据库
+- ✅ 启动自动捕获时显示错误消息
+- ✅ 启动自动捕获后刷新记录列表
 - ✅ 前端测试通过（919 个）
 - ✅ Rust 测试通过（435 个）
+- ✅ CI 通过
 
 ---
 

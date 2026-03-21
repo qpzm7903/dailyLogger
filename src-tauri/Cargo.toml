@@ -1,6 +1,6 @@
 [package]
 name = "daily-logger"
-version = "1.57.0"
+version = "1.58.0"
 description = "AI Workflow Memory & Summary Agent"
 authors = ["DailyLogger"]
 edition = "2021"

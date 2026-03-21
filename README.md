@@ -173,7 +173,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.57.0
+**最新版本**: v1.58.0
+- UI 重构：Sidebar + Header + Dashboard 架构，现代化深色玻璃态界面
+- 修复：启动分析后没有截图出现 (#57)
+- 修复：Windows 上闪念胶囊快捷键无效 (#58)
+- CI 全部通过，测试覆盖完善（919 前端 + 435 Rust）
+
+v1.57.0 更新:
 - E2E 测试框架：集成 AI 驱动的端到端测试框架（Playwright + AI Agent）
 - 修复：package-lock.json 与 package.json 同步问题
 - CI 全部通过，无开放 Issues，测试覆盖完善（905 前端 + 435 Rust）
