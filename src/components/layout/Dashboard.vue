@@ -108,6 +108,12 @@
             >
               对比分析
             </button>
+            <button
+              @click="$emit('reanalyzeToday')"
+              class="bg-purple-600 hover:bg-purple-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              重新分析今天
+            </button>
           </div>
         </div>
 
@@ -315,6 +321,7 @@ const emit = defineEmits<{
   toggleAutoCapture: []
   openQuickNote: []
   generateReport: [type: 'daily' | 'weekly' | 'monthly']
+  reanalyzeToday: []
   viewScreenshot: [record: LogRecord]
 }>()
 

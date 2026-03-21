@@ -41,6 +41,7 @@
         @toggleAutoCapture="toggleAutoCapture"
         @openQuickNote="openQuickNote"
         @generateReport="handleReportGenerate"
+        @reanalyzeToday="reanalyzeTodayRecords"
         @viewScreenshot="openScreenshot"
       />
     </div>
@@ -166,6 +167,7 @@ const todayRecords = ref<LogRecord[]>([])
 const isGenerating = ref(false)
 const isGeneratingWeekly = ref(false)
 const isGeneratingMonthly = ref(false)
+const isReanalyzing = ref(false)
 const isCapturing = ref(false)
 const summaryPath = ref('')
 const weeklyReportPath = ref('')
@@ -342,6 +344,27 @@ const generateMonthlyReport = async () => {
     showError(String(err), generateMonthlyReport)
   } finally {
     isGeneratingMonthly.value = false
+  }
+}
+
+// FEAT-003 (#63): Batch reanalyze all today's screenshot records
+const reanalyzeTodayRecords = async () => {
+  if (isReanalyzing.value) return
+  isReanalyzing.value = true
+  try {
+    const result = await invoke<{ total: number; success: number; failed: number; errors: string[] }>('reanalyze_today_records')
+    if (result.failed > 0) {
+      showError(`重新分析完成: ${result.success}/${result.total} 成功，${result.failed} 失败`)
+    } else {
+      showSuccess(`重新分析完成: ${result.success} 条记录已更新`)
+    }
+    // Refresh records after reanalysis
+    await loadTodayRecords()
+  } catch (err) {
+    console.error('Failed to reanalyze records:', err)
+    showError(String(err))
+  } finally {
+    isReanalyzing.value = false
   }
 }
 
