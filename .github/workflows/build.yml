@@ -96,34 +96,91 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Extract version changes
+        id: changelog
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION_NUM="${VERSION#v}"
+
+          # Extract version changes from README.md
+          CHANGES=$(awk -v ver="$VERSION_NUM" '
+          BEGIN { found=0; buffer="" }
+
+          # Match version header line
+          /^\*\*最新版本\*\*: v[0-9]+\.[0-9]+\.[0-9]+/ {
+            if (found) exit
+            if ($0 ~ "v" ver) {
+              found=1
+              next
+            }
+          }
+          /^v[0-9]+\.[0-9]+\.[0-9]+ 更更?新:/ {
+            if (found) exit
+            if ($0 ~ "v" ver) {
+              found=1
+              next
+            }
+          }
+
+          # Stop at next version or early versions marker
+          /^\*\*早期版本/ { if (found) exit }
+          /^v[0-9]+\.[0-9]+\.[0-9]+ / { if (found && $0 !~ "v" ver) exit }
+
+          found == 1 {
+            if (buffer == "" && /^$/) next
+            buffer = buffer $0 "\n"
+          }
+
+          END {
+            gsub(/^[ \t\n]+/, "", buffer)
+            gsub(/[ \t\n]+$/, "", buffer)
+            print buffer
+          }
+          ' README.md)
+
+          # Save to file for multiline handling
+          echo "$CHANGES" > /tmp/changes.txt
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/changes.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create draft release
         id: create
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_BODY=$(cat <<'BODY'
+          VERSION="${{ github.ref_name }}"
+          CHANGES="${{ steps.changelog.outputs.changes }}"
+
+          RELEASE_BODY=$(cat <<BODY
+          ## What's Changed
+
+          $CHANGES
+
+          ---
+
           ## Installation
 
           ### Windows
-          **Installer** (recommended): Download `*-setup.exe` and run it. The installer will automatically set up WebView2 if needed.
+          **Installer** (recommended): Download \`*-setup.exe\` and run it. The installer will automatically set up WebView2 if needed.
           > Windows SmartScreen may show a warning for unsigned apps. Click **"More info"** → **"Run anyway"** to proceed.
 
-          **Portable** (no install): Download `*-portable.exe` and run directly. Requires Windows 10/11 with WebView2 runtime pre-installed.
+          **Portable** (no install): Download \`*-portable.exe\` and run directly. Requires Windows 10/11 with WebView2 runtime pre-installed.
 
           ### macOS
-          Download the `.dmg`, open it, and drag DailyLogger to Applications.
+          Download the \`.dmg\`, open it, and drag DailyLogger to Applications.
           > macOS Gatekeeper may block unsigned apps. Right-click the app → **"Open"** → **"Open"** to bypass. Alternatively, run in Terminal:
-          > ```
+          > \`\`\`
           > xattr -cr /Applications/DailyLogger.app
-          > ```
+          > \`\`\`
 
           ### Linux
-          Download the `.tar.gz`, extract it, and run the binary:
-          ```bash
+          Download the \`.tar.gz\`, extract it, and run the binary:
+          \`\`\`bash
           tar xzf DailyLogger-*.tar.gz
           chmod +x DailyLogger
           ./DailyLogger
-          ```
+          \`\`\`
           BODY
           )
           RELEASE_ID=$(gh api repos/${{ github.repository }}/releases \

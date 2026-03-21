@@ -173,7 +173,22 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.58.0
+**最新版本**: v1.99.0
+- 新增：按日期重新分析记录功能 (#64)
+- 创建 ReanalyzeByDateModal 组件，支持选择任意日期重新分析
+- 前端测试提升至 939 个，Rust 测试 435 个
+
+v1.98.0 更新:
+- 维护检查：CI 全部通过，测试覆盖完善
+- 无开放 Issues，依赖最新，Clippy 无警告
+
+v1.85.0 更新:
+- 修复 4 个用户反馈问题 (#59, #60, #61, #62)
+- 模型无法连接时截图自动保存并加入离线队列
+- 历史记录展示内容改为多行显示
+- 提高深色主题文字对比度
+
+v1.58.0 更新:
 - UI 重构：Sidebar + Header + Dashboard 架构，现代化深色玻璃态界面
 - 修复：启动分析后没有截图出现 (#57)
 - 修复：Windows 上闪念胶囊快捷键无效 (#58)
