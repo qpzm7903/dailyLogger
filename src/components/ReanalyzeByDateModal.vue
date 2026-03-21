@@ -155,16 +155,16 @@ const handleReanalyze = async () => {
     result.value = res
 
     if (res.success > 0) {
-      showToast(t('reanalyze.successMessage', { count: res.success }), 'success')
+      showToast(t('reanalyze.successMessage', { count: res.success }), { type: 'success' })
       emit('reanalyzed')
     }
 
     if (res.failed > 0 && res.success === 0) {
-      showToast(t('reanalyze.allFailed'), 'error')
+      showToast(t('reanalyze.allFailed'), { type: 'error' })
     }
   } catch (e) {
     error.value = String(e)
-    showToast(t('reanalyze.errorMessage'), 'error')
+    showToast(t('reanalyze.errorMessage'), { type: 'error' })
   } finally {
     isReanalyzing.value = false
   }
