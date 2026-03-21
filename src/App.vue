@@ -328,6 +328,7 @@ import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { usePlatform } from './composables/usePlatform'
 import { useModal } from './composables/useModal'
 import SettingsModal from './components/SettingsModal.vue'
@@ -560,8 +561,16 @@ const toggleAutoCapture = async () => {
       await invoke('start_auto_capture')
     }
     autoCaptureEnabled.value = !autoCaptureEnabled.value
+    // Persist the state to database - fetch current settings and update only auto_capture_enabled
+    const currentSettings = await invoke<Settings>('get_settings')
+    await invoke('save_settings', { settings: { ...currentSettings, auto_capture_enabled: autoCaptureEnabled.value } })
+    // Refresh records after starting auto capture to show any new captures
+    if (autoCaptureEnabled.value) {
+      await loadTodayRecords()
+    }
   } catch (err) {
     console.error('Failed to toggle auto capture:', err)
+    showError(String(err))
   }
 }
 
@@ -789,11 +798,24 @@ onMounted(async () => {
     open('quickNote')
   })
 
+  // Register global shortcut for Quick Note (Alt+Space) - desktop only
+  if (isDesktop) {
+    try {
+      await register('Alt+Space', (event) => {
+        if (event.state === 'Pressed') {
+          open('quickNote')
+        }
+      })
+    } catch (err) {
+      console.error('Failed to register global shortcut:', err)
+    }
+  }
+
   await loadSettings()
   await loadTodayRecords()
 })
 
-onUnmounted(() => {
+onUnmounted(async () => {
   if (timeInterval) clearInterval(timeInterval)
   if (recordsRefreshInterval) clearInterval(recordsRefreshInterval)
   if (networkCheckInterval) clearInterval(networkCheckInterval)
@@ -801,5 +823,12 @@ onUnmounted(() => {
   if (unlistenTrayOpenQuickNote) unlistenTrayOpenQuickNote()
   if (unlistenNetworkStatus) unlistenNetworkStatus()
   if (unlistenQueueUpdated) unlistenQueueUpdated()
+
+  // Unregister global shortcut
+  if (isDesktop) {
+    try {
+      await unregister('Alt+Space')
+    } catch { /* ignore */ }
+  }
 })
 </script>
