@@ -313,7 +313,8 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
             }
             Event::End(Tag::Heading(level, _, _)) => {
                 let rich_text = rich_text_builder.build();
-                if !(rich_text.is_empty() || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
+                if !(rich_text.is_empty()
+                    || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
                 {
                     let heading_level = match level {
                         pulldown_cmark::HeadingLevel::H1 => 1,
@@ -349,7 +350,8 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
             }
             Event::End(Tag::Item) => {
                 let rich_text = rich_text_builder.build();
-                if !(rich_text.is_empty() || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
+                if !(rich_text.is_empty()
+                    || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
                 {
                     if is_numbered_list {
                         blocks.push(NotionBlock::numbered_list_item(rich_text));
@@ -384,7 +386,8 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
             Event::End(Tag::BlockQuote) => {
                 in_blockquote = false;
                 let rich_text = blockquote_builder.build();
-                if !(rich_text.is_empty() || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
+                if !(rich_text.is_empty()
+                    || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
                 {
                     blocks.push(NotionBlock::quote(rich_text));
                 }
