@@ -472,5 +472,49 @@ fn call_llm_api(config: &ApiConfig, ...) {
 
 ---
 
+### 12. Notion 集成模块
+
+**notion.rs** - Notion API 集成
+```rust
+// 核心函数
+pub async fn write_report_to_notion()  // 将报告写入 Notion 数据库
+pub fn test_notion_connection()        // 测试连接
+pub fn is_notion_configured()          // 检查配置状态
+
+// Markdown 转换
+pub fn markdown_to_notion_blocks()     // Markdown → Notion Blocks
+fn chunk_blocks()                      // 分块处理（100 blocks/请求）
+async fn get_title_property_name()     // 自动检测标题属性名
+```
+
+**Markdown 到 Notion Block 转换**:
+
+| Markdown | Notion Block Type |
+|----------|------------------|
+| `# H1` | `heading_1` |
+| `## H2` | `heading_2` |
+| `### H3` | `heading_3` |
+| `- item` | `bulleted_list_item` |
+| `1. item` | `numbered_list_item` |
+| ``` code ``` | `code` |
+| `> quote` | `quote` |
+| `**bold**` | `annotations.bold = true` |
+| `*italic*` | `annotations.italic = true` |
+| `` `code` `` | `annotations.code = true` |
+
+**实现细节**:
+- 使用 `pulldown-cmark` crate 解析 Markdown
+- `RichTextBuilder` 模式处理行内格式（bold/italic/code）
+- 分块上传：每批最多 100 blocks（Notion API 限制）
+- 自动检测数据库标题属性名（支持 Name/Title/标题/名称）
+- 错误处理使用 `tracing::warn!` 记录日志
+
+**API 限制处理**:
+- 单次 `append_block_children` 请求最多 100 blocks
+- Rich text 单个元素最多 2000 字符
+- 自动截断超长内容
+
+---
+
 **文档更新**: 2026-03-21
-**版本**: 2.1.0 (新增 AI-006 自定义 API Headers)
+**版本**: 2.1.0 (新增 INT-001 Notion 导出完善)

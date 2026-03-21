@@ -93,7 +93,7 @@ development_status:
 
   # Epic 6: 集成与扩展 (INT)
   epic-6: in-progress
-  INT-001: ready-for-dev
+  INT-001: review
   INT-002: backlog
   INT-003A: backlog
   INT-003B: backlog
