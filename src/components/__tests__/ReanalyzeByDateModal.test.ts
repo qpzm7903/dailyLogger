@@ -237,7 +237,7 @@ describe('ReanalyzeByDateModal', () => {
       await startButton?.trigger('click')
       await nextTick()
 
-      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('2'), 'success')
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('2'), { type: 'success' })
     })
 
     it('emits reanalyzed event on success', async () => {
