@@ -1264,7 +1264,10 @@ pub async fn reanalyze_today_records() -> Result<ReanalyzeTodayResult, String> {
             Ok(data) => data,
             Err(e) => {
                 failed += 1;
-                errors.push(format!("Record {}: Failed to read screenshot: {}", record_id, e));
+                errors.push(format!(
+                    "Record {}: Failed to read screenshot: {}",
+                    record_id, e
+                ));
                 continue;
             }
         };
