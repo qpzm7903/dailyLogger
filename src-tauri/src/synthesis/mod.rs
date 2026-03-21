@@ -1211,6 +1211,68 @@ mod tests {
         assert!(result.is_none());
     }
 
+    /// INT-002: Additional edge case tests for Logseq export
+    #[test]
+    fn write_report_to_logseq_with_empty_path_returns_none() {
+        let mut settings = create_settings_with_include_manual(true);
+        // Graph with empty path should be skipped
+        settings.logseq_graphs =
+            Some(r#"[{"name":"Empty","path":"","is_default":true}]"#.to_string());
+        let result = write_report_to_logseq(&settings, "test.md", "# Content");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn write_report_to_logseq_with_whitespace_path_returns_none() {
+        let mut settings = create_settings_with_include_manual(true);
+        // Graph with whitespace-only path should be skipped
+        settings.logseq_graphs =
+            Some(r#"[{"name":"Whitespace","path":"   ","is_default":true}]"#.to_string());
+        let result = write_report_to_logseq(&settings, "test.md", "# Content");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn write_report_to_logseq_falls_back_to_first_graph() {
+        let dir = std::env::temp_dir().join("dailylogger_test_logseq_fallback");
+        let _ = std::fs::remove_dir_all(&dir);
+
+        let mut settings = create_settings_with_include_manual(true);
+        let graph_path = dir.to_str().unwrap().to_string();
+        let graphs_json = serde_json::to_string(&[
+            serde_json::json!({
+                "name": "First",
+                "path": graph_path,
+                "is_default": false
+            }),
+            serde_json::json!({
+                "name": "Second",
+                "path": "/nonexistent",
+                "is_default": false
+            }),
+        ])
+        .unwrap();
+        settings.logseq_graphs = Some(graphs_json);
+
+        // Should use first graph when no default is set
+        let result = write_report_to_logseq(&settings, "test-fallback.md", "# Test");
+        assert!(result.is_some());
+        let path = result.unwrap();
+        assert!(path.contains("First") || path.contains("dailylogger_test_logseq_fallback"));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn get_logseq_output_path_with_multiple_graphs_selects_default() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.logseq_graphs = Some(
+            r#"[{"name":"Personal","path":"/logseq/personal","is_default":false},{"name":"Work","path":"/logseq/work","is_default":true}]"#.to_string(),
+        );
+        // Should select the graph with is_default=true, not the first one
+        assert_eq!(settings.get_logseq_output_path().unwrap(), "/logseq/work");
+    }
+
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)
 }
 

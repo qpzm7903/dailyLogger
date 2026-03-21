@@ -92,6 +92,27 @@ npm run tauri build
 - **自定义 Prompt** — 自定义 AI 分析和报告生成的提示词
 - **标签分类** — 创建标签类别，组织管理标签
 
+### 输出集成配置
+
+#### Logseq 导出配置
+1. 在设置中找到 **Logseq Graphs** 区域
+2. 输入图谱名称（如 "Work"）和图谱根目录路径
+3. 点击添加，首个图谱自动设为默认
+4. 多个图谱时，点击 ☆ 设为默认
+5. 报告将自动写入 `{graph-path}/pages/` 目录
+
+#### Notion 导出配置
+1. 在 Notion 中创建数据库，获取 Database ID
+2. 创建 Integration 获取 API Key
+3. 在设置中填入 API Key 和 Database ID
+4. 点击测试连接验证配置
+
+#### Obsidian 导出配置
+1. 在设置中找到 **Obsidian Vaults** 区域
+2. 添加一个或多个 Vault 路径
+3. 设置默认 Vault
+4. 报告将自动写入默认 Vault 根目录
+
 ## 项目结构
 
 ```
