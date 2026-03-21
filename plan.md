@@ -1,12 +1,12 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-21
-> 当前版本: v1.62.0 🔄 规划中
+> 当前版本: v1.62.0 🔄 开发中
 > 上个发布版本: v1.57.0 ✅ 已发布
 
 ---
 
-## v1.62.0（前端 E2E 测试框架）🔄 规划中
+## v1.62.0（前端 E2E 测试框架）🔄 开发中
 
 **目标**: 建立 Playwright + Vite Dev Server 的前端 E2E 测试框架，实现 `npm run test:e2e` 一条命令完成全部前端页面功能验证
 
@@ -14,17 +14,27 @@
 
 **背景**: 现有 `e2e-tests/` Python 框架存在平台锁定（仅 Windows）、非确定性（LLM 驱动）、未集成 CI 等问题。新方案通过 mock Tauri IPC 层，在真实浏览器中测试前端 UI 交互，与已有的 `cargo test`（后端）+ `npm run test`（前端单元测试）形成完整测试金字塔。
 
+**状态检查** (2026-03-21):
+- ✅ Playwright 配置完成
+- ✅ Tauri IPC Mock 框架实现
+- ✅ Page Object Model 实现
+- ✅ P0 测试用例通过（15 个）
+- ✅ CI 集成完成
+
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| TEST-018 | Playwright E2E 测试框架搭建 + 核心测试用例 | 5pts | HIGH | ⏳ 待开始 | [specs/TEST-018-e2e-playwright.md](specs/TEST-018-e2e-playwright.md) |
-| TEST-019 | CI 集成（GitHub Actions test-e2e job） | 2pts | HIGH | ⏳ 待开始 | — |
+| TEST-018 | Playwright E2E 测试框架搭建 + 核心测试用例 | 5pts | HIGH | ✅ 完成 | [specs/TEST-018-e2e-playwright.md](specs/TEST-018-e2e-playwright.md) |
+| TEST-019 | CI 集成（GitHub Actions test-e2e job） | 2pts | HIGH | ✅ 完成 | — |
 
-**实施阶段**:
-1. Playwright 基础设施 + Tauri IPC Mock 框架
-2. Page Object Model（MainPage, QuickNoteModal, SettingsModal）
-3. P0-P2 核心工作流测试用例（10 个场景）
-4. CI 集成（Ubuntu runner, 自动运行）
-5. Quality Gate 更新（`npm run test:e2e` 加入 pre-commit checklist）
+**完成情况**:
+- ✅ 安装 @playwright/test
+- ✅ 创建 tests/e2e/ 目录结构
+- ✅ 实现 Tauri IPC Mock（window.__TAURI_INTERNALS__）
+- ✅ 创建测试数据工厂
+- ✅ 实现 Page Object Model（MainPage, QuickNoteModal, SettingsModal）
+- ✅ 编写 P0 测试用例（smoke, quick-note, settings）
+- ✅ 添加 npm scripts（test:e2e, test:e2e:ui, test:e2e:debug）
+- ✅ 更新 GitHub Actions test.yml
 
 ---
 

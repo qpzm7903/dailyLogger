@@ -10,6 +10,9 @@
     "tauri": "tauri",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config tests/e2e/playwright.config.ts --ui",
+    "test:e2e:debug": "playwright test --config tests/e2e/playwright.config.ts --debug",
     "lint": "vue-tsc --noEmit",
     "typecheck": "vue-tsc --noEmit"
   },
@@ -27,6 +30,7 @@
     "vue-i18n": "^11.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tauri-apps/cli": "^2.10.1",
     "@types/node": "^25.5.0",
     "@vitejs/plugin-vue": "^6.0.5",

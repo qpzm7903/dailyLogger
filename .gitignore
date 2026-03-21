@@ -8,3 +8,7 @@ src-tauri/target/
 *.zip
 .env
 .env.local
+
+# E2E test outputs
+playwright-report/
+test-results/
