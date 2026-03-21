@@ -26,7 +26,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 comparison_report_prompt, logseq_graphs,
                 notion_api_key, notion_database_id,
                 github_token, github_repositories,
-                slack_webhook_url, capture_only_mode
+                slack_webhook_url, capture_only_mode, custom_headers
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -93,6 +93,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 capture_only_mode: row
                     .get::<_, Option<i32>>("capture_only_mode")?
                     .map(|v| v != 0),
+                custom_headers: row.get("custom_headers")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -121,6 +122,35 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                         crypto::decrypt_api_key(github_token)
                             .map_err(|e| format!("Failed to decrypt GitHub token: {}", e))?,
                     );
+                }
+            }
+            // AI-006: Decrypt sensitive values in custom_headers
+            if let Some(ref custom_headers) = settings.custom_headers {
+                if !custom_headers.is_empty() {
+                    match serde_json::from_str::<Vec<super::CustomHeader>>(custom_headers) {
+                        Ok(mut headers) => {
+                            for header in &mut headers {
+                                if header.sensitive
+                                    && !header.value.is_empty()
+                                    && crypto::is_encrypted(&header.value)
+                                {
+                                    match crypto::decrypt_api_key(&header.value) {
+                                        Ok(decrypted) => header.value = decrypted,
+                                        Err(e) => {
+                                            tracing::error!("Failed to decrypt custom header: {}", e)
+                                        }
+                                    }
+                                }
+                            }
+                            match serde_json::to_string(&headers) {
+                                Ok(json) => decrypted_settings.custom_headers = Some(json),
+                                Err(e) => {
+                                    tracing::error!("Failed to serialize custom headers: {}", e)
+                                }
+                            }
+                        }
+                        Err(e) => tracing::error!("Failed to parse custom headers JSON: {}", e),
+                    }
                 }
             }
             decrypted_settings
@@ -172,6 +202,42 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             )
         } else {
             settings.github_token.clone()
+        }
+    } else {
+        None
+    };
+
+    // AI-006: Encrypt sensitive values in custom_headers before saving
+    let encrypted_custom_headers = if let Some(ref custom_headers) = settings.custom_headers {
+        if !custom_headers.is_empty() {
+            match serde_json::from_str::<Vec<super::CustomHeader>>(custom_headers) {
+                Ok(mut headers) => {
+                    for header in &mut headers {
+                        if header.sensitive
+                            && !header.value.is_empty()
+                            && !crypto::is_encrypted(&header.value)
+                        {
+                            match crypto::encrypt_api_key(&header.value) {
+                                Ok(encrypted) => header.value = encrypted,
+                                Err(e) => tracing::error!("Failed to encrypt custom header: {}", e),
+                            }
+                        }
+                    }
+                    match serde_json::to_string(&headers) {
+                        Ok(json) => Some(json),
+                        Err(e) => {
+                            tracing::error!("Failed to serialize custom headers: {}", e);
+                            settings.custom_headers.clone()
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to parse custom headers JSON: {}", e);
+                    settings.custom_headers.clone()
+                }
+            }
+        } else {
+            settings.custom_headers.clone()
         }
     } else {
         None
@@ -235,7 +301,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             github_token = :github_token,
             github_repositories = :github_repositories,
             slack_webhook_url = :slack_webhook_url,
-            capture_only_mode = :capture_only_mode
+            capture_only_mode = :capture_only_mode,
+            custom_headers = :custom_headers
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -283,6 +350,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":github_repositories": settings.github_repositories,
             ":slack_webhook_url": settings.slack_webhook_url,
             ":capture_only_mode": settings.capture_only_mode.map(|v| if v { 1 } else { 0 }),
+            ":custom_headers": encrypted_custom_headers,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

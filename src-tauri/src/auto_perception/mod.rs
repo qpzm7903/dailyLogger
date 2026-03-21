@@ -152,6 +152,8 @@ pub struct CaptureSettings {
     pub selected_monitor_index: usize,
     // FEAT-006: Capture only mode (#65)
     pub capture_only_mode: bool,
+    // AI-006: Custom API headers (#68)
+    pub custom_headers: Vec<crate::memory_storage::CustomHeader>,
 }
 
 impl Default for CaptureSettings {
@@ -172,6 +174,8 @@ impl Default for CaptureSettings {
             selected_monitor_index: 0,
             // FEAT-006: Default to false (analyze after capture)
             capture_only_mode: false,
+            // AI-006: Default to empty custom headers
+            custom_headers: Vec::new(),
         }
     }
 }
@@ -535,6 +539,19 @@ async fn analyze_screen(
     // Create HTTP client with proxy bypass for local URLs
     let client = crate::create_http_client(&endpoint, 120)?;
 
+    // AI-006: Log custom headers (mask sensitive values)
+    let custom_headers_debug: Vec<_> = settings
+        .custom_headers
+        .iter()
+        .map(|h| {
+            if h.sensitive {
+                format!("{}: {}", h.key, "***MASKED***")
+            } else {
+                format!("{}: {}", h.key, h.value)
+            }
+        })
+        .collect();
+
     tracing::info!(
         "{}",
         serde_json::json!({
@@ -547,6 +564,7 @@ async fn analyze_screen(
             "has_image": true,
             "image_base64_len": image_base64.len(),
             "prompt": prompt,
+            "custom_headers": custom_headers_debug,
         })
     );
 
@@ -560,9 +578,20 @@ async fn analyze_screen(
         .header("Content-Type", "application/json")
         .json(&request_body);
 
-    // Only add Authorization header if API key is provided (not required for Ollama)
-    if !settings.api_key.is_empty() {
+    // AI-006: Check if custom headers contain Authorization or api-key header
+    let has_custom_auth = settings
+        .custom_headers
+        .iter()
+        .any(|h| h.key.to_lowercase() == "authorization" || h.key.to_lowercase() == "api-key");
+
+    // Only add Authorization header if API key is provided (not required for Ollama) and no custom auth header
+    if !settings.api_key.is_empty() && !has_custom_auth {
         request = request.header("Authorization", format!("Bearer {}", settings.api_key));
+    }
+
+    // AI-006: Apply custom headers
+    for header in &settings.custom_headers {
+        request = request.header(&header.key, &header.value);
     }
 
     let response = request.send().await.map_err(|e| {
@@ -646,24 +675,40 @@ async fn analyze_screen(
 
 fn load_capture_settings() -> CaptureSettings {
     match memory_storage::get_settings_sync() {
-        Ok(s) => CaptureSettings {
-            api_base_url: s.api_base_url.unwrap_or_default(),
-            api_key: s.api_key.unwrap_or_default(),
-            model_name: s.model_name.unwrap_or_else(|| "gpt-4o".to_string()),
-            screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
-            analysis_prompt: s.analysis_prompt,
-            change_threshold: s.change_threshold.unwrap_or(3) as f64,
-            max_silent_minutes: s.max_silent_minutes.unwrap_or(30) as u64,
-            // SMART-001: Parse window filter settings from JSON
-            window_whitelist: parse_window_patterns(s.window_whitelist.as_deref()),
-            window_blacklist: parse_window_patterns(s.window_blacklist.as_deref()),
-            use_whitelist_only: s.use_whitelist_only.unwrap_or(false),
-            // SMART-004: Load multi-monitor settings
-            capture_mode: s.capture_mode.unwrap_or_else(|| "primary".to_string()),
-            selected_monitor_index: s.selected_monitor_index.unwrap_or(0) as usize,
-            // FEAT-006: Load capture only mode setting
-            capture_only_mode: s.capture_only_mode.unwrap_or(false),
-        },
+        Ok(s) => {
+            // AI-006: Parse custom headers from settings
+            let custom_headers = if let Some(ref headers_json) = s.custom_headers {
+                if !headers_json.is_empty() {
+                    serde_json::from_str::<Vec<crate::memory_storage::CustomHeader>>(headers_json)
+                        .unwrap_or_default()
+                } else {
+                    Vec::new()
+                }
+            } else {
+                Vec::new()
+            };
+
+            CaptureSettings {
+                api_base_url: s.api_base_url.unwrap_or_default(),
+                api_key: s.api_key.unwrap_or_default(),
+                model_name: s.model_name.unwrap_or_else(|| "gpt-4o".to_string()),
+                screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
+                analysis_prompt: s.analysis_prompt,
+                change_threshold: s.change_threshold.unwrap_or(3) as f64,
+                max_silent_minutes: s.max_silent_minutes.unwrap_or(30) as u64,
+                // SMART-001: Parse window filter settings from JSON
+                window_whitelist: parse_window_patterns(s.window_whitelist.as_deref()),
+                window_blacklist: parse_window_patterns(s.window_blacklist.as_deref()),
+                use_whitelist_only: s.use_whitelist_only.unwrap_or(false),
+                // SMART-004: Load multi-monitor settings
+                capture_mode: s.capture_mode.unwrap_or_else(|| "primary".to_string()),
+                selected_monitor_index: s.selected_monitor_index.unwrap_or(0) as usize,
+                // FEAT-006: Load capture only mode setting
+                capture_only_mode: s.capture_only_mode.unwrap_or(false),
+                // AI-006: Load custom headers
+                custom_headers,
+            }
+        }
         Err(_) => CaptureSettings::default(),
     }
 }
@@ -1897,6 +1942,8 @@ mod tests {
             selected_monitor_index: 1,
             // FEAT-006: Capture only mode
             capture_only_mode: false,
+            // AI-006: Custom headers
+            custom_headers: Vec::new(),
         };
         assert_eq!(settings.window_whitelist, vec!["VS Code"]);
         assert_eq!(settings.window_blacklist, vec!["Chrome"]);

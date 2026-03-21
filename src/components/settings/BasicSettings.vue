@@ -190,6 +190,90 @@
       </div>
     </div>
 
+    <!-- Custom API Headers (AI-006) -->
+    <div>
+      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.customHeaders') }}</h3>
+      <p class="text-xs text-gray-500 mb-3">{{ $t('settings.customHeadersHint') }}</p>
+
+      <div class="space-y-3">
+        <!-- Preset Templates -->
+        <div class="flex gap-2">
+          <select
+            v-model="selectedPreset"
+            @change="applyPreset"
+            class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+          >
+            <option value="">{{ $t('settings.selectPreset') }}</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="azure">Azure OpenAI</option>
+            <option value="claude">Claude API</option>
+          </select>
+          <button
+            @click="clearAllHeaders"
+            type="button"
+            class="px-3 py-2 text-sm bg-red-700 hover:bg-red-600 rounded-lg transition-colors"
+          >
+            {{ $t('settings.clearAllHeaders') }}
+          </button>
+        </div>
+
+        <!-- Headers List -->
+        <div v-if="customHeaders.length > 0" class="space-y-2">
+          <div
+            v-for="(header, index) in customHeaders"
+            :key="index"
+            class="flex items-center gap-2 p-2 bg-darker border border-gray-700 rounded-lg"
+          >
+            <input
+              v-model="header.key"
+              type="text"
+              :placeholder="$t('settings.headerKeyPlaceholder')"
+              class="flex-1 bg-transparent border-none text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
+            />
+            <input
+              v-model="header.value"
+              :type="header.sensitive ? 'password' : 'text'"
+              :placeholder="$t('settings.headerValuePlaceholder')"
+              class="flex-1 bg-transparent border-none text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
+            />
+            <label class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+              <input
+                v-model="header.sensitive"
+                type="checkbox"
+                class="rounded border-gray-600 bg-darker text-primary focus:ring-primary"
+              />
+              <span>{{ $t('settings.sensitive') }}</span>
+            </label>
+            <button
+              @click="removeHeader(index)"
+              type="button"
+              class="text-gray-400 hover:text-red-400 transition-colors px-2"
+            >×</button>
+          </div>
+        </div>
+        <p v-else class="text-xs text-gray-500">{{ $t('settings.noHeaders') }}</p>
+
+        <!-- Add Header Button -->
+        <button
+          @click="addHeader"
+          type="button"
+          class="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+        >
+          + {{ $t('settings.addHeader') }}
+        </button>
+
+        <!-- Headers Preview -->
+        <div v-if="customHeaders.length > 0" class="mt-3 p-3 bg-gray-800/50 rounded-lg">
+          <h4 class="text-xs font-medium text-gray-400 mb-2">{{ $t('settings.headerPreview') }}</h4>
+          <div class="text-xs text-gray-500 font-mono space-y-1">
+            <div v-for="(header, index) in customHeaders" :key="index">
+              {{ header.key }}: {{ header.sensitive ? '***' : header.value || '(empty)' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Language Settings -->
     <div>
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.language') }}</h3>
@@ -248,6 +332,7 @@ interface Props {
     api_base_url: string
     api_key: string
     model_name: string
+    custom_headers?: string
   }
 }
 
@@ -267,14 +352,53 @@ const { isDesktop } = usePlatform()
 // Local state (synced with parent)
 const localSettings = ref({ ...props.settings })
 
+// AI-006: Custom Headers State
+interface CustomHeader {
+  key: string
+  value: string
+  sensitive: boolean
+}
+
+const customHeaders = ref<CustomHeader[]>([])
+const selectedPreset = ref('')
+
+// Preset templates
+const headerPresets: Record<string, CustomHeader[]> = {
+  openrouter: [
+    { key: 'HTTP-Referer', value: 'https://dailylogger.app', sensitive: false },
+    { key: 'X-Title', value: 'DailyLogger', sensitive: false }
+  ],
+  azure: [
+    { key: 'api-key', value: '', sensitive: true }
+  ],
+  claude: [
+    { key: 'anthropic-version', value: '2023-06-01', sensitive: false }
+  ]
+}
+
 // Watch for external changes
 watch(() => props.settings, (newVal) => {
   localSettings.value = { ...newVal }
-}, { deep: true })
+  // AI-006: Parse custom headers from JSON
+  if (newVal.custom_headers) {
+    try {
+      customHeaders.value = JSON.parse(newVal.custom_headers)
+    } catch {
+      customHeaders.value = []
+    }
+  } else {
+    customHeaders.value = []
+  }
+}, { deep: true, immediate: true })
 
 // Watch for local changes and emit
 watch(localSettings, (newVal) => {
   emit('update:settings', newVal)
+}, { deep: true })
+
+// AI-006: Watch custom headers and sync to localSettings
+watch(customHeaders, (newVal) => {
+  localSettings.value.custom_headers = JSON.stringify(newVal)
 }, { deep: true })
 
 // UI State
@@ -462,5 +586,35 @@ function openCopyModelModal(source: string) {
 function changeLanguage(lang: Locale) {
   setLocale(lang)
   locale.value = lang
+}
+
+// AI-006: Custom Headers Methods
+function addHeader() {
+  customHeaders.value.push({ key: '', value: '', sensitive: false })
+}
+
+function removeHeader(index: number) {
+  customHeaders.value.splice(index, 1)
+}
+
+function applyPreset() {
+  if (!selectedPreset.value) return
+
+  const preset = headerPresets[selectedPreset.value]
+  if (preset) {
+    // Add preset headers (don't overwrite existing ones with same key)
+    for (const header of preset) {
+      if (!customHeaders.value.some(h => h.key.toLowerCase() === header.key.toLowerCase())) {
+        customHeaders.value.push({ ...header })
+      }
+    }
+    showSuccess(t('settings.headersCount', { count: customHeaders.value.length }))
+  }
+  selectedPreset.value = ''
+}
+
+function clearAllHeaders() {
+  if (!confirm(t('settings.confirmClearHeaders'))) return
+  customHeaders.value = []
 }
 </script>

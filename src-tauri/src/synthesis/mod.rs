@@ -12,6 +12,8 @@ struct ApiConfig {
     api_key: String,
     model_name: String,
     is_ollama: bool,
+    // AI-006: Custom API headers
+    custom_headers: Vec<crate::memory_storage::CustomHeader>,
 }
 
 /// Extract API configuration from settings (shared by all report generators).
@@ -33,11 +35,24 @@ fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
         return Err("API Key is required for non-Ollama endpoints".to_string());
     }
 
+    // AI-006: Parse custom headers from settings
+    let custom_headers = if let Some(ref headers_json) = settings.custom_headers {
+        if !headers_json.is_empty() {
+            serde_json::from_str::<Vec<crate::memory_storage::CustomHeader>>(headers_json)
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        }
+    } else {
+        Vec::new()
+    };
+
     Ok(ApiConfig {
         api_base_url,
         api_key,
         model_name,
         is_ollama,
+        custom_headers,
     })
 }
 
@@ -60,6 +75,19 @@ async fn call_llm_api(
     });
 
     let masked_key = crate::mask_api_key(&config.api_key);
+    // AI-006: Log custom headers (mask sensitive values)
+    let custom_headers_debug: Vec<_> = config
+        .custom_headers
+        .iter()
+        .map(|h| {
+            if h.sensitive {
+                format!("{}: {}", h.key, "***MASKED***")
+            } else {
+                format!("{}: {}", h.key, h.value)
+            }
+        })
+        .collect();
+
     tracing::info!(
         "{}",
         serde_json::json!({
@@ -71,6 +99,7 @@ async fn call_llm_api(
             "api_key_masked": masked_key,
             "has_image": false,
             "prompt": prompt,
+            "custom_headers": custom_headers_debug,
         })
     );
 
@@ -80,8 +109,20 @@ async fn call_llm_api(
         .header("Content-Type", "application/json")
         .json(&request_body);
 
-    if !config.api_key.is_empty() {
+    // AI-006: Check if custom headers contain Authorization or api-key header
+    let has_custom_auth = config
+        .custom_headers
+        .iter()
+        .any(|h| h.key.to_lowercase() == "authorization" || h.key.to_lowercase() == "api-key");
+
+    // Set Authorization header only if api_key is provided and no custom auth header
+    if !config.api_key.is_empty() && !has_custom_auth {
         request = request.header("Authorization", format!("Bearer {}", config.api_key));
+    }
+
+    // AI-006: Apply custom headers
+    for header in &config.custom_headers {
+        request = request.header(&header.key, &header.value);
     }
 
     let response = request.send().await.map_err(|e| {
@@ -551,6 +592,7 @@ mod tests {
             github_repositories: None,
             slack_webhook_url: None,
             capture_only_mode: None,
+            custom_headers: None,
         }
     }
 
@@ -1040,6 +1082,54 @@ mod tests {
         assert_eq!(config.model_name, "gpt-4o");
     }
 
+    // ── Tests for AI-006: Custom Headers ──
+
+    #[test]
+    fn load_api_config_loads_custom_headers() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = Some("test-key".to_string());
+        settings.custom_headers = Some(
+            r#"[{"key":"HTTP-Referer","value":"https://dailylogger.app","sensitive":false}]"#
+                .to_string(),
+        );
+        let config = load_api_config(&settings).unwrap();
+        assert_eq!(config.custom_headers.len(), 1);
+        assert_eq!(config.custom_headers[0].key, "HTTP-Referer");
+        assert_eq!(config.custom_headers[0].value, "https://dailylogger.app");
+        assert!(!config.custom_headers[0].sensitive);
+    }
+
+    #[test]
+    fn load_api_config_handles_empty_custom_headers() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = Some("test-key".to_string());
+        settings.custom_headers = Some("[]".to_string());
+        let config = load_api_config(&settings).unwrap();
+        assert!(config.custom_headers.is_empty());
+    }
+
+    #[test]
+    fn load_api_config_handles_invalid_custom_headers_json() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = Some("test-key".to_string());
+        settings.custom_headers = Some("invalid json".to_string());
+        let config = load_api_config(&settings).unwrap();
+        assert!(config.custom_headers.is_empty());
+    }
+
+    #[test]
+    fn load_api_config_handles_none_custom_headers() {
+        let mut settings = create_settings_with_include_manual(true);
+        settings.api_base_url = Some("https://api.openai.com/v1".to_string());
+        settings.api_key = Some("test-key".to_string());
+        settings.custom_headers = None;
+        let config = load_api_config(&settings).unwrap();
+        assert!(config.custom_headers.is_empty());
+    }
+
     // ── Tests for write_report_to_obsidian ──
 
     #[test]
@@ -1526,6 +1616,7 @@ mod benchmarks {
             github_repositories: None,
             slack_webhook_url: None,
             capture_only_mode: None,
+            custom_headers: None,
         }
     }
 

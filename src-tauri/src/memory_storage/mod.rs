@@ -87,6 +87,65 @@ pub struct Settings {
     pub slack_webhook_url: Option<String>, // Slack Incoming Webhook URL
     // FEAT-006: 仅截图模式 (#65)
     pub capture_only_mode: Option<bool>, // Only capture screenshots without AI analysis
+    // AI-006: 自定义 API Headers (#68)
+    pub custom_headers: Option<String>, // JSON: Vec<CustomHeader>
+}
+
+/// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct CustomHeader {
+    pub key: String,
+    pub value: String,
+    pub sensitive: bool, // Whether the value should be encrypted
+}
+
+/// AI-006: Preset header templates for common API providers
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HeaderPreset {
+    pub name: String,
+    pub headers: Vec<CustomHeader>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+/// AI-006: Get preset header templates for common API providers
+pub fn get_header_presets() -> Vec<HeaderPreset> {
+    vec![
+        HeaderPreset {
+            name: "OpenRouter".to_string(),
+            headers: vec![
+                CustomHeader {
+                    key: "HTTP-Referer".to_string(),
+                    value: "https://dailylogger.app".to_string(),
+                    sensitive: false,
+                },
+                CustomHeader {
+                    key: "X-Title".to_string(),
+                    value: "DailyLogger".to_string(),
+                    sensitive: false,
+                },
+            ],
+            note: None,
+        },
+        HeaderPreset {
+            name: "Azure OpenAI".to_string(),
+            headers: vec![CustomHeader {
+                key: "api-key".to_string(),
+                value: String::new(),
+                sensitive: true,
+            }],
+            note: Some("api-key header replaces Authorization header".to_string()),
+        },
+        HeaderPreset {
+            name: "Claude API".to_string(),
+            headers: vec![CustomHeader {
+                key: "anthropic-version".to_string(),
+                value: "2023-06-01".to_string(),
+                sensitive: false,
+            }],
+            note: None,
+        },
+    ]
 }
 
 /// DATA-006: Vault entry for multi-vault support
@@ -223,5 +282,93 @@ pub async fn get_model_info(
             context_window: None,
             error: Some(format!("请求失败: {}", e)),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests_ai_006 {
+    use super::*;
+
+    #[test]
+    fn test_custom_header_serialization() {
+        let header = CustomHeader {
+            key: "X-Custom-Header".to_string(),
+            value: "test-value".to_string(),
+            sensitive: false,
+        };
+        let json = serde_json::to_string(&header).unwrap();
+        assert!(json.contains("X-Custom-Header"));
+        assert!(json.contains("test-value"));
+        assert!(json.contains("\"sensitive\":false"));
+    }
+
+    #[test]
+    fn test_custom_header_deserialization() {
+        let json = r#"{"key":"Authorization","value":"Bearer token","sensitive":true}"#;
+        let header: CustomHeader = serde_json::from_str(json).unwrap();
+        assert_eq!(header.key, "Authorization");
+        assert_eq!(header.value, "Bearer token");
+        assert!(header.sensitive);
+    }
+
+    #[test]
+    fn test_custom_headers_vec_serialization() {
+        let headers = vec![
+            CustomHeader {
+                key: "HTTP-Referer".to_string(),
+                value: "https://dailylogger.app".to_string(),
+                sensitive: false,
+            },
+            CustomHeader {
+                key: "api-key".to_string(),
+                value: "secret-key".to_string(),
+                sensitive: true,
+            },
+        ];
+        let json = serde_json::to_string(&headers).unwrap();
+        assert!(json.contains("HTTP-Referer"));
+        assert!(json.contains("api-key"));
+        assert!(json.contains("secret-key"));
+    }
+
+    #[test]
+    fn test_custom_headers_vec_deserialization() {
+        let json = r#"[{"key":"X-Title","value":"DailyLogger","sensitive":false}]"#;
+        let headers: Vec<CustomHeader> = serde_json::from_str(json).unwrap();
+        assert_eq!(headers.len(), 1);
+        assert_eq!(headers[0].key, "X-Title");
+        assert_eq!(headers[0].value, "DailyLogger");
+        assert!(!headers[0].sensitive);
+    }
+
+    #[test]
+    fn test_header_presets() {
+        let presets = get_header_presets();
+        assert!(!presets.is_empty());
+
+        // Check OpenRouter preset
+        let openrouter = presets.iter().find(|p| p.name == "OpenRouter");
+        assert!(openrouter.is_some());
+        let openrouter = openrouter.unwrap();
+        assert_eq!(openrouter.headers.len(), 2);
+
+        // Check Azure OpenAI preset
+        let azure = presets.iter().find(|p| p.name == "Azure OpenAI");
+        assert!(azure.is_some());
+        let azure = azure.unwrap();
+        assert_eq!(azure.headers.len(), 1);
+        assert!(azure.headers[0].sensitive);
+
+        // Check Claude API preset
+        let claude = presets.iter().find(|p| p.name == "Claude API");
+        assert!(claude.is_some());
+    }
+
+    #[test]
+    fn test_settings_default_custom_headers() {
+        let settings = Settings::default();
+        assert!(
+            settings.custom_headers.is_none() || settings.custom_headers == Some("[]".to_string())
+        );
     }
 }

@@ -116,7 +116,7 @@ development_status:
   AI-003: done          # 自定义日报模板 [3pts]
   AI-004: done          # 工作分类标签生成 [5pts]
   AI-005: done          # 本地模型支持 Ollama (API集成+配置界面) [8pts]
-  AI-006: ready-for-dev # 自定义 API Headers [3pts] (#68)
+  AI-006: review # 自定义 API Headers [3pts] (#68)
   epic-3-retrospective: done
 
   # ========================================

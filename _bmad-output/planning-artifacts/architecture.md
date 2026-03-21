@@ -286,7 +286,10 @@ CREATE TABLE settings (
     summary_time TEXT DEFAULT '18:00',
     obsidian_path TEXT,
     auto_capture_enabled INTEGER DEFAULT 0,
-    last_summary_path TEXT
+    last_summary_path TEXT,
+
+    -- AI-006: 自定义 API Headers
+    custom_headers TEXT DEFAULT '[]'   -- JSON: Vec<CustomHeader>
 );
 ```
 
@@ -395,6 +398,48 @@ pub struct Settings {
 }
 ```
 
+#### 9.4 自定义 API Headers (AI-006)
+
+支持 OpenRouter、Azure OpenAI、Claude 等 API 服务所需的自定义请求头。
+
+```rust
+// 数据结构
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomHeader {
+    pub key: String,        // Header 名称
+    pub value: String,      // Header 值
+    pub sensitive: bool,    // 是否加密存储
+}
+
+// Settings 字段
+pub struct Settings {
+    pub custom_headers: Option<String>,  // JSON: Vec<CustomHeader>
+}
+
+// API 调用时应用 Headers
+fn call_llm_api(config: &ApiConfig, ...) {
+    // 检查自定义 Headers 是否包含 Authorization 或 api-key
+    let has_custom_auth = config.custom_headers.iter().any(|h| {
+        h.key.to_lowercase() == "authorization" || h.key.to_lowercase() == "api-key"
+    });
+
+    // 仅在没有自定义认证头时添加默认 Authorization
+    if !config.api_key.is_empty() && !has_custom_auth {
+        request = request.header("Authorization", format!("Bearer {}", config.api_key));
+    }
+
+    // 应用自定义 Headers
+    for header in &config.custom_headers {
+        request = request.header(&header.key, &header.value);
+    }
+}
+```
+
+**预设模板**:
+- OpenRouter: `HTTP-Referer`, `X-Title`
+- Azure OpenAI: `api-key` (替代 Authorization)
+- Claude API: `anthropic-version`
+
 ---
 
 ### 10. 性能优化
@@ -427,5 +472,5 @@ pub struct Settings {
 
 ---
 
-**文档更新**: 2026-03-13
-**版本**: 1.3.0
+**文档更新**: 2026-03-21
+**版本**: 2.1.0 (新增 AI-006 自定义 API Headers)
