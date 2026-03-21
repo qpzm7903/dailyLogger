@@ -748,7 +748,9 @@ mod tests {
     fn parse_repositories_handles_invalid_format() {
         // Test that invalid repository formats don't cause panic
         let settings = crate::memory_storage::Settings {
-            github_repositories: Some(r#"["valid/repo", "invalid-no-slash", "also/valid/repo2", ""]"#.to_string()),
+            github_repositories: Some(
+                r#"["valid/repo", "invalid-no-slash", "also/valid/repo2", ""]"#.to_string(),
+            ),
             ..Default::default()
         };
         let repos = parse_repositories(&settings);
