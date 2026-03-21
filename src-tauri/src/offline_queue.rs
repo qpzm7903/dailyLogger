@@ -414,6 +414,12 @@ pub fn get_offline_queue_status() -> Result<serde_json::Value, String> {
     }))
 }
 
+/// Tauri command: get all pending tasks with details
+#[command]
+pub fn get_pending_offline_tasks() -> Result<Vec<OfflineTask>, String> {
+    get_pending_tasks()
+}
+
 /// Tauri command: manually trigger queue processing
 #[command]
 pub async fn process_offline_queue() -> Result<String, String> {

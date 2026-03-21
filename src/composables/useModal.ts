@@ -25,6 +25,7 @@ export type ModalId =
   | 'timeline'
   | 'pluginPanel'
   | 'reportHistory'
+  | 'offlineQueue'
 
 // Module-level state (singleton pattern)
 const activeModal: Ref<ModalId | null> = ref(null)

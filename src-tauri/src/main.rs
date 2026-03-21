@@ -439,6 +439,7 @@ fn main() {
             #[cfg(feature = "screenshot")]
             daily_logger_lib::performance::benchmark_screenshot_processing,
             daily_logger_lib::offline_queue::get_offline_queue_status,
+            daily_logger_lib::offline_queue::get_pending_offline_tasks,
             daily_logger_lib::offline_queue::process_offline_queue,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::auto_perception::start_auto_capture,

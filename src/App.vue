@@ -16,6 +16,7 @@
         :isOnline="isOnline"
         :offlineQueueCount="offlineQueueCount"
         :currentTime="currentTime"
+        @showOfflineQueue="open('offlineQueue')"
       />
 
       <!-- Dashboard -->
@@ -107,6 +108,9 @@
           @viewScreenshot="handleTimelineViewScreenshot"
         />
       </Transition>
+      <Transition name="slide-up" mode="out-in">
+        <OfflineQueueModal v-if="isOpen('offlineQueue')" @close="close('offlineQueue')" />
+      </Transition>
       <Toast />
     </Teleport>
   </div>
@@ -144,6 +148,7 @@ import ReportComparisonModal from './components/ReportComparisonModal.vue'
 import TimelineVisualization from './components/TimelineVisualization.vue'
 import Toast from './components/Toast.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
+import OfflineQueueModal from './components/OfflineQueueModal.vue'
 
 import { showError, showSuccess, initToastI18n } from './stores/toast'
 import type { LogRecord, Tag, Settings } from './types/tauri'

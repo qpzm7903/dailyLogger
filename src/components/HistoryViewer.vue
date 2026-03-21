@@ -10,7 +10,7 @@
       <!-- Filters -->
       <div class="px-6 py-3 border-b border-gray-700 flex items-center gap-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">{{ t('historyViewer.startDate') }}</label>
+          <label class="text-sm text-gray-300">{{ t('historyViewer.startDate') }}</label>
           <input
             type="date"
             v-model="startDate"
@@ -18,7 +18,7 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">{{ t('historyViewer.endDate') }}</label>
+          <label class="text-sm text-gray-300">{{ t('historyViewer.endDate') }}</label>
           <input
             type="date"
             v-model="endDate"
@@ -26,7 +26,7 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">{{ t('historyViewer.source') }}</label>
+          <label class="text-sm text-gray-300">{{ t('historyViewer.source') }}</label>
           <select
             v-model="sourceType"
             class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
@@ -43,7 +43,7 @@
         >
           {{ isLoading ? t('historyViewer.loading') : t('historyViewer.query') }}
         </button>
-        <span v-if="records.length > 0" class="text-sm text-gray-400 ml-auto">
+        <span v-if="records.length > 0" class="text-sm text-gray-300 ml-auto">
           {{ t('historyViewer.totalRecords', { count: records.length }) }}
         </span>
       </div>
@@ -91,9 +91,9 @@
                     >
                       {{ records[virtualItem.index].source_type === 'auto' ? t('historyViewer.auto') : t('historyViewer.manual') }}
                     </span>
-                    <span class="text-xs text-gray-500">{{ formatTime(records[virtualItem.index].timestamp) }}</span>
+                    <span class="text-xs text-gray-400">{{ formatTime(records[virtualItem.index].timestamp) }}</span>
                   </div>
-                  <p class="text-sm text-gray-300 truncate">{{ truncateContent(records[virtualItem.index].content) }}</p>
+                  <p class="text-sm text-gray-300 line-clamp-3 whitespace-pre-wrap break-words">{{ truncateContent(records[virtualItem.index].content) }}</p>
                   <!-- Manual tags -->
                   <div v-if="getRecordTags(records[virtualItem.index].id).length > 0" class="flex flex-wrap gap-1 mt-2">
                     <TagBadge

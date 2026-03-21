@@ -614,5 +614,27 @@
     "modified": "Modified",
     "view": "View",
     "viewSelected": "View Selected"
+  },
+  "offlineQueue": {
+    "title": "Pending Sync Tasks",
+    "noTasks": "No pending tasks",
+    "totalPending": "{count} pending tasks",
+    "processNow": "Process Now",
+    "processing": "Processing...",
+    "retryCount": "Retry: {current}/{max}",
+    "loadFailed": "Failed to load tasks: {error}",
+    "screenshotAnalysis": "Screenshot analysis: {path}",
+    "types": {
+      "screenshot": "Screenshot",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "taskType": {
+      "screenshot_analysis": "Screenshot AI Analysis",
+      "daily_summary": "Daily Summary",
+      "weekly_report": "Weekly Report",
+      "monthly_report": "Monthly Report"
+    }
   }
 }

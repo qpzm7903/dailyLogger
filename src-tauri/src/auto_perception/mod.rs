@@ -909,35 +909,67 @@ async fn capture_and_store() -> Result<(), String> {
         return Ok(());
     }
 
-    let analysis = analyze_screen(&settings, &image_base64).await?;
+    // FIX-009: If AI analysis fails, still save the screenshot and queue for retry
+    let analysis_result = analyze_screen(&settings, &image_base64).await;
 
-    // SMART-001: Include window info in content JSON (AC1)
-    // SMART-004: Include monitor info in content JSON (AC3)
-    let content = serde_json::json!({
-        "current_focus": analysis.current_focus,
-        "active_software": analysis.active_software,
-        "context_keywords": analysis.context_keywords,
-        "active_window": {
-            "title": active_window.title,
-            "process_name": active_window.process_name
-        },
-        "monitor_info": {
-            "count": monitor_info.count,
-            "capture_mode": capture_mode.to_string()
+    let (content, tags_json, is_success) = match analysis_result {
+        Ok(ref analysis) => {
+            // SMART-001: Include window info in content JSON (AC1)
+            // SMART-004: Include monitor info in content JSON (AC3)
+            let content = serde_json::json!({
+                "current_focus": analysis.current_focus,
+                "active_software": analysis.active_software,
+                "context_keywords": analysis.context_keywords,
+                "active_window": {
+                    "title": active_window.title,
+                    "process_name": active_window.process_name
+                },
+                "monitor_info": {
+                    "count": monitor_info.count,
+                    "capture_mode": capture_mode.to_string()
+                }
+            })
+            .to_string();
+
+            // AI-004: Store tags as JSON
+            let tags_json = analysis
+                .tags
+                .as_ref()
+                .and_then(|t| serde_json::to_string(t).ok());
+            (content, tags_json, true)
         }
-    })
-    .to_string();
+        Err(ref e) => {
+            tracing::warn!(
+                "AI analysis failed, saving screenshot with pending status: {}",
+                e
+            );
+
+            // Save with error indicator and queue for retry
+            let content = serde_json::json!({
+                "current_focus": "分析失败 - 待重试",
+                "active_software": active_window.process_name,
+                "context_keywords": [],
+                "active_window": {
+                    "title": active_window.title,
+                    "process_name": active_window.process_name
+                },
+                "monitor_info": {
+                    "count": monitor_info.count,
+                    "capture_mode": capture_mode.to_string()
+                },
+                "offline_pending": true,
+                "error": e
+            })
+            .to_string();
+
+            (content, None, false)
+        }
+    };
 
     // SMART-004: Store monitor_info as JSON in the monitor_info field
     let monitor_info_json = serde_json::to_string(&monitor_info).ok();
 
-    // AI-004: Store tags as JSON
-    let tags_json = analysis
-        .tags
-        .as_ref()
-        .and_then(|t| serde_json::to_string(t).ok());
-
-    memory_storage::add_record(
+    let record_id = memory_storage::add_record(
         "auto",
         &content,
         screenshot_path.as_deref(),
@@ -946,7 +978,24 @@ async fn capture_and_store() -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to store capture: {}", e))?;
 
-    tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
+    // FIX-009: If analysis failed, queue for retry
+    if !is_success {
+        if let Some(ref path) = screenshot_path {
+            let payload = serde_json::json!({
+                "screenshot_path": path,
+                "record_id": record_id,
+            })
+            .to_string();
+            let _ = crate::offline_queue::enqueue_task(
+                &crate::offline_queue::OfflineTaskType::ScreenshotAnalysis,
+                &payload,
+                Some(record_id),
+            );
+        }
+    } else if let Ok(ref analysis) = analysis_result {
+        tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
+    }
+
     Ok(())
 }
 

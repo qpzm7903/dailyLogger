@@ -11,16 +11,17 @@
     <!-- Right: Status & Time -->
     <div class="flex items-center gap-4">
       <!-- Pending Sync Badge -->
-      <div
+      <button
         v-if="offlineQueueCount > 0"
-        class="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs"
+        @click="$emit('showOfflineQueue')"
+        class="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs cursor-pointer hover:bg-yellow-500/30 transition-colors"
       >
         <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block animate-pulse"></span>
         {{ t('header.pendingSync', { count: offlineQueueCount }) }}
-      </div>
+      </button>
 
       <!-- Current Time -->
-      <span class="text-sm text-gray-400 font-mono">{{ currentTime }}</span>
+      <span class="text-sm text-gray-300 font-mono">{{ currentTime }}</span>
     </div>
   </header>
 </template>
@@ -32,6 +33,10 @@ defineProps<{
   isOnline: boolean
   offlineQueueCount: number
   currentTime: string
+}>()
+
+const emit = defineEmits<{
+  showOfflineQueue: []
 }>()
 
 const { t } = useI18n()

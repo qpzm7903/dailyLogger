@@ -610,5 +610,27 @@
     "modified": "修改时间",
     "view": "查看",
     "viewSelected": "查看选中"
+  },
+  "offlineQueue": {
+    "title": "待同步任务",
+    "noTasks": "暂无待同步任务",
+    "totalPending": "共 {count} 个待处理",
+    "processNow": "立即处理",
+    "processing": "处理中...",
+    "retryCount": "重试次数: {current}/{max}",
+    "loadFailed": "加载任务失败: {error}",
+    "screenshotAnalysis": "截图分析: {path}",
+    "types": {
+      "screenshot": "截图分析",
+      "daily": "日报",
+      "weekly": "周报",
+      "monthly": "月报"
+    },
+    "taskType": {
+      "screenshot_analysis": "截图 AI 分析",
+      "daily_summary": "日报生成",
+      "weekly_report": "周报生成",
+      "monthly_report": "月报生成"
+    }
   }
 }
