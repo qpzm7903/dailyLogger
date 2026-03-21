@@ -204,6 +204,21 @@ export interface GetGitHubStatsArgs {
   end_date: string
 }
 
+// GitHub Work Stats Panel Types (INT-003B)
+export interface GitHubWorkStatsJson {
+  commit_count: number
+  pr_count: number
+  estimated_hours: number
+  active_repos: string[]
+  commits_by_hour: { [key: number]: string[] }
+  pull_requests: string[]
+}
+
+export interface GitHubWorkStatsResponse {
+  configured: boolean
+  stats: GitHubWorkStatsJson | null
+}
+
 // ============================================
 // Plugin Types
 // ============================================

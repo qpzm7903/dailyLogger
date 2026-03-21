@@ -5,7 +5,7 @@
 
 use crate::create_http_client;
 use chrono::Timelike;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::command;
 
 /// GitHub API base URL
@@ -71,6 +71,24 @@ pub struct GitHubWorkStats {
     pub pull_requests: Vec<String>,
 }
 
+/// JSON-serializable version of GitHubWorkStats for frontend consumption
+#[derive(Debug, Clone, Serialize)]
+pub struct GitHubWorkStatsJson {
+    pub commit_count: usize,
+    pub pr_count: usize,
+    pub estimated_hours: f64,
+    pub active_repos: Vec<String>,
+    pub commits_by_hour: std::collections::HashMap<u32, Vec<String>>,
+    pub pull_requests: Vec<String>,
+}
+
+/// Response structure for get_github_work_stats command
+#[derive(Debug, Clone, Serialize)]
+pub struct GitHubWorkStatsResponse {
+    pub configured: bool,
+    pub stats: Option<GitHubWorkStatsJson>,
+}
+
 /// Check if GitHub is configured in settings
 pub fn is_github_configured(settings: &crate::memory_storage::Settings) -> bool {
     settings.github_token.is_some() && !settings.github_token.as_ref().unwrap().is_empty()
@@ -116,6 +134,38 @@ pub async fn test_github_connection() -> Result<bool, String> {
         let status = response.status();
         let error_text = response.text().await.unwrap_or_default();
         Err(format!("GitHub API error: {} - {}", status, error_text))
+    }
+}
+
+/// Get today's GitHub work statistics for display in the frontend
+/// Returns a response with configured status and stats if available
+#[command]
+pub async fn get_github_work_stats() -> Result<GitHubWorkStatsResponse, String> {
+    let settings = crate::memory_storage::get_settings_sync()?;
+
+    if !is_github_configured(&settings) {
+        return Ok(GitHubWorkStatsResponse {
+            configured: false,
+            stats: None,
+        });
+    }
+
+    match fetch_today_github_activity(&settings).await {
+        Ok(stats) => Ok(GitHubWorkStatsResponse {
+            configured: true,
+            stats: Some(GitHubWorkStatsJson {
+                commit_count: stats.commit_count,
+                pr_count: stats.pr_count,
+                estimated_hours: stats.estimated_hours,
+                active_repos: stats.active_repos,
+                commits_by_hour: stats.commits_by_hour,
+                pull_requests: stats.pull_requests,
+            }),
+        }),
+        Err(e) => {
+            tracing::warn!("Failed to fetch GitHub stats: {}", e);
+            Err(e)
+        }
     }
 }
 
@@ -756,5 +806,60 @@ mod tests {
         let repos = parse_repositories(&settings);
         // All entries are parsed as-is; filtering happens in fetch_today_github_activity
         assert_eq!(repos.len(), 4);
+    }
+
+    #[test]
+    fn github_work_stats_json_serialization() {
+        let mut commits_by_hour = std::collections::HashMap::new();
+        commits_by_hour.insert(10, vec!["commit 1".to_string()]);
+
+        let stats_json = GitHubWorkStatsJson {
+            commit_count: 5,
+            pr_count: 2,
+            estimated_hours: 3.5,
+            active_repos: vec!["owner/repo".to_string()],
+            commits_by_hour,
+            pull_requests: vec!["#42: Add feature".to_string()],
+        };
+
+        // Verify serialization works
+        let json = serde_json::to_string(&stats_json).unwrap();
+        assert!(json.contains("commit_count"));
+        assert!(json.contains("5"));
+        assert!(json.contains("3.5"));
+    }
+
+    #[test]
+    fn github_work_stats_response_not_configured() {
+        let response = GitHubWorkStatsResponse {
+            configured: false,
+            stats: None,
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("\"configured\":false"));
+        assert!(json.contains("\"stats\":null"));
+    }
+
+    #[test]
+    fn github_work_stats_response_with_stats() {
+        let stats_json = GitHubWorkStatsJson {
+            commit_count: 3,
+            pr_count: 1,
+            estimated_hours: 2.0,
+            active_repos: vec!["owner/repo".to_string()],
+            commits_by_hour: std::collections::HashMap::new(),
+            pull_requests: vec!["#1: Test PR".to_string()],
+        };
+
+        let response = GitHubWorkStatsResponse {
+            configured: true,
+            stats: Some(stats_json),
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("\"configured\":true"));
+        assert!(json.contains("\"commit_count\":3"));
+        assert!(json.contains("\"pr_count\":1"));
     }
 }

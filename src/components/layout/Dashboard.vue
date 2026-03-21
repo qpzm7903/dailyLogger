@@ -73,6 +73,9 @@
         </div>
       </div>
 
+      <!-- GitHub Stats Panel -->
+      <GitHubStatsPanel @open-settings="$emit('open', 'settings')" />
+
       <!-- Today's Workflow Card -->
       <div
         class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
@@ -296,6 +299,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ReportDropdown from '../ReportDropdown.vue'
+import GitHubStatsPanel from '../GitHubStatsPanel.vue'
 import { extractSummary } from '../../utils/contentUtils'
 import { getTagColorClass } from '../../utils/tagColors'
 import type { LogRecord, Tag } from '../../types/tauri'
