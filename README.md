@@ -173,20 +173,31 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v1.100.0
+**最新版本**: v1.102.0
+- 维护检查：CI 全部通过，测试覆盖完善
+- 无开放 Issues，依赖最新，Clippy 无警告
+- 前端测试 939 个，Rust 测试 435 个
+
+v1.101.0 更新:
+- 维护检查：CI 全部通过，测试覆盖完善
+- 无开放 Issues，依赖最新，Clippy 无警告
+
+v1.100.0 更新:
 - 新增：仅截图模式 - 启动后只记录截图，延迟 AI 分析 (#65)
 - 新增：截图支持用户手动补充备注 (#66)
 - 修复：Release 发布时包含版本变更内容 (#67)
-- 前端测试 939 个，Rust 测试 435 个
 
 v1.99.0 更新:
 - 新增：按日期重新分析记录功能 (#64)
 - 创建 ReanalyzeByDateModal 组件，支持选择任意日期重新分析
-- 前端测试提升至 939 个，Rust 测试 435 个
 
 v1.98.0 更新:
 - 维护检查：CI 全部通过，测试覆盖完善
 - 无开放 Issues，依赖最新，Clippy 无警告
+
+v1.94.0 更新:
+- 新增：批量重新分析当天记录功能 (#63)
+- AI 分析失败时仍保存截图并加入离线队列
 
 v1.85.0 更新:
 - 修复 4 个用户反馈问题 (#59, #60, #61, #62)
@@ -198,97 +209,8 @@ v1.58.0 更新:
 - UI 重构：Sidebar + Header + Dashboard 架构，现代化深色玻璃态界面
 - 修复：启动分析后没有截图出现 (#57)
 - 修复：Windows 上闪念胶囊快捷键无效 (#58)
-- CI 全部通过，测试覆盖完善（919 前端 + 435 Rust）
 
-v1.57.0 更新:
-- E2E 测试框架：集成 AI 驱动的端到端测试框架（Playwright + AI Agent）
-- 修复：package-lock.json 与 package.json 同步问题
-- CI 全部通过，无开放 Issues，测试覆盖完善（905 前端 + 435 Rust）
-
-v1.56.0 更新:
-- 测试覆盖完善：补充剩余未测试组件
-- 新增 DailySummaryViewer、LogViewer、SearchPanel、SettingsModal、TagBadge 组件测试（113 个新测试）
-- 前端测试总数提升至 905 个，实现所有组件 100% 测试覆盖
-
-v1.53.0 更新:
-- 测试覆盖完善：为 SettingsModal 子组件添加独立测试
-- 新增 BasicSettings、AISettings、CaptureSettings、OutputSettings 组件测试（97 个新测试）
-- 前端测试总数提升至 792 个
-
-v1.52.0 更新:
-- UX 优化：为快速记录按钮添加快捷键提示
-- 悬停显示 "Alt + Space" 快捷键提示，提升功能发现性
-
-v1.51.0 更新:
-- 测试覆盖完善：补全 QuickNoteWindow 组件测试
-- 前端测试总数提升至 695 个
-- 实现所有 Vue 组件 100% 测试覆盖
-
-v1.50.0 更新:
-- 测试覆盖增强：新增 PluginPanel 组件测试（23 个测试用例）
-- 测试总数提升至 673 个前端测试 + 435 个 Rust 测试
-
-v1.49.0 更新:
-- 测试覆盖增强：新增 OfflineBanner、ReportHistoryViewer、TimelineVisualization 组件测试
-- 测试总数提升至 650 个前端测试 + 435 个 Rust 测试
-
-v1.48.0 更新:
-- 代码质量改进：版本同步 + 组件测试
-- 新增 ExportModal 组件测试（12 个测试用例）
-- 测试总数提升至 595 个前端测试 + 435 个 Rust 测试
-
-v1.47.0 更新:
-- 维护优化：版本同步 + 依赖更新
-- 添加 `npm run lint` 脚本（vue-tsc --noEmit 类型检查）
-
-v1.46.0 更新:
-- 依赖升级：Tailwind CSS v3 → v4
-- 升级 Tailwind CSS 从 3.4.19 到 4.2.2，获得显著性能提升
-- 配置迁移：tailwind.config.js → CSS @theme 块
-- 使用 @tailwindcss/vite 和 @tailwindcss/postcss 插件
-- 渐变类名更新：bg-gradient-* → bg-linear-*
-
-v1.45.0 更新:
-- 代码架构优化：SettingsModal.vue 组件拆分
-- 将 2750 行的 SettingsModal.vue 拆分为模块化子组件
-- BasicSettings.vue: API 配置、模型选择、Ollama 管理
-- AISettings.vue: 分析/报告模型配置、Prompt 设置
-- CaptureSettings.vue: 截图间隔、静默检测、窗口过滤
-- OutputSettings.vue: Obsidian、Logseq、Notion、GitHub、Slack 配置
-- 主 SettingsModal.vue 精简为 691 行容器组件
-
-v1.44.0 更新:
-- 代码质量优化：统一标签颜色系统、性能改进
-- 移除 App.vue 硬编码的 tagColors，创建统一的标签颜色工具
-- SearchPanel 添加虚拟滚动，支持大数据量搜索结果
-- ScreenshotGallery 实现缩略图懒加载，优化内存使用
-
-v1.43.0 更新:
-- 支持重新分析已分析的截图记录 (#53)
-- 移除登录/注册功能，简化应用架构 (#55)
-
-v1.42.0 更新:
-- 设置入口优化：拆分为 4 个标签页（Basic、AI、Capture、Output），解决功能过于集中问题 (#50)
-- 历史报告查看：支持浏览所有历史输出文件 (#52)
-- 修复 Windows portable 版本日报生成崩溃问题 (#54)
-
-v1.41.0 更新:
-- 核心交互重构：状态管理优化 + 性能提升
-- useModal composable 替代分散的 showXxx ref，统一模态框管理
-- 报告生成入口整合为单一下拉菜单，简化操作流程
-- HistoryViewer 虚拟滚动，支持大数据量流畅渲染
-- 修复网络状态检测类型不匹配导致的离线状态问题 (#49)
-- 设置浮窗关闭前增加未保存更改确认 (#51)
-
-v1.40.0 更新:
-- UX 体验修复：5 项即时体验痛点全部解决
-- Toast 通知时长优化（错误 5s，成功 3s）
-- 报告生成按钮互锁 + 加载 spinner，防止重复提交
-- 离线状态改为顶部横幅 Banner，不遮挡内容
-- 截图分析完成后显示简短应用摘要，替代原始 JSON
-- 标签过滤条超出 6 个时折叠为"+N 个标签"
-
-**早期版本 (v1.0.0 ~ v1.39.0)**:
+**早期版本 (v1.0.0 ~ v1.57.0)**:
 - v1.32.0: 改进错误提示和用户反馈（i18n 支持）
 - v1.31.0: 前端代码全量 TypeScript 迁移
 - v1.30.0: 引入 TypeScript 基础设施
