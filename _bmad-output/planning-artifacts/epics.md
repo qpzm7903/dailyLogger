@@ -85,6 +85,7 @@
 | AI-004 | 工作分类标签生成 | Medium | 5pts |
 | AI-005A | Ollama API 集成 | Low | 5pts |
 | AI-005B | 本地模型配置界面 | Low | 3pts |
+| AI-006 | 自定义 API Headers (支持 OpenRouter/Azure/Claude 等) | High | 3pts |
 
 ---
 
