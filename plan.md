@@ -1,8 +1,29 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-21
-> 当前版本: v1.62.0 🔄 开发中
+> 当前版本: v1.77.0 🔄 规划中
 > 上个发布版本: v1.57.0 ✅ 已发布
+
+---
+
+## v1.77.0（前端界面与交互重构）🔄 规划中
+
+**目标**: 对前端架构进行拆分，将顶部导航移至侧边栏，并全面升级为现代化深色玻璃态 UI，实现极致用户体验。
+
+**版本类型**: MINOR（UI/UX 重构）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| UX-024 | 架构拆分与侧边栏布局重构 | 5pts | HIGH | ⏳ 待开始 | [specs/v1.77.0-ui-optimization.md](specs/v1.77.0-ui-optimization.md) |
+| UX-025 | 旗舰级视觉美化与组件重塑 | 5pts | HIGH | ⏳ 待开始 | [specs/v1.77.0-ui-optimization.md](specs/v1.77.0-ui-optimization.md) |
+| UX-026 | 动态微交互与时间轴视觉化 | 3pts | MEDIUM | ⏳ 待开始 | [specs/v1.77.0-ui-optimization.md](specs/v1.77.0-ui-optimization.md) |
+| UX-027 | 弹窗管理器重构 (Teleport) | 2pts | MEDIUM | ⏳ 待开始 | [specs/v1.77.0-ui-optimization.md](specs/v1.77.0-ui-optimization.md) |
+
+**实施阶段**:
+1. 架构拆分: 创建 Sidebar, Header, Dashboard 组件
+2. 基础视觉: 升级 main.css (字型、玻璃态样式、独立滚动条)
+3. 组件改造: 将现有卡片与按钮替换为新样式
+4. 动效与弹窗: 添加 Vue Transition，重构 Modal
 
 ---
 
