@@ -50,6 +50,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { ModalId } from '../../composables/useModal'
 
 interface NavItem {
   id: string
@@ -63,7 +64,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  open: [modal: string]
+  open: [modal: ModalId]
 }>()
 
 const navItems = computed<NavItem[]>(() => [

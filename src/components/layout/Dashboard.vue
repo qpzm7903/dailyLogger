@@ -287,6 +287,7 @@ import ReportDropdown from '../ReportDropdown.vue'
 import { extractSummary } from '../../utils/contentUtils'
 import { getTagColorClass } from '../../utils/tagColors'
 import type { LogRecord, Tag } from '../../types/tauri'
+import type { ModalId } from '../../composables/useModal'
 
 const { t } = useI18n()
 
@@ -308,7 +309,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  open: [modal: string]
+  open: [modal: ModalId]
   takeScreenshot: []
   triggerCapture: []
   toggleAutoCapture: []
