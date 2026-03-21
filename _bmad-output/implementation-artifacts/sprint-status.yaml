@@ -73,14 +73,15 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: 数据管理与检索 (DATA)
-  epic-4: in-progress
+  epic-4: done
   DATA-001: done
   DATA-002: done
   DATA-003: done
   DATA-004: done
   DATA-005: done
-  DATA-006: backlog
+  DATA-006: done
   DATA-003-retrospective: done
+  epic-4-retrospective: optional
 
   # Epic 5: 周报月报功能 (REPORT)
   epic-5: done
