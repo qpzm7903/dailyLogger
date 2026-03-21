@@ -1,12 +1,34 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-21
-> 当前版本: v1.61.0 🔄 开发中
+> 当前版本: v1.62.0 🔄 规划中
 > 上个发布版本: v1.57.0 ✅ 已发布
 
 ---
 
-## v1.61.0（维护检查）🔄 开发中
+## v1.62.0（前端 E2E 测试框架）🔄 规划中
+
+**目标**: 建立 Playwright + Vite Dev Server 的前端 E2E 测试框架，实现 `npm run test:e2e` 一条命令完成全部前端页面功能验证
+
+**版本类型**: MINOR（测试基础设施升级）
+
+**背景**: 现有 `e2e-tests/` Python 框架存在平台锁定（仅 Windows）、非确定性（LLM 驱动）、未集成 CI 等问题。新方案通过 mock Tauri IPC 层，在真实浏览器中测试前端 UI 交互，与已有的 `cargo test`（后端）+ `npm run test`（前端单元测试）形成完整测试金字塔。
+
+| ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
+|----|------|--------|--------|------|------|
+| TEST-018 | Playwright E2E 测试框架搭建 + 核心测试用例 | 5pts | HIGH | ⏳ 待开始 | [specs/TEST-018-e2e-playwright.md](specs/TEST-018-e2e-playwright.md) |
+| TEST-019 | CI 集成（GitHub Actions test-e2e job） | 2pts | HIGH | ⏳ 待开始 | — |
+
+**实施阶段**:
+1. Playwright 基础设施 + Tauri IPC Mock 框架
+2. Page Object Model（MainPage, QuickNoteModal, SettingsModal）
+3. P0-P2 核心工作流测试用例（10 个场景）
+4. CI 集成（Ubuntu runner, 自动运行）
+5. Quality Gate 更新（`npm run test:e2e` 加入 pre-commit checklist）
+
+---
+
+## v1.61.0（维护检查）✅ 已完成
 
 **目标**: 定期健康检查，等待新需求或用户反馈
 
@@ -25,7 +47,7 @@
 |----|------|--------|--------|------|------|
 | MAINT-023 | 定期健康检查（依赖/测试/CI） | 1pt | LOW | ✅ 完成 | — |
 
-**备注**: 项目状态非常健康，所有核心功能已实现，测试覆盖完善。等待新需求或用户反馈。
+**备注**: 项目状态非常健康，所有核心功能已实现，测试覆盖完善。决定下一步建设前端 E2E 测试框架。
 
 ---
 
