@@ -45,6 +45,30 @@
           <p v-else class="text-sm text-gray-500 italic">{{ t('screenshotModal.noAIAnalysis') }}</p>
         </div>
 
+        <!-- FEAT-005: User Notes Section -->
+        <div class="mt-4 p-4 bg-darker rounded-lg border border-gray-700">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm text-gray-400">{{ t('screenshotModal.userNotes') }}</label>
+            <button
+              v-if="userNotes !== originalUserNotes"
+              @click="saveUserNotes"
+              :disabled="isSavingNotes"
+              class="px-3 py-1 text-xs rounded-md transition-colors"
+              :class="isSavingNotes
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 text-white'"
+            >
+              {{ isSavingNotes ? t('screenshotModal.saving') : t('screenshotModal.save') }}
+            </button>
+          </div>
+          <textarea
+            v-model="userNotes"
+            :placeholder="t('screenshotModal.userNotesPlaceholder')"
+            class="w-full bg-dark border border-gray-600 rounded-lg p-3 text-sm text-gray-300 resize-none focus:outline-none focus:border-blue-500"
+            rows="3"
+          ></textarea>
+        </div>
+
         <!-- FEAT-001: Reanalyze Button -->
         <div class="mt-4 flex justify-end">
           <button
@@ -95,6 +119,9 @@ const emit = defineEmits<{
 
 const screenshotData = ref('')
 const isReanalyzing = ref(false)
+const userNotes = ref(props.record.user_notes || '')
+const originalUserNotes = ref(props.record.user_notes || '')
+const isSavingNotes = ref(false)
 
 const formatTime = (timestamp: string) => {
   const date = new Date(timestamp)
@@ -183,6 +210,33 @@ const handleReanalyze = async () => {
     showToast(t('screenshotModal.reanalyzeFailed', { error: errorMsg }), { type: 'error' })
   } finally {
     isReanalyzing.value = false
+  }
+}
+
+// FEAT-005: Save user notes
+const saveUserNotes = async () => {
+  if (isSavingNotes.value) return
+
+  isSavingNotes.value = true
+  try {
+    await invoke('update_record_user_notes', {
+      id: props.record.id,
+      userNotes: userNotes.value || null
+    })
+
+    originalUserNotes.value = userNotes.value
+    showToast(t('screenshotModal.notesSaved'), { type: 'success' })
+
+    // Emit updated record
+    emit('updated', {
+      ...props.record,
+      user_notes: userNotes.value || null
+    })
+  } catch (err) {
+    const errorMsg = String(err)
+    showToast(t('screenshotModal.notesSaveFailed', { error: errorMsg }), { type: 'error' })
+  } finally {
+    isSavingNotes.value = false
   }
 }
 

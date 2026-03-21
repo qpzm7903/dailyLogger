@@ -47,6 +47,9 @@ export interface LogRecord {
   source_type: 'auto' | 'manual'
   content: string
   screenshot_path: string | null
+  monitor_info?: string | null // JSON: MonitorInfo serialized
+  tags?: string | null // JSON: Vec<String> serialized
+  user_notes?: string | null // FEAT-005: User manual notes (#66)
 }
 
 // Alias for backward compatibility - prefer LogRecord to avoid conflict with TS built-in Record

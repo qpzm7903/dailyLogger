@@ -208,7 +208,13 @@
     "reanalyze": "Reanalyze",
     "reanalyzing": "Analyzing...",
     "reanalyzeSuccess": "Reanalysis complete",
-    "reanalyzeFailed": "Reanalysis failed: {error}"
+    "reanalyzeFailed": "Reanalysis failed: {error}",
+    "userNotes": "User Notes",
+    "userNotesPlaceholder": "Add notes for this screenshot...",
+    "save": "Save",
+    "saving": "Saving...",
+    "notesSaved": "Notes saved",
+    "notesSaveFailed": "Failed to save notes: {error}"
   },
   "logViewer": {
     "title": "Runtime Logs",
