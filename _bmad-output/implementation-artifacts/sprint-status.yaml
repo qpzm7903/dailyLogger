@@ -1,5 +1,5 @@
 # generated: 2026-03-21
-# last_updated: 2026-03-21
+# last_updated: 2026-03-21T18:15:00Z
 # project: dailylogger
 # project_key: NOKEY
 # tracking_system: file-system
@@ -92,8 +92,8 @@ development_status:
   epic-5-retrospective: done
 
   # Epic 6: 集成与扩展 (INT)
-  epic-6: backlog
-  INT-001: backlog
+  epic-6: in-progress
+  INT-001: ready-for-dev
   INT-002: backlog
   INT-003A: backlog
   INT-003B: backlog
