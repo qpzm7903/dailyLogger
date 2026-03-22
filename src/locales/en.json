@@ -625,6 +625,22 @@
     "noEvents": "No events for this day",
     "events": "events"
   },
+  "timelineWidget": {
+    "title": "Today's Work Distribution",
+    "viewFull": "View Full Timeline",
+    "loading": "Loading...",
+    "loadFailed": "Failed to load",
+    "workTime": "Work Time",
+    "activePeriods": "Active Periods",
+    "totalRecords": "Total Records",
+    "autoCapture": "Auto Capture",
+    "manualNote": "Manual Note",
+    "noActivity": "No Activity",
+    "noEvents": "No events",
+    "auto": "auto",
+    "manual": "manual",
+    "events": "events"
+  },
   "plugin": {
     "title": "Plugins",
     "openDirectory": "Open Plugins Folder",

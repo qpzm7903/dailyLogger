@@ -76,6 +76,9 @@
       <!-- GitHub Stats Panel -->
       <GitHubStatsPanel @open-settings="$emit('open', 'settings')" />
 
+      <!-- Timeline Widget -->
+      <TimelineWidget ref="timelineWidgetRef" @open-full-timeline="$emit('open', 'timeline')" />
+
       <!-- Today's Workflow Card -->
       <div
         class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
@@ -300,6 +303,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ReportDropdown from '../ReportDropdown.vue'
 import GitHubStatsPanel from '../GitHubStatsPanel.vue'
+import TimelineWidget from '../TimelineWidget.vue'
 import { extractSummary } from '../../utils/contentUtils'
 import { getTagColorClass } from '../../utils/tagColors'
 import type { LogRecord, Tag } from '../../types/tauri'
@@ -339,6 +343,7 @@ const emit = defineEmits<{
 const selectedTagFilter = ref('')
 const TAG_VISIBLE_THRESHOLD = 6
 const tagFilterExpanded = ref(false)
+const timelineWidgetRef = ref<InstanceType<typeof TimelineWidget> | null>(null)
 
 // Computed
 const tagCounts = computed<Record<string, number>>(() => {

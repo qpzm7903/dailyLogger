@@ -621,6 +621,22 @@
     "noEvents": "当天暂无事件记录",
     "events": "个事件"
   },
+  "timelineWidget": {
+    "title": "今日工作分布",
+    "viewFull": "查看完整时间线",
+    "loading": "加载中...",
+    "loadFailed": "加载失败",
+    "workTime": "工作时长",
+    "activePeriods": "活跃时段",
+    "totalRecords": "总记录",
+    "autoCapture": "自动截图",
+    "manualNote": "手动记录",
+    "noActivity": "无活动",
+    "noEvents": "暂无事件",
+    "auto": "自动",
+    "manual": "手动",
+    "events": "个事件"
+  },
   "plugin": {
     "title": "插件管理",
     "openDirectory": "打开插件目录",
