@@ -138,13 +138,13 @@
 
 #### Stories
 
-| ID | 故事 | 优先级 | 估算 |
-|----|------|--------|------|
-| INT-001 | Notion 导出支持 | Medium | 5pts |
-| INT-002 | Logseq 导出支持 | Low | 3pts |
-| INT-003A | GitHub API 集成 | Low | 5pts |
-| INT-003B | 工时统计计算与展示 | Low | 3pts |
-| INT-004 | Slack/钉钉通知 | Low | 5pts |
+| ID | 故事 | 优先级 | 估算 | 状态 |
+|----|------|--------|------|------|
+| INT-001 | Notion 导出支持 | Medium | 5pts | ✅ 已完成 |
+| INT-002 | Logseq 导出支持 | Low | 3pts | ✅ 已完成 |
+| ~~INT-003A~~ | ~~GitHub API 集成~~ | ~~Low~~ | ~~5pts~~ | 🗑️ 已移除 (v3.0.0) |
+| ~~INT-003B~~ | ~~工时统计计算与展示~~ | ~~Low~~ | ~~3pts~~ | 🗑️ 已移除 (v3.0.0) |
+| INT-004 | Slack/钉钉通知 | Low | 5pts | ✅ 已完成 |
 
 ---
 
@@ -167,6 +167,36 @@
 | EXP-003 | 记录重分析（手动触发 AI 重新分析单条记录） | High | 2pts | 让用户修正低质量分析结果 |
 | EXP-004 | 全文搜索 | Medium | 5pts | 快速找回历史记录 |
 | EXP-005 | 今日工作摘要 Widget（实时更新） | Medium | 3pts | 随时感知当天已记录了什么 |
+
+---
+
+### Epic 8: 工作时段感知分析 (Session-Aware Analysis)
+
+**目标**: 将截图分析从"逐张即时分析"重构为"工作时段批量上下文分析"，同时支持用户编辑和手动触发
+
+**优先级**: P0
+**预计周期**: 下一个 Sprint (v3.0.0)
+
+> **设计原则**: 工作是连续的。分析必须有上下文才有意义。用户对自己的工作最了解，AI 只是辅助。
+
+#### Stories
+
+| ID | 故事 | 优先级 | 估算 | 说明 |
+|----|------|--------|------|------|
+| SESSION-001 | 捕获与分析解耦 + 时段管理 | P0 | 5pts | 重构 capture_and_store() 移除即时分析；新增 sessions 表和 session_manager 模块；时段检测（30min 间隔可配置） |
+| SESSION-002 | 时段批量上下文分析 | P0 | 5pts | 实现 analyze_session()：收集时段截图 + 上一时段上下文 → 批量发送 AI → 返回每张截图分析 + 时段摘要 |
+| SESSION-003 | 分析结果用户编辑 | P0 | 3pts | 截图级编辑 user_notes + 时段级编辑 user_summary + 前端 UI + 优先展示用户内容 |
+| SESSION-004 | 手动触发分析 | P1 | 2pts | 用户选择时段手动触发分析，复用 SESSION-002 分析管线 |
+| SESSION-005 | 日报生成适配 | P1 | 3pts | synthesis 改为基于时段分析结果，优先使用 user_summary，按时段组织内容 |
+| CLEAN-001 | 移除 GitHub 集成 | P0 | 2pts | 删除 github.rs、GitHubStatsPanel.vue 及所有引用 |
+
+**Story 依赖关系**:
+```
+SESSION-001 (基础) ─→ SESSION-002 (分析) ─→ SESSION-005 (日报)
+                  ─→ SESSION-003 (编辑)
+                  ─→ SESSION-004 (手动触发)
+CLEAN-001 (独立，无依赖)
+```
 
 ---
 
@@ -216,18 +246,33 @@
 
 ---
 
-### Sprint 4（下一 Sprint）
+### Sprint 4 ✅ 已完成
 
 **目标**: 核心体验深化——回归产品使命
 
 **Stories**:
-- [ ] EXP-001: 工作时间线视图
-- [ ] EXP-002: 截图质量过滤
-- [ ] EXP-003: 记录重分析
-- [ ] EXP-004: 全文搜索
-- [ ] EXP-005: 今日工作摘要 Widget
+- [x] EXP-001: 工作时间线视图
+- [x] EXP-002: 截图质量过滤
+- [x] EXP-003: 记录重分析
+- [x] EXP-004: 全文搜索
+- [x] EXP-005: 今日工作摘要 Widget
+
+---
+
+### Sprint 5（下一 Sprint）
+
+**目标**: 工作时段感知分析 — 核心分析管线重设计 (v3.0.0)
+
+**Stories**:
+- [ ] CLEAN-001: 移除 GitHub 集成
+- [ ] SESSION-001: 捕获与分析解耦 + 时段管理
+- [ ] SESSION-002: 时段批量上下文分析
+- [ ] SESSION-003: 分析结果用户编辑
+- [ ] SESSION-004: 手动触发分析
+- [ ] SESSION-005: 日报生成适配
 
 > **Sprint 准入原则**: 所有 Story 须通过 PRD 2.1 功能准入三问验证
+> **变更依据**: Sprint Change Proposal v2 (2026-03-22)
 
 ---
 
@@ -239,8 +284,9 @@ Epic 1 (核心完善)
         └─→ Epic 3 (AI 能力)
             └─→ Epic 4 (数据管理)
                 └─→ Epic 5 (周报月报)
-                    └─→ Epic 6 (集成扩展)
-                    └─→ Epic 7 (核心体验深化) ← 当前重心
+                    └─→ Epic 6 (集成扩展, GitHub 已移除)
+                    └─→ Epic 7 (核心体验深化)
+                        └─→ Epic 8 (工作时段感知分析) ← 当前重心
 ```
 
 ---
@@ -253,22 +299,25 @@ Epic 1 (核心完善)
 | 跨平台兼容性 | Epic 2 | 充分测试各平台截图功能 |
 | 大数据量性能 | Epic 4 | 分页加载，索引优化 |
 | 集成复杂度 | Epic 6 | 优先支持成熟 API |
+| 分析管线重构风险 | Epic 8 | 分阶段实施，每个 Story 独立可测试；向后兼容现有数据 |
 
 ---
 
 ## P3 功能 (暂缓，不规划 Story)
 
-以下功能为 P3 优先级，在核心体验（Epic 7）成熟前不创建对应 Story：
+以下功能为 P3 优先级，在核心体验成熟前不创建对应 Story：
 
 | 功能 | PRD 参考 | 暂缓原因 |
 |-----|---------|---------|
 | 更多 IM 集成（企业微信/飞书等） | Section 11 | 属于集成扩展类，不直接提升记录体验 |
 | 更多导出目标（超出 Notion/Logseq） | Section 11 | 同上 |
 
-> **2026-03-22 战略调整**：根据 Sprint Change Proposal，集成类功能扩展暂缓，聚焦核心体验深化（Epic 7）。
-> 详见：`_bmad-output/planning-artifacts/sprint-change-proposal-2026-03-22.md`
+> **2026-03-22 战略调整 v1**：集成类功能扩展暂缓，聚焦核心体验深化（Epic 7）。
+> **2026-03-22 战略调整 v2**：移除 GitHub 集成（INT-003A/B）；核心分析管线重设计为工作时段感知分析（Epic 8）。
+> 详见：`_bmad-output/planning-artifacts/sprint-change-proposal-2026-03-22-v2.md`
 
 ---
 
 **文档创建**: 2026-03-13
-**版本**: 1.0
+**最后更新**: 2026-03-22
+**版本**: 2.0
