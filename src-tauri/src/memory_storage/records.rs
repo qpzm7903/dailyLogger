@@ -288,8 +288,8 @@ pub fn get_today_stats_sync() -> Result<TodayStats, String> {
         .query_row(
             "SELECT
                 COUNT(*) as total,
-                SUM(CASE WHEN source_type='auto' THEN 1 ELSE 0 END) as auto_count,
-                SUM(CASE WHEN source_type='manual' THEN 1 ELSE 0 END) as manual_count,
+                COALESCE(SUM(CASE WHEN source_type='auto' THEN 1 ELSE 0 END), 0) as auto_count,
+                COALESCE(SUM(CASE WHEN source_type='manual' THEN 1 ELSE 0 END), 0) as manual_count,
                 MIN(timestamp) as first_time,
                 MAX(timestamp) as latest_time
             FROM records WHERE timestamp >= ?1",
