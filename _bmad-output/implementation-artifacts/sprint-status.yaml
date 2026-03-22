@@ -106,8 +106,8 @@ development_status:
   epic-7: in-progress
   EXP-001: done
   EXP-001-retrospective: done
-  EXP-002: backlog
-  EXP-003: backlog
-  EXP-004: backlog
-  EXP-005: backlog
+  EXP-002: ready-for-dev
+  EXP-003: ready-for-dev
+  EXP-004: ready-for-dev
+  EXP-005: ready-for-dev
   epic-7-retrospective: optional
