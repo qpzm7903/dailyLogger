@@ -4,7 +4,6 @@ pub mod backup;
 pub mod crypto;
 pub mod dingtalk;
 pub mod export;
-pub mod github;
 #[cfg(feature = "screenshot")]
 pub mod hardware;
 pub mod manual_entry;

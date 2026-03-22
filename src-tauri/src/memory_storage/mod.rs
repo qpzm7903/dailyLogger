@@ -80,9 +80,6 @@ pub struct Settings {
     // INT-001: Notion 导出支持
     pub notion_api_key: Option<String>, // Notion integration secret (encrypted)
     pub notion_database_id: Option<String>, // Notion database ID to write pages to
-    // INT-003: GitHub 工时统计配置
-    pub github_token: Option<String>, // GitHub Personal Access Token (encrypted)
-    pub github_repositories: Option<String>, // JSON: ["owner/repo", ...] repos to track
     // INT-004: Slack 通知配置
     pub slack_webhook_url: Option<String>, // Slack Incoming Webhook URL
     // INT-004: DingTalk 通知配置

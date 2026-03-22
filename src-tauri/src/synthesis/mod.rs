@@ -508,19 +508,6 @@ pub async fn generate_daily_summary() -> Result<String, String> {
 
     let records_text = format_records_for_summary(&records);
 
-    // INT-003: Fetch GitHub activity if configured
-    let github_activity_text = if crate::github::is_github_configured(&settings) {
-        match crate::github::fetch_today_github_activity(&settings).await {
-            Ok(stats) => crate::github::format_github_activity_for_report(&stats),
-            Err(e) => {
-                tracing::warn!("Failed to fetch GitHub activity: {}", e);
-                String::new()
-            }
-        }
-    } else {
-        String::new()
-    };
-
     let prompt_template = settings
         .summary_prompt
         .as_deref()
@@ -528,7 +515,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .unwrap_or(DEFAULT_SUMMARY_PROMPT);
     let prompt = prompt_template
         .replace("{records}", &records_text)
-        .replace("{github_activity}", &github_activity_text);
+        .replace("{github_activity}", ""); // GitHub integration removed in v3.0.0
 
     let summary = call_llm_api(&api_config, &prompt, 2000, "generate_daily_summary").await?;
 
@@ -622,8 +609,6 @@ mod tests {
             logseq_graphs: None,
             notion_api_key: None,
             notion_database_id: None,
-            github_token: None,
-            github_repositories: None,
             slack_webhook_url: None,
             dingtalk_webhook_url: None,
             capture_only_mode: None,
@@ -1723,8 +1708,6 @@ mod benchmarks {
             logseq_graphs: None,
             notion_api_key: None,
             notion_database_id: None,
-            github_token: None,
-            github_repositories: None,
             slack_webhook_url: None,
             dingtalk_webhook_url: None,
             capture_only_mode: None,

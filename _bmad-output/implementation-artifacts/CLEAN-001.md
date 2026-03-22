@@ -1,6 +1,6 @@
 # Story 8.CLEAN: 移除 GitHub 集成
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -41,31 +41,31 @@ so that the codebase is simplified and aligned with the product strategy (GitHub
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 删除 Rust 后端代码 (AC: #1)
-  - [ ] 删除 `src-tauri/src/github.rs`
-  - [ ] 从 `lib.rs` 移除 `pub mod github;`
-  - [ ] 从 `main.rs` 移除 `daily_logger_lib::github::test_github_connection` 和 `daily_logger_lib::github::get_github_work_stats`
+- [x] Task 1: 删除 Rust 后端代码 (AC: #1)
+  - [x] 删除 `src-tauri/src/github.rs`
+  - [x] 从 `lib.rs` 移除 `pub mod github;`
+  - [x] 从 `main.rs` 移除 `daily_logger_lib::github::test_github_connection` 和 `daily_logger_lib::github::get_github_work_stats`
 
-- [ ] Task 2: 删除前端组件和引用 (AC: #2)
-  - [ ] 删除 `src/components/GitHubStatsPanel.vue`
-  - [ ] 更新 `Dashboard.vue` 移除 import 和 `<GitHubStatsPanel />` 使用
-  - [ ] 更新 `OutputSettings.vue` 移除 GitHub 配置区域
+- [x] Task 2: 删除前端组件和引用 (AC: #2)
+  - [x] 删除 `src/components/GitHubStatsPanel.vue`
+  - [x] 更新 `Dashboard.vue` 移除 import 和 `<GitHubStatsPanel />` 使用
+  - [x] 更新 `OutputSettings.vue` 移除 GitHub 配置区域
 
-- [ ] Task 3: 清理类型定义 (AC: #3)
-  - [ ] 从 `src/types/tauri.ts` 移除 GitHub 相关类型
+- [x] Task 3: 清理类型定义 (AC: #3)
+  - [x] 从 `src/types/tauri.ts` 移除 GitHub 相关类型
 
-- [ ] Task 4: 清理设置字段 (AC: #4)
-  - [ ] 从 Settings 结构体移除 `github_token` 和 `github_repositories`
+- [x] Task 4: 清理设置字段 (AC: #4)
+  - [x] 从 Settings 结构体移除 `github_token` 和 `github_repositories`
 
-- [ ] Task 5: 清理测试 (AC: #5)
-  - [ ] 删除 `src/components/__tests__/GitHubStatsPanel.test.ts`
-  - [ ] 检查并清理其他测试文件中的 GitHub 相关代码
+- [x] Task 5: 清理测试 (AC: #5)
+  - [x] 删除 `src/components/__tests__/GitHubStatsPanel.test.ts`
+  - [x] 检查并清理其他测试文件中的 GitHub 相关代码
 
-- [ ] Task 6: 验证 (AC: #6)
-  - [ ] 运行 `cargo fmt`
-  - [ ] 运行 `cargo clippy -- -D warnings`
-  - [ ] 运行 `cargo test --no-default-features`
-  - [ ] 运行 `npm test`
+- [x] Task 6: 验证 (AC: #6)
+  - [x] 运行 `cargo fmt`
+  - [x] 运行 `cargo clippy -- -D warnings`
+  - [x] 运行 `cargo test --no-default-features`
+  - [x] 运行 `npm test`
 
 ## Dev Notes
 
@@ -133,10 +133,51 @@ pub github_repositories: Option<String>,
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+无
+
 ### Completion Notes List
 
+1. 成功删除 `src-tauri/src/github.rs` (865 行 Rust 后端代码)
+2. 从 `lib.rs` 移除 `pub mod github;` 声明
+3. 从 `main.rs` 移除 `test_github_connection` 和 `get_github_work_stats` 命令注册
+4. 删除 `src/components/GitHubStatsPanel.vue` (181 行 Vue 组件)
+5. 从 `Dashboard.vue` 移除 GitHubStatsPanel import 和使用
+6. 从 `OutputSettings.vue` 移除 GitHub 配置区域、测试函数和相关状态
+7. 从 `src/types/tauri.ts` 移除 GitHub 相关类型定义
+8. 从 `memory_storage/mod.rs` Settings 结构体移除 `github_token` 和 `github_repositories` 字段
+9. 从 `memory_storage/settings.rs` 移除 GitHub 相关的读写和加解密代码
+10. 从 `synthesis/mod.rs` 移除 GitHub 活动集成代码
+11. 删除 `src/components/__tests__/GitHubStatsPanel.test.ts`
+12. 更新 `OutputSettings.test.ts` 移除 GitHub 测试用例并修复按钮索引
+13. 从 `SettingsModal.vue` 移除 GitHub 相关的设置和事件处理
+14. 从 `en.json` 和 `zh-CN.json` 移除 GitHub 相关翻译
+
 ### File List
+
+**删除的文件：**
+- src-tauri/src/github.rs
+- src/components/GitHubStatsPanel.vue
+- src/components/__tests__/GitHubStatsPanel.test.ts
+
+**修改的文件：**
+- src-tauri/src/lib.rs
+- src-tauri/src/main.rs
+- src-tauri/src/synthesis/mod.rs
+- src-tauri/src/memory_storage/mod.rs
+- src-tauri/src/memory_storage/settings.rs
+- src/components/layout/Dashboard.vue
+- src/components/settings/OutputSettings.vue
+- src/components/settings/__tests__/OutputSettings.test.ts
+- src/components/SettingsModal.vue
+- src/types/tauri.ts
+- src/locales/en.json
+- src/locales/zh-CN.json
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Change Log
+
+- 2026-03-22: 完成 CLEAN-001 实现，移除 GitHub 集成功能

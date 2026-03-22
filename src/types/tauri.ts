@@ -181,45 +181,6 @@ export interface BackupResult {
 }
 
 // ============================================
-// GitHub Integration Types
-// ============================================
-
-export interface GitHubStats {
-  total_commits: number
-  total_prs: number
-  total_issues: number
-  work_hours: number
-  repositories: RepositoryStats[]
-}
-
-export interface RepositoryStats {
-  name: string
-  commits: number
-  prs: number
-  issues: number
-}
-
-export interface GetGitHubStatsArgs {
-  start_date: string
-  end_date: string
-}
-
-// GitHub Work Stats Panel Types (INT-003B)
-export interface GitHubWorkStatsJson {
-  commit_count: number
-  pr_count: number
-  estimated_hours: number
-  active_repos: string[]
-  commits_by_hour: { [key: number]: string[] }
-  pull_requests: string[]
-}
-
-export interface GitHubWorkStatsResponse {
-  configured: boolean
-  stats: GitHubWorkStatsJson | null
-}
-
-// ============================================
 // Plugin Types
 // ============================================
 

@@ -73,9 +73,6 @@
         </div>
       </div>
 
-      <!-- GitHub Stats Panel -->
-      <GitHubStatsPanel @open-settings="$emit('open', 'settings')" />
-
       <!-- Today Summary Widget (EXP-005) -->
       <TodaySummaryWidget ref="todaySummaryWidgetRef" />
 
@@ -305,7 +302,6 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ReportDropdown from '../ReportDropdown.vue'
-import GitHubStatsPanel from '../GitHubStatsPanel.vue'
 import TimelineWidget from '../TimelineWidget.vue'
 import TodaySummaryWidget from '../TodaySummaryWidget.vue'
 import { extractSummary } from '../../utils/contentUtils'

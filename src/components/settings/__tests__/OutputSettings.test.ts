@@ -30,11 +30,6 @@ const mockT = vi.fn((key: string) => {
     'settings.notionDatabaseId': 'Database ID',
     'settings.notionDatabaseIdPlaceholder': 'xxx...',
     'settings.notionHint': 'Configure Notion to export reports',
-    'settings.githubWorkTime': 'GitHub Work Time Statistics',
-    'settings.githubToken': 'GitHub Token',
-    'settings.githubTokenPlaceholder': 'ghp_...',
-    'settings.githubRepos': 'Repositories',
-    'settings.githubHint': 'Track GitHub activity',
     'settings.slackNotification': 'Slack Notification',
     'settings.slackWebhookUrl': 'Slack Webhook URL',
     'settings.slackWebhookPlaceholder': 'https://hooks.slack.com/...',
@@ -64,9 +59,8 @@ describe('OutputSettings', () => {
     settings: {
       notion_api_key: null,
       notion_database_id: null,
-      github_token: null,
-      github_repositories: '',
-      slack_webhook_url: null
+      slack_webhook_url: null,
+      dingtalk_webhook_url: null
     },
     vaults: [
       { name: 'Personal', path: '/Users/test/Documents/Personal', is_default: true }
@@ -102,11 +96,6 @@ describe('OutputSettings', () => {
     it('renders Notion integration section', () => {
       const wrapper = mount(OutputSettings, { props: defaultProps })
       expect(wrapper.text()).toContain('Notion Integration')
-    })
-
-    it('renders GitHub work time section', () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      expect(wrapper.text()).toContain('GitHub Work Time')
     })
 
     it('renders Slack notification section', () => {
@@ -273,43 +262,6 @@ describe('OutputSettings', () => {
     })
   })
 
-  // === GitHub Integration ===
-  describe('github integration', () => {
-    it('updates github token', async () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      const inputs = wrapper.findAll('input[type="password"]')
-      const githubTokenInput = inputs.find(i => i.attributes('placeholder')?.includes('ghp'))
-      if (githubTokenInput) {
-        await githubTokenInput.setValue('ghp_test_token')
-      }
-
-      const emitted = wrapper.emitted('update:settings')
-      expect(emitted).toBeTruthy()
-    })
-
-    it('tests github connection', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ success: true, message: 'OK' })
-
-      const wrapper = mount(OutputSettings, {
-        props: {
-          ...defaultProps,
-          settings: {
-            ...defaultProps.settings,
-            github_token: 'ghp_test'
-          }
-        }
-      })
-
-      const testButtons = wrapper.findAll('button').filter(b => b.text().includes('Test Connection'))
-      await testButtons[1]?.trigger('click')
-      await flushPromises()
-
-      expect(invoke).toHaveBeenCalledWith('test_github_connection', expect.objectContaining({
-        token: 'ghp_test'
-      }))
-    })
-  })
-
   // === Slack Integration ===
   describe('slack integration', () => {
     it('updates slack webhook url', async () => {
@@ -338,7 +290,7 @@ describe('OutputSettings', () => {
       })
 
       const testButtons = wrapper.findAll('button').filter(b => b.text().includes('Test Connection'))
-      await testButtons[2]?.trigger('click')
+      await testButtons[1]?.trigger('click')
       await flushPromises()
 
       expect(invoke).toHaveBeenCalledWith('test_slack_webhook', expect.objectContaining({

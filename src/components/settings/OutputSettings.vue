@@ -97,40 +97,6 @@
       </div>
     </div>
 
-    <!-- GitHub Work Time Statistics -->
-    <div>
-      <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.githubWorkTime') }}</label>
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.githubToken') }}</label>
-          <input v-model="localSettings.github_token" type="password" :placeholder="$t('settings.githubTokenPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
-        </div>
-        <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.githubRepos') }}</label>
-          <textarea
-            v-model="githubReposText"
-            rows="3"
-            placeholder="owner/repo1&#10;owner/repo2"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-none font-mono"
-          />
-        </div>
-        <div class="flex gap-2">
-          <button @click="testGithubConnection" :disabled="isTestingGithubConnection"
-            class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
-            {{ isTestingGithubConnection ? $t('common.testing') : $t('common.testConnection') }}
-          </button>
-          <span v-if="githubConnectionStatus" class="text-xs"
-            :class="githubConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
-            {{ githubConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
-          </span>
-        </div>
-        <p class="text-xs text-gray-500">
-          {{ $t('settings.githubHint') }}
-        </p>
-      </div>
-    </div>
-
     <!-- Slack Notification -->
     <div>
       <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.slackNotification') }}</label>
@@ -221,8 +187,6 @@ interface Props {
   settings: {
     notion_api_key: string | null
     notion_database_id: string | null
-    github_token: string | null
-    github_repositories: string
     slack_webhook_url: string | null
     dingtalk_webhook_url: string | null
   }
@@ -252,13 +216,10 @@ const newVaultName = ref('')
 const newVaultPath = ref('')
 const newGraphName = ref('')
 const newGraphPath = ref('')
-const githubReposText = ref('')
 
 // Connection test state
 const isTestingNotionConnection = ref(false)
 const notionConnectionStatus = ref<'success' | 'failed' | null>(null)
-const isTestingGithubConnection = ref(false)
-const githubConnectionStatus = ref<'success' | 'failed' | null>(null)
 const isTestingSlackConnection = ref(false)
 const slackConnectionStatus = ref<'success' | 'failed' | null>(null)
 const isTestingDingtalkConnection = ref(false)
@@ -365,34 +326,6 @@ async function testNotionConnection() {
     showError(err)
   } finally {
     isTestingNotionConnection.value = false
-  }
-}
-
-async function testGithubConnection() {
-  if (!localSettings.value.github_token) {
-    showError(t('settings.githubTokenRequired'))
-    return
-  }
-
-  isTestingGithubConnection.value = true
-  githubConnectionStatus.value = null
-
-  try {
-    const result = await invoke<{ success: boolean; message: string }>('test_github_connection', {
-      token: localSettings.value.github_token
-    })
-
-    githubConnectionStatus.value = result.success ? 'success' : 'failed'
-    if (result.success) {
-      showSuccess(t('settings.githubConnectionSuccess'))
-    } else {
-      showError(result.message)
-    }
-  } catch (err) {
-    githubConnectionStatus.value = 'failed'
-    showError(err)
-  } finally {
-    isTestingGithubConnection.value = false
   }
 }
 
