@@ -281,6 +281,50 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // SESSION-001: 工作时段管理配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN session_gap_minutes INTEGER DEFAULT 30",
+        [],
+    );
+
+    // SESSION-001: sessions 表 - 工作时段管理
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT,
+            ai_summary TEXT,
+            user_summary TEXT,
+            context_for_next TEXT,
+            status TEXT DEFAULT 'active'
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create sessions table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_sessions_date index: {}", e))?;
+
+    // SESSION-001: records 表扩展 - 时段关联和分析状态
+    let _ = conn.execute(
+        "ALTER TABLE records ADD COLUMN session_id INTEGER REFERENCES sessions(id)",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE records ADD COLUMN analysis_status TEXT DEFAULT 'pending'",
+        [],
+    );
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_session_id ON records(session_id)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_session_id index: {}", e))?;
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     tracing::info!("init_database: Creating FTS5 table");
@@ -468,11 +512,41 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             content TEXT NOT NULL,
             screenshot_path TEXT,
             monitor_info TEXT,
-            tags TEXT
+            tags TEXT,
+            session_id INTEGER REFERENCES sessions(id),
+            analysis_status TEXT DEFAULT 'pending'
         )",
         [],
     )
     .map_err(|e| format!("Failed to create records table: {}", e))?;
+
+    // Create sessions table (SESSION-001)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT,
+            ai_summary TEXT,
+            user_summary TEXT,
+            context_for_next TEXT,
+            status TEXT DEFAULT 'active'
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create sessions table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_sessions_date index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_session_id ON records(session_id)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_session_id index: {}", e))?;
 
     // Create settings table
     conn.execute(
@@ -526,7 +600,8 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             capture_only_mode INTEGER DEFAULT 0,
             custom_headers TEXT DEFAULT '[]',
             quality_filter_enabled INTEGER DEFAULT 1,
-            quality_filter_threshold REAL DEFAULT 0.3
+            quality_filter_threshold REAL DEFAULT 0.3,
+            session_gap_minutes INTEGER DEFAULT 30
         )",
         [],
     )

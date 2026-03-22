@@ -18,6 +18,9 @@ pub struct Record {
     pub tags: Option<String>, // JSON: Vec<String> serialized
     // FEAT-005: 用户手动备注 (#66)
     pub user_notes: Option<String>,
+    // SESSION-001: 时段关联和分析状态
+    pub session_id: Option<i64>,
+    pub analysis_status: Option<String>, // pending | analyzed | user_edited
 }
 
 /// Full-text search result with highlighting
@@ -56,6 +59,25 @@ pub fn add_record(
     monitor_info: Option<&str>,
     tags: Option<&str>,
 ) -> Result<i64, String> {
+    add_record_with_session(
+        source_type,
+        content,
+        screenshot_path,
+        monitor_info,
+        tags,
+        None,
+    )
+}
+
+/// SESSION-001: Add record with session_id support
+pub fn add_record_with_session(
+    source_type: &str,
+    content: &str,
+    screenshot_path: Option<&str>,
+    monitor_info: Option<&str>,
+    tags: Option<&str>,
+    session_id: Option<i64>,
+) -> Result<i64, String> {
     let db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
@@ -64,8 +86,8 @@ pub fn add_record(
     let timestamp = chrono::Utc::now().to_rfc3339();
 
     conn.execute(
-        "INSERT INTO records (timestamp, source_type, content, screenshot_path, monitor_info, tags) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![timestamp, source_type, content, screenshot_path, monitor_info, tags],
+        "INSERT INTO records (timestamp, source_type, content, screenshot_path, monitor_info, tags, session_id, analysis_status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'pending')",
+        params![timestamp, source_type, content, screenshot_path, monitor_info, tags, session_id],
     ).map_err(|e| format!("Failed to insert record: {}", e))?;
 
     Ok(conn.last_insert_rowid())
@@ -88,7 +110,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -104,6 +126,8 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -148,7 +172,7 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -164,6 +188,8 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -210,7 +236,7 @@ pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp < ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -226,6 +252,8 @@ pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -372,7 +400,7 @@ pub fn get_records_by_date_range_sync(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -388,6 +416,8 @@ pub fn get_records_by_date_range_sync(
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -429,7 +459,7 @@ pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Re
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp ASC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -445,6 +475,8 @@ pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Re
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -483,7 +515,7 @@ pub fn get_record_by_id_sync(id: i64) -> Result<Record, String> {
 
     let record = conn
         .query_row(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status
              FROM records WHERE id = ?1",
             params![id],
             |row| {
@@ -496,6 +528,8 @@ pub fn get_record_by_id_sync(id: i64) -> Result<Record, String> {
                     monitor_info: row.get(5)?,
                     tags: row.get(6)?,
                     user_notes: row.get(7)?,
+                    session_id: row.get(8)?,
+                    analysis_status: row.get(9)?,
                 })
             },
         )
@@ -601,11 +635,11 @@ pub fn get_history_records_sync(
                 st
             ));
         }
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
          ORDER BY timestamp DESC LIMIT ?4 OFFSET ?5"
     } else {
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes FROM records
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2
          ORDER BY timestamp DESC LIMIT ?3 OFFSET ?4"
     };
@@ -625,6 +659,8 @@ pub fn get_history_records_sync(
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -641,6 +677,8 @@ pub fn get_history_records_sync(
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -687,7 +725,7 @@ pub fn search_records_sync(
         // Use LIKE search for CJK queries
         // Note: Both time and rank order use the same SQL since LIKE doesn't have relevance score
         let sql = "SELECT
-                id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes
+                id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status
             FROM records
             WHERE content LIKE ?1
             ORDER BY timestamp DESC
@@ -714,6 +752,8 @@ pub fn search_records_sync(
                         monitor_info: row.get(5)?,
                         tags: row.get(6)?,
                         user_notes: row.get(7)?,
+                        session_id: row.get(8)?,
+                        analysis_status: row.get(9)?,
                     },
                     snippet,
                     rank: 0.0, // LIKE search doesn't have relevance score
@@ -730,7 +770,7 @@ pub fn search_records_sync(
 
         let sql = if order_by == "time" {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes, r.session_id, r.analysis_status,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -740,7 +780,7 @@ pub fn search_records_sync(
             LIMIT ?2"
         } else {
             "SELECT
-                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes,
+                r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes, r.session_id, r.analysis_status,
                 highlight(records_fts, 0, '<mark>', '</mark>') as snippet,
                 bm25(records_fts) as rank
             FROM records_fts
@@ -769,9 +809,11 @@ pub fn search_records_sync(
                         monitor_info: row.get(5)?,
                         tags: row.get(6)?,
                         user_notes: row.get(7)?,
+                        session_id: row.get(8)?,
+                        analysis_status: row.get(9)?,
                     },
-                    snippet: row.get(8)?,
-                    rank: row.get(9)?,
+                    snippet: row.get(10)?,
+                    rank: row.get(11)?,
                 })
             })
             .map_err(|e| format!("Failed to search records: {}", e))?
@@ -862,7 +904,9 @@ mod tests {
                 screenshot_path TEXT,
                 monitor_info TEXT,
                 tags TEXT,
-                user_notes TEXT
+                user_notes TEXT,
+                session_id INTEGER,
+                analysis_status TEXT DEFAULT 'pending'
             )",
             [],
         )
@@ -914,7 +958,8 @@ mod tests {
                 github_token TEXT,
                 github_repositories TEXT DEFAULT '[]',
                 slack_webhook_url TEXT,
-                capture_only_mode INTEGER DEFAULT 0
+                capture_only_mode INTEGER DEFAULT 0,
+                session_gap_minutes INTEGER DEFAULT 30
             )",
             [],
         )
@@ -1640,6 +1685,8 @@ mod tests {
             monitor_info: None,
             tags: None,
             user_notes: None,
+            session_id: None,
+            analysis_status: None,
         };
 
         let result = SearchResult {
@@ -1666,6 +1713,8 @@ mod tests {
             monitor_info: Some(r#"{"name":"Display 1"}"#.to_string()),
             tags: Some(r#"["work"]"#.to_string()),
             user_notes: None,
+            session_id: None,
+            analysis_status: Some("pending".to_string()),
         };
 
         let json = serde_json::to_string(&record).unwrap();
@@ -1692,6 +1741,8 @@ mod tests {
             monitor_info: None,
             tags: None,
             user_notes: None,
+            session_id: None,
+            analysis_status: None,
         };
 
         let cloned = record.clone();
@@ -1710,6 +1761,8 @@ mod tests {
             monitor_info: None,
             tags: None,
             user_notes: None,
+            session_id: None,
+            analysis_status: None,
         };
 
         let debug_str = format!("{:?}", record);
@@ -1986,7 +2039,9 @@ mod benchmarks {
                 screenshot_path TEXT,
                 monitor_info TEXT,
                 tags TEXT,
-                user_notes TEXT
+                user_notes TEXT,
+                session_id INTEGER,
+                analysis_status TEXT DEFAULT 'pending'
             )",
             [],
         )
@@ -2038,7 +2093,8 @@ mod benchmarks {
                 github_token TEXT,
                 github_repositories TEXT DEFAULT '[]',
                 slack_webhook_url TEXT,
-                capture_only_mode INTEGER DEFAULT 0
+                capture_only_mode INTEGER DEFAULT 0,
+                session_gap_minutes INTEGER DEFAULT 30
             )",
             [],
         )

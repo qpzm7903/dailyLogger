@@ -26,7 +26,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 comparison_report_prompt, logseq_graphs,
                 notion_api_key, notion_database_id,
                 slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers,
-                quality_filter_enabled, quality_filter_threshold
+                quality_filter_enabled, quality_filter_threshold, session_gap_minutes
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -98,6 +98,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                     .get::<_, Option<i32>>("quality_filter_enabled")?
                     .map(|v| v != 0),
                 quality_filter_threshold: row.get("quality_filter_threshold")?,
+                // SESSION-001: Session gap minutes
+                session_gap_minutes: row.get("session_gap_minutes")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -287,7 +289,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             capture_only_mode = :capture_only_mode,
             custom_headers = :custom_headers,
             quality_filter_enabled = :quality_filter_enabled,
-            quality_filter_threshold = :quality_filter_threshold
+            quality_filter_threshold = :quality_filter_threshold,
+            session_gap_minutes = :session_gap_minutes
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -337,6 +340,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":custom_headers": encrypted_custom_headers,
             ":quality_filter_enabled": settings.quality_filter_enabled.map(|v| if v { 1 } else { 0 }),
             ":quality_filter_threshold": settings.quality_filter_threshold,
+            ":session_gap_minutes": settings.session_gap_minutes,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

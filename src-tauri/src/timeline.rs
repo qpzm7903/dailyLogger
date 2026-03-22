@@ -186,7 +186,7 @@ pub fn get_timeline_data_for_date(date: &str) -> Result<TimelineData, String> {
     // Query records for the date
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status
              FROM records
              WHERE timestamp >= ?1 AND timestamp <= ?2
              ORDER BY timestamp ASC",
@@ -204,6 +204,8 @@ pub fn get_timeline_data_for_date(date: &str) -> Result<TimelineData, String> {
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?

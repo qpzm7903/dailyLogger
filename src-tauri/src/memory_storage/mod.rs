@@ -91,6 +91,8 @@ pub struct Settings {
     // EXP-002: 截图质量过滤
     pub quality_filter_enabled: Option<bool>,
     pub quality_filter_threshold: Option<f64>,
+    // SESSION-001: 工作时段管理
+    pub session_gap_minutes: Option<i32>, // 时段间隔阈值（分钟），默认 30
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)

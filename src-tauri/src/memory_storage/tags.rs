@@ -95,7 +95,7 @@ pub fn get_records_by_tag(tag: String) -> Result<Vec<Record>, String> {
     // Get all records with tags and filter in Rust (SQLite doesn't handle JSON arrays well)
     let mut stmt = conn
         .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes
+            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status
              FROM records
              WHERE tags IS NOT NULL
              ORDER BY timestamp DESC",
@@ -113,6 +113,8 @@ pub fn get_records_by_tag(tag: String) -> Result<Vec<Record>, String> {
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -497,7 +499,7 @@ pub fn get_records_by_manual_tags(
 
     // 交集筛选：找出同时包含所有指定标签的记录
     let sql = format!(
-        "SELECT r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes
+        "SELECT r.id, r.timestamp, r.source_type, r.content, r.screenshot_path, r.monitor_info, r.tags, r.user_notes, r.session_id, r.analysis_status
          FROM records r
          WHERE r.id IN (
              SELECT record_id FROM record_manual_tags
@@ -539,6 +541,8 @@ pub fn get_records_by_manual_tags(
                 monitor_info: row.get(5)?,
                 tags: row.get(6)?,
                 user_notes: row.get(7)?,
+                session_id: row.get(8)?,
+                analysis_status: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
@@ -569,7 +573,9 @@ mod tests {
                 screenshot_path TEXT,
                 monitor_info TEXT,
                 tags TEXT,
-                user_notes TEXT
+                user_notes TEXT,
+                session_id INTEGER,
+                analysis_status TEXT DEFAULT 'pending'
             )",
             [],
         )

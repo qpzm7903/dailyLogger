@@ -1032,185 +1032,48 @@ async fn capture_and_store() -> Result<(), String> {
 
     let screenshot_path = save_screenshot(&image_base64);
 
-    // FEAT-006: Capture only mode - skip AI analysis (#65)
-    if settings.capture_only_mode {
-        tracing::info!("Capture only mode: saving screenshot without AI analysis");
+    // SESSION-001: 捕获与分析解耦
+    // 所有截图现在都只保存不立即分析，等待时段结束时批量分析
+    tracing::info!("Capture mode: saving screenshot without immediate AI analysis");
 
-        // Save record with placeholder content, marked for later analysis
-        let content = serde_json::json!({
-            "current_focus": "仅截图模式 - 待分析",
-            "active_software": active_window.process_name,
-            "context_keywords": [],
-            "active_window": {
-                "title": active_window.title,
-                "process_name": active_window.process_name
-            },
-            "monitor_info": {
-                "count": monitor_info.count,
-                "capture_mode": capture_mode.to_string()
-            },
-            "offline_pending": true,
-            "capture_only": true
-        })
-        .to_string();
+    // SESSION-001: 检测或创建工作时段
+    let current_timestamp = chrono::Utc::now().to_rfc3339();
+    let session_id = crate::session_manager::detect_or_create_session(&current_timestamp)?;
 
-        let monitor_info_json = serde_json::to_string(&monitor_info).ok();
-        let record_id = memory_storage::add_record(
-            "auto",
-            &content,
-            screenshot_path.as_deref(),
-            monitor_info_json.as_deref(),
-            None,
-        )?;
+    // Save record with placeholder content, marked for later analysis
+    let content = serde_json::json!({
+        "current_focus": "待分析",
+        "active_software": active_window.process_name,
+        "context_keywords": [],
+        "active_window": {
+            "title": active_window.title,
+            "process_name": active_window.process_name
+        },
+        "monitor_info": {
+            "count": monitor_info.count,
+            "capture_mode": capture_mode.to_string()
+        },
+        "offline_pending": true
+    })
+    .to_string();
 
-        // Queue for later analysis (can be triggered manually)
-        if let Some(ref path) = screenshot_path {
-            let payload = serde_json::json!({
-                "screenshot_path": path,
-                "record_id": record_id,
-            })
-            .to_string();
-            let _ = crate::offline_queue::enqueue_task(
-                &crate::offline_queue::OfflineTaskType::ScreenshotAnalysis,
-                &payload,
-                Some(record_id),
-            );
-        }
-
-        return Ok(());
-    }
-
-    // CORE-007: Check network status before AI analysis
-    if !crate::network_status::is_online() {
-        tracing::info!("Offline mode: saving screenshot without AI analysis");
-
-        // Save record with placeholder content
-        let content = serde_json::json!({
-            "current_focus": "离线模式 - 待分析",
-            "active_software": active_window.process_name,
-            "context_keywords": [],
-            "active_window": {
-                "title": active_window.title,
-                "process_name": active_window.process_name
-            },
-            "monitor_info": {
-                "count": monitor_info.count,
-                "capture_mode": capture_mode.to_string()
-            },
-            "offline_pending": true
-        })
-        .to_string();
-
-        let monitor_info_json = serde_json::to_string(&monitor_info).ok();
-        let record_id = memory_storage::add_record(
-            "auto",
-            &content,
-            screenshot_path.as_deref(),
-            monitor_info_json.as_deref(),
-            None,
-        )?;
-
-        // Queue AI analysis for when network is restored
-        let payload = serde_json::json!({
-            "screenshot_path": screenshot_path,
-            "record_id": record_id,
-        })
-        .to_string();
-        let _ = crate::offline_queue::enqueue_task(
-            &crate::offline_queue::OfflineTaskType::ScreenshotAnalysis,
-            &payload,
-            Some(record_id),
-        );
-
-        return Ok(());
-    }
-
-    // FIX-009: If AI analysis fails, still save the screenshot and queue for retry
-    let analysis_result = analyze_screen(&settings, &image_base64).await;
-
-    let (content, tags_json, is_success) = match analysis_result {
-        Ok(ref analysis) => {
-            // SMART-001: Include window info in content JSON (AC1)
-            // SMART-004: Include monitor info in content JSON (AC3)
-            let content = serde_json::json!({
-                "current_focus": analysis.current_focus,
-                "active_software": analysis.active_software,
-                "context_keywords": analysis.context_keywords,
-                "active_window": {
-                    "title": active_window.title,
-                    "process_name": active_window.process_name
-                },
-                "monitor_info": {
-                    "count": monitor_info.count,
-                    "capture_mode": capture_mode.to_string()
-                }
-            })
-            .to_string();
-
-            // AI-004: Store tags as JSON
-            let tags_json = analysis
-                .tags
-                .as_ref()
-                .and_then(|t| serde_json::to_string(t).ok());
-            (content, tags_json, true)
-        }
-        Err(ref e) => {
-            tracing::warn!(
-                "AI analysis failed, saving screenshot with pending status: {}",
-                e
-            );
-
-            // Save with error indicator and queue for retry
-            let content = serde_json::json!({
-                "current_focus": "分析失败 - 待重试",
-                "active_software": active_window.process_name,
-                "context_keywords": [],
-                "active_window": {
-                    "title": active_window.title,
-                    "process_name": active_window.process_name
-                },
-                "monitor_info": {
-                    "count": monitor_info.count,
-                    "capture_mode": capture_mode.to_string()
-                },
-                "offline_pending": true,
-                "error": e
-            })
-            .to_string();
-
-            (content, None, false)
-        }
-    };
-
-    // SMART-004: Store monitor_info as JSON in the monitor_info field
     let monitor_info_json = serde_json::to_string(&monitor_info).ok();
 
-    let record_id = memory_storage::add_record(
+    // SESSION-001: 使用 add_record_with_session 保存 session_id
+    let record_id = memory_storage::add_record_with_session(
         "auto",
         &content,
         screenshot_path.as_deref(),
         monitor_info_json.as_deref(),
-        tags_json.as_deref(),
-    )
-    .map_err(|e| format!("Failed to store capture: {}", e))?;
+        None,
+        Some(session_id),
+    )?;
 
-    // FIX-009: If analysis failed, queue for retry
-    if !is_success {
-        if let Some(ref path) = screenshot_path {
-            let payload = serde_json::json!({
-                "screenshot_path": path,
-                "record_id": record_id,
-            })
-            .to_string();
-            let _ = crate::offline_queue::enqueue_task(
-                &crate::offline_queue::OfflineTaskType::ScreenshotAnalysis,
-                &payload,
-                Some(record_id),
-            );
-        }
-    } else if let Ok(ref analysis) = analysis_result {
-        tracing::info!("Screen captured and analyzed: {}", analysis.current_focus);
-    }
+    tracing::debug!(
+        "Screenshot saved with record_id={}, session_id={}",
+        record_id,
+        session_id
+    );
 
     Ok(())
 }

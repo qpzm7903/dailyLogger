@@ -563,6 +563,8 @@ mod tests {
             monitor_info: None,
             tags: None,
             user_notes: None,
+            session_id: None,
+            analysis_status: None,
         }
     }
 
@@ -615,6 +617,7 @@ mod tests {
             custom_headers: None,
             quality_filter_enabled: None,
             quality_filter_threshold: None,
+            session_gap_minutes: None,
         }
     }
 
@@ -1714,6 +1717,7 @@ mod benchmarks {
             custom_headers: None,
             quality_filter_enabled: None,
             quality_filter_threshold: None,
+            session_gap_minutes: None,
         }
     }
 
@@ -1732,6 +1736,8 @@ mod benchmarks {
                 monitor_info: None,
                 tags: None,
                 user_notes: None,
+                session_id: None,
+                analysis_status: None,
             });
         }
 
@@ -1767,6 +1773,8 @@ mod benchmarks {
                 monitor_info: None,
                 tags: None,
                 user_notes: None,
+                session_id: None,
+                analysis_status: None,
             });
         }
 
@@ -1842,6 +1850,8 @@ mod benchmarks {
                 monitor_info: None,
                 tags: None,
                 user_notes: None,
+                session_id: None,
+                analysis_status: None,
             });
         }
 

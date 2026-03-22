@@ -227,6 +227,8 @@ mod tests {
             monitor_info: None,
             tags: None,
             user_notes: None,
+            session_id: None,
+            analysis_status: None,
         }
     }
 
