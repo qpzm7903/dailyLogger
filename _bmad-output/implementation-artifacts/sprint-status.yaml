@@ -102,8 +102,8 @@ development_status:
   INT-004-retrospective: done
   epic-6-retrospective: done
 
-  # Epic 7: 核心体验深化 (EXP) — 当前 Sprint 重心
-  epic-7: in-progress
+  # Epic 7: 核心体验深化 (EXP) — Sprint 完成
+  epic-7: done
   EXP-001: done
   EXP-001-retrospective: done
   EXP-002: done
