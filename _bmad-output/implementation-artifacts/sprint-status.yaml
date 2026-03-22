@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-22 (SESSION-002 story created)
+# last_updated: 2026-03-22 (UX-REDESIGN Epic 9 added with 5 stories)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-22
+last_updated: 2026-03-22 (UX-REDESIGN Epic 9 added)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -124,3 +124,12 @@ development_status:
   SESSION-004: backlog
   SESSION-005: backlog
   epic-8-retrospective: optional
+
+  # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 新规划
+  epic-9: backlog
+  UX-1-design-tokens: ready-for-dev
+  UX-2-button-normalization: backlog
+  UX-3-sidebar-upgrade: backlog
+  UX-4-dashboard-reorganization: backlog
+  UX-5-interaction-polish: backlog
+  epic-9-retrospective: optional
