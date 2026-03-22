@@ -81,12 +81,13 @@
           <div
             v-for="virtualItem in virtualItems"
             :key="virtualItem.index"
-            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-darker/50 transition-colors border-b border-gray-700"
+            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-darker/50 transition-colors border-b border-gray-700 cursor-pointer"
             :style="{
               height: `${virtualItem.size}px`,
               transform: `translateY(${virtualItem.start}px)`,
             }"
             :data-index="virtualItem.index"
+            @click="results[virtualItem.index] && handleResultClick(results[virtualItem.index].record)"
           >
             <template v-if="results[virtualItem.index]">
               <div class="flex items-start justify-between gap-2">
@@ -115,7 +116,8 @@
           <div
             v-for="result in results"
             :key="result.record.id"
-            class="py-3 px-2 hover:bg-darker/50 transition-colors"
+            class="py-3 px-2 hover:bg-darker/50 transition-colors cursor-pointer"
+            @click="handleResultClick(result.record)"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="flex-1 min-w-0">
@@ -142,10 +144,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { useVirtualizer } from '@tanstack/vue-virtual'
+import { useDebounceFn } from '@vueuse/core'
 import { showError } from '../stores/toast'
 import type { Record } from '../types/tauri'
 
@@ -156,7 +159,10 @@ interface SearchResult {
 }
 
 const { t } = useI18n()
-const emit = defineEmits<{(e: 'close'): void}>()
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'viewScreenshot', record: Record): void
+}>()
 
 // UX-022: Virtual scroll configuration
 const VIRTUAL_SCROLL_CONFIG = {
@@ -186,6 +192,18 @@ const virtualizer = useVirtualizer({
 
 // UX-022: Virtual items to render
 const virtualItems = computed(() => virtualizer.value.getVirtualItems())
+
+// AC 6: Debounce search (>=300ms)
+const debouncedSearch = useDebounceFn(async () => {
+  await search()
+}, 300)
+
+// Watch for query changes and trigger debounced search
+watch(searchQuery, (newQuery) => {
+  if (newQuery.trim() && hasSearched.value) {
+    debouncedSearch()
+  }
+})
 
 function formatTime(timestamp: string) {
   const date = new Date(timestamp)
@@ -232,6 +250,12 @@ async function setOrderBy(newOrderBy: 'rank' | 'time') {
   if (searchQuery.value.trim() && hasSearched.value) {
     await search()
   }
+}
+
+// AC 4: Handle result click - emit event to parent for screenshot viewing
+function handleResultClick(record: Record) {
+  emit('viewScreenshot', record)
+  emit('close')
 }
 </script>
 

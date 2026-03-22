@@ -94,7 +94,7 @@
         <HistoryViewer v-if="isOpen('historyViewer')" :initialTag="initialFilterTag" @close="close('historyViewer'); initialFilterTag = null" />
       </Transition>
       <Transition name="fade" mode="out-in">
-        <SearchPanel v-if="isOpen('search')" @close="close('search')" />
+        <SearchPanel v-if="isOpen('search')" @close="close('search')" @viewScreenshot="handleSearchViewScreenshot" />
       </Transition>
       <Transition name="slide-up" mode="out-in">
         <TagCloud v-if="isOpen('tagCloud')" @close="close('tagCloud')" @tagSelected="handleTagSelected" />
@@ -274,6 +274,13 @@ const openScreenshot = (record: LogRecord) => {
 
 const handleTimelineViewScreenshot = (record: LogRecord) => {
   close('timeline')
+  selectedScreenshot.value = record
+  open('screenshot')
+}
+
+// EXP-004: Handle search result screenshot viewing
+const handleSearchViewScreenshot = (record: LogRecord) => {
+  close('search')
   selectedScreenshot.value = record
   open('screenshot')
 }
