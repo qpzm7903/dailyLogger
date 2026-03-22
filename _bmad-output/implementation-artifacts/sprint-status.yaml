@@ -114,8 +114,8 @@ development_status:
   epic-7-retrospective: done
 
   # Epic 8: 工作时段感知分析 (SESSION) — Sprint Change Proposal v2
-  epic-8: backlog
-  CLEAN-001: backlog
+  epic-8: in-progress
+  CLEAN-001: ready-for-dev
   SESSION-001: backlog
   SESSION-002: backlog
   SESSION-003: backlog
