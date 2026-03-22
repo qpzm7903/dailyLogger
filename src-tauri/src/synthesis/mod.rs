@@ -628,6 +628,8 @@ mod tests {
             dingtalk_webhook_url: None,
             capture_only_mode: None,
             custom_headers: None,
+            quality_filter_enabled: None,
+            quality_filter_threshold: None,
         }
     }
 
@@ -1727,6 +1729,8 @@ mod benchmarks {
             dingtalk_webhook_url: None,
             capture_only_mode: None,
             custom_headers: None,
+            quality_filter_enabled: None,
+            quality_filter_threshold: None,
         }
     }
 

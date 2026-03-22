@@ -321,6 +321,8 @@ const settings = ref({
   capture_mode: 'primary',
   selected_monitor_index: 0,
   capture_only_mode: false,
+  quality_filter_enabled: true,
+  quality_filter_threshold: 0.3,
   tag_categories: '',
   is_ollama: false,
   obsidian_vaults: '[]',
@@ -364,7 +366,9 @@ const captureSettings = computed(() => ({
   use_whitelist_only: settings.value.use_whitelist_only,
   capture_mode: settings.value.capture_mode,
   selected_monitor_index: settings.value.selected_monitor_index,
-  capture_only_mode: settings.value.capture_only_mode
+  capture_only_mode: settings.value.capture_only_mode,
+  quality_filter_enabled: settings.value.quality_filter_enabled,
+  quality_filter_threshold: settings.value.quality_filter_threshold
 }))
 
 const outputSettings = computed(() => ({

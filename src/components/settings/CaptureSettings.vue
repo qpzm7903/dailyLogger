@@ -269,12 +269,75 @@
         </div>
       </div>
     </div>
+
+    <!-- EXP-002: Quality Filter -->
+    <div>
+      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.qualityFilter.title') }}</h3>
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <input
+            v-model="localSettings.quality_filter_enabled"
+            type="checkbox"
+            id="quality_filter_enabled"
+            class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+          />
+          <label for="quality_filter_enabled" class="text-xs text-gray-300 cursor-pointer">
+            {{ $t('settings.qualityFilter.enabled') }}
+          </label>
+        </div>
+        <span class="text-xs text-gray-500 block">
+          {{ $t('settings.qualityFilter.hint') }}
+        </span>
+
+        <!-- Sensitivity selection -->
+        <div v-if="localSettings.quality_filter_enabled" class="space-y-2">
+          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.qualityFilter.sensitivity') }}</label>
+          <div class="flex flex-wrap gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                v-model="qualitySensitivity"
+                value="low"
+                class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
+              />
+              <span class="text-sm text-gray-300">{{ $t('settings.qualityFilter.low') }}</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                v-model="qualitySensitivity"
+                value="medium"
+                class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
+              />
+              <span class="text-sm text-gray-300">{{ $t('settings.qualityFilter.medium') }}</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                v-model="qualitySensitivity"
+                value="high"
+                class="w-4 h-4 border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0"
+              />
+              <span class="text-sm text-gray-300">{{ $t('settings.qualityFilter.high') }}</span>
+            </label>
+          </div>
+          <span class="text-xs text-gray-500">{{ $t('settings.qualityFilter.sensitivityHint') }}</span>
+        </div>
+
+        <!-- Filtered today stats -->
+        <div v-if="localSettings.quality_filter_enabled && qualityFilterStats" class="bg-darker rounded-lg px-3 py-2 border border-gray-700">
+          <span class="text-xs text-gray-400">{{ $t('settings.qualityFilter.filteredToday') }}: </span>
+          <span class="text-sm text-primary font-medium">{{ qualityFilterStats.filtered_today }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { usePlatform } from '../../composables/usePlatform'
+import { invoke } from '@tauri-apps/api/core'
 
 // Props
 interface Monitor {
@@ -302,6 +365,8 @@ interface Props {
     capture_mode: string
     selected_monitor_index: number
     capture_only_mode: boolean
+    quality_filter_enabled: boolean
+    quality_filter_threshold: number
   }
   whitelistTags: string[]
   blacklistTags: string[]
@@ -328,6 +393,29 @@ const localBlacklistTags = ref([...props.blacklistTags])
 // Tag input state
 const newWhitelistTag = ref('')
 const newBlacklistTag = ref('')
+
+// EXP-002: Quality filter stats
+interface QualityFilterStats {
+  filtered_today: number
+  quality_filter_enabled: boolean
+  quality_filter_threshold: number
+}
+const qualityFilterStats = ref<QualityFilterStats | null>(null)
+
+// EXP-002: Quality sensitivity computed property
+// Maps threshold to sensitivity: low=0.1, medium=0.3, high=0.6
+const qualitySensitivity = computed({
+  get: () => {
+    const t = localSettings.value.quality_filter_threshold
+    if (t <= 0.15) return 'low'
+    if (t <= 0.45) return 'medium'
+    return 'high'
+  },
+  set: (value: string) => {
+    const thresholds: Record<string, number> = { low: 0.1, medium: 0.3, high: 0.6 }
+    localSettings.value.quality_filter_threshold = thresholds[value] ?? 0.3
+  }
+})
 
 // Watch for external changes
 watch(() => props.settings, (newVal) => {
@@ -373,4 +461,17 @@ function removeBlacklistTag(index: number) {
   localBlacklistTags.value.splice(index, 1)
   emit('update:blacklistTags', [...localBlacklistTags.value])
 }
+
+// EXP-002: Load quality filter stats
+async function loadQualityFilterStats() {
+  try {
+    qualityFilterStats.value = await invoke<QualityFilterStats>('get_quality_filter_stats')
+  } catch (e) {
+    console.error('Failed to load quality filter stats:', e)
+  }
+}
+
+onMounted(() => {
+  loadQualityFilterStats()
+})
 </script>

@@ -271,6 +271,16 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // EXP-002: 截图质量过滤配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN quality_filter_enabled INTEGER DEFAULT 1",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN quality_filter_threshold REAL DEFAULT 0.3",
+        [],
+    );
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     tracing::info!("init_database: Creating FTS5 table");
@@ -514,7 +524,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             slack_webhook_url TEXT,
             dingtalk_webhook_url TEXT,
             capture_only_mode INTEGER DEFAULT 0,
-            custom_headers TEXT DEFAULT '[]'
+            custom_headers TEXT DEFAULT '[]',
+            quality_filter_enabled INTEGER DEFAULT 1,
+            quality_filter_threshold REAL DEFAULT 0.3
         )",
         [],
     )

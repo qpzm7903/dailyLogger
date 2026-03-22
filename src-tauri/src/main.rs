@@ -467,6 +467,11 @@ fn main() {
             daily_logger_lib::auto_perception::get_work_time_status,
             #[cfg(feature = "screenshot")]
             daily_logger_lib::monitor::get_monitors,
+            // EXP-002: Quality filter stats
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::get_quality_filter_stats,
+            #[cfg(feature = "screenshot")]
+            daily_logger_lib::auto_perception::reset_quality_filter_counter,
             // Timeline visualization
             daily_logger_lib::timeline::get_timeline_today,
             daily_logger_lib::timeline::get_timeline_for_date,

@@ -91,6 +91,9 @@ pub struct Settings {
     pub capture_only_mode: Option<bool>, // Only capture screenshots without AI analysis
     // AI-006: 自定义 API Headers (#68)
     pub custom_headers: Option<String>, // JSON: Vec<CustomHeader>
+    // EXP-002: 截图质量过滤
+    pub quality_filter_enabled: Option<bool>,
+    pub quality_filter_threshold: Option<f64>,
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)

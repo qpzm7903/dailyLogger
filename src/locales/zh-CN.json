@@ -403,6 +403,17 @@
     "captureOnlyMode": "仅截图模式",
     "captureOnlyModeLabel": "启动后仅截图，延迟分析",
     "captureOnlyModeHint": "启用后，启动自动捕获时只记录截图，不进行 AI 分析。可稍后手动触发分析。",
+    "qualityFilter": {
+      "title": "截图质量过滤",
+      "enabled": "启用质量过滤",
+      "hint": "自动跳过低信息量截图（空白桌面、锁屏、纯色背景等），减少历史记录噪音。",
+      "sensitivity": "过滤灵敏度",
+      "low": "低（仅过滤空白）",
+      "medium": "中（推荐）",
+      "high": "高（积极过滤）",
+      "sensitivityHint": "低灵敏度只过滤纯色截图，高灵敏度会过滤更多低信息量内容。",
+      "filteredToday": "今日已过滤"
+    },
     "displaySettings": "显示器设置",
     "captureMode": "捕获模式",
     "primaryMonitor": "主显示器",

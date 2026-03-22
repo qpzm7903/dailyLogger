@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::{command, Emitter};
@@ -37,6 +37,24 @@ static SCREEN_STATE: Lazy<Mutex<ScreenState>> = Lazy::new(|| {
     })
 });
 
+// EXP-002: Quality filter counter for today's filtered screenshots
+static FILTERED_TODAY: AtomicU32 = AtomicU32::new(0);
+
+/// Increment the filtered screenshot counter
+fn increment_filtered_count() {
+    FILTERED_TODAY.fetch_add(1, Ordering::Relaxed);
+}
+
+/// Get today's filtered screenshot count
+pub fn get_filtered_today() -> u32 {
+    FILTERED_TODAY.load(Ordering::Relaxed)
+}
+
+/// Reset the filtered counter (call at midnight or app start)
+pub fn reset_filtered_count() {
+    FILTERED_TODAY.store(0, Ordering::Relaxed);
+}
+
 use once_cell::sync::Lazy;
 
 /// Compute a 64x64 grayscale thumbnail fingerprint from a base64-encoded PNG.
@@ -69,6 +87,75 @@ fn calc_change_rate(a: &[u8], b: &[u8]) -> f64 {
         .filter(|(pa, pb)| pa.abs_diff(**pb) > NOISE_TOLERANCE)
         .count();
     (changed as f64 / a.len() as f64) * 100.0
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXP-002: Screenshot Quality Filter
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Quality score thumbnail size: 32x32 grayscale for fast entropy calculation
+const QUALITY_THUMB_SIZE: u32 = 32;
+
+/// Compute quality score for a screenshot based on image entropy.
+/// Returns 0.0 (low quality - solid color/lock screen) to 1.0 (high quality - rich content).
+///
+/// Algorithm:
+/// 1. Decode base64 → image
+/// 2. Resize to 32x32 grayscale (fast computation)
+/// 3. Compute grayscale histogram
+/// 4. Calculate entropy: -sum(p * log2(p))
+/// 5. Normalize by max entropy (log2(256) ≈ 8.0)
+///
+/// Quality interpretation:
+/// - entropy ≈ 0: Solid color (lock screen, blank desktop)
+/// - entropy ≈ 8: Maximum variety (code, documents, complex UI)
+fn compute_quality_score(image_base64: &str) -> Result<f64, String> {
+    let image_data =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)
+            .map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+    let img =
+        image::load_from_memory(&image_data).map_err(|e| format!("Failed to load image: {}", e))?;
+
+    // Resize to small thumbnail for fast computation
+    let thumb = img
+        .resize_exact(
+            QUALITY_THUMB_SIZE,
+            QUALITY_THUMB_SIZE,
+            image::imageops::FilterType::Nearest,
+        )
+        .to_luma8();
+
+    let pixels = thumb.into_raw();
+
+    // Compute grayscale histogram
+    let mut histogram = [0u32; 256];
+    for &pixel in &pixels {
+        histogram[pixel as usize] += 1;
+    }
+
+    // Calculate entropy
+    let total_pixels = pixels.len() as f64;
+    let mut entropy = 0.0;
+    for &count in &histogram {
+        if count > 0 {
+            let p = count as f64 / total_pixels;
+            entropy -= p * p.log2();
+        }
+    }
+
+    // Normalize to [0, 1] range (max entropy = log2(256) ≈ 8.0)
+    let normalized_score = (entropy / 8.0).min(1.0);
+
+    Ok(normalized_score)
+}
+
+/// EXP-002: Statistics for quality filter
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QualityFilterStats {
+    pub filtered_today: u32,
+    pub quality_filter_enabled: bool,
+    pub quality_filter_threshold: f64,
 }
 
 /// Determine whether the screen has changed enough to warrant a new capture.
@@ -154,6 +241,9 @@ pub struct CaptureSettings {
     pub capture_only_mode: bool,
     // AI-006: Custom API headers (#68)
     pub custom_headers: Vec<crate::memory_storage::CustomHeader>,
+    // EXP-002: Quality filter settings
+    pub quality_filter_enabled: bool,
+    pub quality_filter_threshold: f64,
 }
 
 impl Default for CaptureSettings {
@@ -176,6 +266,9 @@ impl Default for CaptureSettings {
             capture_only_mode: false,
             // AI-006: Default to empty custom headers
             custom_headers: Vec::new(),
+            // EXP-002: Quality filter defaults (enabled, medium sensitivity)
+            quality_filter_enabled: true,
+            quality_filter_threshold: 0.3,
         }
     }
 }
@@ -707,6 +800,9 @@ fn load_capture_settings() -> CaptureSettings {
                 capture_only_mode: s.capture_only_mode.unwrap_or(false),
                 // AI-006: Load custom headers
                 custom_headers,
+                // EXP-002: Load quality filter settings
+                quality_filter_enabled: s.quality_filter_enabled.unwrap_or(true),
+                quality_filter_threshold: s.quality_filter_threshold.unwrap_or(0.3),
             }
         }
         Err(_) => CaptureSettings::default(),
@@ -911,6 +1007,27 @@ async fn capture_and_store() -> Result<(), String> {
     .is_none()
     {
         return Ok(());
+    }
+
+    // EXP-002: Quality filter - skip low-information screenshots
+    // (blank desktop, lock screen, solid color backgrounds)
+    if settings.quality_filter_enabled {
+        let threshold = settings.quality_filter_threshold;
+        let score = compute_quality_score(&image_base64)?;
+        if score < threshold {
+            increment_filtered_count();
+            tracing::debug!(
+                "Quality filter: score={:.2} < threshold={:.2}, skipping screenshot",
+                score,
+                threshold
+            );
+            return Ok(());
+        }
+        tracing::trace!(
+            "Quality filter: score={:.2} >= threshold={:.2}, proceeding with capture",
+            score,
+            threshold
+        );
     }
 
     let screenshot_path = save_screenshot(&image_base64);
@@ -1537,6 +1654,30 @@ pub async fn reanalyze_records_by_date(date: String) -> Result<ReanalyzeTodayRes
     })
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXP-002: Quality Filter Stats
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// EXP-002: Get quality filter statistics for today.
+/// Returns the count of filtered screenshots and current settings.
+#[command]
+pub async fn get_quality_filter_stats() -> Result<QualityFilterStats, String> {
+    let settings = memory_storage::get_settings_sync()?;
+
+    Ok(QualityFilterStats {
+        filtered_today: get_filtered_today(),
+        quality_filter_enabled: settings.quality_filter_enabled.unwrap_or(true),
+        quality_filter_threshold: settings.quality_filter_threshold.unwrap_or(0.3),
+    })
+}
+
+/// EXP-002: Reset the quality filter counter (e.g., at midnight).
+#[command]
+pub async fn reset_quality_filter_counter() -> Result<(), String> {
+    reset_filtered_count();
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1944,6 +2085,9 @@ mod tests {
             capture_only_mode: false,
             // AI-006: Custom headers
             custom_headers: Vec::new(),
+            // EXP-002: Quality filter
+            quality_filter_enabled: true,
+            quality_filter_threshold: 0.3,
         };
         assert_eq!(settings.window_whitelist, vec!["VS Code"]);
         assert_eq!(settings.window_blacklist, vec!["Chrome"]);
@@ -2244,5 +2388,114 @@ mod tests {
         let loaded = load_capture_settings();
         assert_eq!(loaded.capture_mode, "all");
         assert_eq!(loaded.selected_monitor_index, 2);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // EXP-002: Quality filter tests
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /// Helper: Create a solid-color PNG image as base64
+    fn make_solid_color_png_base64(gray_value: u8) -> String {
+        let image = image::GrayImage::from_pixel(
+            QUALITY_THUMB_SIZE,
+            QUALITY_THUMB_SIZE,
+            image::Luma([gray_value]),
+        );
+        let mut buffer = Vec::new();
+        image::DynamicImage::ImageLuma8(image)
+            .write_to(
+                &mut std::io::Cursor::new(&mut buffer),
+                image::ImageFormat::Png,
+            )
+            .unwrap();
+        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &buffer)
+    }
+
+    /// Helper: Create a varied-content PNG image (simulating real content)
+    fn make_varied_png_base64() -> String {
+        let mut image = image::GrayImage::new(QUALITY_THUMB_SIZE, QUALITY_THUMB_SIZE);
+        for y in 0..QUALITY_THUMB_SIZE {
+            for x in 0..QUALITY_THUMB_SIZE {
+                // Create a pattern with high entropy
+                let value = ((x * y + x + y) % 256) as u8;
+                image.put_pixel(x, y, image::Luma([value]));
+            }
+        }
+        let mut buffer = Vec::new();
+        image::DynamicImage::ImageLuma8(image)
+            .write_to(
+                &mut std::io::Cursor::new(&mut buffer),
+                image::ImageFormat::Png,
+            )
+            .unwrap();
+        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &buffer)
+    }
+
+    #[test]
+    fn compute_quality_score_solid_black_returns_near_zero() {
+        let black_image = make_solid_color_png_base64(0);
+        let score = compute_quality_score(&black_image).unwrap();
+        assert!(
+            score < 0.01,
+            "Solid black image should have near-zero score, got {}",
+            score
+        );
+    }
+
+    #[test]
+    fn compute_quality_score_solid_white_returns_near_zero() {
+        let white_image = make_solid_color_png_base64(255);
+        let score = compute_quality_score(&white_image).unwrap();
+        assert!(
+            score < 0.01,
+            "Solid white image should have near-zero score, got {}",
+            score
+        );
+    }
+
+    #[test]
+    fn compute_quality_score_solid_gray_returns_near_zero() {
+        let gray_image = make_solid_color_png_base64(128);
+        let score = compute_quality_score(&gray_image).unwrap();
+        assert!(
+            score < 0.01,
+            "Solid gray image should have near-zero score, got {}",
+            score
+        );
+    }
+
+    #[test]
+    fn compute_quality_score_varied_content_returns_high_score() {
+        let varied_image = make_varied_png_base64();
+        let score = compute_quality_score(&varied_image).unwrap();
+        assert!(
+            score > 0.5,
+            "Varied content image should have high score, got {}",
+            score
+        );
+    }
+
+    #[test]
+    fn compute_quality_score_invalid_base64_returns_error() {
+        let result = compute_quality_score("not valid base64!!!");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn quality_filter_counter_increments() {
+        // Reset counter
+        reset_filtered_count();
+        assert_eq!(get_filtered_today(), 0);
+
+        // Increment
+        increment_filtered_count();
+        assert_eq!(get_filtered_today(), 1);
+
+        increment_filtered_count();
+        assert_eq!(get_filtered_today(), 2);
+
+        // Reset again
+        reset_filtered_count();
+        assert_eq!(get_filtered_today(), 0);
     }
 }

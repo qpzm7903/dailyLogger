@@ -26,7 +26,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 comparison_report_prompt, logseq_graphs,
                 notion_api_key, notion_database_id,
                 github_token, github_repositories,
-                slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers
+                slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers,
+                quality_filter_enabled, quality_filter_threshold
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -95,6 +96,11 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                     .get::<_, Option<i32>>("capture_only_mode")?
                     .map(|v| v != 0),
                 custom_headers: row.get("custom_headers")?,
+                // EXP-002: Quality filter settings
+                quality_filter_enabled: row
+                    .get::<_, Option<i32>>("quality_filter_enabled")?
+                    .map(|v| v != 0),
+                quality_filter_threshold: row.get("quality_filter_threshold")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -307,7 +313,9 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             slack_webhook_url = :slack_webhook_url,
             dingtalk_webhook_url = :dingtalk_webhook_url,
             capture_only_mode = :capture_only_mode,
-            custom_headers = :custom_headers
+            custom_headers = :custom_headers,
+            quality_filter_enabled = :quality_filter_enabled,
+            quality_filter_threshold = :quality_filter_threshold
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -357,6 +365,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":dingtalk_webhook_url": settings.dingtalk_webhook_url,
             ":capture_only_mode": settings.capture_only_mode.map(|v| if v { 1 } else { 0 }),
             ":custom_headers": encrypted_custom_headers,
+            ":quality_filter_enabled": settings.quality_filter_enabled.map(|v| if v { 1 } else { 0 }),
+            ":quality_filter_threshold": settings.quality_filter_threshold,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

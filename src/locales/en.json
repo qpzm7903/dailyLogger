@@ -403,6 +403,17 @@
     "captureOnlyMode": "Capture Only Mode",
     "captureOnlyModeLabel": "Capture only, delay analysis",
     "captureOnlyModeHint": "When enabled, auto-capture only saves screenshots without AI analysis. You can trigger analysis later.",
+    "qualityFilter": {
+      "title": "Screenshot Quality Filter",
+      "enabled": "Enable quality filter",
+      "hint": "Automatically skip low-information screenshots (blank desktop, lock screen, solid color backgrounds) to reduce noise in history.",
+      "sensitivity": "Filter sensitivity",
+      "low": "Low (blank only)",
+      "medium": "Medium (recommended)",
+      "high": "High (aggressive)",
+      "sensitivityHint": "Low sensitivity only filters solid-color screenshots, high sensitivity filters more low-information content.",
+      "filteredToday": "Filtered today"
+    },
     "displaySettings": "Display Settings",
     "captureMode": "Capture Mode",
     "primaryMonitor": "Primary Monitor",
