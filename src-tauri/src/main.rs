@@ -383,6 +383,7 @@ fn main() {
             daily_logger_lib::manual_entry::open_obsidian_folder,
             daily_logger_lib::manual_entry::list_report_files,
             daily_logger_lib::memory_storage::get_today_records,
+            daily_logger_lib::memory_storage::get_today_stats,
             daily_logger_lib::memory_storage::get_records_by_date_range,
             daily_logger_lib::memory_storage::get_settings,
             daily_logger_lib::memory_storage::save_settings,

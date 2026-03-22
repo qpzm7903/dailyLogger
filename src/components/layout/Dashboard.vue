@@ -76,6 +76,9 @@
       <!-- GitHub Stats Panel -->
       <GitHubStatsPanel @open-settings="$emit('open', 'settings')" />
 
+      <!-- Today Summary Widget (EXP-005) -->
+      <TodaySummaryWidget ref="todaySummaryWidgetRef" />
+
       <!-- Timeline Widget -->
       <TimelineWidget ref="timelineWidgetRef" @open-full-timeline="$emit('open', 'timeline')" />
 
@@ -304,6 +307,7 @@ import { useI18n } from 'vue-i18n'
 import ReportDropdown from '../ReportDropdown.vue'
 import GitHubStatsPanel from '../GitHubStatsPanel.vue'
 import TimelineWidget from '../TimelineWidget.vue'
+import TodaySummaryWidget from '../TodaySummaryWidget.vue'
 import { extractSummary } from '../../utils/contentUtils'
 import { getTagColorClass } from '../../utils/tagColors'
 import type { LogRecord, Tag } from '../../types/tauri'
@@ -344,12 +348,18 @@ const selectedTagFilter = ref('')
 const TAG_VISIBLE_THRESHOLD = 6
 const tagFilterExpanded = ref(false)
 const timelineWidgetRef = ref<InstanceType<typeof TimelineWidget> | null>(null)
+const todaySummaryWidgetRef = ref<InstanceType<typeof TodaySummaryWidget> | null>(null)
 
-// Refresh TimelineWidget when todayRecords changes (AC 3.3: real-time update)
+// Refresh TimelineWidget and TodaySummaryWidget when todayRecords changes (AC 3.3: real-time update)
 watch(() => props.todayRecords, (newRecords, oldRecords) => {
   // Only refresh if the record count actually changed
-  if (newRecords.length !== oldRecords?.length && timelineWidgetRef.value) {
-    timelineWidgetRef.value.refresh()
+  if (newRecords.length !== oldRecords?.length) {
+    if (timelineWidgetRef.value) {
+      timelineWidgetRef.value.refresh()
+    }
+    if (todaySummaryWidgetRef.value) {
+      todaySummaryWidgetRef.value.refresh()
+    }
   }
 }, { deep: false })
 

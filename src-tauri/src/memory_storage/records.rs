@@ -30,6 +30,25 @@ pub struct SearchResult {
     pub rank: f64,
 }
 
+/// EXP-005: Today's statistics for the summary widget
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TodayStats {
+    /// Total number of records today (auto + manual)
+    pub total_count: u32,
+    /// Number of auto-captured screenshots
+    pub auto_count: u32,
+    /// Number of manual notes
+    pub manual_count: u32,
+    /// Timestamp of the first record today (RFC3339)
+    pub first_record_time: Option<String>,
+    /// Timestamp of the latest record today (RFC3339)
+    pub latest_record_time: Option<String>,
+    /// Hour (0-23) with the most records today
+    pub busiest_hour: Option<u32>,
+    /// Number of records in the busiest hour
+    pub busiest_hour_count: u32,
+}
+
 pub fn add_record(
     source_type: &str,
     content: &str,
@@ -245,6 +264,76 @@ pub fn get_today_record_count_sync() -> Result<usize, String> {
         .map_err(|e| format!("Failed to count records: {}", e))?;
 
     Ok(count as usize)
+}
+
+/// EXP-005: Get today's statistics for the summary widget.
+/// Returns aggregated stats including record counts, time span, and busiest hour.
+pub fn get_today_stats_sync() -> Result<TodayStats, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let today_start = chrono::Local::now()
+        .date_naive()
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    // Query basic stats in a single query
+    let basic_stats = conn
+        .query_row(
+            "SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN source_type='auto' THEN 1 ELSE 0 END) as auto_count,
+                SUM(CASE WHEN source_type='manual' THEN 1 ELSE 0 END) as manual_count,
+                MIN(timestamp) as first_time,
+                MAX(timestamp) as latest_time
+            FROM records WHERE timestamp >= ?1",
+            params![today_start],
+            |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,            // total
+                    row.get::<_, i64>(1)?,            // auto_count
+                    row.get::<_, i64>(2)?,            // manual_count
+                    row.get::<_, Option<String>>(3)?, // first_time
+                    row.get::<_, Option<String>>(4)?, // latest_time
+                ))
+            },
+        )
+        .map_err(|e| format!("Failed to query today stats: {}", e))?;
+
+    let (total, auto_count, manual_count, first_record_time, latest_record_time) = basic_stats;
+
+    // Query busiest hour if there are records
+    let (busiest_hour, busiest_hour_count) = if total > 0 {
+        conn.query_row(
+            "SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(*) as cnt
+            FROM records
+            WHERE timestamp >= ?1
+            GROUP BY hour
+            ORDER BY cnt DESC
+            LIMIT 1",
+            params![today_start],
+            |row| Ok((row.get::<_, i64>(0)? as u32, row.get::<_, i64>(1)? as u32)),
+        )
+        .map_err(|e| format!("Failed to query busiest hour: {}", e))?
+    } else {
+        (0, 0)
+    };
+
+    Ok(TodayStats {
+        total_count: total as u32,
+        auto_count: auto_count as u32,
+        manual_count: manual_count as u32,
+        first_record_time,
+        latest_record_time,
+        busiest_hour: if total > 0 { Some(busiest_hour) } else { None },
+        busiest_hour_count,
+    })
 }
 
 pub fn get_records_by_date_range_sync(
@@ -747,6 +836,12 @@ pub async fn update_record_user_notes(id: i64, user_notes: Option<String>) -> Re
     update_record_user_notes_sync(id, user_notes.as_deref())
 }
 
+/// EXP-005: Get today's statistics for the summary widget
+#[command]
+pub async fn get_today_stats() -> Result<TodayStats, String> {
+    get_today_stats_sync()
+}
+
 // ── Tests ──
 
 #[cfg(test)]
@@ -1069,6 +1164,97 @@ mod tests {
         // Insert a record for today
         add_record("manual", "today", None, None, None).unwrap();
         assert_eq!(get_today_record_count_sync().unwrap(), 1);
+    }
+
+    // ── get_today_stats_sync tests (EXP-005) ──
+
+    #[test]
+    #[serial]
+    fn today_stats_empty_db_returns_zeros() {
+        setup_test_db();
+        let stats = get_today_stats_sync().unwrap();
+        assert_eq!(stats.total_count, 0);
+        assert_eq!(stats.auto_count, 0);
+        assert_eq!(stats.manual_count, 0);
+        assert!(stats.first_record_time.is_none());
+        assert!(stats.latest_record_time.is_none());
+        assert!(stats.busiest_hour.is_none());
+        assert_eq!(stats.busiest_hour_count, 0);
+    }
+
+    #[test]
+    #[serial]
+    fn today_stats_counts_auto_and_manual() {
+        setup_test_db();
+
+        add_record("auto", "screenshot 1", None, None, None).unwrap();
+        add_record("auto", "screenshot 2", None, None, None).unwrap();
+        add_record("manual", "note 1", None, None, None).unwrap();
+
+        let stats = get_today_stats_sync().unwrap();
+        assert_eq!(stats.total_count, 3);
+        assert_eq!(stats.auto_count, 2);
+        assert_eq!(stats.manual_count, 1);
+    }
+
+    #[test]
+    #[serial]
+    fn today_stats_returns_time_range() {
+        setup_test_db();
+
+        let today = chrono::Local::now().date_naive();
+
+        // Insert records at different times
+        let ts_10 = local_to_utc_rfc3339(today.and_hms_opt(10, 0, 0).unwrap());
+        insert_record_with_ts(&ts_10, "morning");
+
+        let ts_14 = local_to_utc_rfc3339(today.and_hms_opt(14, 0, 0).unwrap());
+        insert_record_with_ts(&ts_14, "afternoon");
+
+        let stats = get_today_stats_sync().unwrap();
+        assert!(stats.first_record_time.is_some());
+        assert!(stats.latest_record_time.is_some());
+        // The first should be earlier than the latest
+        assert!(
+            stats.first_record_time.as_ref().unwrap() < stats.latest_record_time.as_ref().unwrap()
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn today_stats_finds_busiest_hour() {
+        setup_test_db();
+
+        let today = chrono::Local::now().date_naive();
+
+        // Insert 3 records at 10:00
+        for _ in 0..3 {
+            let ts = local_to_utc_rfc3339(today.and_hms_opt(10, 30, 0).unwrap());
+            insert_record_with_ts(&ts, "10am record");
+        }
+
+        // Insert 1 record at 14:00
+        let ts_14 = local_to_utc_rfc3339(today.and_hms_opt(14, 0, 0).unwrap());
+        insert_record_with_ts(&ts_14, "2pm record");
+
+        let stats = get_today_stats_sync().unwrap();
+        assert_eq!(stats.busiest_hour, Some(10));
+        assert_eq!(stats.busiest_hour_count, 3);
+    }
+
+    #[test]
+    #[serial]
+    fn today_stats_excludes_yesterday_records() {
+        setup_test_db();
+
+        // Insert a record for yesterday
+        let yesterday = chrono::Local::now().date_naive() - chrono::Duration::days(1);
+        let ts = local_to_utc_rfc3339(yesterday.and_hms_opt(12, 0, 0).unwrap());
+        insert_record_with_ts(&ts, "yesterday");
+
+        let stats = get_today_stats_sync().unwrap();
+        assert_eq!(stats.total_count, 0);
+        assert!(stats.first_record_time.is_none());
     }
 
     // ── get_records_by_date_range_sync tests ──

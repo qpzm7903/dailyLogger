@@ -711,5 +711,16 @@
     "successMessage": "成功重新分析 {count} 条记录",
     "allFailed": "所有记录分析失败",
     "errorMessage": "重新分析失败，请检查 API 配置"
+  },
+  "widget": {
+    "todaySummary": "今日摘要",
+    "loading": "加载中...",
+    "loadFailed": "加载失败",
+    "noRecordsYet": "今日尚未记录",
+    "totalRecords": "总记录",
+    "autoCaptures": "自动截图",
+    "manualNotes": "手动速记",
+    "busiestHour": "最活跃时段",
+    "records": "条"
   }
 }

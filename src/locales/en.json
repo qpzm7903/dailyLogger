@@ -715,5 +715,16 @@
     "successMessage": "Successfully reanalyzed {count} records",
     "allFailed": "All records failed to analyze",
     "errorMessage": "Reanalysis failed, please check API configuration"
+  },
+  "widget": {
+    "todaySummary": "Today's Summary",
+    "loading": "Loading...",
+    "loadFailed": "Failed to load",
+    "noRecordsYet": "No records today",
+    "totalRecords": "Total Records",
+    "autoCaptures": "Auto Captures",
+    "manualNotes": "Manual Notes",
+    "busiestHour": "Busiest Hour",
+    "records": "records"
   }
 }
