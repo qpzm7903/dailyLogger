@@ -104,7 +104,7 @@ development_status:
 
   # Epic 7: 核心体验深化 (EXP) — 当前 Sprint 重心
   epic-7: in-progress
-  EXP-001: review
+  EXP-001: done
   EXP-002: backlog
   EXP-003: backlog
   EXP-004: backlog

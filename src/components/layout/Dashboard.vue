@@ -299,7 +299,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ReportDropdown from '../ReportDropdown.vue'
 import GitHubStatsPanel from '../GitHubStatsPanel.vue'
@@ -344,6 +344,14 @@ const selectedTagFilter = ref('')
 const TAG_VISIBLE_THRESHOLD = 6
 const tagFilterExpanded = ref(false)
 const timelineWidgetRef = ref<InstanceType<typeof TimelineWidget> | null>(null)
+
+// Refresh TimelineWidget when todayRecords changes (AC 3.3: real-time update)
+watch(() => props.todayRecords, (newRecords, oldRecords) => {
+  // Only refresh if the record count actually changed
+  if (newRecords.length !== oldRecords?.length && timelineWidgetRef.value) {
+    timelineWidgetRef.value.refresh()
+  }
+}, { deep: false })
 
 // Computed
 const tagCounts = computed<Record<string, number>>(() => {
