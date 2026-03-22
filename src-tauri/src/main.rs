@@ -475,6 +475,11 @@ fn main() {
             daily_logger_lib::timeline::get_timeline_today,
             daily_logger_lib::timeline::get_timeline_for_date,
             daily_logger_lib::timeline::get_timeline_for_range,
+            // SESSION-001: Session management
+            daily_logger_lib::session_manager::get_today_sessions,
+            // SESSION-002: Session batch analysis
+            daily_logger_lib::session_manager::analyze_session,
+            daily_logger_lib::session_manager::get_session_screenshots,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");

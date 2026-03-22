@@ -52,6 +52,14 @@ pub struct TodayStats {
     pub busiest_hour_count: u32,
 }
 
+/// SESSION-002: Screenshot info for session batch analysis
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionScreenshot {
+    pub record_id: i64,
+    pub timestamp: String,
+    pub screenshot_path: String,
+}
+
 pub fn add_record(
     source_type: &str,
     content: &str,
@@ -882,6 +890,76 @@ pub async fn update_record_user_notes(id: i64, user_notes: Option<String>) -> Re
 #[command]
 pub async fn get_today_stats() -> Result<TodayStats, String> {
     get_today_stats_sync()
+}
+
+/// SESSION-002: Get all pending-analysis records for a session
+///
+/// Returns records that have `analysis_status = 'pending'` and belong to the given session.
+/// These are screenshots that have been captured but not yet analyzed by AI.
+pub fn get_records_by_session_id(session_id: i64) -> Result<Vec<SessionScreenshot>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, timestamp, screenshot_path FROM records
+             WHERE session_id = ?1 AND analysis_status = 'pending' AND screenshot_path IS NOT NULL
+             ORDER BY timestamp ASC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let screenshots = stmt
+        .query_map(params![session_id], |row| {
+            Ok(SessionScreenshot {
+                record_id: row.get(0)?,
+                timestamp: row.get(1)?,
+                screenshot_path: row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+            })
+        })
+        .map_err(|e| format!("Failed to query records: {}", e))?
+        .filter_map(|r| r.ok())
+        .filter(|s| !s.screenshot_path.is_empty())
+        .collect::<Vec<_>>();
+
+    Ok(screenshots)
+}
+
+/// SESSION-002: Update record content and analysis status after AI analysis
+pub fn update_record_analysis(record_id: i64, content: &str) -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    conn.execute(
+        "UPDATE records SET content = ?1, analysis_status = 'analyzed' WHERE id = ?2",
+        params![content, record_id],
+    )
+    .map_err(|e| format!("Failed to update record: {}", e))?;
+
+    Ok(())
+}
+
+/// SESSION-002: Update session with AI analysis results
+pub fn update_session_analysis(
+    session_id: i64,
+    ai_summary: &str,
+    context_for_next: &str,
+) -> Result<(), String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    conn.execute(
+        "UPDATE sessions SET ai_summary = ?1, context_for_next = ?2, status = 'analyzed' WHERE id = ?3",
+        params![ai_summary, context_for_next, session_id],
+    )
+    .map_err(|e| format!("Failed to update session: {}", e))?;
+
+    Ok(())
 }
 
 // ── Tests ──
