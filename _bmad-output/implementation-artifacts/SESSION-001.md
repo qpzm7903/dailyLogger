@@ -1,6 +1,6 @@
 # Story 8.1: 捕获与分析解耦 + 时段管理
 
-Status: review
+Status: done
 
 ## Story
 
@@ -302,3 +302,56 @@ Claude Opus 4.6 (claude-opus-4-6)
 - src-tauri/src/synthesis/mod.rs
 - src-tauri/src/auto_perception/mod.rs
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Change Log
+
+- 2026-03-22: 完成 SESSION-001 实现，捕获与分析解耦 + 时段管理
+- 2026-03-22: Code Review 通过，Story 状态更新为 done
+
+## Code Review (2026-03-22)
+
+### Review Summary
+
+**审查结果**: ✅ 通过
+
+**审查人**: Claude Opus 4.6 (Adversarial Code Review)
+
+### Acceptance Criteria Validation
+
+| AC | 要求 | 状态 | 验证方式 |
+|----|------|------|----------|
+| #1 | 捕获与分析解耦 | ✅ IMPLEMENTED | `auto_perception/mod.rs:1035-1078` - 移除 `analyze_screen()` 调用，使用 placeholder content |
+| #2 | 新增 sessions 表 | ✅ IMPLEMENTED | `schema.rs:290-310` - 完整表结构：id, date, start_time, end_time, ai_summary, user_summary, context_for_next, status |
+| #3 | records 表扩展 | ✅ IMPLEMENTED | `schema.rs:312-326` - 添加 `session_id` 和 `analysis_status` 列 + 索引 |
+| #4 | 时段检测逻辑 | ✅ IMPLEMENTED | `session_manager/mod.rs:97-126` - 30分钟默认间隔，可配置 |
+| #5 | 新增 session_manager 模块 | ✅ IMPLEMENTED | `lib.rs:19` - 模块声明，完整实现核心函数 |
+| #6 | 向后兼容 | ✅ IMPLEMENTED | 使用 `ALTER TABLE` + `Option` 类型，现有数据不受影响 |
+| #7 | 测试覆盖 | ✅ IMPLEMENTED | Rust 444 tests ✅，Clippy 0 warnings ✅，4 个 session_manager 单元测试 |
+
+### Task Completion Audit
+
+所有 6 个任务均验证完成：
+- [x] Task 1: 数据库 Schema 扩展 ✓
+- [x] Task 2: 创建 session_manager 模块 ✓
+- [x] Task 3: 重构 capture_and_store ✓
+- [x] Task 4: 更新 Settings 结构体 ✓
+- [x] Task 5: 清理离线队列相关代码 ✓
+- [x] Task 6: 测试验证 ✓
+
+### Code Quality Assessment
+
+- **完整性**: 捕获与分析解耦彻底，时段管理逻辑完整
+- **安全性**: session_id 可为 NULL，向后兼容现有数据
+- **性能**: 添加了 `idx_sessions_date` 和 `idx_session_id` 索引
+- **代码风格**: 遵循项目规范，注释清晰
+
+### Test Results
+
+```
+Rust Tests:    444 passed; 0 failed
+Clippy:        0 warnings
+```
+
+### Conclusion
+
+SESSION-001 实现质量优秀，所有 AC 满足，测试全绿。Story 状态已更新为 **done**。
