@@ -88,6 +88,19 @@
               <div class="p-2">
                 <p class="text-xs text-gray-500">{{ formatTimeShort(screenshot.timestamp) }}</p>
                 <p class="text-xs text-gray-400 truncate">{{ parseContent(screenshot.content) }}</p>
+                <!-- EXP-003: Reanalyze button for grid view -->
+                <div class="mt-1 flex justify-end">
+                  <button
+                    @click.stop="reanalyzeRecord(screenshot)"
+                    :disabled="reanalyzingIds.has(screenshot.id)"
+                    class="px-2 py-0.5 text-xs rounded transition-colors"
+                    :class="reanalyzingIds.has(screenshot.id)
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-primary/20 hover:bg-primary/30 text-primary'"
+                  >
+                    {{ reanalyzingIds.has(screenshot.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -117,8 +130,19 @@
               <div class="flex-1 min-w-0">
                 <p class="text-sm text-gray-300 truncate">{{ parseContent(screenshot.content) }}</p>
               </div>
-              <!-- Action -->
-              <div class="flex-shrink-0">
+              <!-- Actions -->
+              <div class="flex-shrink-0 flex items-center gap-2">
+                <!-- EXP-003: Reanalyze button for list view -->
+                <button
+                  @click.stop="reanalyzeRecord(screenshot)"
+                  :disabled="reanalyzingIds.has(screenshot.id)"
+                  class="px-2 py-1 text-xs rounded transition-colors"
+                  :class="reanalyzingIds.has(screenshot.id)
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'bg-primary/20 hover:bg-primary/30 text-primary'"
+                >
+                  {{ reanalyzingIds.has(screenshot.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
+                </button>
                 <button class="text-xs text-gray-400 hover:text-primary transition-colors">
                   {{ t('screenshotGallery.view') }}
                 </button>
@@ -159,10 +183,17 @@ import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import ScreenshotModal from './ScreenshotModal.vue'
 import type { LogRecord } from '../types/tauri'
+import { showToast } from '../stores/toast'
 
 interface ScreenshotRecord extends LogRecord {
   thumbnail?: string
   thumbnailLoaded?: boolean
+}
+
+interface ScreenAnalysis {
+  current_focus?: string
+  active_software?: string
+  context_keywords?: string[]
 }
 
 const { t } = useI18n()
@@ -178,6 +209,7 @@ const currentPage = ref(1)
 const pageSize = 20
 const isLoadingMore = ref(false)
 const scrollContainer = ref<HTMLElement | null>(null)
+const reanalyzingIds = ref(new Set<number>())
 
 // Computed: paginated screenshots for AC4
 const paginatedScreenshots = computed(() => {
@@ -351,6 +383,35 @@ const handleRecordUpdated = (updatedRecord: LogRecord) => {
     const thumbnail = selectedScreenshot.value.thumbnail
     const thumbnailLoaded = selectedScreenshot.value.thumbnailLoaded
     selectedScreenshot.value = { ...updatedRecord, thumbnail, thumbnailLoaded } as ScreenshotRecord
+  }
+}
+
+// EXP-003: Reanalyze a single record
+const reanalyzeRecord = async (screenshot: ScreenshotRecord) => {
+  if (reanalyzingIds.value.has(screenshot.id)) return
+
+  reanalyzingIds.value.add(screenshot.id)
+  try {
+    const analysis = await invoke<ScreenAnalysis>('reanalyze_record', { recordId: screenshot.id })
+
+    // Update the record content
+    const updatedRecord: ScreenshotRecord = {
+      ...screenshot,
+      content: JSON.stringify(analysis)
+    }
+
+    // Update in the screenshots array
+    const index = screenshots.value.findIndex(s => s.id === screenshot.id)
+    if (index !== -1) {
+      screenshots.value[index] = updatedRecord
+    }
+
+    showToast(t('screenshotModal.reanalyzeSuccess'), { type: 'success' })
+  } catch (err) {
+    const errorMsg = String(err)
+    showToast(t('screenshotModal.reanalyzeFailed', { error: errorMsg }), { type: 'error' })
+  } finally {
+    reanalyzingIds.value.delete(screenshot.id)
   }
 }
 
