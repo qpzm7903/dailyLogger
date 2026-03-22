@@ -223,13 +223,16 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v2.6.0
-- Slack/钉钉通知：报告生成后自动发送到团队群
-- GitHub 工时统计：Dashboard 独立展示
-- Notion/Logseq 导出：完善 Markdown 转换
-- 自定义 API Headers：支持 OpenRouter/Azure/Claude 等
+**最新版本**: v2.10.0
+- 今日摘要 Widget：实时统计记录数、时间跨度、活跃时段
+- 搜索优化：防抖 + 结果点击导航
+- 截图重新分析：Gallery 卡片一键重分析
+- 截图质量过滤：自动跳过低信息截图
 
-**近期版本 (v2.0.0 ~ v2.5.0)**:
+**近期版本 (v2.6.0 ~ v2.9.0)**:
+- v2.9.0: 截图重新分析按钮
+- v2.8.0: 截图质量过滤
+- v2.6.0: Slack/钉钉通知集成
 - v2.5.0: GitHub 工时统计展示
 - v2.4.0: GitHub API 集成验证
 - v2.3.0: Logseq 导出支持
