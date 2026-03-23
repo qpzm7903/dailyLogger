@@ -42,7 +42,7 @@ argon2 = "0.5"
 zip = "2"
 tempfile = "3"
 walkdir = "2"
-pulldown-cmark = "0.9"
+pulldown-cmark = "0.13"
 
 [dev-dependencies]
 serial_test = "3"
