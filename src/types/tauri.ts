@@ -29,6 +29,9 @@ export interface Settings {
   onboarding_completed?: boolean
   // PERF-005: Language setting
   language?: string
+  // DATA-007: Multi-language settings
+  preferred_language?: string
+  supported_languages?: string
 }
 
 export interface ObsidianVault {

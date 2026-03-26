@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-26 (Sprint planning: Epic 11 added)
+# last_updated: 2026-03-26 (DATA-007: review)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (Sprint planning: Epic 11 added)
+last_updated: 2026-03-26 (DATA-007: in-progress)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -158,7 +158,7 @@ development_status:
 
   # Epic 11: 数据增强与稳定性 (DATA-ENHANCEMENT)
   epic-11: in-progress
-  data-007: ready-for-dev
+  data-007: review
   data-008: backlog  # 数据统计面板
   stab-001: backlog  # 错误边界与优雅降级
   stab-002: backlog  # 自动备份与恢复

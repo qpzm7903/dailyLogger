@@ -50,6 +50,50 @@
         ></span>
       </button>
 
+      <!-- Language selector submenu -->
+      <div class="border-t border-gray-600 my-1"></div>
+      <div class="relative">
+        <button
+          @click="toggleLanguageSubmenu"
+          class="w-full px-4 py-2 text-left text-sm hover:bg-dark transition-colors flex items-center justify-between"
+        >
+          <div class="flex items-center gap-2">
+            <span class="text-base">🌐</span>
+            <div>
+              <div class="text-white">多语言日报</div>
+              <div class="text-xs text-gray-400">{{ selectedLanguageName }}</div>
+            </div>
+          </div>
+          <svg
+            :class="isLanguageSubmenuOpen ? 'rotate-90' : ''"
+            class="w-3 h-3 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        <!-- Language submenu -->
+        <div
+          v-if="isLanguageSubmenuOpen"
+          class="absolute left-full top-0 ml-1 bg-darker border border-gray-600 rounded-md shadow-lg z-30 min-w-[140px]"
+        >
+          <button
+            v-for="lang in languageOptions"
+            :key="lang.code"
+            @click="selectLanguageAndGenerate(lang.code)"
+            :disabled="isGeneratingDaily"
+            class="w-full px-4 py-2 text-left text-sm hover:bg-dark transition-colors flex items-center justify-between disabled:opacity-50"
+            :class="{ 'bg-dark': selectedLanguage === lang.code }"
+          >
+            <span class="text-white">{{ lang.name }}</span>
+            <span v-if="selectedLanguage === lang.code" class="text-primary">✓</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Additional options with divider -->
       <template v-if="additionalOptions && additionalOptions.length > 0">
         <div class="border-t border-gray-600 my-1"></div>
@@ -90,12 +134,15 @@ interface Props {
   isGeneratingWeekly?: boolean
   isGeneratingMonthly?: boolean
   additionalOptions?: AdditionalOption[]
+  preferredLanguage?: string
 }
 
 interface Emits {
   (e: 'generate', type: 'daily' | 'weekly' | 'monthly'): void
+  (e: 'generateMultilingual', language: string): void
   (e: 'openModal', modalId: string): void
   (e: 'customAction', actionId: string): void
+  (e: 'languageChange', language: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -103,16 +150,37 @@ const props = withDefaults(defineProps<Props>(), {
   isGeneratingWeekly: false,
   isGeneratingMonthly: false,
   additionalOptions: () => [],
+  preferredLanguage: 'zh-CN',
 })
 
 const emit = defineEmits<Emits>()
 
 const isOpen = ref(false)
+const isLanguageSubmenuOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
+const selectedLanguage = ref(props.preferredLanguage || 'zh-CN')
+
+// Language options
+const languageOptions = [
+  { code: 'zh-CN', name: '中文' },
+  { code: 'en', name: 'English' },
+  { code: 'ja', name: '日本語' },
+  { code: 'ko', name: '한국어' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'de', name: 'Deutsch' },
+]
+
+// Selected language display name
+const selectedLanguageName = computed(() => {
+  const lang = languageOptions.find(l => l.code === selectedLanguage.value)
+  return lang ? lang.name : '中文'
+})
 
 // Close dropdown when clicking outside
 onClickOutside(dropdownRef, () => {
   isOpen.value = false
+  isLanguageSubmenuOpen.value = false
 })
 
 // Computed: any report is generating
@@ -139,7 +207,22 @@ const isGeneratingType = (type: 'daily' | 'weekly' | 'monthly'): boolean => {
 const toggleDropdown = () => {
   if (!isGenerating.value) {
     isOpen.value = !isOpen.value
+    isLanguageSubmenuOpen.value = false
   }
+}
+
+// Toggle language submenu
+const toggleLanguageSubmenu = () => {
+  isLanguageSubmenuOpen.value = !isLanguageSubmenuOpen.value
+}
+
+// Select language and generate multilingual report
+const selectLanguageAndGenerate = (langCode: string) => {
+  selectedLanguage.value = langCode
+  emit('languageChange', langCode)
+  emit('generateMultilingual', langCode)
+  isOpen.value = false
+  isLanguageSubmenuOpen.value = false
 }
 
 // Handle main button click (daily report)

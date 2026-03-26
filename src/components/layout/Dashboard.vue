@@ -103,6 +103,8 @@
                 { id: 'reanalyzeToday', label: '重新分析今天', type: 'action', icon: '🔄' }
               ]"
               @generate="handleReportGenerate"
+              @generateMultilingual="handleGenerateMultilingualReport"
+              @languageChange="handleLanguageChange"
               @openModal="(modalId) => $emit('open', modalId as ModalId)"
               @customAction="handleCustomAction"
             />
@@ -364,8 +366,10 @@ const emit = defineEmits<{
   toggleAutoCapture: []
   openQuickNote: []
   generateReport: [type: 'daily' | 'weekly' | 'monthly']
+  generateMultilingualReport: [language: string]
   viewScreenshot: [record: LogRecord]
   customAction: [actionId: string]
+  languageChange: [language: string]
 }>()
 
 // Tag filtering state
@@ -542,6 +546,14 @@ const openScreenshot = (record: LogRecord) => {
 
 const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
   emit('generateReport', type)
+}
+
+const handleGenerateMultilingualReport = (language: string) => {
+  emit('generateMultilingualReport', language)
+}
+
+const handleLanguageChange = (language: string) => {
+  emit('languageChange', language)
 }
 
 const handleCustomAction = (actionId: string) => {

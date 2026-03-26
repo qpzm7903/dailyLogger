@@ -314,6 +314,16 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // DATA-007: 多语言日报配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN preferred_language TEXT DEFAULT 'zh-CN'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN supported_languages TEXT DEFAULT '[\"zh-CN\",\"en\",\"ja\"]'",
+        [],
+    );
+
     // SESSION-001: sessions 表 - 工作时段管理
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sessions (

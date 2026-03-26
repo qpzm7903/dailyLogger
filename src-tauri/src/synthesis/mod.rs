@@ -677,6 +677,92 @@ pub fn generate_summary_filename(settings: &Settings) -> String {
     format!("{}.md", title)
 }
 
+// DATA-007: Multi-language support
+
+/// Supported languages for daily report translation
+const SUPPORTED_LANGUAGES: &[(&str, &str)] = &[
+    ("zh-CN", "中文"),
+    ("en", "English"),
+    ("ja", "日本語"),
+    ("ko", "한국어"),
+    ("es", "Español"),
+    ("fr", "Français"),
+    ("de", "Deutsch"),
+];
+
+/// Language code to file suffix mapping
+fn get_language_suffix(lang: &str) -> &str {
+    match lang {
+        "zh-CN" => "",
+        "en" => ".en",
+        "ja" => ".ja",
+        "ko" => ".ko",
+        "es" => ".es",
+        "fr" => ".fr",
+        "de" => ".de",
+        _ => "",
+    }
+}
+
+/// Get language display name from code
+fn get_language_name(lang: &str) -> &str {
+    SUPPORTED_LANGUAGES
+        .iter()
+        .find(|(code, _)| *code == lang)
+        .map(|(_, name)| *name)
+        .unwrap_or("Unknown")
+}
+
+/// Translation prompt template
+const TRANSLATION_PROMPT: &str = r#"你是一个专业的技术文档翻译助手。请将以下 Markdown 格式的工作日报翻译成{language}。
+
+要求：
+1. 保持 Markdown 格式不变
+2. 技术术语保持准确
+3. 保持原意的专业性
+4. 输出纯翻译结果，不要有其他说明文字
+
+原文：
+{original_report}
+
+请翻译："#;
+
+/// Translate the report content to the target language
+async fn translate_report(
+    config: &ApiConfig,
+    original_report: &str,
+    target_lang: &str,
+) -> Result<String, String> {
+    let lang_name = get_language_name(target_lang);
+    let prompt = TRANSLATION_PROMPT
+        .replace("{language}", lang_name)
+        .replace("{original_report}", original_report);
+
+    call_llm_api(config, &prompt, 3000, "translate_report").await
+}
+
+/// Get the list of supported languages
+#[command]
+pub fn get_supported_languages() -> Vec<(String, String)> {
+    SUPPORTED_LANGUAGES
+        .iter()
+        .map(|(code, name)| (code.to_string(), name.to_string()))
+        .collect()
+}
+
+/// Generate daily summary filename with language suffix
+pub fn generate_summary_filename_with_lang(settings: &Settings, lang: &str) -> String {
+    let title_format = settings
+        .summary_title_format
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_TITLE_FORMAT);
+
+    let title = format_summary_title(title_format);
+    let suffix = get_language_suffix(lang);
+    format!("{}{}.md", title, suffix)
+}
+
 #[command]
 pub async fn generate_daily_summary() -> Result<String, String> {
     if !crate::network_status::is_online() {
@@ -806,6 +892,95 @@ pub async fn generate_daily_summary() -> Result<String, String> {
     Ok(path_str)
 }
 
+// DATA-007: Multi-language daily report command
+#[command]
+pub async fn generate_multilingual_daily_summary(target_lang: String) -> Result<String, String> {
+    if !crate::network_status::is_online() {
+        return Err("当前处于离线状态，多语言日报生成需要网络连接".to_string());
+    }
+
+    let settings = memory_storage::get_settings_sync()
+        .map_err(|e| format!("Failed to get settings: {}", e))?;
+    let api_config = load_api_config(&settings)?;
+
+    // Get the default (Chinese) summary first
+    let summary = generate_base_daily_summary(&settings, &api_config).await?;
+
+    // If target language is Chinese (default), return as-is
+    if target_lang == "zh-CN" || target_lang.is_empty() {
+        return Ok(summary);
+    }
+
+    // Translate to target language
+    let translated = translate_report(&api_config, &summary, &target_lang).await?;
+
+    // Save the translated version
+    let obsidian_path = settings.get_obsidian_output_path()?;
+    let filename = generate_summary_filename_with_lang(&settings, &target_lang);
+    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &translated)?;
+
+    tracing::info!(
+        "Multilingual daily summary generated: {} (lang: {})",
+        path_str,
+        target_lang
+    );
+    Ok(path_str)
+}
+
+/// Helper function to generate base daily summary content
+async fn generate_base_daily_summary(
+    settings: &Settings,
+    api_config: &ApiConfig,
+) -> Result<String, String> {
+    // Try session-based approach first
+    let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+
+    if !sessions.is_empty() {
+        for session in &sessions {
+            if session.status == SessionStatus::Active || session.status == SessionStatus::Ended {
+                if let Err(e) = crate::session_manager::analyze_session(session.id).await {
+                    tracing::warn!("Failed to analyze session {}: {}", session.id, e);
+                }
+            }
+        }
+
+        let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+
+        if let Some(content) = build_session_based_report(&sessions) {
+            let prompt_template = settings
+                .summary_prompt
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .unwrap_or(DEFAULT_SUMMARY_PROMPT);
+            let prompt = prompt_template
+                .replace("{records}", &content)
+                .replace("{github_activity}", "");
+
+            return call_llm_api(api_config, &prompt, 2000, "generate_daily_summary").await;
+        }
+    }
+
+    // Fallback to legacy flat record format
+    let all_records = memory_storage::get_all_today_records_for_summary()
+        .map_err(|e| format!("Failed to get records: {}", e))?;
+    let records = filter_records_by_settings(all_records, settings);
+    if records.is_empty() {
+        return Err("No records for today after filtering".to_string());
+    }
+
+    let records_text = format_records_for_summary(&records);
+    let prompt_template = settings
+        .summary_prompt
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_SUMMARY_PROMPT);
+    let prompt = prompt_template
+        .replace("{records}", &records_text)
+        .replace("{github_activity}", "");
+
+    call_llm_api(api_config, &prompt, 2000, "generate_daily_summary").await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -885,6 +1060,9 @@ mod tests {
             test_model_name: None,
             onboarding_completed: None,
             language: None,
+            // DATA-007: Multi-language settings
+            preferred_language: None,
+            supported_languages: None,
         }
     }
 
@@ -2122,6 +2300,9 @@ mod benchmarks {
             onboarding_completed: None,
             // PERF-005: Language setting
             language: None,
+            // DATA-007: Multi-language settings
+            preferred_language: None,
+            supported_languages: None,
         }
     }
 

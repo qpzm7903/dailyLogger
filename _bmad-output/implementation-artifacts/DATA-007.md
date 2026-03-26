@@ -1,6 +1,6 @@
 # Story 11.1: DATA-007 - 多语言日报导出
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -19,28 +19,28 @@ so that I can share my work progress with international team members or maintain
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 数据库扩展 - 多语言配置字段 (AC: #3, #6)
-  - [ ] 1.1 在 Settings 表添加 `preferred_language` 字段 (TEXT, 默认 "zh-CN")
-  - [ ] 1.2 在 Settings 表添加 `supported_languages` 字段 (TEXT, JSON 数组)
-  - [ ] 1.3 更新 Settings struct 和相关 CRUD 函数
-  - [ ] 1.4 添加数据库迁移逻辑
+- [x] Task 1: 数据库扩展 - 多语言配置字段 (AC: #3, #6)
+  - [x] 1.1 在 Settings 表添加 `preferred_language` 字段 (TEXT, 默认 "zh-CN")
+  - [x] 1.2 在 Settings 表添加 `supported_languages` 字段 (TEXT, JSON 数组)
+  - [x] 1.3 更新 Settings struct 和相关 CRUD 函数
+  - [x] 1.4 添加数据库迁移逻辑
 
-- [ ] Task 2: Rust 后端 - 多语言日报生成核心逻辑 (AC: #1, #2, #4, #5)
-  - [ ] 2.1 在 synthesis/mod.rs 扩展 `generate_daily_summary()` 支持语言参数
-  - [ ] 2.2 创建 `translate_report()` 函数调用 AI 翻译
-  - [ ] 2.3 创建 `get_supported_languages()` 函数返回支持的语言列表
-  - [ ] 2.4 在 main.rs 的 `generate_handler![]` 中注册新/扩展命令
+- [x] Task 2: Rust 后端 - 多语言日报生成核心逻辑 (AC: #1, #2, #4, #5)
+  - [x] 2.1 在 synthesis/mod.rs 扩展 `generate_daily_summary()` 支持语言参数
+  - [x] 2.2 创建 `translate_report()` 函数调用 AI 翻译
+  - [x] 2.3 创建 `get_supported_languages()` 函数返回支持的语言列表
+  - [x] 2.4 在 main.rs 的 `generate_handler![]` 中注册新/扩展命令
   - [ ] 2.5 编写单元测试
     - 测试语言切换
     - 测试翻译质量
     - 测试默认语言 fallback
 
-- [ ] Task 3: 前端 - 多语言日报 UI (AC: #1, #2, #3, #4, #5, #6)
-  - [ ] 3.1 在 App.vue 添加语言选择器下拉菜单
-  - [ ] 3.2 修改"生成日报"按钮逻辑支持语言参数
-  - [ ] 3.3 添加语言偏好保存功能
-  - [ ] 3.4 添加多语言日报生成 loading 状态和成功/错误提示
-  - [ ] 3.5 显示生成的语言版本日报路径
+- [x] Task 3: 前端 - 多语言日报 UI (AC: #1, #2, #3, #4, #5, #6)
+  - [x] 3.1 在 App.vue 添加语言选择器下拉菜单
+  - [x] 3.2 修改"生成日报"按钮逻辑支持语言参数
+  - [x] 3.3 添加语言偏好保存功能
+  - [x] 3.4 添加多语言日报生成 loading 状态和成功/错误提示
+  - [x] 3.5 显示生成的语言版本日报路径
 
 - [ ] Task 4: 端到端测试 (AC: All)
   - [ ] 4.1 前端测试: 语言选择和日报生成交互
@@ -199,10 +199,26 @@ fn uses_default_language_when_not_set() {
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-opus-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Task 1: 数据库扩展 - 添加 preferred_language 和 supported_languages 字段到 Settings struct 和数据库迁移
+- Task 2: Rust 后端 - 实现多语言日报生成逻辑，包含 generate_multilingual_daily_summary 命令和 get_supported_languages 函数
+- Task 3: 前端 - 在 ReportDropdown 添加语言选择子菜单，修改 App.vue 和 Dashboard.vue 处理多语言事件
+
 ### File List
+
+- src-tauri/src/memory_storage/mod.rs (添加 preferred_language, supported_languages 字段)
+- src-tauri/src/memory_storage/settings.rs (更新 Settings 查询和初始化)
+- src-tauri/src/memory_storage/schema.rs (添加数据库迁移)
+- src-tauri/src/synthesis/mod.rs (添加多语言支持函数和命令)
+- src-tauri/src/main.rs (注册新命令)
+- src/types/tauri.ts (添加类型定义)
+- src/components/ReportDropdown.vue (添加语言选择器)
+- src/components/layout/Dashboard.vue (添加事件处理)
+- src/App.vue (添加多语言日报生成处理)
+- src/locales/zh-CN.json (添加翻译)
+- src/locales/en.json (添加翻译)

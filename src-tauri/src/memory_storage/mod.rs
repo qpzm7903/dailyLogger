@@ -105,6 +105,9 @@ pub struct Settings {
     pub onboarding_completed: Option<bool>,
     // PERF-005: 语言设置
     pub language: Option<String>,
+    // DATA-007: 多语言日报配置
+    pub preferred_language: Option<String>, // 首选语言，如 "zh-CN", "en"
+    pub supported_languages: Option<String>, // 支持的语言列表，JSON 数组
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)

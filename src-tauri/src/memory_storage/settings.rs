@@ -28,7 +28,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers,
                 quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
                 proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,
-                test_model_name, onboarding_completed, language
+                test_model_name, onboarding_completed, language,
+                preferred_language, supported_languages
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -116,6 +117,9 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                     .map(|v| v != 0),
                 // PERF-005: Language setting
                 language: row.get("language")?,
+                // DATA-007: Multi-language settings
+                preferred_language: row.get("preferred_language")?,
+                supported_languages: row.get("supported_languages")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;

@@ -44,6 +44,8 @@
         @toggleAutoCapture="toggleAutoCapture"
         @openQuickNote="openQuickNote"
         @generateReport="handleReportGenerate"
+        @generateMultilingualReport="handleGenerateMultilingualReport"
+        @languageChange="handleLanguageChange"
         @customAction="handleCustomAction"
         @viewScreenshot="openScreenshot"
       />
@@ -354,6 +356,35 @@ const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
     generateWeeklyReport()
   } else if (type === 'monthly') {
     generateMonthlyReport()
+  }
+}
+
+const handleGenerateMultilingualReport = async (language: string) => {
+  if (isGenerating.value) return
+  isGenerating.value = true
+  try {
+    const result = await invoke<string>('generate_multilingual_daily_summary', { targetLang: language })
+    summaryPath.value = result
+    showSuccess(t('report.multilingualSuccess'))
+  } catch (err) {
+    console.error('Failed to generate multilingual summary:', err)
+    showError(String(err), () => handleGenerateMultilingualReport(language))
+  } finally {
+    isGenerating.value = false
+  }
+}
+
+const handleLanguageChange = async (language: string) => {
+  try {
+    const currentSettings = await invoke<Settings>('get_settings')
+    await invoke('save_settings', {
+      settings: {
+        ...currentSettings,
+        preferred_language: language,
+      }
+    })
+  } catch (err) {
+    console.error('Failed to save language preference:', err)
   }
 }
 

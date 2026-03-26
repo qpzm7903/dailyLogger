@@ -337,7 +337,8 @@
   "report": {
     "dailySuccess": "Daily report generated",
     "weeklySuccess": "Weekly report generated",
-    "monthlySuccess": "Monthly report generated"
+    "monthlySuccess": "Monthly report generated",
+    "multilingualSuccess": "Multilingual daily report generated"
   },
   "customReport": {
     "title": "Custom Report",

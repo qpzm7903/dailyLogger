@@ -337,7 +337,8 @@
   "report": {
     "dailySuccess": "日报生成成功",
     "weeklySuccess": "周报生成成功",
-    "monthlySuccess": "月报生成成功"
+    "monthlySuccess": "月报生成成功",
+    "multilingualSuccess": "多语言日报生成成功"
   },
   "customReport": {
     "title": "自定义报告",

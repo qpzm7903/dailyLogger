@@ -409,6 +409,8 @@ fn main() {
             // FEAT-005: User notes for screenshot records
             daily_logger_lib::memory_storage::update_record_user_notes,
             daily_logger_lib::synthesis::generate_daily_summary,
+            daily_logger_lib::synthesis::generate_multilingual_daily_summary,
+            daily_logger_lib::synthesis::get_supported_languages,
             daily_logger_lib::synthesis::get_default_summary_prompt,
             daily_logger_lib::synthesis::generate_weekly_report,
             daily_logger_lib::synthesis::generate_monthly_report,
