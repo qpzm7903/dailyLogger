@@ -182,7 +182,6 @@ import SessionListModal from './components/SessionListModal.vue'
 import SessionDetailView from './components/SessionDetailView.vue'
 
 import { showError, showSuccess, initToastI18n } from './stores/toast'
-import { initTheme } from './theme'
 import type { LogRecord, Tag, Settings } from './types/tauri'
 
 interface Session {
@@ -556,8 +555,6 @@ onMounted(async () => {
   await loadSettings()
   // PERF-005: Load language from backend after settings are loaded
   await loadLanguageFromBackend()
-  // PERF-006: Initialize theme
-  initTheme()
   await loadTodayRecords()
 
   // PERF-002: Check if onboarding is needed
