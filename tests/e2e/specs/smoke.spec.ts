@@ -6,6 +6,9 @@
 import { test, expect } from '../fixtures/base-test';
 
 test.describe('冒烟测试', () => {
+  // Settings button is now in the Sidebar (UX-3 sidebar upgrade)
+  const getSettingsButton = (page: any) => page.locator('aside button').filter({ hasText: '设置' }).or(page.locator('aside button[title="设置"]'));
+
   test('应用加载完成，header 可见', async ({ page }) => {
     // 导航到主页面
     await page.goto('/');
@@ -33,8 +36,8 @@ test.describe('冒烟测试', () => {
     await page.goto('/');
     await page.locator('header').waitFor({ state: 'visible', timeout: 15000 });
 
-    // 验证设置按钮存在
-    const settingsButton = page.locator('button:has-text("⚙️")');
+    // 验证设置按钮存在 (settings button is in sidebar)
+    const settingsButton = getSettingsButton(page);
     await expect(settingsButton).toBeVisible({ timeout: 10000 });
   });
 
@@ -69,8 +72,8 @@ test.describe('冒烟测试', () => {
     await page.goto('/');
     await page.locator('header').waitFor({ state: 'visible', timeout: 15000 });
 
-    // 点击设置按钮
-    await page.locator('button:has-text("⚙️")').click();
+    // 点击设置按钮 (settings button is in sidebar)
+    await getSettingsButton(page).click();
 
     // 验证设置弹窗出现
     const modal = page.locator('.fixed.inset-0, [class*="modal"]').first();

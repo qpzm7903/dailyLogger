@@ -28,7 +28,8 @@ export class MainPage {
     // Header - 使用实际的元素选择器
     this.header = page.locator('header');
     this.quickNoteButton = page.locator('button:has-text("记录")').first();
-    this.settingsButton = page.locator('button:has-text("⚙️")');
+    // Settings button is now in the Sidebar (UX-3 sidebar upgrade)
+    this.settingsButton = page.locator('aside button').filter({ hasText: '设置' }).or(page.locator('aside button[title="设置"]'));
     this.reportDropdown = page.locator('.report-dropdown, [class*="report"]').first();
 
     // 内容区域 - 今日工作流区域
@@ -70,8 +71,8 @@ export class MainPage {
    * 点击设置按钮
    */
   async clickSettings() {
-    // 点击设置按钮（包含 ⚙️ 图标）
-    await this.page.locator('button:has-text("⚙️")').click();
+    // 点击设置按钮 (settings button is in sidebar)
+    await this.settingsButton.click();
   }
 
   /**
