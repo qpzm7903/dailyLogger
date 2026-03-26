@@ -2,13 +2,11 @@
 
 Status: ready-for-dev
 
-<!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
-
 ## Story
 
 As a DailyLogger user,
-I want to use the app in my preferred language,
-so that I can understand and use all features effectively regardless of my language background.
+I want to use the application in my preferred language,
+so that I can understand all features and settings without language barriers.
 
 **来源**: plan.md 未来规划 - 多语言支持
 
@@ -26,166 +24,181 @@ Epic 10: 体验极致化
 └── PERF-006: 浅色主题支持
 ```
 
-### 当前 i18n 基础设施
+### 当前 i18n 基础设施状态
 
-项目已有完整的 vue-i18n 基础设施：
+项目**已安装** vue-i18n 并建立了基础架构：
 
-| 文件 | 说明 |
-|------|------|
-| `src/i18n.ts` | vue-i18n 配置，包含 `setLocale()` / `getLocale()` helpers |
-| `src/locales/en.json` | 英文翻译（完整） |
-| `src/locales/zh-CN.json` | 中文翻译（完整） |
-| `src/components/settings/BasicSettings.vue` | 语言选择 UI（第 381-405 行） |
+1. **依赖**: `vue-i18n@11.3.0` (package.json)
+2. **配置文件**: `src/i18n.ts` - 完整的 i18n 配置
+   - 自动检测系统语言 (navigator.language)
+   - localStorage 持久化用户语言选择 (`dailylogger-locale`)
+   - `setLocale()` / `getLocale()` 辅助函数
+   - 支持 `en` 和 `zh-CN` 两种语言
+3. **翻译文件**:
+   - `src/locales/en.json` - 英文翻译 (~800 行)
+   - `src/locales/zh-CN.json` - 中文翻译 (~800 行)
 
-**当前 `detectLanguage()` 逻辑** (`src/i18n.ts`):
-1. 检查 `localStorage.getItem('dailylogger-locale')`
-2. 降级到 `navigator.language` 检测浏览器语言
-3. 默认返回 `'en'`
+### 已有翻译覆盖的组件
 
-**现有语言选择 UI** (`BasicSettings.vue`):
-- 两个按钮：`English` 和 `简体中文`
-- 点击调用 `changeLanguage(lang)` → `setLocale(lang)` → 保存到 localStorage
-
-### 待完成项
-
-当前实现使用 **localStorage** 存储语言偏好，存在以下问题：
-
-1. **不持久化到后端** — 语言设置未保存到 `settings` 表，重启应用后可能被浏览器自动语言检测覆盖
-2. **首次启动流程不完整** — 虽然 `detectLanguage()` 能检测浏览器语言，但用户设置的语言偏好应该优先
+根据已完成的子步骤，以下组件已完成国际化：
+- ✅ App.vue (头部按钮、自动感知、闪念胶囊区块)
+- ✅ SettingsModal.vue (设置界面所有文本)
+- ✅ QuickNoteModal.vue
+- ✅ Toast 组件
+- ✅ HistoryViewer、TagCloud、ScreenshotModal
+- ✅ SearchPanel、ScreenshotGallery、TagFilter、TagInput
+- ✅ TimelineVisualization、时间线 Widget
 
 ## Acceptance Criteria
 
-1. **语言切换**
+1. **语言切换功能**
    - Given 用户在设置中选择语言
    - When 切换到 English
-   - Then 所有界面文字显示英文，且设置持久化到后端
+   - Then 所有界面文字显示英文
+   - And 切换到 中文 时，所有界面文字显示中文
 
-2. **中文支持**
-   - Given 用户在设置中选择语言
-   - When 切换到 中文
-   - Then 所有界面文字显示中文，且设置持久化到后端
-
-3. **首次启动自动检测**
+2. **系统语言自动检测**
    - Given 用户首次启动应用
-   - When 自动检测系统语言
-   - Then 默认使用检测到的语言（如果支持 en 或 zh-CN）
+   - When 没有保存的语言偏好
+   - Then 自动检测系统语言（navigator.language）
+   - And 如果系统语言是中文（zh-*），默认使用 zh-CN
+   - And 否则默认使用 en
 
-4. **日报不受影响**
+3. **语言偏好持久化**
+   - Given 用户选择了语言
+   - When 关闭并重新启动应用
+   - Then 保持上次的语言选择
+
+4. **日报内容不受影响**
    - Given 应用已生成日报
    - When 用户切换语言
-   - Then 已生成的日报内容不受影响（仅界面变化）
+   - Then 已生成的日报内容不受影响（仅界面 UI 变化）
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 后端设置持久化 (AC: #1, #2, #3)
-  - [ ] Subtask 1.1: 在 settings 表添加 `language` 字段（如果不存在）
-  - [ ] Subtask 1.2: 后端 `get_settings` / `save_settings` 支持 language 字段
-  - [ ] Subtask 1.3: 前端 SettingsModal 同步 language 字段
+- [ ] Task 1: 验证 i18n 基础设施完整性 (AC: #1, #2, #3)
+  - [ ] Subtask 1.1: 确认 vue-i18n 正确集成到 main.ts
+  - [ ] Subtask 1.2: 确认所有翻译键完整无遗漏
+  - [ ] Subtask 1.3: 测试语言切换功能在所有组件正常工作
+  - [ ] Subtask 1.4: 验证系统语言自动检测逻辑
 
-- [ ] Task 2: 语言设置初始化逻辑 (AC: #3)
-  - [ ] Subtask 2.1: 应用启动时从后端加载语言设置
-  - [ ] Subtask 2.2: 如果后端无设置，使用 `navigator.language` 检测并保存
-  - [ ] Subtask 2.3: 确保 localStorage 优先级与后端一致
+- [ ] Task 2: 确保 SettingsModal 中语言切换 UI 完整 (AC: #1)
+  - [ ] Subtask 2.1: 检查语言选择下拉框/按钮是否实现
+  - [ ] Subtask 2.2: 确认切换语言后立即生效（无需刷新）
+  - [ ] Subtask 2.3: 验证语言选择后保存到 localStorage
 
-- [ ] Task 3: 语言切换流程 (AC: #1, #2)
-  - [ ] Subtask 3.1: `changeLanguage()` 调用 Tauri command 保存到后端
-  - [ ] Subtask 3.2: 保存成功后更新 vue-i18n locale
-  - [ ] Subtask 3.3: 保持 localStorage 作为 fallback
+- [ ] Task 3: 验证日报生成不受语言切换影响 (AC: #4)
+  - [ ] Subtask 3.1: 确认日报生成使用固定语言（不受当前 UI 语言影响）
+  - [ ] Subtask 3.2: 或明确日报语言跟随设置中的"日报语言"配置
 
-- [ ] Task 4: 回归测试 (AC: #4)
-  - [ ] Subtask 4.1: 验证日报生成不受语言切换影响
-  - [ ] Subtask 4.2: 运行 `npm test` 确保无回归
+- [ ] Task 4: 回归测试 (AC: all)
+  - [ ] Subtask 4.1: 运行 `npm test` 确保所有测试通过
+  - [ ] Subtask 4.2: 手动测试语言切换流程
+  - [ ] Subtask 4.3: 验证无硬编码中文字符串残留
 
 ## Dev Notes
 
 ### 关键架构约束
 
-1. **技术栈**: Vue 3 + vue-i18n + Tauri v2
-2. **持久化方案**: 使用后端 SQLite `settings` 表存储语言偏好
-3. **优先级**: 后端设置 > localStorage > 浏览器语言检测
-4. **不引入新依赖**: 使用现有的 vue-i18n
+1. **前端技术栈**: Vue 3 + Composition API + `<script setup>` + TailwindCSS
+2. **i18n 库**: vue-i18n@11.x (已安装)
+3. **语言配置存储**: localStorage (`dailylogger-locale`)
+4. **支持的语 言**: `en` | `zh-CN`
 
-### 文件树组件（需修改）
+### 文件树组件
 
 ```
 src/
-├── i18n.ts                      # 修改 detectLanguage 逻辑，优先使用后端设置
-├── App.vue                      # 应用启动时加载语言设置
+├── i18n.ts                    # i18n 配置（已存在）
+├── locales/
+│   ├── en.json               # 英文翻译（已存在）
+│   └── zh-CN.json            # 中文翻译（已存在）
+├── main.ts                   # 需确认 i18n 插件已注册
+├── App.vue                   # 主组件
 └── components/
     └── settings/
-        └── BasicSettings.vue     # 修改 changeLanguage，调用后端保存
-
-src-tauri/src/
-├── memory_storage/
-│   ├── mod.rs                  # 如果需要，添加 language 字段处理
-│   └── schema.rs               # 如果需要，添加 language 列
-└── main.rs                     # 注册可能的 Tauri commands
+        └── BasicSettings.vue  # 语言切换 UI 可能在此
 ```
 
-### 实现方案
+### i18n.ts 当前实现（已存在）
 
-**后端设置流程**:
 ```typescript
 // src/i18n.ts
-async function loadLanguageFromBackend(): Promise<Locale> {
-  try {
-    const settings = await invoke<Settings>('get_settings')
-    if (settings.language === 'en' || settings.language === 'zh-CN') {
-      return settings.language
-    }
-  } catch (e) {
-    console.warn('Failed to load language from backend:', e)
-  }
-  return null
-}
+import { createI18n } from 'vue-i18n'
+import en from './locales/en.json'
+import zhCN from './locales/zh-CN.json'
+
+export type Locale = 'en' | 'zh-CN'
 
 function detectLanguage(): Locale {
-  // 1. 检查 localStorage
   const stored = localStorage.getItem('dailylogger-locale')
   if (stored && (stored === 'en' || stored === 'zh-CN')) {
     return stored as Locale
   }
-
-  // 2. 降级到浏览器语言
-  const browserLang = navigator.language || (navigator as { userLanguage?: string }).userLanguage
+  const browserLang = navigator.language || ...
   if (browserLang && browserLang.startsWith('zh')) {
     return 'zh-CN'
   }
   return 'en'
 }
-```
 
-**语言切换流程**:
-```typescript
-// BasicSettings.vue
-async function changeLanguage(lang: Locale) {
-  setLocale(lang) // 更新 vue-i18n 和 localStorage
-  // 保存到后端
-  const settings = { ...localSettings.value, language: lang }
-  await invoke('save_settings', { settings })
+export function setLocale(locale: Locale): void {
+  i18n.global.locale.value = locale
+  localStorage.setItem('dailylogger-locale', locale)
+  document.documentElement.lang = locale
 }
 ```
 
-### 数据库字段（如果需要添加）
+### 翻译文件结构（已存在）
 
-```sql
--- 如果 settings 表没有 language 列，需要添加
-ALTER TABLE settings ADD COLUMN language TEXT DEFAULT 'en';
+```json
+{
+  "settings": {
+    "language": "语言",
+    "languageHint": "选择界面语言",
+    "languageEn": "English",
+    "languageZhCN": "简体中文"
+  }
+}
 ```
+
+### 组件中使用 i18n 的模式
+
+```vue
+<script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+</script>
+
+<template>
+  <span>{{ t('settings.language') }}</span>
+</template>
+```
+
+### 验证清单
+
+- [ ] `npm test` 所有测试通过
+- [ ] 语言切换立即生效，无需刷新页面
+- [ ] 切换到英文后所有组件显示英文
+- [ ] 切换到中文后所有组件显示中文
+- [ ] 刷新页面保持语言选择
+- [ ] 系统中文字符串检测（无遗漏的硬编码中文）
+- [ ] 日报内容语言独立于 UI 语言
 
 ### 注意事项
 
-1. **向后兼容**: 如果后端返回的 settings 没有 language 字段，使用 localStorage 或浏览器检测
-2. **日报内容**: 日报内容存储在文件系统中，与语言设置无关
-3. **测试验证**: 确保 `npm test` 通过后再提交
+1. **不要重新实现已存在的基础设施** - i18n.ts、locale 文件、vue-i18n 依赖都已就绪
+2. **聚焦验证和补全** - 确保语言切换 UI 完整，所有组件正确使用 t() 函数
+3. **日报语言** - 如果日报内容需要独立于 UI 语言，需要在 synthesis 模块中指定语言
 
 ### References
 
-- [Source: src/i18n.ts] - vue-i18n 配置和 helpers
+- [Source: src/i18n.ts] - i18n 配置和语言检测逻辑
 - [Source: src/locales/en.json] - 英文翻译
 - [Source: src/locales/zh-CN.json] - 中文翻译
-- [Source: src/components/settings/BasicSettings.vue#381-405] - 语言选择 UI
-- [Source: _bmad-output/implementation-artifacts/PERF-001.md] - PERF-001 参考（后端设置持久化模式）
+- [Source: package.json#vue-i18n] - vue-i18n 版本
+- [Source: _bmad-output/planning-artifacts/epics.md#epic-10] - Story 原始需求
+- [Source: .auto-progress.md#i18n] - 历史实现记录
 
 ## Dev Agent Record
 
