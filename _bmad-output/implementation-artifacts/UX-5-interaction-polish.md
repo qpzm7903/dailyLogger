@@ -1,6 +1,6 @@
 # Story 9.5: 交互细节打磨 (Interaction Polish)
 
-Status: review (all review findings addressed)
+Status: done
 
 ## Story
 
