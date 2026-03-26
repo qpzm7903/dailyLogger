@@ -62,15 +62,14 @@
 
       <!-- Results List -->
       <div ref="scrollContainer" class="flex-1 overflow-auto p-4">
-        <div v-if="isLoading" class="text-center py-8 text-gray-500">
-          {{ t('searchPanel.searching') }}
+        <!-- Loading skeleton -->
+        <div v-if="isLoading">
+          <SkeletonLoader :count="5" />
         </div>
-        <div v-else-if="hasSearched && results.length === 0" class="text-center py-8 text-gray-500">
-          {{ t('searchPanel.noResults') }}
-        </div>
-        <div v-else-if="!hasSearched" class="text-center py-8 text-gray-500">
-          {{ t('searchPanel.startHint') }}
-        </div>
+        <!-- Empty state: no results -->
+        <EmptyState v-else-if="hasSearched && results.length === 0" type="searchResults" :description="t('emptyState.searchResults')" />
+        <!-- Empty state: not searched yet -->
+        <EmptyState v-else-if="!hasSearched" type="generic" :description="t('searchPanel.startHint')" />
 
         <!-- UX-022: Virtual scroll for large result sets -->
         <div
@@ -150,6 +149,8 @@ import { useI18n } from 'vue-i18n'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useDebounceFn } from '@vueuse/core'
 import { showError } from '../stores/toast'
+import EmptyState from './EmptyState.vue'
+import SkeletonLoader from './SkeletonLoader.vue'
 import type { Record } from '../types/tauri'
 
 interface SearchResult {

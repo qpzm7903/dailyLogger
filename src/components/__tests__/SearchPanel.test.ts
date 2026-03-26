@@ -26,6 +26,10 @@ vi.mock('vue-i18n', () => ({
         'searchPanel.manual': 'Manual',
         'searchPanel.relevanceScore': `Score: ${params?.rank || 0}`,
         'searchPanel.searchFailed': `Search failed: ${params?.error || 'unknown'}`,
+        'emptyState.screenshots': 'No screenshots yet',
+        'emptyState.dailyReport': 'No daily report generated yet',
+        'emptyState.searchResults': 'No matching records found',
+        'emptyState.generic': 'Nothing here yet',
       }
       return translations[key] || key
     },
@@ -197,7 +201,7 @@ describe('SearchPanel', () => {
       await wrapper.find('input[type="text"]').trigger('keyup.enter')
 
       await vi.waitFor(() => {
-        expect(wrapper.text()).toContain('No results found')
+        expect(wrapper.text()).toContain('No matching records found')
       })
     })
   })

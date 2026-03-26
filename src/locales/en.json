@@ -631,6 +631,12 @@
     "tabCapture": "Capture",
     "tabOutput": "Output & Integrations"
   },
+  "emptyState": {
+    "screenshots": "No screenshots yet. Screenshots will be captured automatically as you work.",
+    "dailyReport": "No daily report generated yet. Reports are generated at the end of each day.",
+    "searchResults": "No matching records found.",
+    "generic": "Nothing here yet."
+  },
   "screenshotGallery": {
     "title": "Screenshot Gallery",
     "gridView": "Grid",

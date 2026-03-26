@@ -61,9 +61,13 @@
       </div>
 
       <div class="flex-1 overflow-auto p-6" ref="scrollContainer" @scroll="handleScroll">
-        <div v-if="screenshots.length === 0" class="text-center py-8 text-gray-500">
-          {{ t('screenshotGallery.noScreenshots') }}
+        <!-- Loading skeleton -->
+        <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SkeletonLoader :count="6" />
         </div>
+
+        <!-- Empty state -->
+        <EmptyState v-else-if="screenshots.length === 0" type="screenshots" :description="t('emptyState.screenshots')" />
 
         <template v-else>
           <!-- Grid View -->
@@ -182,6 +186,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import ScreenshotModal from './ScreenshotModal.vue'
+import EmptyState from './EmptyState.vue'
+import SkeletonLoader from './SkeletonLoader.vue'
 import type { LogRecord } from '../types/tauri'
 import { showToast } from '../stores/toast'
 
@@ -208,6 +214,7 @@ const endDate = ref('')
 const currentPage = ref(1)
 const pageSize = 20
 const isLoadingMore = ref(false)
+const isLoading = ref(true)
 const scrollContainer = ref<HTMLElement | null>(null)
 const reanalyzingIds = ref(new Set<number>())
 
@@ -275,6 +282,7 @@ const loadThumbnails = async (records: ScreenshotRecord[]) => {
 }
 
 const loadScreenshots = async () => {
+  isLoading.value = true
   try {
     const records = await invoke<LogRecord[]>('get_today_records')
     // Filter only auto records with screenshots
@@ -292,6 +300,8 @@ const loadScreenshots = async () => {
     await loadThumbnailsForPage(1)
   } catch (err) {
     console.error('Failed to load screenshots:', err)
+  } finally {
+    isLoading.value = false
   }
 }
 

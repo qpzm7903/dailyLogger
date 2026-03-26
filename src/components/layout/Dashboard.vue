@@ -155,9 +155,7 @@
         </div>
 
         <!-- Records List -->
-        <div v-if="filteredRecords.length === 0" class="text-center py-8 text-gray-500">
-          {{ todayRecords.length === 0 ? '暂无记录' : '无匹配标签的记录' }}
-        </div>
+        <EmptyState v-if="filteredRecords.length === 0" type="generic" :description="todayRecords.length === 0 ? t('emptyState.screenshots') : '无匹配标签的记录'" />
         <div v-else class="space-y-3 pr-1 custom-scrollbar">
           <div
             v-for="record in paginatedRecords"
@@ -332,6 +330,8 @@ import { useI18n } from 'vue-i18n'
 import ReportDropdown from '../ReportDropdown.vue'
 import TimelineWidget from '../TimelineWidget.vue'
 import TodaySummaryWidget from '../TodaySummaryWidget.vue'
+import EmptyState from '../EmptyState.vue'
+import SkeletonLoader from '../SkeletonLoader.vue'
 import { extractSummary } from '../../utils/contentUtils'
 import { getTagColorClass } from '../../utils/tagColors'
 import type { LogRecord, Tag } from '../../types/tauri'
