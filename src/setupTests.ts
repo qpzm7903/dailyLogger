@@ -16,6 +16,25 @@ if (typeof globalThis.window === 'undefined') {
   })
 }
 
+// Polyfill window.performance for @intlify/core-base in jsdom environment
+// Without this, intlify's message resolution crashes with "window is not defined"
+// because it accesses window.performance.now() during non-production builds
+if (typeof window !== 'undefined' && !window.performance) {
+  window.performance = {
+    now: () => Date.now(),
+    mark: () => {},
+    measure: () => {},
+    getEntriesByType: () => [],
+    getEntriesByName: () => [],
+    clearMarks: () => {},
+    clearMeasures: () => {},
+    setResourceTimingBufferSize: () => {},
+    onresourcetimingbufferfull: null,
+    timeOrigin: 0,
+    eventCounts: { getEntriesByType: () => [], getEntriesByName: () => [], size: 0, clear: () => {}, toArray: () => [] }
+  } as unknown as Performance
+}
+
 // Create i18n instance for tests
 const i18n = createI18n({
   legacy: false,
