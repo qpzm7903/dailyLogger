@@ -2,8 +2,8 @@
 
 **项目名称:** DailyLogger
 **复盘日期:** 2026-03-26
-**复盘范围:** Epic 1 ~ Epic 9 (全部完成)
-**当前版本:** v3.1.0
+**复盘范围:** Epic 1 ~ Epic 10 (全部完成)
+**当前版本:** v3.3.0 (体验极致化续)
 **参与者:** Weiyicheng (Project Lead), Bob (Scrum Master), Alice (Product Owner), Charlie (Senior Dev), Dana (QA Engineer), Elena (Junior Dev)
 
 ---
@@ -14,13 +14,13 @@
 
 | 维度 | 数值 |
 |------|------|
-| 总 Epic 数 | 9 |
-| 总 Story 数 | 50+ |
-| 总 Story Points | ~150 pts |
-| 完成率 | 100% (9/9 Epic) |
+| 总 Epic 数 | 10 |
+| 总 Story 数 | 56+ |
+| 总 Story Points | ~167 pts |
+| 完成率 | 100% (10/10 Epic) |
 | 代码审查通过率 | 100% |
 | CI 构建状态 | ✅ 成功 |
-| 发布版本数 | v2.0.0 ~ v3.1.0 |
+| 发布版本数 | v2.0.0 ~ v3.3.0 |
 
 ### Epic 清单
 
@@ -35,6 +35,7 @@
 | Epic 7 | 核心体验深化 (EXP) | 5 | 18 | MINOR |
 | Epic 8 | 工作时段感知分析 (SESSION) | 6 | 20 | MAJOR |
 | Epic 9 | 视觉与交互体验升级 (UX) | 5 | 16 | MINOR |
+| Epic 10 | 体验极致化 (PERF) | 6 | 17 | MINOR |
 
 ---
 
@@ -70,6 +71,7 @@
 | AI | ~214 | ~167 | ~381 |
 | DATA | ~286 | ~191 | ~477 |
 | SESSION | ~454 | ~927 | ~1381 |
+| PERF | ~454 | ~927 | ~1381 |
 
 测试覆盖的阶段性增长验证了测试驱动开发文化的成熟。
 
@@ -104,8 +106,23 @@
 | v2.8.0 ~ v2.10.0 | ~2026-03-22 | 核心体验深化 |
 | v3.0.0 | 2026-03-26 | 工作时段感知分析 (MAJOR) |
 | v3.1.0 | 2026-03-26 | 视觉与交互体验升级 |
+| v3.2.0 | 2026-03-26 | AI 代理配置 |
+| v3.3.0 | 2026-03-26 | 体验极致化续 |
 
 版本发布遵循语义化版本规范，变更类型与版本号匹配。
+
+### 6. Epic 10 代码审查发现关键问题
+
+Epic 10 的 6 个 Story 中，有 4 个在代码审查阶段发现了 HIGH 级别问题：
+
+| Story | 发现的问题 | 严重度 |
+|-------|-----------|--------|
+| PERF-003 | 虚拟滚动 composable 创建但未集成使用 | HIGH |
+| PERF-004 | command 未在 main.rs 注册 | HIGH |
+| PERF-005 | App.vue 6 处硬编码中文字符串 | HIGH |
+| PERF-006 | 重复的 .light CSS 类定义 (3x) | HIGH |
+
+**结论:** 代码审查作为 Quality Gate 有效拦截了 4 个关键缺陷，证明不同 LLM 执行代码审查是质量保障的有效手段。
 
 ---
 
@@ -150,6 +167,24 @@ UI 渲染逻辑和状态管理可以测试，但实际覆盖缺口较大。Tauri
 
 AI-004 (工作分类标签) 和 DATA-003 (标签系统) 功能高度相似但独立开发，存在重复实现风险。
 
+### 6. Epic 10 Composable 集成验证遗漏
+
+PERF-003 创建了 `useVirtualScroll` composable 但 `ScreenshotGallery.vue` 未集成使用。问题在代码审查阶段发现。
+
+**教训:** 新创建的 composable 必须在目标组件中被实际引用和调用。
+
+### 7. Epic 10 Tauri Command 注册遗漏
+
+PERF-004 定义了 `#[command]` 但未在 main.rs 中注册，前端无法调用新 API。问题在代码审查阶段发现。
+
+**教训:** Tauri command 定义后必须验证是否在 main.rs 的 `.register()` 调用中。
+
+### 8. Epic 10 组件颜色迁移不完整
+
+PERF-006 建立 CSS 变量主题基础设施，但 371 处硬编码颜色引用未迁移。浅色主题部分元素颜色不正确。
+
+**教训:** 主题基础设施和组件迁移是两个不同任务；明确 MVP 边界避免范围蔓延。
+
 ---
 
 ## 四、关键经验教训 (Key Lessons)
@@ -178,6 +213,22 @@ CORE-004 的 Toast 通知系统是全局性基础设施。如果在 CORE-001/002
 
 聚合函数（SUM、AVG、COUNT）对空数据集返回 NULL。COALESCE 是标准解决方案，应在初始实现时就考虑，而非事后修复。
 
+### 7. Composables 必须验证集成
+
+新创建的 composable 必须在使用它的组件中被实际引用和调用。建议在 composable 创建时就在目标组件中集成，而非作为单独步骤。
+
+### 8. Tauri Command 注册必须验证
+
+定义新的 Tauri command 后，必须检查 main.rs 的 `.register()` 调用是否包含该命令。可添加 cargo clippy lint 规则防止再次遗漏。
+
+### 9. 大规模迁移需要明确 MVP 边界
+
+PERF-006 的浅色主题 MVP 明确：核心切换机制必须工作，完整组件颜色迁移是"最好有"而非"必须有"。这种边界定义避免了项目范围蔓延。
+
+### 10. 同日完成多个 Story 的可行条件
+
+Epic 10 的 6 个 Story 都在同一天完成，原因：每个 Story 都有清晰的具体目标、没有跨 Story 的依赖、并行开发能力充足、Code Review 流程快速响应。
+
 ---
 
 ## 五、技术债务汇总
@@ -190,6 +241,10 @@ CORE-004 的 Toast 通知系统是全局性基础设施。如果在 CORE-001/002
 | 全局状态测试隔离 | Medium | 解决 AtomicBool 导致的 flaky test |
 | CJK 搜索 LIKE 降级性能 | Low | 1000+ 记录时监控搜索性能 |
 | 标签系统合并 | Low | AI-004 和 DATA-003 标签功能需协调 |
+| 371 处硬编码颜色迁移 | Medium | PERF-006 组件颜色迁移到 CSS 变量 |
+| 游标分页前端集成 | Medium | PERF-004 API 准备就绪但前端未使用 |
+| OnboardingModal i18n | Low | PERF-002 硬编码中文字符串需要迁移 |
+| Tauri command 注册验证 | Low | 添加 clippy lint 防止遗漏 |
 
 ---
 
@@ -197,25 +252,29 @@ CORE-004 的 Toast 通知系统是全局性基础设施。如果在 CORE-001/002
 
 ### 成功传承的模式
 
-1. **CORE → SMART → AI → DATA → EXP → SESSION → UX**: UI 设计语言、测试策略、错误处理框架
+1. **CORE → SMART → AI → DATA → EXP → SESSION → UX → PERF**: UI 设计语言、测试策略、错误处理框架
 2. **AI → DATA**: API Key 加密模块被直接复用
 3. **DATA → REPORT**: 导出基础设施（日期范围选择、格式化模板、进度反馈）被 Notion/Logseq 导出复用
 4. **SESSION → UX**: 时段数据为 UX 组件提供更丰富的数据上下文
+5. **UX → PERF**: i18n 的 localStorage 持久化模式被 theme 复用（`dailylogger-locale` → `dailylogger-theme`）
 
 ### 待改进的传递链
 
 1. **AI → DATA**: 标签系统功能重叠，未能提前协调
 2. **所有 Epic**: 缺乏统一的「架构约束清单」导致部分 Story 实现质量不一致
+3. **PERF-005 → PERF-002**: i18n 验证发现 OnboardingModal 硬编码中文未迁移
 
 ---
 
 ## 七、团队协作亮点
 
 1. **Story 间知识自动传递**: Previous Story Intelligence 机制确保每个 Story 都站在前序 Story 的肩膀上
-2. **代码审查效果显著**: 所有 Story 均通过代码审查，发现的问题都是有价值的改进点
-3. **TDD 文化建立**: 从 CORE 的 ~249 测试到 SESSION 的 ~1381 测试，测试覆盖持续增长
+2. **代码审查效果显著**: 所有 Story 均通过代码审查，发现的问题都是有价值的改进点。Epic 10 中 4/6 Story 在审查阶段发现 HIGH 级别问题
+3. **TDD 文化建立**: 从 CORE 的 ~249 测试到 PERF 的 ~1381 测试，测试覆盖持续增长
 4. **安全意识前置**: 在第一个 Epic 就完成了 API Key 加密（通常被推迟到后期）
-5. **务实的技术选型**: 混合搜索方案、OpenAI 兼容 API 策略都是务实的选择
+5. **务实的技术选型**: 混合搜索方案、OpenAI 兼容 API 策略、设计令牌体系都是务实有效的选择
+6. **同日完成多个 Story**: Epic 10 的 6 个 Story 在同一天全部完成，展示了高效的并行开发能力
+7. **Code Review 作为 Quality Gate**: 不同 LLM 执行代码审查持续发现真实问题，证明审查是有效的质量保障手段
 
 ---
 
@@ -223,13 +282,13 @@ CORE-004 的 Toast 通知系统是全局性基础设施。如果在 CORE-001/002
 
 | 指标 | 数值 |
 |------|------|
-| 总 Story Points | ~150 pts |
-| Epic 完成率 | 100% (9/9) |
-| Story 完成率 | 100% (50+/50+) |
+| 总 Story Points | ~167 pts |
+| Epic 完成率 | 100% (10/10) |
+| Story 完成率 | 100% (56+/56+) |
 | 总测试用例 | ~1400+ (Rust + Frontend) |
 | 代码审查通过率 | 100% |
 | 生产事故 | 0 |
-| 发布版本数 | 6+ (v2.0.0 ~ v3.1.0) |
+| 发布版本数 | 8+ (v2.0.0 ~ v3.3.0) |
 
 ---
 
@@ -261,6 +320,20 @@ CORE-004 的 Toast 通知系统是全局性基础设施。如果在 CORE-001/002
 | UX-5 | feat | 2pts | - |
 | **Total** | MINOR | **16pts** | **v3.0.0 → v3.1.0** |
 
+### v3.3.0 发布状态
+
+**Epic 10 包含的 Stories:**
+
+| Story | Type | Story Points | Key Feature |
+|-------|------|--------------|-------------|
+| PERF-001 | feat | 2pts | AI 代理配置（Proxy + 认证） |
+| PERF-002 | feat | 2pts | 新用户引导（OnboardingModal） |
+| PERF-003 | perf | 3pts | 截图虚拟滚动 + 缩略图缓存 |
+| PERF-004 | perf | 3pts | 数据库索引 + 游标分页 |
+| PERF-005 | feat | 2pts | 多语言支持（中/英） |
+| PERF-006 | feat | 3pts | 浅色主题支持 |
+| **Total** | MINOR | **17pts** | **v3.2.0 → v3.3.0** |
+
 ### 全部 Epic 完成状态
 
 | Epic | 状态 | 全部 Story | 全部 Retro |
@@ -274,21 +347,33 @@ CORE-004 的 Toast 通知系统是全局性基础设施。如果在 CORE-001/002
 | Epic 7 (EXP) | ✅ Done | ✅ Done | ✅ Done |
 | Epic 8 (SESSION) | ✅ Done | ✅ Done | ✅ Done |
 | Epic 9 (UX) | ✅ Done | ✅ Done | ✅ Done |
+| Epic 10 (PERF) | ✅ Done | ✅ Done | ✅ Done |
 
 ---
 
 ## 十一、结论
 
-DailyLogger 项目从 Epic 1 到 Epic 9，经历了约 2 周的密集开发，完成了从 MVP 强化到核心架构重构，再到 UX 系统化升级的全过程。
+DailyLogger 项目从 Epic 1 到 Epic 10，经历了约 2 周的密集开发，完成了从 MVP 强化到核心架构重构，再到 UX 系统化升级和体验极致化的全过程。
 
 **核心成就:**
-1. **功能完善**: 9 个 Epic 覆盖了 AI 能力、数据管理、报告生成、时段分析、视觉升级等全方位功能
+1. **功能完善**: 10 个 Epic 覆盖了 AI 能力、数据管理、报告生成、时段分析、视觉升级、体验优化等全方位功能
 2. **架构演进**: 从"逐张即时分析"到"时段批量上下文分析"，架构实现了质的飞跃
 3. **质量保障**: 100% 代码审查通过率、1400+ 测试用例、0 生产事故
 4. **知识传承**: Story Intelligence 机制确保经验在 Story 间自然流动
 5. **务实决策**: OpenAI 兼容 API、FTS5+LIKE 混合搜索、设计令牌体系都是务实有效的选择
+6. **用户体验**: 代理配置、新用户引导、虚拟滚动、i18n、浅色主题全面提升
 
-**项目当前状态**: v3.1.0 已发布，所有 Epic 完成，项目处于稳定维护阶段。
+**项目当前状态**: v3.3.0 已发布，所有 10 个 Epic 完成，项目处于稳定维护阶段。
+
+**Epic 10 关键经验:**
+- 代码审查有效拦截了 4 个 HIGH 级别问题（composable 未集成、command 未注册、硬编码字符串、重复 CSS）
+- 同日完成 6 个 Story 展示了高效的并行开发能力
+- 大规模迁移需要明确 MVP 边界避免范围蔓延
+
+**下一步:**
+- 收集浅色主题用户体验反馈
+- 评估组件颜色迁移重构（371 处硬编码颜色）
+- 监控游标分页 API 使用情况
 
 ---
 
