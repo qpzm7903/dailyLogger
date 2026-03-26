@@ -1,6 +1,6 @@
 # Story 9.5: 交互细节打磨 (Interaction Polish)
 
-Status: review
+Status: in-progress (review findings applied)
 
 ## Story
 
@@ -280,4 +280,53 @@ claude-opus-4-6
 - `src/locales/en.json` - 添加对应英译
 
 ## Change Log
+
+## Code Review Findings (2026-03-26)
+
+### 🔴 CRITICAL ISSUES
+
+**1. Focus Trap NOT Integrated (AC#4)**
+- **Severity:** CRITICAL
+- **File:** `src/composables/useModal.ts`
+- **Finding:** `useFocusTrap` is instantiated (line 79) but `activateFocusTrap()` and `deactivateFocusTrap()` are **never called** anywhere. The `containerRef` remains `null` because it's never bound to any DOM element.
+- **Impact:** AC#4 (focus trap, Tab cycles within modal, focus restore on close) is completely non-functional.
+- **Root Cause:** The story's design assumed `useModal` would manage focus trapping for modal containers, but `useModal` is a state-only composable that doesn't render DOM elements.
+- **Fix Required:** Focus trap logic must be integrated into each modal component that uses `useModal`, OR `useModal` must be refactored to accept a container ref.
+
+### 🟡 MEDIUM ISSUES
+
+**2. Dashboard Missing SkeletonLoader (AC#3)**
+- **Severity:** MEDIUM
+- **File:** `src/components/layout/Dashboard.vue`
+- **Finding:** AC#3 specifies skeleton loaders for "Dashboard record list" during loading. `Dashboard.vue` line 158 only shows `EmptyState` when records are empty. No `SkeletonLoader` is shown during loading.
+- **Contrast:** `ScreenshotGallery.vue` correctly uses `SkeletonLoader` during `isLoading` (lines 65-67).
+
+**3. Comment Header Typo**
+- **Severity:** MEDIUM
+- **File:** `src/composables/useModal.ts:1`
+- **Finding:** `// UX-010:` should be `// UX-5:`
+
+### 🟢 LOW ISSUES
+
+**4. Redundant Class Binding**
+- **Severity:** LOW
+- **File:** `src/components/SkeletonLoader.vue:7`
+- **Finding:** `:class="{ 'w-full': true }"` is always true, unnecessary.
+
+### Task Completion Status
+
+| Task | Claimed | Actual | Evidence |
+|------|---------|--------|----------|
+| Task 1: ESC key support | ✅ | ✅ DONE | `handleKeydown` correctly handles Escape (lines 82-87) |
+| Task 2: Empty state illustrations | ✅ | ✅ DONE | All 4 SVG types implemented in EmptyState.vue |
+| Task 3: Skeleton loaders | ✅ | ⚠️ PARTIAL | SkeletonLoader in ScreenshotGallery, but Dashboard missing |
+| Task 4: Focus management | ✅ | ❌ NOT DONE | Focus trap never activated, containerRef is null |
+| Task 5: Tests | ✅ | ✅ LIKELY DONE | Dev notes claim 927 tests pass |
+
+### Recommended Actions
+
+1. **HIGH:** Integrate focus trap into modal components (SettingsModal, QuickNoteModal, ScreenshotGallery, etc.) directly, OR refactor useModal to accept a container ref
+2. **MEDIUM:** Add SkeletonLoader to Dashboard.vue for records list loading state
+3. **MEDIUM:** Fix comment header typo "UX-010" → "UX-5"
+4. **LOW:** Remove redundant `:class="{ 'w-full': true }"` in SkeletonLoader.vue
 
