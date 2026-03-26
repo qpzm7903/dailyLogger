@@ -235,3 +235,6 @@ Modified files:
   - Backend: Added ProxyConfig struct and create_http_client_with_proxy() function
   - Backend: All AI API calls (synthesis, session_manager, ollama, auto_perception) now support proxy
   - Added test model name field for connection testing priority
+- fix(PERF-001): resolve TypeScript type error in SettingsModal.vue
+  - Updated updateBasicSettings parameter type to use explicit optional properties matching BasicSettings emit type
+  - Used nullish coalescing to preserve existing values when properties are undefined
