@@ -505,7 +505,7 @@ watch(() => props.settings, (newVal) => {
 
 // Watch for local changes and emit
 watch(localSettings, (newVal) => {
-  emit('update:settings', newVal)
+  emit('update:settings', newVal as Props['settings'])
 }, { deep: true })
 
 // AI-006: Watch custom headers and sync to localSettings
