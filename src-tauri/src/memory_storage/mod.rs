@@ -796,10 +796,11 @@ mod tests_statistics {
         }
 
         // Insert test records with timestamps in today's range
+        // Use the same format as get_today_range() returns (YYYY-MM-DDTHH:MM:SS without timezone)
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let timestamp1 = format!("{}T10:00:00+08:00", today);
-        let timestamp2 = format!("{}T11:00:00+08:00", today);
-        let timestamp3 = format!("{}T14:00:00+08:00", today);
+        let timestamp1 = format!("{}T10:00:00", today);
+        let timestamp2 = format!("{}T11:00:00", today);
+        let timestamp3 = format!("{}T14:00:00", today);
 
         // Insert records - one with screenshot, two without
         {
@@ -929,11 +930,12 @@ mod tests_statistics {
         }
 
         // Insert test records with different analysis statuses
+        // Use the same format as get_today_range() returns (YYYY-MM-DDTHH:MM:SS without timezone)
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let timestamp1 = format!("{}T10:00:00+08:00", today);
-        let timestamp2 = format!("{}T11:00:00+08:00", today);
-        let timestamp3 = format!("{}T14:00:00+08:00", today);
-        let timestamp4 = format!("{}T15:00:00+08:00", today);
+        let timestamp1 = format!("{}T10:00:00", today);
+        let timestamp2 = format!("{}T11:00:00", today);
+        let timestamp3 = format!("{}T14:00:00", today);
+        let timestamp4 = format!("{}T15:00:00", today);
 
         {
             let db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
