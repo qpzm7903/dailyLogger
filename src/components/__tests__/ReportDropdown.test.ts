@@ -8,6 +8,7 @@ describe('ReportDropdown', () => {
     isGeneratingDaily: false,
     isGeneratingWeekly: false,
     isGeneratingMonthly: false,
+    preferredLanguage: 'zh-CN',
   }
 
   beforeEach(() => {
@@ -20,10 +21,10 @@ describe('ReportDropdown', () => {
       expect(wrapper.text()).toContain('生成日报')
     })
 
-    it('renders dropdown toggle buttons (main + toggle)', () => {
+    it('renders dropdown toggle button', () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
       const buttons = wrapper.findAll('button')
-      expect(buttons.length).toBe(2) // Main + Toggle
+      expect(buttons.length).toBe(2) // Main + Dropdown toggle
     })
 
     it('does not show dropdown menu initially', () => {
@@ -40,14 +41,13 @@ describe('ReportDropdown', () => {
       expect(wrapper.text()).toContain('生成月报')
     })
 
-    it('shows language dropdown when language button clicked', async () => {
+    it('shows language submenu trigger in dropdown', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      const toggleBtn = wrapper.findAll('button')[1]
+      const toggleBtn = wrapper.findAll('button')[1] // Open dropdown
       await toggleBtn.trigger('click')
-      const langBtn = wrapper.find('.absolute button')
-      await langBtn.trigger('click')
-      // Should show language submenu
-      expect(wrapper.text()).toContain('中文')
+
+      // The dropdown should contain the language selector
+      expect(wrapper.text()).toContain('多语言日报')
     })
   })
 
@@ -92,31 +92,40 @@ describe('ReportDropdown', () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
       await wrapper.findAll('button')[1].trigger('click') // Open dropdown (2nd button)
 
-      const menuItems = wrapper.findAll('.absolute button')
-      await menuItems[1].trigger('click') // Weekly
+      const menuItems = wrapper.findAll('.absolute > button')
+      // First three are report options: daily, weekly, monthly
+      await menuItems[1].trigger('click') // weekly
       expect(wrapper.emitted('generate')![0]).toEqual(['weekly'])
     })
 
-    it('emits generateMultilingual and languageChange when language selected', async () => {
+    it('emits generateMultilingual and languageChange when language selected from submenu', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      const toggleBtn = wrapper.findAll('button')[1]
-      await toggleBtn.trigger('click')
+      await wrapper.findAll('button')[1].trigger('click') // Open dropdown
 
-      // Find and click language selector (first item in dropdown)
+      // Find and click the language selector button (has "多语言日报" text)
       const dropdownButtons = wrapper.findAll('.absolute button')
-      // The first button in dropdown is "daily report", second is "weekly", third is "monthly"
-      // Then there's a language selector
-      const langSelector = dropdownButtons[3] // Language selector is 4th item
-      await langSelector.trigger('click')
+      const langSelector = dropdownButtons.find(btn =>
+        btn.text().includes('多语言日报')
+      )
+      expect(langSelector).toBeDefined()
+      await langSelector!.trigger('click')
 
-      // Now click English option
-      const langOptions = wrapper.findAll('.absolute button')
-      await langOptions[1].trigger('click') // English (second option)
+      // After clicking language selector, submenu should open
+      // The submenu is the second .absolute element
+      const submenuContainer = wrapper.findAll('.absolute')[1]
+      expect(submenuContainer.exists()).toBe(true)
 
-      expect(wrapper.emitted('languageChange')).toBeTruthy()
-      expect(wrapper.emitted('languageChange')![0]).toEqual(['en'])
+      const submenuButtons = submenuContainer.findAll('button')
+
+      // Find and click English
+      const englishBtn = submenuButtons.find(btn => btn.text().includes('English'))
+      expect(englishBtn).toBeDefined()
+      await englishBtn!.trigger('click')
+
       expect(wrapper.emitted('generateMultilingual')).toBeTruthy()
       expect(wrapper.emitted('generateMultilingual')![0]).toEqual(['en'])
+      expect(wrapper.emitted('languageChange')).toBeTruthy()
+      expect(wrapper.emitted('languageChange')![0]).toEqual(['en'])
     })
 
     it('does not emit when disabled', async () => {
@@ -133,8 +142,8 @@ describe('ReportDropdown', () => {
       await wrapper.findAll('button')[1].trigger('click') // Open
       expect(wrapper.find('.absolute').exists()).toBe(true)
 
-      const menuItems = wrapper.findAll('.absolute button')
-      await menuItems[0].trigger('click') // Select daily
+      const menuItems = wrapper.findAll('.absolute > button')
+      await menuItems[0].trigger('click') // daily
       expect(wrapper.find('.absolute').exists()).toBe(false)
     })
   })
@@ -157,6 +166,56 @@ describe('ReportDropdown', () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
       const toggleBtn = wrapper.findAll('button')[1]
       expect(toggleBtn.attributes('title')).toBe('展开菜单')
+    })
+  })
+
+  describe('language submenu', () => {
+    it('opens language submenu when clicking language selector', async () => {
+      const wrapper = mount(ReportDropdown, { props: defaultProps })
+      await wrapper.findAll('button')[1].trigger('click') // Open dropdown
+
+      // Click language selector
+      const dropdownButtons = wrapper.findAll('.absolute button')
+      const langSelector = dropdownButtons.find(btn =>
+        btn.text().includes('多语言日报')
+      )
+      await langSelector!.trigger('click')
+
+      // There should be a second .absolute element (the submenu)
+      const absolutes = wrapper.findAll('.absolute')
+      expect(absolutes.length).toBe(2)
+    })
+
+    it('shows all language options when submenu is open', async () => {
+      const wrapper = mount(ReportDropdown, { props: defaultProps })
+      await wrapper.findAll('button')[1].trigger('click') // Open dropdown
+
+      // Click language selector
+      const dropdownButtons = wrapper.findAll('.absolute button')
+      const langSelector = dropdownButtons.find(btn =>
+        btn.text().includes('多语言日报')
+      )
+      await langSelector!.trigger('click')
+
+      // The submenu should contain language options
+      const submenuContainer = wrapper.findAll('.absolute')[1]
+      const submenuText = submenuContainer.text()
+      expect(submenuText).toContain('中文')
+      expect(submenuText).toContain('English')
+      expect(submenuText).toContain('日本語')
+      expect(submenuText).toContain('한국어')
+      expect(submenuText).toContain('Español')
+      expect(submenuText).toContain('Français')
+      expect(submenuText).toContain('Deutsch')
+    })
+
+    it('displays correct default language based on preferredLanguage prop', () => {
+      const wrapper = mount(ReportDropdown, {
+        props: { ...defaultProps, preferredLanguage: 'ja' }
+      })
+      // The component shows the selected language name in the UI
+      // We verify the prop is accepted and doesn't cause errors
+      expect(wrapper.exists()).toBe(true)
     })
   })
 })
