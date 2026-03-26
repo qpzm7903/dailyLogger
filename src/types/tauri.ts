@@ -281,3 +281,37 @@ export interface ComparisonResult {
   period2_summary: string
   comparison: string
 }
+
+// ============================================
+// Statistics Types (DATA-008)
+// ============================================
+
+export interface DateRange {
+  start: string  // RFC3339
+  end: string    // RFC3339
+  label: string  // "今日" / "本周" / "本月" / "自定义"
+}
+
+export interface DailyStatistic {
+  date: string           // YYYY-MM-DD
+  screenshot_count: number
+  session_count: number
+  record_count: number
+}
+
+export interface Statistics {
+  date_range: DateRange
+  screenshot_count: number
+  session_count: number
+  record_count: number
+  analysis_success_rate: number  // Percentage 0-100
+  daily_breakdown: DailyStatistic[]
+}
+
+export type TimeRangeType = 'today' | 'week' | 'month' | 'custom'
+
+export interface GetStatisticsArgs {
+  range_type: TimeRangeType
+  custom_start?: string  // YYYY-MM-DD, required when range_type is 'custom'
+  custom_end?: string    // YYYY-MM-DD, required when range_type is 'custom'
+}

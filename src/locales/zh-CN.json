@@ -806,5 +806,21 @@
     "custom": "自定义报告",
     "comparison": "对比分析",
     "notGenerated": "尚未生成"
+  },
+  "statistics": {
+    "title": "数据统计",
+    "today": "今日",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "apply": "应用",
+    "screenshots": "截图数",
+    "sessions": "时段数",
+    "records": "记录数",
+    "analysisRate": "AI分析成功率",
+    "dailyBreakdown": "每日明细",
+    "noData": "暂无数据",
+    "export": "导出CSV",
+    "exporting": "导出中...",
+    "close": "关闭"
   }
 }

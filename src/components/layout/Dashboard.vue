@@ -114,6 +114,12 @@
             >
               时段管理
             </button>
+            <button
+              @click="$emit('open', 'statistics')"
+              class="btn btn-secondary btn-sm"
+            >
+              数据统计
+            </button>
           </div>
         </div>
 

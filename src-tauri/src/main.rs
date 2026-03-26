@@ -485,6 +485,8 @@ fn main() {
             daily_logger_lib::session_manager::get_session_screenshots,
             // SESSION-003: Session summary editing
             daily_logger_lib::session_manager::update_session_user_summary,
+            // DATA-008: Statistics panel
+            daily_logger_lib::memory_storage::get_statistics,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");

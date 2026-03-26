@@ -1,6 +1,6 @@
 # Story 11.2: DATA-008 - 数据统计面板
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -265,4 +265,20 @@ claude-opus-4-6
 ### Completion Notes List
 
 ### File List
+
+- `src-tauri/src/memory_storage/mod.rs` - Statistics struct, DateRange, DailyStatistic, get_statistics()
+- `src-tauri/src/main.rs` - Registered get_statistics command
+- `src/types/tauri.ts` - Statistics, DateRange, DailyStatistic, GetStatisticsArgs types
+- `src/components/StatisticsPanel.vue` - Statistics panel modal component
+- `src/App.vue` - Added StatisticsPanel modal registration
+- `src/components/layout/Dashboard.vue` - Added statistics button
+- `src/locales/zh-CN.json` - Added statistics translations
+- `src/locales/en.json` - Added statistics translations
+
+### Completion Notes List
+
+- [2026-03-26] Implemented backend Statistics struct and get_statistics() Tauri command
+- [2026-03-26] Added frontend StatisticsPanel.vue component with time range selector, statistics cards, daily breakdown chart
+- [2026-03-26] Added data export (CSV) functionality
+- [2026-03-26] Added i18n translations for statistics panel
 

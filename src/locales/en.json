@@ -810,5 +810,21 @@
     "custom": "Custom Report",
     "comparison": "Comparison",
     "notGenerated": "Not generated yet"
+  },
+  "statistics": {
+    "title": "Statistics",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "apply": "Apply",
+    "screenshots": "Screenshots",
+    "sessions": "Sessions",
+    "records": "Records",
+    "analysisRate": "AI Analysis Rate",
+    "dailyBreakdown": "Daily Breakdown",
+    "noData": "No data",
+    "export": "Export CSV",
+    "exporting": "Exporting...",
+    "close": "Close"
   }
 }

@@ -391,3 +391,330 @@ mod tests_ai_006 {
         );
     }
 }
+
+// DATA-008: Statistics Types and Functions
+// ============================================
+
+use chrono::{Datelike, Local, NaiveDate};
+
+/// Statistics time range type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TimeRangeType {
+    Today,
+    Week,
+    Month,
+    Custom,
+}
+
+/// Date range for statistics query
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DateRange {
+    pub start: String, // RFC3339
+    pub end: String,   // RFC3339
+    pub label: String, // "今日" / "本周" / "本月" / "自定义"
+}
+
+/// Daily breakdown statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DailyStatistic {
+    pub date: String, // YYYY-MM-DD
+    pub screenshot_count: i64,
+    pub session_count: i64,
+    pub record_count: i64,
+}
+
+/// Full statistics result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Statistics {
+    pub date_range: DateRange,
+    pub screenshot_count: i64,
+    pub session_count: i64,
+    pub record_count: i64,
+    pub analysis_success_rate: f64,           // Percentage 0-100
+    pub daily_breakdown: Vec<DailyStatistic>, // Daily breakdown
+}
+
+/// Get the start and end of today in local timezone
+fn get_today_range() -> (String, String) {
+    let now = Local::now();
+    let today = now.format("%Y-%m-%d").to_string();
+    let start = format!("{}T00:00:00", today);
+    let end = format!("{}T23:59:59.999", today);
+    (start, end)
+}
+
+/// Get the start and end of current week in local timezone (Monday to Sunday)
+fn get_week_range() -> (String, String) {
+    let now = Local::now();
+    let weekday = now.weekday().num_days_from_monday() as i64;
+    let start_date = now - chrono::Duration::days(weekday);
+    let end_date = start_date + chrono::Duration::days(6);
+    let start = format!("{}T00:00:00", start_date.format("%Y-%m-%d"));
+    let end = format!("{}T23:59:59.999", end_date.format("%Y-%m-%d"));
+    (start, end)
+}
+
+/// Get the start and end of current month in local timezone
+fn get_month_range() -> (String, String) {
+    let now = Local::now();
+    let start = format!("{}-{:02}-01T00:00:00", now.year(), now.month());
+    let last_day = get_last_day_of_month(now.year(), now.month());
+    let end = format!(
+        "{}-{:02}-{}T23:59:59.999",
+        now.year(),
+        now.month(),
+        last_day
+    );
+    (start, end)
+}
+
+/// Get the last day of a given month
+fn get_last_day_of_month(year: i32, month: u32) -> u32 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+                29
+            } else {
+                28
+            }
+        }
+        _ => 31,
+    }
+}
+
+/// Parse a date string (YYYY-MM-DD) and return NaiveDate
+fn parse_date(date_str: &str) -> Result<NaiveDate, String> {
+    NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+        .map_err(|e| format!("Failed to parse date '{}': {}", date_str, e))
+}
+
+/// Count records in a date range
+fn count_records_in_range(
+    conn: &rusqlite::Connection,
+    start: &str,
+    end: &str,
+) -> Result<i64, String> {
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ?",
+            [start, end],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(count)
+}
+
+/// Count screenshots in a date range (records with screenshot_path)
+fn count_screenshots_in_range(
+    conn: &rusqlite::Connection,
+    start: &str,
+    end: &str,
+) -> Result<i64, String> {
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ? AND screenshot_path IS NOT NULL AND screenshot_path != ''",
+            [start, end],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(count)
+}
+
+/// Count sessions in a date range
+fn count_sessions_in_range(
+    conn: &rusqlite::Connection,
+    start: &str,
+    end: &str,
+) -> Result<i64, String> {
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sessions WHERE date >= ? AND date <= ?",
+            [start[..10].to_string(), end[..10].to_string()],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(count)
+}
+
+/// Get AI analysis success rate (percentage of analyzed records)
+fn get_analysis_success_rate(
+    conn: &rusqlite::Connection,
+    start: &str,
+    end: &str,
+) -> Result<f64, String> {
+    let total: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ?",
+            [start, end],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    if total == 0 {
+        return Ok(0.0);
+    }
+
+    let analyzed: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ? AND analysis_status = 'analyzed'",
+            [start, end],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    Ok((analyzed as f64) / (total as f64) * 100.0)
+}
+
+/// Get daily breakdown statistics for a date range
+fn get_daily_breakdown(
+    conn: &rusqlite::Connection,
+    start: &str,
+    end: &str,
+) -> Result<Vec<DailyStatistic>, String> {
+    let start_date = parse_date(&start[..10])?;
+    let end_date = parse_date(&end[..10])?;
+
+    let mut result = Vec::new();
+    let mut current_date = start_date;
+
+    while current_date <= end_date {
+        let date_str = current_date.format("%Y-%m-%d").to_string();
+        let day_start = format!("{}T00:00:00", date_str);
+        let day_end = format!("{}T23:59:59.999", date_str);
+
+        let screenshot_count = count_screenshots_in_range(conn, &day_start, &day_end).unwrap_or(0);
+        let session_count = count_sessions_in_range(conn, &day_start, &day_end).unwrap_or(0);
+        let record_count = count_records_in_range(conn, &day_start, &day_end).unwrap_or(0);
+
+        result.push(DailyStatistic {
+            date: date_str,
+            screenshot_count,
+            session_count,
+            record_count,
+        });
+
+        current_date += chrono::Duration::days(1);
+    }
+
+    Ok(result)
+}
+
+/// DATA-008: Get statistics for a given time range
+///
+/// # Arguments
+/// * `range_type` - One of: "today", "week", "month", "custom"
+/// * `custom_start` - Start date for custom range (YYYY-MM-DD), required when range_type is "custom"
+/// * `custom_end` - End date for custom range (YYYY-MM-DD), required when range_type is "custom"
+#[command]
+pub async fn get_statistics(
+    range_type: String,
+    custom_start: Option<String>,
+    custom_end: Option<String>,
+) -> Result<Statistics, String> {
+    let (start, end, label) = match range_type.to_lowercase().as_str() {
+        "today" => {
+            let (s, e) = get_today_range();
+            (s, e, "今日".to_string())
+        }
+        "week" => {
+            let (s, e) = get_week_range();
+            (s, e, "本周".to_string())
+        }
+        "month" => {
+            let (s, e) = get_month_range();
+            (s, e, "本月".to_string())
+        }
+        "custom" => {
+            let start_str = custom_start
+                .clone()
+                .ok_or("custom_start is required for custom range")?;
+            let end_str = custom_end
+                .clone()
+                .ok_or("custom_end is required for custom range")?;
+
+            // Validate and parse dates
+            let _ = parse_date(&start_str)?;
+            let _ = parse_date(&end_str)?;
+
+            let start = format!("{}T00:00:00", start_str);
+            let end = format!("{}T23:59:59.999", end_str);
+            (start, end, format!("{} 至 {}", start_str, end_str))
+        }
+        _ => {
+            return Err(format!(
+                "Invalid range_type: {}. Use: today, week, month, custom",
+                range_type
+            ))
+        }
+    };
+
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let screenshot_count = count_screenshots_in_range(conn, &start, &end)?;
+    let session_count = count_sessions_in_range(conn, &start, &end)?;
+    let record_count = count_records_in_range(conn, &start, &end)?;
+    let analysis_success_rate = get_analysis_success_rate(conn, &start, &end)?;
+    let daily_breakdown = get_daily_breakdown(conn, &start, &end)?;
+
+    Ok(Statistics {
+        date_range: DateRange {
+            start: start.clone(),
+            end: end.clone(),
+            label,
+        },
+        screenshot_count,
+        session_count,
+        record_count,
+        analysis_success_rate,
+        daily_breakdown,
+    })
+}
+
+#[cfg(test)]
+mod tests_statistics {
+    use super::*;
+
+    #[test]
+    fn test_get_last_day_of_month() {
+        assert_eq!(get_last_day_of_month(2026, 1), 31);
+        assert_eq!(get_last_day_of_month(2026, 2), 28);
+        assert_eq!(get_last_day_of_month(2024, 2), 29); // Leap year
+        assert_eq!(get_last_day_of_month(2026, 4), 30);
+    }
+
+    #[test]
+    fn test_parse_date() {
+        let date = parse_date("2026-03-26").unwrap();
+        assert_eq!(date.to_string(), "2026-03-26");
+
+        assert!(parse_date("invalid").is_err());
+    }
+
+    #[test]
+    fn test_get_today_range() {
+        let (start, end) = get_today_range();
+        assert!(start.contains("T00:00:00"));
+        assert!(end.contains("T23:59:59"));
+    }
+
+    #[test]
+    fn test_get_week_range() {
+        let (start, end) = get_week_range();
+        // Should be Monday to Sunday
+        assert!(start.contains("T00:00:00"));
+        assert!(end.contains("T23:59:59"));
+    }
+
+    #[test]
+    fn test_get_month_range() {
+        let (start, end) = get_month_range();
+        assert!(start.contains("-01T00:00:00"));
+        assert!(end.contains("T23:59:59"));
+    }
+}

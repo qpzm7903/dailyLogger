@@ -138,6 +138,9 @@
           @updated="handleSessionUpdated"
         />
       </Transition>
+      <Transition name="scale" mode="out-in">
+        <StatisticsPanel v-if="isOpen('statistics')" @close="close('statistics')" />
+      </Transition>
       <Toast />
     </Teleport>
   </div>
@@ -182,6 +185,7 @@ import OfflineQueueModal from './components/OfflineQueueModal.vue'
 import ReanalyzeByDateModal from './components/ReanalyzeByDateModal.vue'
 import SessionListModal from './components/SessionListModal.vue'
 import SessionDetailView from './components/SessionDetailView.vue'
+import StatisticsPanel from './components/StatisticsPanel.vue'
 
 import { showError, showSuccess, initToastI18n } from './stores/toast'
 import type { LogRecord, Tag, Settings } from './types/tauri'
