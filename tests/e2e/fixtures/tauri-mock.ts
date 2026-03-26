@@ -342,7 +342,8 @@ export function getMockInjectionScript(overrides: MockOverrides = {}): string {
   return `
     (function() {
       // 存储状态
-      const mockOverrides = ${JSON.stringify(overrides)};
+      // 确保 overrides 是对象（处理 undefined 的情况）
+      const mockOverrides = ${JSON.stringify(overrides || {})};
       const mockState = {
         settings: ${JSON.stringify(Factory.createSettings())},
         records: [],
@@ -362,7 +363,10 @@ export function getMockInjectionScript(overrides: MockOverrides = {}): string {
 
           // 默认 mock 实现
           const defaults = {
-            get_settings: () => mockState.settings,
+            get_settings: () => {
+              // 确保 onboarding_completed 为 true，避免显示 onboarding 弹窗
+              return { ...mockState.settings, onboarding_completed: true };
+            },
             save_settings: (args) => {
               Object.assign(mockState.settings, args.settings || {});
               return 'ok';
