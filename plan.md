@@ -1,9 +1,9 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-26
-> 当前版本: v3.1.1 (CI 修复)
-> 下一版本: (待规划)
-> Milestone: v2.0.0 架构瘦身 → v2.6.0 集成与扩展 → v2.10.0 核心体验深化 → v3.0.0 分析管线重设计 → v3.1.1 CI 修复
+> 当前版本: v3.2.0 (AI 代理配置支持)
+> 下一版本: v3.3.0（待规划）
+> Milestone: v2.0.0 架构瘦身 → v2.6.0 集成与扩展 → v2.10.0 核心体验深化 → v3.0.0 分析管线重设计 → v3.1.1 CI 修复 → v3.2.0 AI 代理配置
 
 ---
 
@@ -87,13 +87,24 @@
 
 ---
 
-## v3.1.1（CI 修复）✅ 完成
+## v3.2.0（AI 代理配置支持）✅ 完成
 
-**目标**: 修复 Build and Release workflow 中 publish-release job 缺少 checkout 步骤的问题
+**目标**: 为 AI API 请求添加代理配置支持，支持企业防火墙场景和代理认证
 
-**版本类型**: PATCH（Bug 修复）
+**版本类型**: MINOR（功能增强）
 
-- 修复 v3.1.0 release publish 失败问题（gh release edit 需要 git repository 上下文）
+**Epic**: Epic 10（体验极致化）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| PERF-001 | AI 代理配置（Proxy 支持 + 代理认证） | 2pts | HIGH | ✅ 完成 |
+
+**主要变更**：
+- 数据库：新增 proxy_enabled、proxy_host、proxy_port、proxy_username、proxy_password、test_model_name 字段
+- 前端：BasicSettings 添加可折叠代理配置面板
+- 后端：新增 ProxyConfig 结构体和 create_http_client_with_proxy() 函数
+- 所有 AI API 调用路径（synthesis、session_manager、ollama、auto_perception）均支持代理
+- 新增 Test Model 字段，测试连接时优先使用
 
 ---
 
