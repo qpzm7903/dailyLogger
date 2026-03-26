@@ -3,8 +3,7 @@
     <div
       v-for="i in count"
       :key="i"
-      class="h-16 rounded-lg shimmer"
-      :class="{ 'w-full': true }"
+      class="h-16 rounded-lg shimmer w-full"
     />
   </div>
 </template>

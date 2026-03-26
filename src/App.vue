@@ -26,6 +26,7 @@
         :isDesktop="isDesktop"
         :autoCaptureEnabled="autoCaptureEnabled"
         :isCapturing="isCapturing"
+        :isLoading="isLoadingTodayRecords"
         :quickNotesCount="quickNotesCount"
         :todayRecords="todayRecords"
         :isGenerating="isGenerating"
@@ -37,7 +38,6 @@
         :monthlyReportPath="monthlyReportPath"
         :customReportPath="customReportPath"
         :comparisonReportPath="comparisonReportPath"
-        :isLoading="isDashboardLoading"
         @open="open"
         @takeScreenshot="takeScreenshot"
         @triggerCapture="triggerCapture"
@@ -201,6 +201,7 @@ const offlineQueueCount = ref(0)
 const autoCaptureEnabled = ref(false)
 const quickNotesCount = ref(0)
 const todayRecords = ref<LogRecord[]>([])
+const isLoadingTodayRecords = ref(true)
 const isGenerating = ref(false)
 const isGeneratingWeekly = ref(false)
 const isGeneratingMonthly = ref(false)
@@ -453,6 +454,7 @@ const handleViewReportFile = (path: string) => {
 }
 
 const loadTodayRecords = async () => {
+  isLoadingTodayRecords.value = true
   try {
     const records = await invoke<LogRecord[]>('get_today_records')
     todayRecords.value = records
@@ -472,6 +474,7 @@ const loadTodayRecords = async () => {
     console.error('Failed to load records:', err)
   } finally {
     isDashboardLoading.value = false
+    isLoadingTodayRecords.value = false
   }
 }
 

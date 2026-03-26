@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-26 (sprint planning refresh)
+# last_updated: 2026-03-26 (Epic 9 complete, UX-5 done, epic-9 retrospective done)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (UX-5 story created)
+last_updated: 2026-03-26 (UX-5 review findings fixed)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -127,12 +127,15 @@ development_status:
   SESSION-005: done
   epic-8-retrospective: done
 
-  # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 新规划
-  epic-9: in-progress
+  # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 完成
+  epic-9: done
   UX-1-design-tokens: done
   UX-1-retrospective: done
   UX-2-button-normalization: done
+  UX-2-retrospective: done
   UX-3-sidebar-upgrade: done
+  UX-3-retrospective: done
   UX-4-dashboard-reorganization: done
-  UX-5-interaction-polish: in-progress
-  epic-9-retrospective: optional
+  UX-4-retrospective: done
+  UX-5-interaction-polish: done
+  epic-9-retrospective: done

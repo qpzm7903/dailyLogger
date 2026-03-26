@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
+  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
     <div class="bg-dark rounded-2xl w-[700px] max-h-[85vh] overflow-hidden border border-gray-700 flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
@@ -240,10 +240,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { showError, showSuccess } from '../stores/toast'
 import { useI18n } from 'vue-i18n'
+import { useFocusTrap } from '../composables/useFocusTrap'
 import { BasicSettings, AISettings, CaptureSettings, OutputSettings } from './settings'
 import type { Settings } from '../types/tauri'
 
@@ -282,6 +283,10 @@ const { t } = useI18n()
 
 // Emits
 const emit = defineEmits<{(e: 'close'): void}>()
+
+// Focus trap for accessibility (UX-5)
+const containerRef = ref<HTMLElement | null>(null)
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(containerRef)
 
 // Tab navigation
 type SettingsTab = 'basic' | 'ai' | 'capture' | 'output'
@@ -644,5 +649,10 @@ async function createCustomModel() {
 
 onMounted(() => {
   loadSettings()
+  activateFocusTrap()
+})
+
+onBeforeUnmount(() => {
+  deactivateFocusTrap()
 })
 </script>
