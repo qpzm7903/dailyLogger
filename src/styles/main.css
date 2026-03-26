@@ -5,6 +5,23 @@
   --color-secondary: #64748b;
   --color-dark: #1e293b;
   --color-darker: #0f172a;
+
+  /* Action colors - for buttons and interactive elements */
+  --color-action-primary: #3b82f6;
+  --color-action-secondary: #475569;
+  --color-action-danger: #ef4444;
+  --color-action-neutral: #374151;
+
+  /* Status colors - for state indicators */
+  --color-status-success: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
+
+  /* Surface colors - for layered UI elements */
+  --color-surface-0: #0f172a;
+  --color-surface-1: #1e293b;
+  --color-surface-2: #334155;
 }
 
 /* Modern font stack with Inter-like appearance */
@@ -194,4 +211,91 @@ button, .no-select {
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
+}
+
+/* ============================================
+   Design Token Button System (UX-1)
+   ============================================ */
+
+/* Base button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn:hover {
+  transform: translateY(-0.5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Button variants */
+.btn-primary {
+  background-color: var(--color-action-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-secondary {
+  background-color: var(--color-action-secondary);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #6b7280;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: #d1d5db;
+}
+
+.btn-ghost:hover {
+  background-color: rgba(75, 85, 99, 0.5);
+  color: white;
+}
+
+.btn-danger {
+  background-color: var(--color-action-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+.btn-success {
+  background-color: var(--color-status-success);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #16a34a;
+}
+
+/* Button sizes */
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.btn-md {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
 }

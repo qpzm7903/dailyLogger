@@ -27,7 +27,7 @@
               <button
                 @click="$emit('takeScreenshot')"
                 :disabled="isCapturing"
-                class="px-3 py-1.5 text-xs bg-gray-600/80 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-all duration-200 hover:-translate-y-0.5"
+                class="btn btn-ghost btn-sm"
                 :title="t('autoCapture.screenshot')"
               >
                 {{ isCapturing ? t('autoCapture.screenshotting') : '📸 ' + t('autoCapture.screenshot') }}
@@ -35,15 +35,14 @@
               <button
                 @click="$emit('triggerCapture')"
                 :disabled="isCapturing"
-                class="px-3 py-1.5 text-xs bg-gray-600/80 hover:bg-gray-500 disabled:opacity-50 rounded-lg transition-all duration-200 hover:-translate-y-0.5"
+                class="btn btn-ghost btn-sm"
                 :title="t('autoCapture.analyze')"
               >
                 🤖 {{ t('autoCapture.analyze') }}
               </button>
               <button
                 @click="$emit('toggleAutoCapture')"
-                :class="autoCaptureEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
-                class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                :class="autoCaptureEnabled ? 'btn btn-danger btn-sm' : 'btn btn-success btn-sm'"
               >
                 {{ autoCaptureEnabled ? t('autoCapture.stop') : t('autoCapture.start') }}
               </button>
@@ -65,7 +64,7 @@
             <button
               @click="$emit('openQuickNote')"
               :title="isDesktop ? t('quickNote.shortcut') : ''"
-              class="bg-primary hover:bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20"
+              class="btn btn-primary btn-sm hover:shadow-primary/20"
             >
               {{ t('quickNote.record') }}
             </button>
@@ -104,25 +103,25 @@
             />
             <button
               @click="$emit('open', 'customReport')"
-              class="bg-orange-600 hover:bg-orange-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+              class="btn btn-secondary btn-sm"
             >
               自定义报告
             </button>
             <button
               @click="$emit('open', 'comparisonReport')"
-              class="bg-teal-600 hover:bg-teal-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+              class="btn btn-secondary btn-sm"
             >
               对比分析
             </button>
             <button
               @click="$emit('open', 'reanalyzeByDate')"
-              class="bg-purple-600 hover:bg-purple-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+              class="btn btn-secondary btn-sm"
             >
               按日期重新分析
             </button>
             <button
               @click="$emit('reanalyzeToday')"
-              class="bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+              class="btn btn-secondary btn-sm"
             >
               重新分析今天
             </button>
@@ -234,7 +233,7 @@
           </div>
           <button
             @click="$emit('open', 'reportHistory')"
-            class="px-3 py-1.5 text-xs bg-gray-700/50 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
+            class="btn btn-ghost btn-sm"
           >
             {{ t('reportHistory.title') }}
           </button>

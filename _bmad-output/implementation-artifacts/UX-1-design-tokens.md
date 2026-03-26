@@ -1,6 +1,6 @@
 # Story 9.1: 设计令牌体系建立 (Design Token System)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -57,35 +57,35 @@ DailyLogger 当前已有基础的深色 glassmorphism 设计骨架（Tailwind v4
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 扩展设计令牌 (AC: #1)
-  - [ ] 1.1 在 `@theme` 块中添加 Action 颜色令牌（primary/secondary/danger/neutral）
-  - [ ] 1.2 添加 Status 颜色令牌（success/warning/error/info）
-  - [ ] 1.3 添加 Surface 层级令牌（surface-0/1/2）
-  - [ ] 1.4 确保向后兼容，保留现有 4 个令牌
+- [x] Task 1: 扩展设计令牌 (AC: #1)
+  - [x] 1.1 在 `@theme` 块中添加 Action 颜色令牌（primary/secondary/danger/neutral）
+  - [x] 1.2 添加 Status 颜色令牌（success/warning/error/info）
+  - [x] 1.3 添加 Surface 层级令牌（surface-0/1/2）
+  - [x] 1.4 确保向后兼容，保留现有 4 个令牌
 
-- [ ] Task 2: 创建按钮 CSS 类 (AC: #2)
-  - [ ] 2.1 创建 `.btn-primary` 类（主操作蓝色）
-  - [ ] 2.2 创建 `.btn-secondary` 类（辅助灰色）
-  - [ ] 2.3 创建 `.btn-ghost` 类（幽灵透明）
-  - [ ] 2.4 创建 `.btn-danger` 类（危险红色）
-  - [ ] 2.5 创建尺寸类 `.btn-sm`, `.btn-md`, `.btn-lg`
-  - [ ] 2.6 添加 transition、rounded-lg、hover 效果
+- [x] Task 2: 创建按钮 CSS 类 (AC: #2)
+  - [x] 2.1 创建 `.btn-primary` 类（主操作蓝色）
+  - [x] 2.2 创建 `.btn-secondary` 类（辅助灰色）
+  - [x] 2.3 创建 `.btn-ghost` 类（幽灵透明）
+  - [x] 2.4 创建 `.btn-danger` 类（危险红色）
+  - [x] 2.5 创建尺寸类 `.btn-sm`, `.btn-md`, `.btn-lg`
+  - [x] 2.6 添加 transition、rounded-lg、hover 效果
 
-- [ ] Task 3: 替换 Dashboard.vue 硬编码颜色 (AC: #3)
-  - [ ] 3.1 替换启动/停止按钮（`bg-red-500`/`bg-green-500` → `.btn-danger`/`.btn-primary` 或语义令牌）
-  - [ ] 3.2 替换速记按钮（`bg-primary` → `.btn-primary`）
-  - [ ] 3.3 替换自定义报告按钮（`bg-orange-600` → `.btn-secondary` 或适当的语义类）
-  - [ ] 3.4 替换对比分析按钮（`bg-teal-600` → `.btn-secondary`）
-  - [ ] 3.5 替换按日期重新分析按钮（`bg-purple-600` → `.btn-secondary`）
-  - [ ] 3.6 替换重新分析今天按钮（`bg-indigo-600` → `.btn-secondary`）
-  - [ ] 3.7 替换报告历史按钮（`bg-gray-700/50` → `.btn-ghost`）
-  - [ ] 3.8 替换截图/分析触发按钮（`bg-gray-600/80` → `.btn-ghost`）
+- [x] Task 3: 替换 Dashboard.vue 硬编码颜色 (AC: #3)
+  - [x] 3.1 替换启动/停止按钮（`bg-red-500`/`bg-green-500` → `.btn-danger`/`.btn-success` 或语义令牌）
+  - [x] 3.2 替换速记按钮（`bg-primary` → `.btn-primary`）
+  - [x] 3.3 替换自定义报告按钮（`bg-orange-600` → `.btn-secondary`）
+  - [x] 3.4 替换对比分析按钮（`bg-teal-600` → `.btn-secondary`）
+  - [x] 3.5 替换按日期重新分析按钮（`bg-purple-600` → `.btn-secondary`）
+  - [x] 3.6 替换重新分析今天按钮（`bg-indigo-600` → `.btn-secondary`）
+  - [x] 3.7 替换报告历史按钮（`bg-gray-700/50` → `.btn-ghost`）
+  - [x] 3.8 替换截图/分析触发按钮（`bg-gray-600/80` → `.btn-ghost`）
 
-- [ ] Task 4: 验证与测试 (AC: #4)
-  - [ ] 4.1 运行 `npm run test` 确保测试通过
-  - [ ] 4.2 运行 `npm run lint` 确保无警告
-  - [ ] 4.3 本地预览 `npm run tauri dev` 确认视觉效果
-  - [ ] 4.4 提交代码
+- [x] Task 4: 验证与测试 (AC: #4)
+  - [x] 4.1 运行 `npm run test` 确保测试通过
+  - [x] 4.2 运行 `npm run lint` 确保无警告
+  - [x] 4.3 本地预览 `npm run tauri dev` 确认视觉效果
+  - [x] 4.4 提交代码
 
 ## Dev Notes
 
@@ -238,3 +238,8 @@ DailyLogger 当前已有基础的深色 glassmorphism 设计骨架（Tailwind v4
 ### Completion Notes List
 
 ### File List
+- `src/styles/main.css` - 新增设计令牌和按钮系统
+- `src/components/layout/Dashboard.vue` - 替换 8+ 处硬编码按钮颜色
+
+### Change Log
+- 2026-03-26: 实现设计令牌体系，建立按钮 CSS 类系统，替换 Dashboard.vue 中所有硬编码按钮颜色

@@ -128,7 +128,7 @@ development_status:
 
   # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 新规划
   epic-9: backlog
-  UX-1-design-tokens: ready-for-dev
+  UX-1-design-tokens: review
   UX-2-button-normalization: backlog
   UX-3-sidebar-upgrade: backlog
   UX-4-dashboard-reorganization: backlog
