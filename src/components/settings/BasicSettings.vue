@@ -404,6 +404,32 @@
       </div>
     </div>
 
+    <!-- Theme Settings (PERF-006) -->
+    <div>
+      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.theme') }}</h3>
+      <div class="space-y-3">
+        <div class="flex gap-2">
+          <button
+            @click="changeTheme('dark')"
+            type="button"
+            class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
+            :class="currentTheme === 'dark' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+          >
+            {{ $t('settings.themeDark') }}
+          </button>
+          <button
+            @click="changeTheme('light')"
+            type="button"
+            class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
+            :class="currentTheme === 'light' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+          >
+            {{ $t('settings.themeLight') }}
+          </button>
+        </div>
+        <p class="text-xs text-gray-500">{{ $t('settings.themeHint') }}</p>
+      </div>
+    </div>
+
     <!-- Shortcuts -->
     <div v-if="isDesktop">
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
@@ -420,6 +446,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError, showSuccess } from '../../stores/toast'
 import { setLocale } from '../../i18n'
+import { getTheme, setTheme, type Theme } from '../../theme'
 import type { Locale } from '@/i18n'
 import { usePlatform } from '../../composables/usePlatform'
 import {
@@ -520,6 +547,9 @@ const connectionTestResult = ref<ConnectionTestResult | null>(null)
 // PERF-001: Proxy config UI state
 const showProxyConfig = ref(false)
 const showProxyPassword = ref(false)
+
+// PERF-006: Theme state
+const currentTheme = ref<Theme>(getTheme())
 
 // Ollama State
 const isLoadingOllamaModels = ref(false)
@@ -715,6 +745,12 @@ function changeLanguage(lang: Locale) {
   invoke('save_settings', { settings: localSettings.value }).catch(err => {
     console.error('Failed to save language setting:', err)
   })
+}
+
+// PERF-006: Theme switcher
+function changeTheme(theme: Theme) {
+  setTheme(theme)
+  currentTheme.value = theme
 }
 
 // AI-006: Custom Headers Methods

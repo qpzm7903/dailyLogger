@@ -181,6 +181,7 @@ import SessionListModal from './components/SessionListModal.vue'
 import SessionDetailView from './components/SessionDetailView.vue'
 
 import { showError, showSuccess, initToastI18n } from './stores/toast'
+import { initTheme } from './theme'
 import type { LogRecord, Tag, Settings } from './types/tauri'
 
 interface Session {
@@ -499,6 +500,7 @@ const loadSettings = async () => {
 }
 
 onMounted(async () => {
+  initTheme()
   initToastI18n(useI18n())
 
   updateTime()

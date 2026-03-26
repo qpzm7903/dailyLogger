@@ -318,3 +318,98 @@ button, .no-select {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
 }
+
+/* ============================================
+   Light Theme Support (PERF-006)
+   ============================================ */
+
+/* Light theme overrides via .light class on root element */
+.light {
+  /* Surface colors - light theme */
+  --color-darker: #ffffff;
+  --color-dark: #f8fafc;
+  --color-surface-0: #ffffff;
+  --color-surface-1: #f8fafc;
+  --color-surface-2: #e2e8f0;
+
+  /* Text colors */
+  --color-primary: #3b82f6;
+  --color-secondary: #64748b;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+
+  /* Scrollbar colors for light theme */
+  --scrollbar-track-bg: rgba(241, 245, 249, 0.5);
+  --scrollbar-thumb-bg: rgba(148, 163, 184, 0.4);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
+}
+
+/* Light theme body background */
+.light body {
+  background-color: #ffffff;
+}
+
+/* Light theme text */
+.light {
+  color: #0f172a;
+}
+
+/* Light theme custom scrollbar */
+.light .custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.light ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+  border-radius: 4px;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Light theme glass effect */
+.light .glass {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.light .glass-dark {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Light theme selection */
+.light ::selection {
+  background: rgba(59, 130, 246, 0.2);
+  color: #0f172a;
+}
+
+/* Light theme focus visible */
+.light *:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+/* Light theme hover lift */
+.light .hover-lift:hover {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+}
+
+/* Light theme button hover */
+.light .btn:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
