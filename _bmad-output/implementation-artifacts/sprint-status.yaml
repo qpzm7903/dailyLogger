@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (PERF-005 story created, ready for dev)
+last_updated: 2026-03-26 (PERF-005 marked done; sprint-status synced with story file)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -140,7 +140,7 @@ development_status:
   UX-5-interaction-polish: done
   epic-9-retrospective: done
 
-  # Epic 10: 体验极致化 (PERF) — Partial Retro (4/6 Stories Done)
+  # Epic 10: 体验极致化 (PERF) — 5/6 Stories Done (PERF-006 remaining)
   epic-10: in-progress
   PERF-001: done
   PERF-001-retrospective: done
@@ -149,5 +149,5 @@ development_status:
   PERF-003: done
   PERF-004: done
   PERF-004-retrospective: done
-  PERF-005: ready-for-dev  # Story created: i18n backend persistence
+  PERF-005: done  # i18n backend persistence - completed 2026-03-26
   PERF-006: backlog
