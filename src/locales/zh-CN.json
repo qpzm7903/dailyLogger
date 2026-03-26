@@ -216,6 +216,22 @@
     "notesSaved": "备注已保存",
     "notesSaveFailed": "保存备注失败: {error}"
   },
+  "sessionDetailView": {
+    "title": "时段详情",
+    "sessionTime": "时段",
+    "ongoing": "进行中",
+    "editSummary": "编辑摘要",
+    "userSummary": "用户摘要",
+    "aiSummary": "AI 摘要",
+    "userEdited": "已手动编辑",
+    "userSummaryPlaceholder": "添加您的时段摘要...",
+    "noSummary": "暂无摘要",
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "取消",
+    "summarySaved": "摘要已保存",
+    "summarySaveFailed": "保存摘要失败: {error}"
+  },
   "logViewer": {
     "title": "运行日志",
     "refresh": "刷新",

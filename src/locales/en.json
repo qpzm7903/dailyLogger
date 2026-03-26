@@ -216,6 +216,22 @@
     "notesSaved": "Notes saved",
     "notesSaveFailed": "Failed to save notes: {error}"
   },
+  "sessionDetailView": {
+    "title": "Session Details",
+    "sessionTime": "Session",
+    "ongoing": "Ongoing",
+    "editSummary": "Edit Summary",
+    "userSummary": "User Summary",
+    "aiSummary": "AI Summary",
+    "userEdited": "Manually Edited",
+    "userSummaryPlaceholder": "Add your session summary...",
+    "noSummary": "No summary available",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "summarySaved": "Summary saved",
+    "summarySaveFailed": "Failed to save summary: {error}"
+  },
   "logViewer": {
     "title": "Runtime Logs",
     "refresh": "Refresh",
