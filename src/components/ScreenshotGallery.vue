@@ -1,5 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
+  <div
+    class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+    @click.self="$emit('close')"
+    :ref="focusTrap.containerRef"
+  >
     <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden border border-gray-700 flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">📷 {{ t('screenshotGallery.title') }}</h2>
@@ -61,9 +65,13 @@
       </div>
 
       <div class="flex-1 overflow-auto p-6" ref="scrollContainer" @scroll="handleScroll">
-        <div v-if="screenshots.length === 0" class="text-center py-8 text-gray-500">
+        <!-- Skeleton loader while loading -->
+        <SkeletonLoader v-if="isLoading" variant="gallery" :count="6" />
+
+        <!-- Empty state -->
+        <EmptyState v-else-if="screenshots.length === 0" type="screenshots">
           {{ t('screenshotGallery.noScreenshots') }}
-        </div>
+        </EmptyState>
 
         <template v-else>
           <!-- Grid View -->
@@ -178,10 +186,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import ScreenshotModal from './ScreenshotModal.vue'
+import EmptyState from './EmptyState.vue'
+import SkeletonLoader from './SkeletonLoader.vue'
+import { useModal } from '../composables/useModal'
 import type { LogRecord } from '../types/tauri'
 import { showToast } from '../stores/toast'
 
@@ -198,8 +209,10 @@ interface ScreenAnalysis {
 
 const { t } = useI18n()
 const emit = defineEmits<{(e: 'close'): void}>()
+const { focusTrap } = useModal()
 
 const screenshots = ref<ScreenshotRecord[]>([])
+const isLoading = ref(true)
 const showDetail = ref(false)
 const selectedScreenshot = ref<ScreenshotRecord | null>(null)
 const viewMode = ref<'grid' | 'list'>('grid') // 'grid' or 'list'
@@ -275,6 +288,7 @@ const loadThumbnails = async (records: ScreenshotRecord[]) => {
 }
 
 const loadScreenshots = async () => {
+  isLoading.value = true
   try {
     const records = await invoke<LogRecord[]>('get_today_records')
     // Filter only auto records with screenshots
@@ -292,6 +306,8 @@ const loadScreenshots = async () => {
     await loadThumbnailsForPage(1)
   } catch (err) {
     console.error('Failed to load screenshots:', err)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -300,6 +316,7 @@ const applyFilter = async () => {
     return
   }
 
+  isLoading.value = true
   try {
     const records = await invoke<LogRecord[]>('get_records_by_date_range', {
       startDate: startDate.value,
@@ -320,6 +337,8 @@ const applyFilter = async () => {
     await loadThumbnailsForPage(1)
   } catch (err) {
     console.error('Failed to filter screenshots:', err)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -416,6 +435,11 @@ const reanalyzeRecord = async (screenshot: ScreenshotRecord) => {
 }
 
 onMounted(() => {
+  focusTrap.activate()
   loadScreenshots()
+})
+
+onBeforeUnmount(() => {
+  focusTrap.deactivate()
 })
 </script>

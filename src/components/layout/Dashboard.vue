@@ -1,7 +1,6 @@
 <template>
   <main class="flex-1 overflow-auto p-6">
     <div class="max-w-4xl mx-auto space-y-6">
-      <!-- Top Cards: Auto Capture & Quick Note -->
       <div :class="isDesktop ? 'grid grid-cols-2 gap-4' : ''">
         <!-- Auto Capture Card (UX-4: Task 4 - compact layout) -->
         <div
@@ -155,9 +154,10 @@
         </div>
 
         <!-- Records List -->
-        <div v-if="filteredRecords.length === 0" class="text-center py-8 text-gray-500">
+        <SkeletonLoader v-if="props.isLoading" :count="5" />
+        <EmptyState v-else-if="filteredRecords.length === 0" type="screenshots">
           {{ todayRecords.length === 0 ? '暂无记录' : '无匹配标签的记录' }}
-        </div>
+        </EmptyState>
         <div v-else class="space-y-3 pr-1 custom-scrollbar">
           <div
             v-for="record in paginatedRecords"
@@ -272,9 +272,9 @@
                 class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
               >{{ summaryPath }}</p>
             </div>
-            <div v-else class="text-center py-6 text-gray-500 text-sm">
+            <EmptyState v-else type="dailyReport">
               {{ t('outputTabs.notGenerated') }}
-            </div>
+            </EmptyState>
           </div>
 
           <!-- Weekly Report Tab -->
@@ -285,9 +285,9 @@
                 class="text-sm text-gray-300 cursor-pointer hover:text-green-400 hover:underline"
               >{{ weeklyReportPath }}</p>
             </div>
-            <div v-else class="text-center py-6 text-gray-500 text-sm">
+            <EmptyState v-else type="dailyReport">
               {{ t('outputTabs.notGenerated') }}
-            </div>
+            </EmptyState>
           </div>
 
           <!-- Monthly Report Tab -->
@@ -298,9 +298,9 @@
                 class="text-sm text-gray-300 cursor-pointer hover:text-purple-400 hover:underline"
               >{{ monthlyReportPath }}</p>
             </div>
-            <div v-else class="text-center py-6 text-gray-500 text-sm">
+            <EmptyState v-else type="dailyReport">
               {{ t('outputTabs.notGenerated') }}
-            </div>
+            </EmptyState>
           </div>
         </div>
 
@@ -332,6 +332,8 @@ import { useI18n } from 'vue-i18n'
 import ReportDropdown from '../ReportDropdown.vue'
 import TimelineWidget from '../TimelineWidget.vue'
 import TodaySummaryWidget from '../TodaySummaryWidget.vue'
+import EmptyState from '../EmptyState.vue'
+import SkeletonLoader from '../SkeletonLoader.vue'
 import { extractSummary } from '../../utils/contentUtils'
 import { getTagColorClass } from '../../utils/tagColors'
 import type { LogRecord, Tag } from '../../types/tauri'
@@ -354,6 +356,7 @@ const props = defineProps<{
   monthlyReportPath: string
   customReportPath: string
   comparisonReportPath: string
+  isLoading?: boolean
 }>()
 
 const emit = defineEmits<{

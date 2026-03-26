@@ -1,5 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
+  <div
+    class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+    @click.self="$emit('close')"
+    :ref="focusTrap.containerRef"
+  >
     <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-gray-700 flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
@@ -65,8 +69,10 @@
         <div v-if="isLoading" class="text-center py-8 text-gray-500">
           {{ t('searchPanel.searching') }}
         </div>
-        <div v-else-if="hasSearched && results.length === 0" class="text-center py-8 text-gray-500">
-          {{ t('searchPanel.noResults') }}
+        <div v-else-if="hasSearched && results.length === 0" class="text-center py-8">
+          <EmptyState type="searchResults">
+            {{ t('searchPanel.noResults') }}
+          </EmptyState>
         </div>
         <div v-else-if="!hasSearched" class="text-center py-8 text-gray-500">
           {{ t('searchPanel.startHint') }}
@@ -144,11 +150,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useDebounceFn } from '@vueuse/core'
+import EmptyState from './EmptyState.vue'
+import { useModal } from '../composables/useModal'
 import { showError } from '../stores/toast'
 import type { Record } from '../types/tauri'
 
@@ -163,6 +171,7 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'viewScreenshot', record: Record): void
 }>()
+const { focusTrap } = useModal()
 
 // UX-022: Virtual scroll configuration
 const VIRTUAL_SCROLL_CONFIG = {
@@ -257,6 +266,15 @@ function handleResultClick(record: Record) {
   emit('viewScreenshot', record)
   emit('close')
 }
+
+// UX-5: Focus trap lifecycle
+onMounted(() => {
+  focusTrap.activate()
+})
+
+onBeforeUnmount(() => {
+  focusTrap.deactivate()
+})
 </script>
 
 <style scoped>

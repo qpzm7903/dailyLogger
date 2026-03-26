@@ -37,6 +37,7 @@
         :monthlyReportPath="monthlyReportPath"
         :customReportPath="customReportPath"
         :comparisonReportPath="comparisonReportPath"
+        :isLoading="isDashboardLoading"
         @open="open"
         @takeScreenshot="takeScreenshot"
         @triggerCapture="triggerCapture"
@@ -205,6 +206,7 @@ const isGeneratingWeekly = ref(false)
 const isGeneratingMonthly = ref(false)
 const isReanalyzing = ref(false)
 const isCapturing = ref(false)
+const isDashboardLoading = ref(true)
 const summaryPath = ref('')
 const weeklyReportPath = ref('')
 const monthlyReportPath = ref('')
@@ -468,6 +470,8 @@ const loadTodayRecords = async () => {
     }
   } catch (err) {
     console.error('Failed to load records:', err)
+  } finally {
+    isDashboardLoading.value = false
   }
 }
 
