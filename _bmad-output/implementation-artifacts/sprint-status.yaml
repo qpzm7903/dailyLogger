@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (UX-2 done, UX-3-sidebar-upgrade created)
+last_updated: 2026-03-26 (UX-5 story created)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -134,5 +134,5 @@ development_status:
   UX-2-button-normalization: done
   UX-3-sidebar-upgrade: done
   UX-4-dashboard-reorganization: done
-  UX-5-interaction-polish: backlog
+  UX-5-interaction-polish: ready-for-dev
   epic-9-retrospective: optional
