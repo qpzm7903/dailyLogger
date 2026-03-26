@@ -795,12 +795,14 @@ mod tests_statistics {
             *db = Some(conn);
         }
 
-        // Insert test records with timestamps in today's range
-        // Use the same format as get_today_range() returns (YYYY-MM-DDTHH:MM:SS without timezone)
-        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let timestamp1 = format!("{}T10:00:00", today);
-        let timestamp2 = format!("{}T11:00:00", today);
-        let timestamp3 = format!("{}T14:00:00", today);
+        // Get today's range first to ensure we use the same date
+        let (start, _end) = get_today_range();
+
+        // Extract date from start (format: YYYY-MM-DDTHH:MM:SS)
+        let date_part = &start[..10]; // "YYYY-MM-DD"
+        let timestamp1 = format!("{}T10:00:00", date_part);
+        let timestamp2 = format!("{}T11:00:00", date_part);
+        let timestamp3 = format!("{}T14:00:00", date_part);
 
         // Insert records - one with screenshot, two without
         {
@@ -826,7 +828,7 @@ mod tests_statistics {
             .unwrap();
         }
 
-        // Get today's range
+        // Get today's range again for the query
         let (start, end) = get_today_range();
 
         // Call count functions
@@ -929,13 +931,15 @@ mod tests_statistics {
             *db = Some(conn);
         }
 
-        // Insert test records with different analysis statuses
-        // Use the same format as get_today_range() returns (YYYY-MM-DDTHH:MM:SS without timezone)
-        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let timestamp1 = format!("{}T10:00:00", today);
-        let timestamp2 = format!("{}T11:00:00", today);
-        let timestamp3 = format!("{}T14:00:00", today);
-        let timestamp4 = format!("{}T15:00:00", today);
+        // Get today's range first to ensure we use the same date
+        let (start, _end) = get_today_range();
+
+        // Extract date from start (format: YYYY-MM-DDTHH:MM:SS)
+        let date_part = &start[..10]; // "YYYY-MM-DD"
+        let timestamp1 = format!("{}T10:00:00", date_part);
+        let timestamp2 = format!("{}T11:00:00", date_part);
+        let timestamp3 = format!("{}T14:00:00", date_part);
+        let timestamp4 = format!("{}T15:00:00", date_part);
 
         {
             let db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
@@ -967,7 +971,7 @@ mod tests_statistics {
             .unwrap();
         }
 
-        // Get today's range
+        // Get today's range again for the query
         let (start, end) = get_today_range();
 
         // Call analysis success rate function
