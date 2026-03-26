@@ -99,7 +99,8 @@ interface Session {
   ai_summary: string | null
   user_summary: string | null
   context_for_next: string | null
-  status: string
+  status: 'active' | 'ended' | 'analyzed'
+  screenshot_count?: number
 }
 
 const { t, locale } = useI18n()

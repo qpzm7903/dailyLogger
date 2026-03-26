@@ -238,7 +238,7 @@ const analyzeSession = async (session: Session) => {
     emit('sessionAnalyzed', sessions.value[index])
   } catch (err) {
     const errorMsg = String(err)
-    showToast(t('sessionList.analyzeFailed', { error: errorMsg }), { type: 'error', action: { label: t('toast.retry'), onClick: () => analyzeSession(session) } })
+    showToast(t('sessionList.analyzeFailed', { error: errorMsg }), { type: 'error', retryCallback: () => analyzeSession(session) })
   } finally {
     isAnalyzing.value = false
     analyzingSessionId.value = null
