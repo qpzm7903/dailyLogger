@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-26 (PERF-001 & PERF-002 completed; PERF-003 story created; Epic 10 ongoing)
+# last_updated: 2026-03-26 (PERF-005 story created, ready for dev)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (UX-5 review findings fixed)
+last_updated: 2026-03-26 (PERF-005 story created, ready for dev)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -140,13 +140,14 @@ development_status:
   UX-5-interaction-polish: done
   epic-9-retrospective: done
 
-  # Epic 10: 体验极致化 (PERF) — 进行中
+  # Epic 10: 体验极致化 (PERF) — Partial Retro (4/6 Stories Done)
   epic-10: in-progress
   PERF-001: done
   PERF-001-retrospective: done
   PERF-002: done
   PERF-002-retrospective: done
   PERF-003: done
-  PERF-004: review
-  PERF-005: backlog
+  PERF-004: done
+  PERF-004-retrospective: done
+  PERF-005: ready-for-dev  # Story created: i18n backend persistence
   PERF-006: backlog
