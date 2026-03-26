@@ -1,6 +1,6 @@
 # Story 10.4: 性能优化 - 数据库查询
 
-Status: review (fixes applied)
+Status: done
 
 ## Code Review Findings
 
