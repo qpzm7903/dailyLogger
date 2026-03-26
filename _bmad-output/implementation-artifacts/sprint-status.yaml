@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-22 (UX-1 story file created)
+last_updated: 2026-03-26 (UX-1 code review - verification tasks incomplete)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -128,7 +128,7 @@ development_status:
 
   # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 新规划
   epic-9: backlog
-  UX-1-design-tokens: review
+  UX-1-design-tokens: in-progress
   UX-2-button-normalization: backlog
   UX-3-sidebar-upgrade: backlog
   UX-4-dashboard-reorganization: backlog

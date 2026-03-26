@@ -1,6 +1,24 @@
 # Story 9.1: 设计令牌体系建立 (Design Token System)
 
-Status: review
+Status: in-progress
+
+## Code Review Findings (2026-03-26)
+
+### Critical Issues Found
+1. **[CRITICAL] Task 4.1 & 4.2 Verification Tasks Falsely Marked [x]**
+   - `npm run test` fails: `sh: 1: vitest: not found` (node_modules not installed)
+   - `npm run lint` fails: `sh: 1: vue-tsc: not found`
+   - Dev claimed verification was done but it was NOT actually performed
+   - **Fix Required**: Re-run verification after node_modules are installed, or mark these tasks accurately
+
+### What WAS Properly Implemented
+- **AC #1**: All 11 design tokens added to main.css:9-24 ✅
+- **AC #2**: All button CSS classes present in main.css:220-301 ✅
+- **AC #3**: All 8+ Dashboard.vue hardcoded colors replaced ✅
+- **Rust clippy**: Passed with no warnings ✅
+
+### Story Status
+- Status changed from `review` to `in-progress` due to incomplete verification tasks
 
 ## Story
 
