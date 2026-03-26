@@ -649,17 +649,19 @@ pub fn get_history_records_with_cursor_sync(
         .to_rfc3339();
 
     // Build query using cursor-based or offset-based pagination
-    let (sql, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) =
-        match (source_type.as_ref(), last_id) {
-            (Some(ref st), Some(last_id_val)) => {
-                // Cursor-based pagination with source_type filter (efficient)
-                if *st != "auto" && *st != "manual" {
-                    return Err(format!(
-                        "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
-                        st
-                    ));
-                }
-                (
+    let (sql, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) = match (
+        source_type.as_ref(),
+        last_id,
+    ) {
+        (Some(ref st), Some(last_id_val)) => {
+            // Cursor-based pagination with source_type filter (efficient)
+            if *st != "auto" && *st != "manual" {
+                return Err(format!(
+                    "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
+                    st
+                ));
+            }
+            (
                     "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3 AND id < ?4
                      ORDER BY id DESC LIMIT ?5"
@@ -672,17 +674,17 @@ pub fn get_history_records_with_cursor_sync(
                         Box::new(page_size),
                     ],
                 )
+        }
+        (Some(ref st), None) => {
+            // Offset-based pagination with source_type filter (backward compatible)
+            if *st != "auto" && *st != "manual" {
+                return Err(format!(
+                    "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
+                    st
+                ));
             }
-            (Some(ref st), None) => {
-                // Offset-based pagination with source_type filter (backward compatible)
-                if *st != "auto" && *st != "manual" {
-                    return Err(format!(
-                        "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
-                        st
-                    ));
-                }
-                let offset = page * page_size;
-                (
+            let offset = page * page_size;
+            (
                     "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
                      ORDER BY id DESC LIMIT ?4 OFFSET ?5"
@@ -695,10 +697,10 @@ pub fn get_history_records_with_cursor_sync(
                         Box::new(offset),
                     ],
                 )
-            }
-            (None, Some(last_id_val)) => {
-                // Cursor-based pagination without source_type filter (efficient)
-                (
+        }
+        (None, Some(last_id_val)) => {
+            // Cursor-based pagination without source_type filter (efficient)
+            (
                     "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2 AND id < ?3
                      ORDER BY id DESC LIMIT ?4"
@@ -710,11 +712,11 @@ pub fn get_history_records_with_cursor_sync(
                         Box::new(page_size),
                     ],
                 )
-            }
-            (None, None) => {
-                // Offset-based pagination without source_type filter (backward compatible)
-                let offset = page * page_size;
-                (
+        }
+        (None, None) => {
+            // Offset-based pagination without source_type filter (backward compatible)
+            let offset = page * page_size;
+            (
                     "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2
                      ORDER BY id DESC LIMIT ?3 OFFSET ?4"
@@ -726,8 +728,8 @@ pub fn get_history_records_with_cursor_sync(
                         Box::new(offset),
                     ],
                 )
-            }
-        };
+        }
+    };
 
     let mut stmt = conn
         .prepare(&sql)
