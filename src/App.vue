@@ -41,7 +41,7 @@
         @toggleAutoCapture="toggleAutoCapture"
         @openQuickNote="openQuickNote"
         @generateReport="handleReportGenerate"
-        @reanalyzeToday="reanalyzeTodayRecords"
+        @customAction="handleCustomAction"
         @viewScreenshot="openScreenshot"
       />
     </div>
@@ -407,6 +407,12 @@ const reanalyzeTodayRecords = async () => {
     showError(String(err))
   } finally {
     isReanalyzing.value = false
+  }
+}
+
+const handleCustomAction = (actionId: string) => {
+  if (actionId === 'reanalyzeToday') {
+    reanalyzeTodayRecords()
   }
 }
 

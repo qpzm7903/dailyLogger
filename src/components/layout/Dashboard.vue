@@ -99,37 +99,21 @@
               :isGeneratingDaily="isGenerating"
               :isGeneratingWeekly="isGeneratingWeekly"
               :isGeneratingMonthly="isGeneratingMonthly"
+              :additionalOptions="[
+                { id: 'customReport', label: '自定义报告', type: 'action', icon: '📄' },
+                { id: 'comparisonReport', label: '对比分析', type: 'action', icon: '📊' },
+                { id: 'reanalyzeByDate', label: '按日期重新分析', type: 'action', icon: '📅' },
+                { id: 'reanalyzeToday', label: '重新分析今天', type: 'action', icon: '🔄' }
+              ]"
               @generate="handleReportGenerate"
+              @openModal="(modalId) => $emit('open', modalId as ModalId)"
+              @customAction="handleCustomAction"
             />
-            <button
-              @click="$emit('open', 'customReport')"
-              class="btn btn-secondary btn-sm"
-            >
-              自定义报告
-            </button>
-            <button
-              @click="$emit('open', 'comparisonReport')"
-              class="btn btn-secondary btn-sm"
-            >
-              对比分析
-            </button>
-            <button
-              @click="$emit('open', 'reanalyzeByDate')"
-              class="btn btn-secondary btn-sm"
-            >
-              按日期重新分析
-            </button>
             <button
               @click="$emit('open', 'sessionList')"
               class="btn btn-secondary btn-sm"
             >
               时段管理
-            </button>
-            <button
-              @click="$emit('reanalyzeToday')"
-              class="btn btn-secondary btn-sm"
-            >
-              重新分析今天
             </button>
           </div>
         </div>
@@ -340,8 +324,8 @@ const emit = defineEmits<{
   toggleAutoCapture: []
   openQuickNote: []
   generateReport: [type: 'daily' | 'weekly' | 'monthly']
-  reanalyzeToday: []
   viewScreenshot: [record: LogRecord]
+  customAction: [actionId: string]
 }>()
 
 // Tag filtering state
@@ -490,5 +474,11 @@ const openScreenshot = (record: LogRecord) => {
 
 const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
   emit('generateReport', type)
+}
+
+const handleCustomAction = (actionId: string) => {
+  if (actionId === 'reanalyzeToday') {
+    emit('customAction', 'reanalyzeToday')
+  }
 }
 </script>

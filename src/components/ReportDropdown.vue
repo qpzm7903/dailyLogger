@@ -49,6 +49,26 @@
           class="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"
         ></span>
       </button>
+
+      <!-- Additional options with divider -->
+      <template v-if="additionalOptions && additionalOptions.length > 0">
+        <div class="border-t border-gray-600 my-1"></div>
+        <button
+          v-for="option in additionalOptions"
+          :key="option.id"
+          @click="selectAdditionalOption(option)"
+          :disabled="isGenerating"
+          class="w-full px-4 py-2 text-left text-sm hover:bg-dark transition-colors flex items-center justify-between disabled:opacity-50"
+        >
+          <div class="flex items-center gap-2">
+            <span v-if="option.icon" class="text-base">{{ option.icon }}</span>
+            <div>
+              <div class="text-white">{{ option.label }}</div>
+              <div v-if="option.shortcut" class="text-xs text-gray-400">{{ option.shortcut }}</div>
+            </div>
+          </div>
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -57,20 +77,32 @@
 import { ref, computed } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 
+export interface AdditionalOption {
+  id: string
+  label: string
+  shortcut?: string
+  type: 'report' | 'action'
+  icon?: string
+}
+
 interface Props {
   isGeneratingDaily?: boolean
   isGeneratingWeekly?: boolean
   isGeneratingMonthly?: boolean
+  additionalOptions?: AdditionalOption[]
 }
 
 interface Emits {
   (e: 'generate', type: 'daily' | 'weekly' | 'monthly'): void
+  (e: 'openModal', modalId: string): void
+  (e: 'customAction', actionId: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isGeneratingDaily: false,
   isGeneratingWeekly: false,
   isGeneratingMonthly: false,
+  additionalOptions: () => [],
 })
 
 const emit = defineEmits<Emits>()
@@ -122,6 +154,20 @@ const handleMainClick = () => {
 const selectOption = (type: 'daily' | 'weekly' | 'monthly') => {
   if (!isGenerating.value) {
     emit('generate', type)
+    isOpen.value = false
+  }
+}
+
+// Select additional option
+const selectAdditionalOption = (option: AdditionalOption) => {
+  if (!isGenerating.value) {
+    if (option.type === 'report') {
+      emit('generate', option.id as 'daily' | 'weekly' | 'monthly')
+    } else if (option.id === 'reanalyzeToday') {
+      emit('customAction', 'reanalyzeToday')
+    } else {
+      emit('openModal', option.id)
+    }
     isOpen.value = false
   }
 }
