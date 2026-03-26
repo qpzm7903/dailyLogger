@@ -1,6 +1,6 @@
 # Story 9.3: 侧边栏导航升级 (Sidebar Navigation Upgrade)
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -243,3 +243,83 @@ claude-opus-4-6
 - `src/components/layout/Sidebar.vue` - 完全重构：添加折叠状态、激活高亮、Lucide图标、版本号显示
 - `package.json` - 添加 lucide-vue-next@1.0.0 依赖
 - `package-lock.json` - 依赖更新
+
+## Code Review Findings
+
+**Review Date:** 2026-03-26
+**Reviewer:** BMAD Code Review Agent
+**Story:** UX-3-sidebar-upgrade
+
+### Git vs Story Discrepancies
+0 found - All changed files are documented in the story File List.
+
+### Issues Found
+- **HIGH:** 1
+- **MEDIUM:** 0
+- **LOW:** 0
+
+---
+
+### 🔴 HIGH: Tooltip Implementation is Broken
+
+**Severity:** HIGH
+**Location:** `src/components/layout/Sidebar.vue:37-43` and `src/components/layout/Sidebar.vue:61-66`
+
+**Problem:** The tooltip uses `group-hover:opacity-100` CSS pattern but the implementation is broken:
+
+1. The button element (line 23) does NOT have the `group` class
+2. The tooltip span is a **sibling** to the icon/label elements, not a **child** - `group-hover` only works on children of a `group` element
+3. The parent has no `position: relative` to anchor the `absolute` positioned tooltip
+
+**Evidence:**
+```vue
+<!-- Line 23-44 - nav item button -->
+<button ... :title="isCollapsed ? item.label : undefined">
+  <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
+  <span v-if="!isCollapsed" class="text-sm whitespace-nowrap">{{ item.label }}</span>
+  <!-- Tooltip is a SIBLING, not a child - group-hover won't work! -->
+  <span v-if="isCollapsed" class="absolute left-14 ... group-hover:opacity-100 ...">
+    {{ item.label }}
+  </span>
+</button>
+```
+
+**Acceptance Criteria Impact:** AC#2 (侧边栏可折叠功能) states "折叠状态：宽度 `w-16`，仅显示图标，hover 时显示 tooltip" - The tooltip is a required part of the AC.
+
+**Recommended Fix:**
+- **Option A (Recommended):** Since `:title` attribute already provides native browser tooltip, remove the broken CSS tooltip spans entirely:
+  ```vue
+  <button
+    v-for="item in navItems"
+    :key="item.id"
+    @click="item.action"
+    :title="item.label"  <!-- Native tooltip, works in both states -->
+    :class="[...isCollapsed ? 'w-10 h-10' : 'w-full px-3 h-10 gap-3'...]"
+  >
+  ```
+  Remove lines 37-43 and 61-66 (the tooltip spans).
+
+- **Option B:** Fix the CSS tooltip by properly nesting it inside the button as a child with `group` class on parent.
+
+---
+
+### ✅ Verification Completed
+
+**Tests Passed:**
+- `npm run lint` (vue-tsc --noEmit): ✅ PASSED
+- `npm run test` (vitest run): ✅ 927 tests passed
+- `cargo fmt --check`: ✅ PASSED
+- `cargo clippy`: ✅ PASSED (no warnings)
+
+**Acceptance Criteria Status:**
+- AC#1 (激活状态指示): ✅ IMPLEMENTED - `isActive()` function uses `bg-primary/20 text-white`
+- AC#2 (可折叠功能): ⚠️ PARTIAL - Collapsed state works, but tooltip is broken
+- AC#3 (图标系统): ✅ IMPLEMENTED - lucide-vue-next with correct icon mapping
+- AC#4 (版本号): ✅ IMPLEMENTED - `v2.14.0` displayed below logo
+- AC#5 (测试与CI): ✅ PASSED
+
+---
+
+### Review Action Items
+
+- [ ] [AI-Review][HIGH] Fix tooltip implementation in Sidebar.vue (see details above)
