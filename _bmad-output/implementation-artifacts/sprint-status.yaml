@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (SESSION-004 ready for review)
+last_updated: 2026-03-26 (SESSION-004 code review complete, marked done)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -123,7 +123,7 @@ development_status:
   SESSION-002-retrospective: done
   SESSION-003: done
   SESSION-003-retrospective: done
-  SESSION-004: review
+  SESSION-004: done
   SESSION-005: backlog
   epic-8-retrospective: done
 

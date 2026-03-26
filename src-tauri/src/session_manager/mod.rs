@@ -104,7 +104,7 @@ pub struct Session {
     pub context_for_next: Option<String>, // 传递给下一时段分析的上下文
     pub status: SessionStatus,
     #[serde(default)]
-    pub screenshot_count: Option<i64>,    // 时段内的截图数量
+    pub screenshot_count: Option<i64>, // 时段内的截图数量
 }
 
 impl Default for Session {

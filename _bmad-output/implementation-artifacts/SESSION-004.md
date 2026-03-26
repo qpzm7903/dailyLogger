@@ -1,6 +1,6 @@
 # Story 8.4: 手动触发分析
 
-Status: review
+Status: done
 
 ## Story
 
@@ -239,3 +239,64 @@ pub enum SessionStatus {
 ## Change Log
 
 - 2026-03-26: feat(SESSION-004): 实现手动触发分析功能 - 时段列表、状态筛选、批量分析、错误处理和重试机制
+
+---
+
+## Code Review Findings
+
+**Reviewer:** Claude Code (bmad-code-review)
+**Review Date:** 2026-03-26
+**Story:** SESSION-004 (手动触发分析)
+**Git vs Story Discrepancies:** 0
+**Issues Found:** 0 High, 0 Medium, 1 Low
+
+### Acceptance Criteria Validation
+
+| AC | Status | Evidence |
+|----|--------|----------|
+| AC1: 时段选择 UI | ✅ IMPLEMENTED | `SessionListModal.vue` lines 166-174 - status filter (pending/analyzed/all), session list with checkbox selection |
+| AC2: 手动触发按钮 | ✅ IMPLEMENTED | `SessionListModal.vue` lines 92-99 - "分析" button calls `invoke('analyze_session', {sessionId: session.id})` |
+| AC3: 分析进度反馈 | ✅ IMPLEMENTED | `SessionListModal.vue` lines 110-115 - loading state + toast notifications (lines 228, 241) |
+| AC4: 批量分析支持 | ✅ IMPLEMENTED | `SessionListModal.vue` lines 248-282 - sequential `for` loop with `analyzeSelected()` |
+| AC5: 错误处理 | ✅ IMPLEMENTED | `SessionListModal.vue` lines 239-241 - retry toast action with `onClick: () => analyzeSession(session)` |
+| AC6: 测试覆盖 | ✅ IMPLEMENTED | 444 tests pass, clippy no warnings, frontend builds |
+
+### Task Completion Audit
+
+All tasks marked [x] are actually done with evidence:
+- Task 1-5: All verified via code inspection
+
+### Code Quality Findings
+
+#### 🟢 LOW ISSUES
+
+1. **Progress bar hardcoded width (cosmetic)**
+   - File: `src/components/SessionListModal.vue:112`
+   - Issue: `style="width: 60%"` is hardcoded animation - no actual progress tracking
+   - Severity: LOW
+   - Recommendation: Consider using a real progress percentage if API provides it, or remove progress bar as it provides no actual feedback
+
+#### 🟢 NO ISSUES (Clean Code)
+
+- Security: No injection risks, proper input validation via Tauri commands
+- Performance: Sequential batch processing avoids API concurrency issues
+- Error Handling: Proper try/catch with user-friendly toast messages
+- Architecture: Clean separation between UI and backend via invoke()
+
+### Verification Commands Run
+
+```bash
+cargo fmt --check  # FAILED (minor spacing, fixed)
+cargo fmt          # PASSED
+cargo clippy -- -D warnings  # PASSED (no warnings)
+cargo test --no-default-features  # PASSED (444 tests)
+npm run build      # PASSED
+```
+
+### Conclusion
+
+**Status: PASSED - Story can be marked as done**
+
+The implementation is solid with all acceptance criteria met. The single LOW issue is cosmetic and does not affect functionality.
+
+**New Status: done**
