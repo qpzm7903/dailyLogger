@@ -100,6 +100,14 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 quality_filter_threshold: row.get("quality_filter_threshold")?,
                 // SESSION-001: Session gap minutes
                 session_gap_minutes: row.get("session_gap_minutes")?,
+                // PERF-001: Proxy settings
+                proxy_enabled: row.get::<_, Option<i32>>("proxy_enabled")?.map(|v| v != 0),
+                proxy_host: row.get("proxy_host")?,
+                proxy_port: row.get("proxy_port")?,
+                proxy_username: row.get("proxy_username")?,
+                proxy_password: row.get("proxy_password")?,
+                // PERF-001: Test model name
+                test_model_name: row.get("test_model_name")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -118,6 +126,15 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                     decrypted_settings.notion_api_key = Some(
                         crypto::decrypt_api_key(notion_api_key)
                             .map_err(|e| format!("Failed to decrypt Notion API key: {}", e))?,
+                    );
+                }
+            }
+            // PERF-001: Decrypt proxy password if present
+            if let Some(ref proxy_password) = settings.proxy_password {
+                if !proxy_password.is_empty() {
+                    decrypted_settings.proxy_password = Some(
+                        crypto::decrypt_api_key(proxy_password)
+                            .map_err(|e| format!("Failed to decrypt proxy password: {}", e))?,
                     );
                 }
             }
@@ -229,6 +246,20 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
         None
     };
 
+    // PERF-001: Encrypt proxy password before saving
+    let encrypted_proxy_password = if let Some(ref proxy_password) = settings.proxy_password {
+        if !proxy_password.is_empty() && !crypto::is_encrypted(proxy_password) {
+            Some(
+                crypto::encrypt_api_key(proxy_password)
+                    .map_err(|e| format!("Failed to encrypt proxy password: {}", e))?,
+            )
+        } else {
+            settings.proxy_password.clone()
+        }
+    } else {
+        None
+    };
+
     // AI-005: Auto-detect Ollama endpoint based on api_base_url
     let is_ollama = settings
         .api_base_url
@@ -290,7 +321,13 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             custom_headers = :custom_headers,
             quality_filter_enabled = :quality_filter_enabled,
             quality_filter_threshold = :quality_filter_threshold,
-            session_gap_minutes = :session_gap_minutes
+            session_gap_minutes = :session_gap_minutes,
+            proxy_enabled = :proxy_enabled,
+            proxy_host = :proxy_host,
+            proxy_port = :proxy_port,
+            proxy_username = :proxy_username,
+            proxy_password = :proxy_password,
+            test_model_name = :test_model_name
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -341,6 +378,12 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":quality_filter_enabled": settings.quality_filter_enabled.map(|v| if v { 1 } else { 0 }),
             ":quality_filter_threshold": settings.quality_filter_threshold,
             ":session_gap_minutes": settings.session_gap_minutes,
+            ":proxy_enabled": settings.proxy_enabled.map(|v| if v { 1 } else { 0 }),
+            ":proxy_host": settings.proxy_host,
+            ":proxy_port": settings.proxy_port,
+            ":proxy_username": settings.proxy_username,
+            ":proxy_password": encrypted_proxy_password,
+            ":test_model_name": settings.test_model_name,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

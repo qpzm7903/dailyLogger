@@ -244,6 +244,12 @@ pub struct CaptureSettings {
     // EXP-002: Quality filter settings
     pub quality_filter_enabled: bool,
     pub quality_filter_threshold: f64,
+    // PERF-001: Proxy configuration
+    pub proxy_enabled: bool,
+    pub proxy_host: Option<String>,
+    pub proxy_port: Option<i32>,
+    pub proxy_username: Option<String>,
+    pub proxy_password: Option<String>,
 }
 
 impl Default for CaptureSettings {
@@ -269,6 +275,12 @@ impl Default for CaptureSettings {
             // EXP-002: Quality filter defaults (enabled, medium sensitivity)
             quality_filter_enabled: true,
             quality_filter_threshold: 0.3,
+            // PERF-001: Proxy defaults (disabled)
+            proxy_enabled: false,
+            proxy_host: None,
+            proxy_port: None,
+            proxy_username: None,
+            proxy_password: None,
         }
     }
 }
@@ -629,8 +641,17 @@ async fn analyze_screen(
     let masked_key = crate::mask_api_key(&settings.api_key);
     let endpoint = format!("{}/chat/completions", settings.api_base_url);
 
-    // Create HTTP client with proxy bypass for local URLs
-    let client = crate::create_http_client(&endpoint, 120)?;
+    // PERF-001: Build proxy configuration
+    let proxy_config = crate::ProxyConfig {
+        enabled: settings.proxy_enabled,
+        host: settings.proxy_host.clone(),
+        port: settings.proxy_port,
+        username: settings.proxy_username.clone(),
+        password: settings.proxy_password.clone(),
+    };
+
+    // Create HTTP client with proxy configuration
+    let client = crate::create_http_client_with_proxy(&endpoint, 120, Some(proxy_config))?;
 
     // AI-006: Log custom headers (mask sensitive values)
     let custom_headers_debug: Vec<_> = settings
@@ -803,6 +824,12 @@ fn load_capture_settings() -> CaptureSettings {
                 // EXP-002: Load quality filter settings
                 quality_filter_enabled: s.quality_filter_enabled.unwrap_or(true),
                 quality_filter_threshold: s.quality_filter_threshold.unwrap_or(0.3),
+                // PERF-001: Load proxy settings
+                proxy_enabled: s.proxy_enabled.unwrap_or(false),
+                proxy_host: s.proxy_host.clone(),
+                proxy_port: s.proxy_port,
+                proxy_username: s.proxy_username.clone(),
+                proxy_password: s.proxy_password.clone(),
             }
         }
         Err(_) => CaptureSettings::default(),
@@ -1951,6 +1978,12 @@ mod tests {
             // EXP-002: Quality filter
             quality_filter_enabled: true,
             quality_filter_threshold: 0.3,
+            // PERF-001: Proxy settings
+            proxy_enabled: false,
+            proxy_host: None,
+            proxy_port: None,
+            proxy_username: None,
+            proxy_password: None,
         };
         assert_eq!(settings.window_whitelist, vec!["VS Code"]);
         assert_eq!(settings.window_blacklist, vec!["Chrome"]);

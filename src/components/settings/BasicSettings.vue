@@ -40,6 +40,19 @@
             >{{ showApiKey ? $t('common.hide') : $t('common.show') }}</button>
           </div>
         </div>
+        <!-- PERF-001: Test Model Name -->
+        <div>
+          <label class="text-xs text-gray-300 block mb-1">Test Model</label>
+          <input
+            v-model="localSettings.test_model_name"
+            type="text"
+            placeholder="gpt-4o"
+            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+          />
+          <span class="text-xs text-gray-500 mt-1 block">
+            {{ $t('settings.testModelHint') }}
+          </span>
+        </div>
 
         <!-- Test Connection Button -->
         <div class="pt-2">
@@ -274,6 +287,97 @@
       </div>
     </div>
 
+    <!-- PERF-001: Proxy Configuration -->
+    <div>
+      <button
+        @click="showProxyConfig = !showProxyConfig"
+        type="button"
+        class="w-full flex items-center justify-between text-sm font-medium text-gray-300 mb-3 hover:text-white transition-colors"
+      >
+        <span>{{ $t('settings.proxyConfig') }}</span>
+        <span :class="showProxyConfig ? 'rotate-180' : ''" class="transition-transform">▼</span>
+      </button>
+
+      <div v-if="showProxyConfig" class="space-y-3 pl-2 border-l-2 border-gray-700">
+        <!-- Enable Proxy Toggle -->
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              v-model="localSettings.proxy_enabled"
+              type="checkbox"
+              class="rounded border-gray-600 bg-darker text-primary focus:ring-primary"
+            />
+            <span class="text-xs text-gray-300">{{ $t('settings.enableProxy') }}</span>
+          </label>
+        </div>
+
+        <!-- Proxy Host and Port -->
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.proxyHost') }}</label>
+            <input
+              v-model="localSettings.proxy_host"
+              type="text"
+              :placeholder="$t('settings.proxyHostPlaceholder')"
+              :disabled="!localSettings.proxy_enabled"
+              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+          <div class="w-24">
+            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.proxyPort') }}</label>
+            <input
+              v-model.number="localSettings.proxy_port"
+              type="number"
+              min="1"
+              max="65535"
+              placeholder="8080"
+              :disabled="!localSettings.proxy_enabled"
+              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+
+        <!-- Proxy Username (Optional) -->
+        <div>
+          <label class="text-xs text-gray-300 block mb-1">
+            {{ $t('settings.proxyUsername') }}
+            <span class="text-gray-500">({{ $t('settings.optional') }})</span>
+          </label>
+          <input
+            v-model="localSettings.proxy_username"
+            type="text"
+            :placeholder="$t('settings.proxyUsernamePlaceholder')"
+            :disabled="!localSettings.proxy_enabled"
+            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+        </div>
+
+        <!-- Proxy Password (Optional) -->
+        <div>
+          <label class="text-xs text-gray-300 block mb-1">
+            {{ $t('settings.proxyPassword') }}
+            <span class="text-gray-500">({{ $t('settings.optional') }})</span>
+          </label>
+          <div class="relative">
+            <input
+              v-model="localSettings.proxy_password"
+              :type="showProxyPassword ? 'text' : 'password'"
+              :placeholder="$t('settings.proxyPasswordPlaceholder')"
+              :disabled="!localSettings.proxy_enabled"
+              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 pr-16 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <button
+              @click="showProxyPassword = !showProxyPassword"
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors text-xs px-2 py-1 rounded hover:bg-gray-700 disabled:opacity-50"
+              :disabled="!localSettings.proxy_enabled"
+              :title="showProxyPassword ? $t('common.hide') : $t('common.show')"
+            >{{ showProxyPassword ? $t('common.hide') : $t('common.show') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Language Settings -->
     <div>
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.language') }}</h3>
@@ -333,6 +437,14 @@ interface Props {
     api_key: string
     model_name: string
     custom_headers?: string
+    // PERF-001: Proxy settings
+    proxy_enabled?: boolean
+    proxy_host?: string
+    proxy_port?: number
+    proxy_username?: string
+    proxy_password?: string
+    // PERF-001: Test model name
+    test_model_name?: string
   }
 }
 
@@ -405,6 +517,9 @@ watch(customHeaders, (newVal) => {
 const showApiKey = ref(false)
 const isTestingConnection = ref(false)
 const connectionTestResult = ref<ConnectionTestResult | null>(null)
+// PERF-001: Proxy config UI state
+const showProxyConfig = ref(false)
+const showProxyPassword = ref(false)
 
 // Ollama State
 const isLoadingOllamaModels = ref(false)
@@ -433,6 +548,9 @@ async function testConnection() {
     return
   }
 
+  // PERF-001: Use test_model_name if configured, otherwise use model_name
+  const testModel = localSettings.value.test_model_name || localSettings.value.model_name
+
   isTestingConnection.value = true
   connectionTestResult.value = null
 
@@ -440,7 +558,13 @@ async function testConnection() {
     const result = await invoke<ConnectionTestResult>('test_api_connection_with_ollama', {
       apiBaseUrl: localSettings.value.api_base_url,
       apiKey: localSettings.value.api_key || null,
-      modelName: localSettings.value.model_name
+      modelName: localSettings.value.test_model_name || localSettings.value.model_name,
+      // PERF-001: Proxy configuration
+      proxyEnabled: localSettings.value.proxy_enabled || false,
+      proxyHost: localSettings.value.proxy_host || null,
+      proxyPort: localSettings.value.proxy_port || null,
+      proxyUsername: localSettings.value.proxy_username || null,
+      proxyPassword: localSettings.value.proxy_password || null
     })
     connectionTestResult.value = result
     if (result.success) {

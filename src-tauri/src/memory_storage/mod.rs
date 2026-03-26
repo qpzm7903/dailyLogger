@@ -93,6 +93,14 @@ pub struct Settings {
     pub quality_filter_threshold: Option<f64>,
     // SESSION-001: 工作时段管理
     pub session_gap_minutes: Option<i32>, // 时段间隔阈值（分钟），默认 30
+    // PERF-001: 代理配置
+    pub proxy_enabled: Option<bool>,
+    pub proxy_host: Option<String>,
+    pub proxy_port: Option<i32>,
+    pub proxy_username: Option<String>,
+    pub proxy_password: Option<String>,
+    // PERF-001: 测试模型名称
+    pub test_model_name: Option<String>,
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)

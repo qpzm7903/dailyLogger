@@ -287,6 +287,33 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // PERF-001: 代理配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN proxy_enabled INTEGER DEFAULT 0",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN proxy_host TEXT",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN proxy_port INTEGER DEFAULT 8080",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN proxy_username TEXT",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN proxy_password TEXT",
+        [],
+    );
+    // PERF-001: 测试模型名称
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN test_model_name TEXT",
+        [],
+    );
+
     // SESSION-001: sessions 表 - 工作时段管理
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sessions (
@@ -601,7 +628,13 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             custom_headers TEXT DEFAULT '[]',
             quality_filter_enabled INTEGER DEFAULT 1,
             quality_filter_threshold REAL DEFAULT 0.3,
-            session_gap_minutes INTEGER DEFAULT 30
+            session_gap_minutes INTEGER DEFAULT 30,
+            proxy_enabled INTEGER DEFAULT 0,
+            proxy_host TEXT,
+            proxy_port INTEGER DEFAULT 8080,
+            proxy_username TEXT,
+            proxy_password TEXT,
+            test_model_name TEXT
         )",
         [],
     )

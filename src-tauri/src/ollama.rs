@@ -5,6 +5,7 @@
 //! daily summary generation.
 
 use crate::create_http_client;
+use crate::create_http_client_with_proxy;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
@@ -394,6 +395,12 @@ pub async fn test_api_connection_with_ollama(
     api_base_url: String,
     api_key: Option<String>,
     model_name: String,
+    // PERF-001: Proxy configuration
+    proxy_enabled: Option<bool>,
+    proxy_host: Option<String>,
+    proxy_port: Option<i32>,
+    proxy_username: Option<String>,
+    proxy_password: Option<String>,
 ) -> Result<ConnectionTestResult, String> {
     let is_ollama = is_ollama_endpoint(&api_base_url);
     let effective_api_key = api_key.unwrap_or_default();
@@ -405,8 +412,17 @@ pub async fn test_api_connection_with_ollama(
         format!("{}/chat/completions", api_base_url)
     };
 
-    // Create client with proxy bypass for local URLs
-    let client = create_http_client(&url, 30)?;
+    // PERF-001: Build proxy configuration
+    let proxy_config = crate::ProxyConfig {
+        enabled: proxy_enabled.unwrap_or(false),
+        host: proxy_host,
+        port: proxy_port,
+        username: proxy_username,
+        password: proxy_password,
+    };
+
+    // Create client with proxy configuration
+    let client = create_http_client_with_proxy(&url, 30, Some(proxy_config))?;
 
     let start = std::time::Instant::now();
 

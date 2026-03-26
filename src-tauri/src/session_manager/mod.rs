@@ -416,6 +416,8 @@ struct ApiConfig {
     api_key: String,
     model_name: String,
     custom_headers: Vec<crate::memory_storage::CustomHeader>,
+    // PERF-001: Proxy configuration
+    proxy_config: crate::ProxyConfig,
 }
 
 /// Load API configuration from settings
@@ -441,11 +443,21 @@ fn load_api_config() -> Result<ApiConfig, String> {
         Vec::new()
     };
 
+    // PERF-001: Parse proxy configuration from settings
+    let proxy_config = crate::ProxyConfig {
+        enabled: settings.proxy_enabled.unwrap_or(false),
+        host: settings.proxy_host.clone(),
+        port: settings.proxy_port,
+        username: settings.proxy_username.clone(),
+        password: settings.proxy_password.clone(),
+    };
+
     Ok(ApiConfig {
         api_base_url,
         api_key,
         model_name,
         custom_headers,
+        proxy_config,
     })
 }
 
@@ -499,7 +511,7 @@ async fn call_vision_api_batch(
     config: &ApiConfig,
 ) -> Result<SessionAnalysisResponse, String> {
     let endpoint = format!("{}/chat/completions", config.api_base_url);
-    let client = crate::create_http_client(&endpoint, 180)?;
+    let client = crate::create_http_client_with_proxy(&endpoint, 180, Some(config.proxy_config.clone()))?;
 
     let masked_key = crate::mask_api_key(&config.api_key);
 

@@ -18,6 +18,8 @@ struct ApiConfig {
     is_ollama: bool,
     // AI-006: Custom API headers
     custom_headers: Vec<crate::memory_storage::CustomHeader>,
+    // PERF-001: Proxy configuration
+    proxy_config: crate::ProxyConfig,
 }
 
 /// Extract API configuration from settings (shared by all report generators).
@@ -51,12 +53,22 @@ fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
         Vec::new()
     };
 
+    // PERF-001: Parse proxy configuration from settings
+    let proxy_config = crate::ProxyConfig {
+        enabled: settings.proxy_enabled.unwrap_or(false),
+        host: settings.proxy_host.clone(),
+        port: settings.proxy_port,
+        username: settings.proxy_username.clone(),
+        password: settings.proxy_password.clone(),
+    };
+
     Ok(ApiConfig {
         api_base_url,
         api_key,
         model_name,
         is_ollama,
         custom_headers,
+        proxy_config,
     })
 }
 
@@ -69,8 +81,8 @@ async fn call_llm_api(
 ) -> Result<String, String> {
     let endpoint = format!("{}/chat/completions", config.api_base_url);
 
-    // Create HTTP client with proxy bypass for local URLs
-    let client = crate::create_http_client(&endpoint, 120)?;
+    // Create HTTP client with proxy configuration
+    let client = crate::create_http_client_with_proxy(&endpoint, 120, Some(config.proxy_config.clone()))?;
 
     let request_body = serde_json::json!({
         "model": config.model_name,
@@ -863,6 +875,13 @@ mod tests {
             quality_filter_enabled: None,
             quality_filter_threshold: None,
             session_gap_minutes: None,
+            // PERF-001: Proxy settings
+            proxy_enabled: None,
+            proxy_host: None,
+            proxy_port: None,
+            proxy_username: None,
+            proxy_password: None,
+            test_model_name: None,
         }
     }
 
@@ -2088,6 +2107,14 @@ mod benchmarks {
             quality_filter_enabled: None,
             quality_filter_threshold: None,
             session_gap_minutes: None,
+            // PERF-001: Proxy configuration
+            proxy_enabled: None,
+            proxy_host: None,
+            proxy_port: None,
+            proxy_username: None,
+            proxy_password: None,
+            // PERF-001: Test model name
+            test_model_name: None,
         }
     }
 

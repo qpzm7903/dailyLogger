@@ -25,7 +25,7 @@ pub mod window_info;
 pub mod work_time;
 
 use once_cell::sync::Lazy;
-use reqwest::{Client, Url};
+use reqwest::{Client, Proxy, Url};
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
@@ -112,15 +112,79 @@ pub fn is_local_url(url: &str) -> bool {
 ///
 /// For external URLs, the client uses system proxy settings.
 pub fn create_http_client(target_url: &str, timeout_secs: u64) -> Result<Client, String> {
+    create_http_client_with_proxy(target_url, timeout_secs, None)
+}
+
+/// PERF-001: Proxy configuration for explicit proxy settings
+#[derive(Debug, Clone, Default)]
+pub struct ProxyConfig {
+    pub enabled: bool,
+    pub host: Option<String>,
+    pub port: Option<i32>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+}
+
+/// Create an HTTP client with optional explicit proxy configuration.
+///
+/// When proxy config is provided and enabled, the client uses the specified proxy.
+/// When proxy config is None or disabled, behavior matches create_http_client().
+pub fn create_http_client_with_proxy(
+    target_url: &str,
+    timeout_secs: u64,
+    proxy_config: Option<ProxyConfig>,
+) -> Result<Client, String> {
     let mut builder = Client::builder().timeout(Duration::from_secs(timeout_secs));
 
-    // If target is a local URL, disable proxy to avoid interference
-    if is_local_url(target_url) {
-        tracing::info!(
-            "Creating HTTP client with proxy disabled for local URL: {}",
-            target_url
-        );
-        builder = builder.no_proxy();
+    // If proxy is explicitly enabled with valid host/port, use the proxy
+    if let Some(ref proxy) = proxy_config {
+        if proxy.enabled {
+            if let (Some(host), Some(port)) = (&proxy.host, &proxy.port) {
+                let proxy_url = if host.starts_with("http://") || host.starts_with("https://") {
+                    format!("{}:{}", host, port)
+                } else {
+                    format!("http://{}:{}", host, port)
+                };
+
+                match Proxy::https(&proxy_url) {
+                    Ok(mut proxy_obj) => {
+                        // Add basic auth if credentials provided
+                        if let (Some(ref username), Some(ref password)) =
+                            (&proxy.username, &proxy.password)
+                        {
+                            if !username.is_empty() {
+                                proxy_obj = proxy_obj.basic_auth(username, password);
+                                tracing::info!(
+                                    "Using authenticated proxy: {}:{}",
+                                    host,
+                                    port
+                                );
+                            }
+                        } else {
+                            tracing::info!("Using proxy: {}:{}", host, port);
+                        }
+                        builder = builder.proxy(proxy_obj);
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to create proxy: {}", e);
+                    }
+                }
+            }
+        } else {
+            // Proxy disabled - use no_proxy for local URLs
+            if is_local_url(target_url) {
+                builder = builder.no_proxy();
+            }
+        }
+    } else {
+        // No proxy config - use default behavior (local URLs bypass system proxy)
+        if is_local_url(target_url) {
+            tracing::info!(
+                "Creating HTTP client with proxy disabled for local URL: {}",
+                target_url
+            );
+            builder = builder.no_proxy();
+        }
     }
 
     builder
