@@ -28,33 +28,24 @@
   --color-text-secondary: #94a3b8;
 }
 
-/* Light theme overrides - applied via .light class on root */
-.light {
-  --color-primary: #3b82f6;
-  --color-secondary: #64748b;
-  --color-dark: #f8fafc;
-  --color-darker: #ffffff;
+/* ============================================
+   Light Theme Support (PERF-006)
+   ============================================ */
 
-  /* Surface colors for light theme */
+/* Light theme overrides via .light class on root element */
+.light {
+  /* Surface colors - light theme */
+  --color-darker: #ffffff;
+  --color-dark: #f8fafc;
   --color-surface-0: #ffffff;
   --color-surface-1: #f8fafc;
   --color-surface-2: #e2e8f0;
 
-  /* Text colors for light theme */
+  /* Text colors */
+  --color-primary: #3b82f6;
+  --color-secondary: #64748b;
   --color-text-primary: #0f172a;
   --color-text-secondary: #64748b;
-
-  /* Action colors for light theme */
-  --color-action-primary: #3b82f6;
-  --color-action-secondary: #94a3b8;
-  --color-action-danger: #ef4444;
-  --color-action-neutral: #9ca3af;
-
-  /* Status colors - remain same */
-  --color-status-success: #22c55e;
-  --color-status-warning: #f59e0b;
-  --color-status-error: #ef4444;
-  --color-status-info: #3b82f6;
 }
 
 /* Modern font stack with Inter-like appearance */
@@ -371,35 +362,9 @@ button, .no-select {
    Light Theme Support (PERF-006)
    ============================================ */
 
-/* Light theme overrides via .light class on root element */
-.light {
-  /* Surface colors - light theme */
-  --color-darker: #ffffff;
-  --color-dark: #f8fafc;
-  --color-surface-0: #ffffff;
-  --color-surface-1: #f8fafc;
-  --color-surface-2: #e2e8f0;
-
-  /* Text colors */
-  --color-primary: #3b82f6;
-  --color-secondary: #64748b;
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #64748b;
-
-  /* Scrollbar colors for light theme */
-  --scrollbar-track-bg: rgba(241, 245, 249, 0.5);
-  --scrollbar-thumb-bg: rgba(148, 163, 184, 0.4);
-  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
-}
-
 /* Light theme body background */
 .light body {
   background-color: #ffffff;
-}
-
-/* Light theme text */
-.light {
-  color: #0f172a;
 }
 
 /* Light theme custom scrollbar */

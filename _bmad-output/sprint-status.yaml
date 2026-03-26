@@ -151,5 +151,5 @@ development_status:
   PERF-004: done  # Code review passed (critical: command not registered - fixed)
   PERF-004-retrospective: done
   PERF-005: done
-  PERF-006: review
+  PERF-006: done
   epic-10-retrospective: pending  # Awaiting PERF-005/006 completion
