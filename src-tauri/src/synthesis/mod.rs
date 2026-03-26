@@ -1,10 +1,12 @@
 use chrono::Datelike;
+use rusqlite::params;
 use std::path::PathBuf;
 use tauri::command;
 
 use crate::dingtalk;
 use crate::memory_storage::{self, Record, Settings};
 use crate::notion;
+use crate::session_manager::{Session, SessionStatus};
 use crate::slack;
 
 /// API configuration extracted from Settings for LLM calls.
@@ -448,6 +450,176 @@ pub fn filter_records_by_settings(records: Vec<Record>, settings: &Settings) -> 
     }
 }
 
+/// SESSION-005: Get the display summary for a session.
+/// Priority: user_summary > ai_summary > "暂无摘要"
+fn get_session_display_summary(session: &Session) -> String {
+    session
+        .user_summary
+        .as_ref()
+        .filter(|s| !s.is_empty())
+        .or(session.ai_summary.as_ref())
+        .filter(|s| !s.is_empty())
+        .cloned()
+        .unwrap_or_else(|| "暂无摘要".to_string())
+}
+
+/// SESSION-005: Get records for a specific session, with user_notes preferred over content.
+/// Skips records with analysis_status = 'pending'.
+fn get_session_records_for_summary(
+    session_id: i64,
+) -> Result<Vec<(String, String, String)>, String> {
+    // Use get_records_by_session_id which returns SessionScreenshot (id, timestamp, screenshot_path)
+    // We need full Record to get user_notes and content
+    let db = crate::memory_storage::DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, timestamp, content, user_notes, analysis_status, source_type
+             FROM records
+             WHERE session_id = ?1
+             ORDER BY timestamp ASC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let records = stmt
+        .query_map(params![session_id], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                source_type: row.get(5)?,
+                content: row.get(2)?,
+                screenshot_path: None,
+                monitor_info: None,
+                tags: None,
+                user_notes: row.get(3)?,
+                session_id: Some(session_id),
+                analysis_status: row.get(4)?,
+            })
+        })
+        .map_err(|e| format!("Query failed: {}", e))?;
+
+    let mut result = Vec::new();
+    for record in records {
+        let record = record.map_err(|e| format!("Failed to read record: {}", e))?;
+        // Skip pending records
+        if record.analysis_status.as_deref() == Some("pending") {
+            continue;
+        }
+        // Get display content: user_notes > content
+        let display_content = if let Some(ref notes) = record.user_notes {
+            if !notes.is_empty() {
+                notes.clone()
+            } else {
+                record.content.clone()
+            }
+        } else {
+            record.content.clone()
+        };
+        // Format time
+        let time = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
+            .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
+            .unwrap_or_else(|_| "unknown".to_string());
+        // Source icon
+        let source = if record.source_type == "auto" {
+            "🖥️ 自动感知"
+        } else {
+            "⚡ 闪念"
+        };
+        result.push((time, source.to_string(), display_content.clone()));
+    }
+
+    Ok(result)
+}
+
+/// SESSION-005: Format a single session for the summary prompt.
+/// Returns formatted string like:
+/// ## 09:00-12:00 - active
+///
+/// ✏️ (if user edited)
+///
+/// 用户摘要或AI摘要
+///
+/// - [09:15] 🖥️: 截图内容
+/// - [10:30] ⚡: 闪念内容
+fn format_session_for_summary(session: &Session) -> String {
+    // Time range
+    let time_range = match &session.end_time {
+        Some(end) => {
+            let start_time = chrono::DateTime::parse_from_rfc3339(&session.start_time)
+                .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
+                .unwrap_or_else(|_| session.start_time.clone());
+            let end_time = chrono::DateTime::parse_from_rfc3339(end)
+                .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
+                .unwrap_or_else(|_| end.clone());
+            format!("{} - {}", start_time, end_time)
+        }
+        None => {
+            let start_time = chrono::DateTime::parse_from_rfc3339(&session.start_time)
+                .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
+                .unwrap_or_else(|_| session.start_time.clone());
+            format!("{} - 进行中", start_time)
+        }
+    };
+
+    let status_str = match session.status {
+        SessionStatus::Active => "active",
+        SessionStatus::Ended => "ended",
+        SessionStatus::Analyzed => "analyzed",
+    };
+
+    // Check if user edited
+    let is_edited = session
+        .user_summary
+        .as_ref()
+        .filter(|s| !s.is_empty())
+        .is_some();
+
+    // Get display summary
+    let summary = get_session_display_summary(session);
+
+    // Build session section
+    let mut content = format!("## {} - {}\n\n", time_range, status_str);
+
+    if is_edited {
+        content.push_str("✏️ ");
+    }
+    content.push_str(&summary);
+    content.push_str("\n\n");
+
+    // Get and format records within this session
+    match get_session_records_for_summary(session.id) {
+        Ok(records) => {
+            for (time, source, display_content) in records {
+                content.push_str(&format!("- [{}] {}: {}\n", time, source, display_content));
+            }
+        }
+        Err(e) => {
+            tracing::warn!("Failed to get records for session {}: {}", session.id, e);
+        }
+    }
+
+    content
+}
+
+/// SESSION-005: Build session-based report content from sessions.
+/// If no sessions exist, returns None to indicate fallback to legacy format.
+pub fn build_session_based_report(sessions: &[Session]) -> Option<String> {
+    if sessions.is_empty() {
+        return None;
+    }
+
+    let mut content = String::new();
+    for session in sessions {
+        content.push_str(&format_session_for_summary(session));
+        content.push('\n');
+    }
+
+    Some(content)
+}
+
 /// Format records into a string for the summary prompt.
 /// Each record is formatted as: "- [HH:MM] 🖥️/⚡ source: content"
 /// SESSION-003: Prefers user_notes over content when available.
@@ -508,6 +680,70 @@ pub async fn generate_daily_summary() -> Result<String, String> {
     let obsidian_path = settings.get_obsidian_output_path()?;
     let api_config = load_api_config(&settings)?;
 
+    // SESSION-005: Try session-based approach first
+    let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+
+    if !sessions.is_empty() {
+        // SESSION-005 AC#4: Auto-analyze pending/ended sessions before generating report
+        for session in &sessions {
+            if session.status == SessionStatus::Active || session.status == SessionStatus::Ended {
+                tracing::info!("Auto-analyzing session {} before daily summary", session.id);
+                if let Err(e) = crate::session_manager::analyze_session(session.id).await {
+                    tracing::warn!("Failed to analyze session {}: {}", session.id, e);
+                }
+            }
+        }
+
+        // Re-fetch sessions after analysis
+        let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+
+        // SESSION-005: Build session-based report
+        if let Some(content) = build_session_based_report(&sessions) {
+            let prompt_template = settings
+                .summary_prompt
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .unwrap_or(DEFAULT_SUMMARY_PROMPT);
+            let prompt = prompt_template
+                .replace("{records}", &content)
+                .replace("{github_activity}", "");
+
+            let summary =
+                call_llm_api(&api_config, &prompt, 2000, "generate_daily_summary").await?;
+
+            let filename = generate_summary_filename(&settings);
+            let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
+
+            // INT-002: Also write to Logseq if configured
+            write_report_to_logseq(&settings, &filename, &summary);
+
+            // INT-001: Also write to Notion if configured
+            if let Some(notion_url) =
+                notion::write_report_to_notion(&settings, &filename, &summary).await
+            {
+                tracing::info!("Report also written to Notion: {}", notion_url);
+            }
+
+            // INT-004: Send notifications to Slack/DingTalk if configured
+            let title = settings
+                .summary_title_format
+                .as_ref()
+                .filter(|s| !s.is_empty())
+                .map(|fmt| format_summary_title(fmt))
+                .unwrap_or_else(|| format_summary_title(DEFAULT_TITLE_FORMAT));
+            send_report_notifications(&settings, &title, &summary);
+
+            let mut updated_settings = settings.clone();
+            updated_settings.last_summary_path = Some(path_str.clone());
+            memory_storage::save_settings_sync(&updated_settings)
+                .map_err(|e| format!("Failed to update settings: {}", e))?;
+
+            tracing::info!("Daily summary generated (session-based): {}", path_str);
+            return Ok(path_str);
+        }
+    }
+
+    // SESSION-005 AC#6: Fallback to legacy flat record format if no sessions
     let all_records = memory_storage::get_all_today_records_for_summary()
         .map_err(|e| format!("Failed to get records: {}", e))?;
     let records = filter_records_by_settings(all_records, &settings);
@@ -1668,6 +1904,131 @@ pub async fn compare_reports(
 
     tracing::info!("Comparison report generated: {}", path_str);
     Ok(path_str)
+}
+
+// ── SESSION-005: Session-based daily summary tests ──
+
+#[cfg(test)]
+mod session_summary_tests {
+    use super::*;
+    use crate::session_manager::{Session, SessionStatus};
+
+    fn create_test_session(
+        id: i64,
+        ai_summary: Option<&str>,
+        user_summary: Option<&str>,
+        status: SessionStatus,
+    ) -> Session {
+        Session {
+            id,
+            date: chrono::Local::now().format("%Y-%m-%d").to_string(),
+            start_time: chrono::Utc::now().to_rfc3339(),
+            end_time: Some(chrono::Utc::now().to_rfc3339()),
+            ai_summary: ai_summary.map(|s| s.to_string()),
+            user_summary: user_summary.map(|s| s.to_string()),
+            context_for_next: None,
+            status,
+            screenshot_count: None,
+        }
+    }
+
+    // SESSION-005 AC#2: Test user_summary > ai_summary priority
+    #[test]
+    fn get_session_display_summary_prefers_user_summary() {
+        let session = create_test_session(
+            1,
+            Some("AI summary"),
+            Some("User summary"),
+            SessionStatus::Analyzed,
+        );
+        let result = get_session_display_summary(&session);
+        assert_eq!(result, "User summary");
+    }
+
+    // SESSION-005 AC#2: Falls back to ai_summary when user_summary is empty
+    #[test]
+    fn get_session_display_summary_falls_back_to_ai_summary() {
+        let session = create_test_session(1, Some("AI summary"), None, SessionStatus::Analyzed);
+        let result = get_session_display_summary(&session);
+        assert_eq!(result, "AI summary");
+    }
+
+    // SESSION-005 AC#2: Falls back to "暂无摘要" when both are empty
+    #[test]
+    fn get_session_display_summary_shows_default_when_empty() {
+        let session = create_test_session(1, None, None, SessionStatus::Analyzed);
+        let result = get_session_display_summary(&session);
+        assert_eq!(result, "暂无摘要");
+    }
+
+    // SESSION-005 AC#2: Falls back to ai_summary when user_summary is empty string
+    #[test]
+    fn get_session_display_summary_ignores_empty_user_summary() {
+        let session = create_test_session(1, Some("AI summary"), Some(""), SessionStatus::Analyzed);
+        let result = get_session_display_summary(&session);
+        assert_eq!(result, "AI summary");
+    }
+
+    // SESSION-005 AC#2: Falls back to "暂无摘要" when ai_summary is empty string
+    #[test]
+    fn get_session_display_summary_ignores_empty_ai_summary() {
+        let session = create_test_session(1, Some(""), None, SessionStatus::Analyzed);
+        let result = get_session_display_summary(&session);
+        assert_eq!(result, "暂无摘要");
+    }
+
+    // SESSION-005 AC#1 & #3: Test build_session_based_report with empty sessions
+    #[test]
+    fn build_session_based_report_returns_none_for_empty_sessions() {
+        let sessions: Vec<Session> = vec![];
+        let result = build_session_based_report(&sessions);
+        assert!(result.is_none());
+    }
+
+    // SESSION-005 AC#1: Test build_session_based_report with sessions
+    #[test]
+    fn build_session_based_report_formats_sessions_correctly() {
+        let session = create_test_session(1, Some("AI summary"), None, SessionStatus::Analyzed);
+        let sessions = vec![session];
+        let result = build_session_based_report(&sessions);
+        assert!(result.is_some());
+        let content = result.unwrap();
+        // Should contain time range and summary
+        assert!(content.contains("##"));
+        assert!(content.contains("- analyzed"));
+        assert!(content.contains("AI summary"));
+    }
+
+    // SESSION-005 AC#2: Test format_session_for_summary with user edited session
+    #[test]
+    fn format_session_for_summary_shows_edit_indicator_for_user_summary() {
+        let session = create_test_session(
+            1,
+            Some("AI summary"),
+            Some("User summary"),
+            SessionStatus::Analyzed,
+        );
+        let result = format_session_for_summary(&session);
+        // Should contain the edit indicator
+        assert!(result.contains("✏️"));
+        assert!(result.contains("User summary"));
+    }
+
+    // SESSION-005 AC#1: Test format_session_for_summary with active session
+    #[test]
+    fn format_session_for_summary_shows_active_status() {
+        let session = create_test_session(1, None, None, SessionStatus::Active);
+        let result = format_session_for_summary(&session);
+        assert!(result.contains("- active"));
+    }
+
+    // SESSION-005 AC#1: Test format_session_for_summary with ended session
+    #[test]
+    fn format_session_for_summary_shows_ended_status() {
+        let session = create_test_session(1, None, None, SessionStatus::Ended);
+        let result = format_session_for_summary(&session);
+        assert!(result.contains("- ended"));
+    }
 }
 
 // ── Performance benchmark tests (CORE-008 AC#3) ──

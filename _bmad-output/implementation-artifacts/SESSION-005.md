@@ -1,6 +1,6 @@
 # Story 8.5: 日报生成适配
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -68,36 +68,36 @@ SESSION-001 (基础) ─→ SESSION-002 (分析) ─→ SESSION-005 (日报) ←
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 修改日报内容组织逻辑 (AC: #1, #2, #3)
-  - [ ] 1.1 在 `synthesis/mod.rs` 中新增 `format_session_for_summary()` 函数
-  - [ ] 1.2 修改 `generate_daily_summary()` 使用 sessions 而非 flat records
-  - [ ] 1.3 实现时段章节格式化（时段时间 + 摘要 + 截图列表）
+- [x] Task 1: 修改日报内容组织逻辑 (AC: #1, #2, #3)
+  - [x] 1.1 在 `synthesis/mod.rs` 中新增 `format_session_for_summary()` 函数
+  - [x] 1.2 修改 `generate_daily_summary()` 使用 sessions 而非 flat records
+  - [x] 1.3 实现时段章节格式化（时段时间 + 摘要 + 截图列表）
 
-- [ ] Task 2: 用户摘要优先逻辑 (AC: #2)
-  - [ ] 2.1 实现 `get_display_summary(session)` 返回 user_summary > ai_summary
-  - [ ] 2.2 为用户编辑过的时段添加 ✏️ 标识
-  - [ ] 2.3 确保空摘要情况正确处理
+- [x] Task 2: 用户摘要优先逻辑 (AC: #2)
+  - [x] 2.1 实现 `get_session_display_summary(session)` 返回 user_summary > ai_summary
+  - [x] 2.2 为用户编辑过的时段添加 ✏️ 标识
+  - [x] 2.3 确保空摘要情况正确处理
 
-- [ ] Task 3: 时段内截图内容优先 (AC: #3)
-  - [ ] 3.1 实现 `get_session_records(session_id)` 获取时段内记录
-  - [ ] 3.2 时段内截图使用 `user_notes > content` 优先逻辑
-  - [ ] 3.3 跳过 pending 状态的截图
+- [x] Task 3: 时段内截图内容优先 (AC: #3)
+  - [x] 3.1 实现 `get_session_records_for_summary(session_id)` 获取时段内记录
+  - [x] 3.2 时段内截图使用 `user_notes > content` 优先逻辑
+  - [x] 3.3 跳过 pending 状态的截图
 
-- [ ] Task 4: 未分析时段自动分析 (AC: #4)
-  - [ ] 4.1 在 `generate_daily_summary()` 中检查 pending/ended 时段
-  - [ ] 4.2 对未分析时段调用 `analyze_session()`
-  - [ ] 4.3 分析完成后组织日报内容
+- [x] Task 4: 未分析时段自动分析 (AC: #4)
+  - [x] 4.1 在 `generate_daily_summary()` 中检查 pending/ended 时段
+  - [x] 4.2 对未分析时段调用 `analyze_session()`
+  - [x] 4.3 分析完成后组织日报内容
 
-- [ ] Task 5: 向后兼容 (AC: #6)
-  - [ ] 5.1 检测当天是否有 sessions 数据
-  - [ ] 5.2 若无 sessions，回退到现有扁平记录格式
-  - [ ] 5.3 测试 fallback 路径
+- [x] Task 5: 向后兼容 (AC: #6)
+  - [x] 5.1 检测当天是否有 sessions 数据
+  - [x] 5.2 若无 sessions，回退到现有扁平记录格式
+  - [x] 5.3 测试 fallback 路径
 
-- [ ] Task 6: 测试验证 (AC: #7)
-  - [ ] 6.1 编写 session-based 日报生成单元测试
-  - [ ] 6.2 运行 `cargo fmt`
-  - [ ] 6.3 运行 `cargo clippy -- -D warnings`
-  - [ ] 6.4 运行 `cargo test --no-default-features`
+- [x] Task 6: 测试验证 (AC: #7)
+  - [x] 6.1 编写 session-based 日报生成单元测试
+  - [x] 6.2 运行 `cargo fmt`
+  - [x] 6.3 运行 `cargo clippy -- -D warnings`
+  - [x] 6.4 运行 `cargo test --no-default-features`
 
 ## Dev Notes
 
@@ -301,3 +301,33 @@ fn get_display_summary(session: &Session) -> String {
 - [Source: src-tauri/src/session_manager/mod.rs] - analyze_session 和 get_today_sessions
 - [Source: src-tauri/src/memory_storage/records.rs] - get_records_by_session_id
 - [Source: src-tauri/src/synthesis/mod.rs] - 现有 generate_daily_summary 实现
+
+## Dev Agent Record
+
+### Implementation Notes
+
+**Date**: 2026-03-26
+
+**Implementation Summary**:
+- 在 `synthesis/mod.rs` 中实现了 `build_session_based_report()` 函数，按时段组织日报内容
+- 实现了 `get_session_display_summary()` 函数，实现 user_summary > ai_summary > "暂无摘要" 优先级
+- 实现了 `get_session_records_for_summary()` 函数，获取时段内记录，优先展示 user_notes
+- 实现了 `format_session_for_summary()` 函数，格式化单个时段为章节
+- 修改了 `generate_daily_summary()` 函数，优先使用 session-based 方式生成日报
+- 添加了 AC#4 自动分析未分析时段的逻辑
+- 添加了 AC#6 向后兼容，当无 sessions 时回退到扁平记录格式
+- 新增 10 个单元测试覆盖新功能
+
+**Files Modified/Created**:
+- `src-tauri/src/synthesis/mod.rs` (修改)
+
+### Completion Notes
+
+所有任务已完成并通过测试验证：
+- 454 Rust 测试通过（包含 10 个新增测试）
+- Clippy 无警告
+- Cargo fmt 通过
+
+## Change Log
+
+- 2026-03-26: feat(SESSION-005): 实现日报生成适配 - 基于时段的日报内容组织、用户摘要优先、未分析时段自动分析、向后兼容
