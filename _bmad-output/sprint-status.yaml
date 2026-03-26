@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (Epic 10 partial retrospective completed: PERF-001/002/003 done, epic-10-retrospective done)
+last_updated: 2026-03-26 (PERF-004 story created, ready for dev)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system

@@ -14,10 +14,21 @@ so that I can quickly find historical screenshots and entries without waiting.
 
 ## Background
 
-当前数据库查询未针对大数据量场景优化。当用户有 1000+ 条记录时：
-- 全文搜索没有索引，LIKE 查询全表扫描
-- 日期范围筛选未使用索引
-- 分页使用 OFFSET，大页码时性能差
+当前 `memory_storage` 模块使用 SQLite 数据库，随着记录数量增长，某些查询可能变慢。当前已存在的索引：
+- `idx_timestamp` on records(timestamp DESC)
+- `idx_source_type` on records(source_type)
+- `idx_session_id` on records(session_id)
+- `idx_sessions_date` on sessions(date)
+- `idx_record_manual_tags_tag_id` on record_manual_tags(tag_id)
+- `idx_manual_tags_name` on manual_tags(name)
+- FTS5 `records_fts` 全文搜索虚拟表（已实现）
+
+**需要优化的查询场景**：
+1. `get_history_records` - 分页查询，日期范围过滤（高频）
+2. `get_today_records` / `get_week_records` / `get_month_records` - 时间范围查询（高频）
+3. `search_records` - FTS5 全文搜索（高频）
+4. `get_records_by_session_id` - 时段内截图查询（中频）
+5. `get_today_stats` - 统计聚合查询（日报生成时调用）
 
 **Epic 10 定位**：
 ```
@@ -56,85 +67,66 @@ Epic 10: 体验极致化
    - Then 使用 idx_sessions_date 索引
    - And 每个会话的截图数量统计使用预聚合或高效查询
 
+5. **统计查询优化**
+   - Given 用户有 1 年的记录数据
+   - When 生成日报（调用 get_today_stats）
+   - Then 响应时间 < 500ms
+   - And 聚合查询使用合适的索引
+
 ## Tasks / Subtasks
 
-- [ ] Task 1: 集成 SQLite FTS5 全文搜索 (AC: #1)
-  - [ ] 分析现有搜索功能实现（memory_storage/mod.rs 中的查询）
-  - [ ] 创建 FTS5 虚拟表用于 records.content 全文搜索
-  - [ ] 实现 triggers 保持 FTS 索引与 records 表同步
-  - [ ] 修改搜索查询使用 MATCH 而非 LIKE
+- [ ] Task 1: 验证并优化 FTS5 搜索性能 (AC: #1)
+  - [ ] Subtask 1.1: 使用 EXPLAIN QUERY PLAN 分析 FTS5 搜索查询
+  - [ ] Subtask 1.2: 验证 FTS5 triggers 正常工作（records_fts 与 records 同步）
+  - [ ] Subtask 1.3: 测量 FTS5 搜索性能，确保 < 1s
 
 - [ ] Task 2: 验证并优化日期索引 (AC: #2)
-  - [ ] 检查 idx_timestamp 索引是否存在
-  - [ ] 验证 EXPLAIN QUERY PLAN 确认索引被使用
-  - [ ] 如需要，添加复合索引 (timestamp, session_id) 优化会话相关查询
+  - [ ] Subtask 2.1: 检查 idx_timestamp 索引是否存在
+  - [ ] Subtask 2.2: 使用 EXPLAIN QUERY PLAN 验证索引被使用
+  - [ ] Subtask 2.3: 如需要，添加复合索引 (timestamp, session_id) 优化会话相关查询
 
 - [ ] Task 3: 实现游标分页 (AC: #3)
-  - [ ] 分析现有分页实现（get_today_records 等函数）
-  - [ ] 将 OFFSET 分页改为 keyset 分页
-  - [ ] 添加基于 ID 的高效跳页机制
-  - [ ] 更新前端分页逻辑（如有）
+  - [ ] Subtask 3.1: 分析现有分页实现（get_history_records 等函数）
+  - [ ] Subtask 3.2: 将 OFFSET 分页改为 keyset 分页
+  - [ ] Subtask 3.3: 添加基于 ID 的高效跳页机制
+  - [ ] Subtask 3.4: 验证分页功能正常，不遗漏记录
 
 - [ ] Task 4: 会话查询优化 (AC: #4)
-  - [ ] 检查 sessions 表查询性能
-  - [ ] 优化 get_today_sessions 相关查询
-  - [ ] 考虑会话内截图数量的预聚合
+  - [ ] Subtask 4.1: 检查 sessions 表查询性能
+  - [ ] Subtask 4.2: 优化 get_today_sessions 相关查询
+  - [ ] Subtask 4.3: 考虑会话内截图数量的预聚合
 
-- [ ] Task 5: 回归测试 (AC: all)
-  - [ ] 测试全文搜索准确性（FTS vs LIKE 结果对比）
-  - [ ] 测试日期筛选功能正常
-  - [ ] 测试分页功能正常
-  - [ ] 测试会话查询功能正常
+- [ ] Task 5: 优化统计查询 (AC: #5)
+  - [ ] Subtask 5.1: 分析 get_today_stats 查询
+  - [ ] Subtask 5.2: 优化 COUNT 和 GROUP BY 查询
+  - [ ] Subtask 5.3: 考虑使用复合索引优化
+
+- [ ] Task 6: 回归测试 (AC: all)
+  - [ ] Subtask 6.1: 测试全文搜索准确性（FTS vs LIKE 结果对比）
+  - [ ] Subtask 6.2: 测试日期筛选功能正常
+  - [ ] Subtask 6.3: 测试分页功能正常
+  - [ ] Subtask 6.4: 测试会话查询功能正常
+  - [ ] Subtask 6.5: 运行 `cargo test --package dailylogger` 确保无回归
 
 ## Dev Notes
 
 ### 关键架构约束
 
-1. **SQLite 版本**: 项目使用 SQLite，需确认 FTS5 支持（SQLite 3.9.0+ 内置支持）
-2. **向后兼容**: FTS 迁移需要处理已有数据
-3. **Rust 后端**: 所有数据库操作在 `src-tauri/src/memory_storage/mod.rs`
+1. **后端技术栈**：Rust + SQLite (rusqlite)，使用 `DB_CONNECTION` 全局连接池
+2. **查询优化策略**：优先使用索引，避免全表扫描；使用 EXPLAIN QUERY PLAN 验证
+3. **不引入新依赖**：使用原生 SQLite 索引优化，不添加额外 crate
+4. **FTS5 已实现**：FTS5 表和 triggers 已在 schema.rs 中创建，Task 1 只需验证和优化
 
 ### 文件树组件（需修改）
 
 ```
+src-tauri/src/memory_storage/
+├── records.rs       # 主要查询函数，游标分页实现
+├── schema.rs        # 数据库初始化，添加新索引
+└── mod.rs           # 模块导出
+
 src-tauri/src/
-├── memory_storage/
-│   ├── mod.rs              # 修改：FTS 查询、游标分页
-│   └── database.rs         # 可能需要：数据库迁移、FTS 表创建
-src-tauri/src/
-├── session_manager/
-│   └── mod.rs              # 可能需要：优化会话查询
-src/
-├── components/
-│   └── ScreenshotGallery.vue  # 可能需要：配合游标分页
-```
-
-### FTS5 实现方案
-
-```rust
-// 1. 创建 FTS5 虚拟表
-CREATE VIRTUAL TABLE records_fts USING fts5(
-    content,
-    content='records',
-    content_rowid='id'
-);
-
-// 2. 创建 triggers 保持同步
-CREATE TRIGGER records_ai AFTER INSERT ON records BEGIN
-    INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
-END;
-
-CREATE TRIGGER records_ad AFTER DELETE ON records BEGIN
-    INSERT INTO records_fts(records_fts, rowid, content) VALUES('delete', old.id, old.content);
-END;
-
-CREATE TRIGGER records_au AFTER UPDATE ON records BEGIN
-    INSERT INTO records_fts(records_fts, rowid, content) VALUES('delete', old.id, old.content);
-    INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
-END;
-
-// 3. 迁移已有数据
-INSERT INTO records_fts(rowid, content) SELECT id, content FROM records;
+└── session_manager/mod.rs  # get_today_stats 调用，可能需要优化
 ```
 
 ### 游标分页方案
@@ -156,6 +148,30 @@ SELECT * FROM records WHERE id < :last_id ORDER BY id DESC LIMIT 20;
 SELECT * FROM records WHERE id < :anchor_id ORDER BY id DESC LIMIT :offset, 20;
 ```
 
+### 数据库索引策略
+
+**当前索引**：
+```sql
+CREATE INDEX idx_timestamp ON records(timestamp DESC);
+CREATE INDEX idx_source_type ON records(source_type);
+CREATE INDEX idx_session_id ON records(session_id);
+CREATE INDEX idx_sessions_date ON sessions(date);
+CREATE INDEX idx_record_manual_tags_tag_id ON record_manual_tags(tag_id);
+CREATE INDEX idx_manual_tags_name ON manual_tags(name);
+```
+
+**建议添加的索引**：
+```sql
+-- 复合索引：时间范围 + 源类型过滤
+CREATE INDEX idx_timestamp_source_type ON records(timestamp DESC, source_type);
+
+-- 复合索引：session_id + timestamp（时段内截图排序）
+CREATE INDEX idx_session_timestamp ON records(session_id, timestamp DESC);
+
+-- 覆盖索引：减少回表查询
+CREATE INDEX idx_timestamp_covering ON records(timestamp DESC, id, content, screenshot_path);
+```
+
 ### 索引验证查询
 
 ```sql
@@ -164,32 +180,41 @@ SELECT name, sql FROM sqlite_master WHERE type='index' AND tbl_name='records';
 
 -- 验证索引使用
 EXPLAIN QUERY PLAN SELECT * FROM records WHERE timestamp BETWEEN :start AND :end;
+
+-- 分析 FTS5 查询
+EXPLAIN QUERY PLAN SELECT * FROM records_fts WHERE records_fts MATCH '关键词';
 ```
 
-## Testing Requirements
+### 测试数据生成（用于性能测试）
 
-1. **性能测试**：
-   - 插入 1000+ 条测试数据
-   - 测量全文搜索响应时间（目标 < 1s）
-   - 测量日期筛选响应时间（目标 < 500ms）
-   - 测量游标分页性能
+```rust
+// 在测试中生成大量数据
+fn insert_test_records(conn: &Connection, count: usize) {
+    for i in 0..count {
+        let timestamp = format!("2025-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            (i % 12) + 1, (i % 28) + 1, (i % 24), (i % 60), (i % 60));
+        conn.execute(
+            "INSERT INTO records (timestamp, source_type, content) VALUES (?1, ?2, ?3)",
+            params![timestamp, "auto", format!("Test content {}", i)],
+        ).unwrap();
+    }
+}
+```
 
-2. **功能测试**：
-   - FTS 搜索结果与 LIKE 搜索结果对比（召回率）
-   - 分页跳转功能正常
-   - 会话查询功能正常
+### 注意事项
 
-3. **回归测试**：
-   - 新增 FTS 记录不影响现有 CRUD
-   - 日期筛选结果正确
-   - 分页不遗漏记录
+1. **不要破坏现有功能**：所有修改必须通过现有测试
+2. **索引不是越多越好**：每个索引都会增加写操作的开销，只添加必要的索引
+3. **使用覆盖索引**：对于高频查询，考虑使用覆盖索引避免回表
+4. **考虑查询计划**：使用 EXPLAIN QUERY PLAN 验证优化效果
+5. **FTS5 已存在**：FTS5 表和 triggers 已在 schema.rs 实现，只需验证和优化
 
-## References
+### References
 
-- [Source: _bmad-output/planning-artifacts/architecture.md#Section 5] - 数据库设计和索引
-- [Source: _bmad-output/planning-artifacts/epics.md#Epic 10] - Story 10.4 原始需求
-- [Source: src-tauri/src/memory_storage/mod.rs] - 现有数据库操作实现
-- [Source: src-tauri/src/session_manager/mod.rs] - 会话管理模块
+- [Source: src-tauri/src/memory_storage/records.rs] - 所有查询函数
+- [Source: src-tauri/src/memory_storage/schema.rs] - 数据库 schema 和索引定义（FTS5 已实现）
+- [Source: src-tauri/src/session_manager/mod.rs] - get_today_stats 调用
+- [Source: _bmad-output/planning-artifacts/architecture.md#section-5] - 数据库设计文档
 
 ## Dev Agent Record
 
