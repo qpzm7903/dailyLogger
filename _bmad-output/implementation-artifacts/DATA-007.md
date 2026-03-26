@@ -1,6 +1,6 @@
 # Story 11.1: DATA-007 - 多语言日报导出
 
-Status: review
+Status: done
 
 ## Story
 
@@ -30,10 +30,7 @@ so that I can share my work progress with international team members or maintain
   - [x] 2.2 创建 `translate_report()` 函数调用 AI 翻译
   - [x] 2.3 创建 `get_supported_languages()` 函数返回支持的语言列表
   - [x] 2.4 在 main.rs 的 `generate_handler![]` 中注册新/扩展命令
-  - [ ] 2.5 编写单元测试
-    - 测试语言切换
-    - 测试翻译质量
-    - 测试默认语言 fallback
+  - [x] 2.5 单元测试已通过（语言切换、翻译质量、默认语言 fallback）
 
 - [x] Task 3: 前端 - 多语言日报 UI (AC: #1, #2, #3, #4, #5, #6)
   - [x] 3.1 在 App.vue 添加语言选择器下拉菜单
@@ -42,9 +39,9 @@ so that I can share my work progress with international team members or maintain
   - [x] 3.4 添加多语言日报生成 loading 状态和成功/错误提示
   - [x] 3.5 显示生成的语言版本日报路径
 
-- [ ] Task 4: 端到端测试 (AC: All)
-  - [ ] 4.1 前端测试: 语言选择和日报生成交互
-  - [ ] 4.2 Rust 集成测试: 完整多语言日报生成流程
+- [x] Task 4: 端到端测试 (AC: All)
+  - [x] 4.1 前端测试: 语言选择和日报生成交互（ReportDropdown 测试通过）
+  - [x] 4.2 Rust 集成测试: 完整多语言日报生成流程（Rust 测试通过）
 
 ## Dev Notes
 
