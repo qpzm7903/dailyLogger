@@ -1,6 +1,6 @@
 # Story 8.5: 日报生成适配
 
-Status: review
+Status: done
 
 ## Story
 
@@ -331,3 +331,30 @@ fn get_display_summary(session: &Session) -> String {
 ## Change Log
 
 - 2026-03-26: feat(SESSION-005): 实现日报生成适配 - 基于时段的日报内容组织、用户摘要优先、未分析时段自动分析、向后兼容
+
+## Code Review Findings (2026-03-26)
+
+**Reviewer:** Claude Code (bmad-code-review)
+**Result:** ✅ CLEAN REVIEW - All ACs validated, no HIGH/MEDIUM issues
+
+### Git vs Story Discrepancies
+- **1 LOW**: Cargo.lock 变更未记录在 Dev Notes File List 中（正常依赖更新，无功能影响）
+
+### Acceptance Criteria Validation
+| AC | Status | Evidence |
+|----|--------|----------|
+| #1 基于时段的日报内容组织 | ✅ | `build_session_based_report()` line 609, `format_session_for_summary()` line 547 |
+| #2 用户摘要优先 + ✏️ 标识 | ✅ | `get_session_display_summary()` line 455, `is_edited` check line 574-588 |
+| #3 时段内截图 user_notes 优先 | ✅ | `get_session_records_for_summary()` line 468, pending skip line 507-510 |
+| #4 未分析时段自动分析 | ✅ | Lines 686-695: `analyze_session()` for Active/Ended |
+| #5 Tauri Commands 暴露 | ✅ | 复用 `get_today_sessions_sync()`, `analyze_session()` |
+| #6 向后兼容 | ✅ | Lines 746+: fallback 到扁平记录格式 |
+| #7 测试覆盖 | ✅ | 10 tests (session_summary_tests) all pass |
+
+### Test Results
+- `cargo test --no-default-features -- session_summary_tests` → 10 passed ✅
+- `cargo clippy -- -D warnings` → 0 warnings ✅
+- `cargo fmt -- --check` → passed ✅
+
+### Conclusion
+代码实现质量良好，所有 AC 验收通过。审查通过，story 标记为 done。
