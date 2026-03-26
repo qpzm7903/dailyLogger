@@ -675,6 +675,42 @@ pub async fn get_session_screenshots(session_id: i64) -> Result<Vec<SessionScree
     crate::memory_storage::get_records_by_session_id(session_id)
 }
 
+// ── SESSION-003: User summary editing ────────────────────────────────────────
+
+/// SESSION-003: Update user summary for a session
+pub fn update_session_user_summary_sync(
+    session_id: i64,
+    user_summary: Option<&str>,
+) -> Result<(), String> {
+    let db = crate::memory_storage::DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    let rows_affected = conn
+        .execute(
+            "UPDATE sessions SET user_summary = ?1 WHERE id = ?2",
+            params![user_summary, session_id],
+        )
+        .map_err(|e| format!("Failed to update session user summary: {}", e))?;
+
+    if rows_affected == 0 {
+        return Err(format!("Session with id {} not found", session_id));
+    }
+
+    tracing::info!("Updated user summary for session {}", session_id);
+    Ok(())
+}
+
+/// SESSION-003: Update user summary for a session (Tauri command)
+#[command]
+pub async fn update_session_user_summary(
+    session_id: i64,
+    user_summary: Option<String>,
+) -> Result<(), String> {
+    update_session_user_summary_sync(session_id, user_summary.as_deref())
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]

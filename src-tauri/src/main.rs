@@ -480,6 +480,8 @@ fn main() {
             // SESSION-002: Session batch analysis
             daily_logger_lib::session_manager::analyze_session,
             daily_logger_lib::session_manager::get_session_screenshots,
+            // SESSION-003: Session summary editing
+            daily_logger_lib::session_manager::update_session_user_summary,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");

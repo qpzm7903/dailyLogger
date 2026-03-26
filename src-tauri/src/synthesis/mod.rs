@@ -450,6 +450,7 @@ pub fn filter_records_by_settings(records: Vec<Record>, settings: &Settings) -> 
 
 /// Format records into a string for the summary prompt.
 /// Each record is formatted as: "- [HH:MM] 🖥️/⚡ source: content"
+/// SESSION-003: Prefers user_notes over content when available.
 pub fn format_records_for_summary(records: &[Record]) -> String {
     records
         .iter()
@@ -464,7 +465,15 @@ pub fn format_records_for_summary(records: &[Record]) -> String {
                 "⚡ 闪念"
             };
 
-            format!("- [{}] {}: {}", time, source, r.content)
+            // SESSION-003: Prefer user_notes over content
+            let display_content = r
+                .user_notes
+                .as_ref()
+                .filter(|n| !n.is_empty())
+                .map(|n| n.as_str())
+                .unwrap_or(&r.content);
+
+            format!("- [{}] {}: {}", time, source, display_content)
         })
         .collect::<Vec<_>>()
         .join("\n")

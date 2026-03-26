@@ -579,7 +579,7 @@ pub fn update_record_user_notes_sync(id: i64, user_notes: Option<&str>) -> Resul
 
     let rows_affected = conn
         .execute(
-            "UPDATE records SET user_notes = ?1 WHERE id = ?2",
+            "UPDATE records SET user_notes = ?1, analysis_status = 'user_edited' WHERE id = ?2",
             params![user_notes, id],
         )
         .map_err(|e| format!("Failed to update user notes: {}", e))?;
