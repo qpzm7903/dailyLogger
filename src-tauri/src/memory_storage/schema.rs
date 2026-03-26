@@ -687,7 +687,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             proxy_password TEXT,
             test_model_name TEXT,
             onboarding_completed INTEGER DEFAULT 0,
-            language TEXT DEFAULT 'en'
+            language TEXT DEFAULT 'en',
+            preferred_language TEXT DEFAULT 'zh-CN',
+            supported_languages TEXT DEFAULT '[\"zh-CN\",\"en\",\"ja\"]'
         )",
         [],
     )
