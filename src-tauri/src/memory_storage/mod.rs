@@ -717,4 +717,278 @@ mod tests_statistics {
         assert!(start.contains("-01T00:00:00"));
         assert!(end.contains("T23:59:59"));
     }
+
+    // Integration tests for get_statistics
+    // Note: These tests require the #[tokio::test] macro since get_statistics is async
+
+    #[test]
+    fn test_get_statistics_empty_database() {
+        use rusqlite::Connection;
+        use crate::memory_storage::schema::init_test_database;
+
+        // Create in-memory database for testing
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+
+        // Set up global DB connection
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Get today's range
+        let (start, end) = get_today_range();
+
+        // Call count functions directly (these are sync)
+        let screenshot_count = count_screenshots_in_range(
+            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            &start,
+            &end,
+        )
+        .unwrap();
+
+        let session_count = count_sessions_in_range(
+            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            &start,
+            &end,
+        )
+        .unwrap();
+
+        let record_count = count_records_in_range(
+            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            &start,
+            &end,
+        )
+        .unwrap();
+
+        // Empty database should return 0 for all counts
+        assert_eq!(screenshot_count, 0);
+        assert_eq!(session_count, 0);
+        assert_eq!(record_count, 0);
+    }
+
+    #[test]
+    fn test_get_statistics_with_data() {
+        use rusqlite::Connection;
+        use rusqlite::params;
+        use crate::memory_storage::schema::init_test_database;
+
+        // Create in-memory database for testing
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+
+        // Set up global DB connection
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Insert test records with timestamps in today's range
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        let timestamp1 = format!("{}T10:00:00+08:00", today);
+        let timestamp2 = format!("{}T11:00:00+08:00", today);
+        let timestamp3 = format!("{}T14:00:00+08:00", today);
+
+        // Insert records - one with screenshot, two without
+        {
+            let db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content, screenshot_path, analysis_status) VALUES (?1, 'auto', 'test1', '/path/to/screenshot.png', 'analyzed')",
+                params![timestamp1],
+            )
+            .unwrap();
+
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content, analysis_status) VALUES (?1, 'auto', 'test2', 'analyzed')",
+                params![timestamp2],
+            )
+            .unwrap();
+
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content, analysis_status) VALUES (?1, 'manual', 'test3', 'pending')",
+                params![timestamp3],
+            )
+            .unwrap();
+        }
+
+        // Get today's range
+        let (start, end) = get_today_range();
+
+        // Call count functions
+        let screenshot_count = count_screenshots_in_range(
+            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            &start,
+            &end,
+        )
+        .unwrap();
+
+        let record_count = count_records_in_range(
+            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            &start,
+            &end,
+        )
+        .unwrap();
+
+        // Should have 1 screenshot and 3 records
+        assert_eq!(screenshot_count, 1);
+        assert_eq!(record_count, 3);
+    }
+
+    #[test]
+    fn test_get_statistics_with_sessions() {
+        use rusqlite::Connection;
+        use rusqlite::params;
+        use crate::memory_storage::schema::init_test_database;
+
+        // Create in-memory database for testing
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+
+        // Set up global DB connection
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Insert test sessions
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+        {
+            let db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+
+            // Insert two sessions for today
+            conn.execute(
+                "INSERT INTO sessions (date, start_time, end_time, status) VALUES (?1, '09:00', '12:00', 'completed')",
+                params![today],
+            )
+            .unwrap();
+
+            conn.execute(
+                "INSERT INTO sessions (date, start_time, end_time, status) VALUES (?1, '14:00', '18:00', 'completed')",
+                params![today],
+            )
+            .unwrap();
+        }
+
+        // Get today's range
+        let (start, end) = get_today_range();
+
+        // Call count functions
+        let session_count = count_sessions_in_range(
+            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            &start,
+            &end,
+        )
+        .unwrap();
+
+        // Should have 2 sessions
+        assert_eq!(session_count, 2);
+    }
+
+    #[test]
+    fn test_get_statistics_analysis_success_rate() {
+        use rusqlite::Connection;
+        use rusqlite::params;
+        use crate::memory_storage::schema::init_test_database;
+
+        // Create in-memory database for testing
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+
+        // Set up global DB connection
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Insert test records with different analysis statuses
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        let timestamp1 = format!("{}T10:00:00+08:00", today);
+        let timestamp2 = format!("{}T11:00:00+08:00", today);
+        let timestamp3 = format!("{}T14:00:00+08:00", today);
+        let timestamp4 = format!("{}T15:00:00+08:00", today);
+
+        {
+            let db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            let conn = db.as_ref().unwrap();
+
+            // 3 analyzed, 1 pending = 75% success rate
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content, analysis_status) VALUES (?1, 'auto', 'test1', 'analyzed')",
+                params![timestamp1],
+            )
+            .unwrap();
+
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content, analysis_status) VALUES (?1, 'auto', 'test2', 'analyzed')",
+                params![timestamp2],
+            )
+            .unwrap();
+
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content, analysis_status) VALUES (?1, 'auto', 'test3', 'analyzed')",
+                params![timestamp3],
+            )
+            .unwrap();
+
+            conn.execute(
+                "INSERT INTO records (timestamp, source_type, content, analysis_status) VALUES (?1, 'auto', 'test4', 'pending')",
+                params![timestamp4],
+            )
+            .unwrap();
+        }
+
+        // Get today's range
+        let (start, end) = get_today_range();
+
+        // Call analysis success rate function
+        let success_rate = get_analysis_success_rate(
+            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            &start,
+            &end,
+        )
+        .unwrap();
+
+        // 3 out of 4 = 75%
+        assert!((success_rate - 75.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_get_statistics_invalid_range_type() {
+        // Test that invalid range_type returns error
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(get_statistics(
+            "invalid".to_string(),
+            None,
+            None,
+        ));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid range_type"));
+    }
+
+    #[test]
+    fn test_get_statistics_custom_range_requires_dates() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        // Custom range without dates should fail
+        let result = rt.block_on(get_statistics(
+            "custom".to_string(),
+            None,
+            None,
+        ));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("custom_start is required"));
+
+        // Custom range with only start date should fail
+        let result = rt.block_on(get_statistics(
+            "custom".to_string(),
+            Some("2026-03-01".to_string()),
+            None,
+        ));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("custom_end is required"));
+    }
 }
