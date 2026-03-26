@@ -303,3 +303,36 @@ claude-opus-4-6
 - **Status**: done (with known limitation on AC4 component coverage)
 - The core theme switching mechanism works correctly
 - Full component migration to CSS variables would require a separate refactoring effort
+
+## Retrospective
+
+**Date:** 2026-03-26
+**Retrospective File:** `PERF-006-retro-2026-03-26.md`
+
+### Retro Summary
+
+| Metric | Value |
+|--------|-------|
+| Story Points | 3pts |
+| Code Review | ✅ Pass (1 HIGH fixed, 1 MEDIUM fixed) |
+| Key Insight | CSS 变量主题方案轻量，但组件颜色硬编码需独立重构 |
+
+### What Went Well
+1. CSS 变量主题体系设计清晰，即时切换无需重载
+2. 主题管理模块独立封装（theme.ts）
+3. 系统主题自动检测功能完善
+4. 代码审查有效发现问题
+
+### Key Challenges
+1. **HIGH**: 重复 `.light` CSS 类定义（已修复）
+2. **MEDIUM**: 371 处硬编码颜色未迁移，浅色主题覆盖不完整
+
+### Action Items
+1. 系统性迁移组件颜色到 CSS 变量（46 文件，371 处）— MEDIUM
+2. 补充主题切换集成测试 — LOW
+3. 增加"检查重复 CSS 选择器"到 Dev Checklist — LOW
+
+### Version Release
+- **Story Type:** feat
+- **Recommended Version:** v3.3.0
+- **Rationale:** 新功能属于 MINOR 升级
