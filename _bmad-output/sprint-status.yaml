@@ -1,0 +1,141 @@
+# generated: 2026-03-22
+# last_updated: 2026-03-26 (Epic 9 complete, UX-5 done, epic-9 retrospective done)
+# project: dailylogger
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-22
+last_updated: 2026-03-26 (UX-5 review findings fixed)
+project: dailylogger
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: 核心功能完善 (CORE)
+  epic-1: done
+  CORE-001: done
+  CORE-002: done
+  CORE-003: done
+  CORE-004: done
+  CORE-005: done
+  CORE-006: done
+  CORE-007: done
+  CORE-008: done
+  epic-1-retrospective: done
+
+  # Epic 2: 智能捕获优化 (SMART)
+  epic-2: done
+  SMART-001: done
+  SMART-002: done
+  SMART-003: done
+  SMART-004: done
+  epic-2-retrospective: done
+
+  # Epic 3: AI 能力提升 (AI)
+  epic-3: done
+  AI-001: done
+  AI-002: done
+  AI-003: done
+  AI-004: done
+  AI-005: done
+  AI-006: done
+  epic-3-retrospective: done
+
+  # Epic 4: 数据管理与检索 (DATA)
+  epic-4: done
+  DATA-001: done
+  DATA-002: done
+  DATA-003: done
+  DATA-004: done
+  DATA-005: done
+  DATA-006: done
+  DATA-003-retrospective: done
+  epic-4-retrospective: done
+
+  # Epic 5: 周报月报功能 (REPORT)
+  epic-5: done
+  REPORT-001: done
+  REPORT-002: done
+  REPORT-003: done
+  REPORT-004: done
+  epic-5-retrospective: done
+
+  # Epic 6: 集成与扩展 (INT) — GitHub 已移除 (v3.0.0)
+  epic-6: done
+  INT-001: done
+  INT-002: done
+  INT-003A: removed  # 已移除 (Sprint Change Proposal v2, 2026-03-22)
+  INT-003B: removed  # 已移除 (Sprint Change Proposal v2, 2026-03-22)
+  INT-004: done
+  epic-6-retrospective: done
+
+  # Epic 7: 核心体验深化 (EXP) — Sprint 完成
+  epic-7: done
+  EXP-001: done
+  EXP-001-retrospective: done
+  EXP-002: done
+  EXP-002-retrospective: done
+  EXP-003: done
+  EXP-003-retrospective: done
+  EXP-004: done
+  EXP-004-retrospective: done
+  EXP-005: done
+  EXP-005-retrospective: done
+  epic-7-retrospective: done
+
+  # Epic 8: 工作时段感知分析 (SESSION) — Sprint Change Proposal v2
+  epic-8: done
+  CLEAN-001: done
+  CLEAN-001-retrospective: done
+  SESSION-001: done
+  SESSION-001-retrospective: done
+  SESSION-002: done
+  SESSION-002-retrospective: done
+  SESSION-003: done
+  SESSION-003-retrospective: done
+  SESSION-004: done
+  SESSION-005: done
+  epic-8-retrospective: done
+
+  # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 完成
+  epic-9: done
+  UX-1-design-tokens: done
+  UX-1-retrospective: done
+  UX-2-button-normalization: done
+  UX-2-retrospective: done
+  UX-3-sidebar-upgrade: done
+  UX-3-retrospective: done
+  UX-4-dashboard-reorganization: done
+  UX-4-retrospective: done
+  UX-5-interaction-polish: done
+  epic-9-retrospective: done
