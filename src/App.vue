@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-darker text-white flex">
+  <div class="h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] flex">
     <!-- UX-003: Offline status top banner -->
     <OfflineBanner :isOnline="isOnline" />
 
@@ -150,6 +150,7 @@ import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { usePlatform } from './composables/usePlatform'
 import { useModal } from './composables/useModal'
 import { loadLanguageFromBackend } from './i18n'
+import { initTheme } from './theme'
 
 // Layout Components
 import Sidebar from './components/layout/Sidebar.vue'
@@ -555,6 +556,8 @@ onMounted(async () => {
   await loadSettings()
   // PERF-005: Load language from backend after settings are loaded
   await loadLanguageFromBackend()
+  // PERF-006: Initialize theme
+  initTheme()
   await loadTodayRecords()
 
   // PERF-002: Check if onboarding is needed

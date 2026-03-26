@@ -1,13 +1,12 @@
 // Theme management module
-// Supports 'dark' and 'light' themes with localStorage persistence
-// and system theme detection
+// PERF-006: Light theme support
 
 export type Theme = 'dark' | 'light'
 
 const STORAGE_KEY = 'dailylogger-theme'
 
 /**
- * Get the stored theme preference, or detect from system if none stored
+ * Get the stored theme preference, or detect system theme if none stored
  */
 export function getTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY)
@@ -18,7 +17,7 @@ export function getTheme(): Theme {
 }
 
 /**
- * Set the theme and apply it to the document
+ * Set the theme and apply it to the document root
  */
 export function setTheme(theme: Theme): void {
   localStorage.setItem(STORAGE_KEY, theme)
@@ -27,19 +26,23 @@ export function setTheme(theme: Theme): void {
 }
 
 /**
- * Detect system preferred color scheme
+ * Detect system theme preference
  */
 export function detectSystemTheme(): Theme {
-  if (typeof window === 'undefined' || !window.matchMedia) {
-    return 'dark'
-  }
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
 /**
  * Initialize theme on app startup
- * Call this once at app mount
  */
 export function initTheme(): void {
   setTheme(getTheme())
+}
+
+/**
+ * Toggle between dark and light themes
+ */
+export function toggleTheme(): void {
+  const current = getTheme()
+  setTheme(current === 'dark' ? 'light' : 'dark')
 }

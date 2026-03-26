@@ -404,7 +404,7 @@
       </div>
     </div>
 
-    <!-- Theme Settings (PERF-006) -->
+    <!-- PERF-006: Theme Settings -->
     <div>
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.theme') }}</h3>
       <div class="space-y-3">
@@ -446,8 +446,9 @@ import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError, showSuccess } from '../../stores/toast'
 import { setLocale } from '../../i18n'
-import { getTheme, setTheme, type Theme } from '../../theme'
+import { getTheme, setTheme } from '../../theme'
 import type { Locale } from '@/i18n'
+import type { Theme } from '@/theme'
 import { usePlatform } from '../../composables/usePlatform'
 import {
   isOllamaEndpoint,
@@ -472,6 +473,8 @@ interface Props {
     proxy_password?: string
     // PERF-001: Test model name
     test_model_name?: string
+    // PERF-005: Language setting
+    language?: string
   }
 }
 
@@ -547,7 +550,6 @@ const connectionTestResult = ref<ConnectionTestResult | null>(null)
 // PERF-001: Proxy config UI state
 const showProxyConfig = ref(false)
 const showProxyPassword = ref(false)
-
 // PERF-006: Theme state
 const currentTheme = ref<Theme>(getTheme())
 
@@ -747,7 +749,7 @@ function changeLanguage(lang: Locale) {
   })
 }
 
-// PERF-006: Theme switcher
+// PERF-006: Theme change handler
 function changeTheme(theme: Theme) {
   setTheme(theme)
   currentTheme.value = theme

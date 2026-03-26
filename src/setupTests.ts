@@ -35,6 +35,24 @@ if (typeof window !== 'undefined' && !window.performance) {
   } as unknown as Performance
 }
 
+// Mock window.matchMedia for theme detection in jsdom environment
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  Object.defineProperty(window, 'matchMedia', {
+    value: (query: string) => ({
+      matches: query === '(prefers-color-scheme: light)',
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => true
+    }),
+    writable: true,
+    configurable: true
+  })
+}
+
 // Create i18n instance for tests
 const i18n = createI18n({
   legacy: false,

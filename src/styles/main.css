@@ -22,6 +22,39 @@
   --color-surface-0: #0f172a;
   --color-surface-1: #1e293b;
   --color-surface-2: #334155;
+
+  /* Text colors - for semantic text mapping */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #94a3b8;
+}
+
+/* Light theme overrides - applied via .light class on root */
+.light {
+  --color-primary: #3b82f6;
+  --color-secondary: #64748b;
+  --color-dark: #f8fafc;
+  --color-darker: #ffffff;
+
+  /* Surface colors for light theme */
+  --color-surface-0: #ffffff;
+  --color-surface-1: #f8fafc;
+  --color-surface-2: #e2e8f0;
+
+  /* Text colors for light theme */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+
+  /* Action colors for light theme */
+  --color-action-primary: #3b82f6;
+  --color-action-secondary: #94a3b8;
+  --color-action-danger: #ef4444;
+  --color-action-neutral: #9ca3af;
+
+  /* Status colors - remain same */
+  --color-status-success: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
 }
 
 /* Modern font stack with Inter-like appearance */
@@ -62,6 +95,10 @@ body {
   border-radius: 4px;
 }
 
+.light ::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.5);
+}
+
 ::-webkit-scrollbar-thumb {
   background: rgba(100, 116, 139, 0.3);
   border-radius: 4px;
@@ -85,6 +122,17 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Light theme glass variants */
+.light .glass {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.light .glass-dark {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* Hover lift effect */
