@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-26 (PERF epic complete)
+# last_updated: 2026-03-26 (Sprint planning: Epic 11 added)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (PERF-006 story created, ready for dev)
+last_updated: 2026-03-26 (Sprint planning: Epic 11 added)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -155,3 +155,11 @@ development_status:
   PERF-006: done
   PERF-006-retrospective: done
   epic-10-retrospective: done  # Completed 2026-03-26
+
+  # Epic 11: 数据增强与稳定性 (DATA-ENHANCEMENT)
+  epic-11: backlog
+  data-007: backlog  # 多语言日报导出
+  data-008: backlog  # 数据统计面板
+  stab-001: backlog  # 错误边界与优雅降级
+  stab-002: backlog  # 自动备份与恢复
+  epic-11-retrospective: optional

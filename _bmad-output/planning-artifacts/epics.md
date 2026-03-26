@@ -1,511 +1,113 @@
-# Epics and Stories
-
-## DailyLogger 产品路线图
-
+---
+stepsCompleted: ["step-01-validate-prerequisites"]
+inputDocuments: ["/workspace/_bmad-output/planning-artifacts/PRD.md", "/workspace/_bmad-output/planning-artifacts/architecture.md"]
 ---
 
-### Epic 1: 核心功能完善 (MVP+)
-
-**目标**: 完善 MVP 核心功能，提升稳定性和用户体验
+# DailyLogger - Epic Breakdown
 
-**优先级**: P0
-**预计周期**: Sprint 1-2
+## Overview
 
-**MVP 功能实现状态**:
-| 功能 | PRD 章节 | 状态 | 说明 |
-|-----|---------|------|------|
-| 自动感知 | 6.1 | ✅ 已实现 | 基础截图+AI分析功能已完成 |
-| 闪念胶囊 | 6.2 | ✅ 已实现 | QuickNoteModal 已实现 |
-| AI 日报生成 | 6.3 | ✅ 已实现 | synthesis 模块已完成 |
-| 截图回顾 | 6.4 | ✅ 已实现 | ScreenshotGallery 基础功能已完成，CORE-002 为增强版 |
-| 系统托盘 | 6.5 | ✅ 已实现 | 基础托盘功能已完成，CORE-005 为菜单完善 |
-| 设置管理 | 6.6 | ✅ 已实现 | 基础设置界面已完成 |
+This document provides the complete epic and story breakdown for DailyLogger, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
 
-#### Stories
+## Requirements Inventory
 
-| ID | 故事 | 优先级 | 估算 |
-|----|------|--------|------|
-| CORE-001 | 设置界面优化 | High | 3pts |
-| CORE-002 | 截图画廊增强 | High | 5pts |
-| CORE-003 | 日报生成模板优化 | High | 3pts |
-| CORE-004 | 错误处理与用户提示 (含网络重连) | Medium | 3pts |
+### Functional Requirements
 
-**CORE-004 验收条件 (NFR 7.4 可用性 - 自动重连)**:
-- [ ] 网络断开时显示离线状态提示
-- [ ] AI 调用失败时保留截图并提示重试选项
-- [ ] 网络恢复后自动重试队列中的 AI 调用（指数退避，最大重试 3 次）
-- [ ] 错误消息清晰、可操作（非技术用户可理解）
-| CORE-005 | 系统托盘菜单完善 | Medium | 2pts |
-| CORE-006 | API Key 加密存储 | High | 3pts |
-| CORE-007 | 离线模式支持 | Medium | 5pts |
-| CORE-008 | 跨平台兼容性测试 (含性能基准) | Medium | 3pts |
+**From PRD Section 6 (Implemented Features):**
 
-**CORE-008 验收条件 (NFR 7.1 性能基准)**:
-- [ ] 应用启动时间 < 3 秒
-- [ ] 截图处理延迟 < 2 秒
-- [ ] AI 分析延迟 < 10 秒
-- [ ] 日报生成时间 < 30 秒 (100 条记录以内)
-- [ ] 内存占用 < 200MB (空闲状态)
-- [ ] Windows/macOS/Linux 三平台截图功能验证
+FR1: 自动感知 - 定时截取屏幕并按工作时段组织，通过批量上下文分析提供准确的工作记录
+FR2: 闪念胶囊 - 全局快捷键快速记录想法，不打断工作流
+FR3: AI 日报生成 - 汇总全天记录，生成结构化 Markdown 日报
+FR4: 截图回顾 - 网格展示当日截图缩略图，点击查看大图
+FR5: 系统托盘 - 最小化到托盘，后台静默运行
+FR6: 设置管理 - 配置应用参数（API、截图间隔、Obsidian路径等）
+FR7: 工作时段管理 - 将连续截图按工作时段自动分组，以时段为单位进行上下文感知的 AI 分析
 
----
+**From PRD Section 11 (Future Planning - 未实现):**
 
-### Epic 2: 智能捕获优化
+FR8: 智能截图质量评分 - 自动识别低质量截图并过滤，减少记录噪音 (P1)
+FR9: 工作时间线可视化 - 图形化展示一天工作流，让用户直观回顾 (P1)
+FR10: 今日工作摘要 Widget - 实时展示当天已记录内容，随时感知进度 (P1)
 
-**目标**: 优化自动截图的智能判断逻辑，减少无效捕获
+**已实现 (Epic 7 - EXP-001~EXP-005):**
+- EXP-001: 工作时间线视图 ✅
+- EXP-002: 截图质量过滤 ✅
+- EXP-003: 记录重分析 ✅
+- EXP-004: 全文搜索 ✅ (注意：PRD FR10 全文搜索与 EXP-004 重复)
+- EXP-005: 今日工作摘要 Widget ✅
 
-**优先级**: P1
-**预计周期**: Sprint 2-3
+### NonFunctional Requirements
 
-#### Stories
+**From PRD Section 7:**
 
-| ID | 故事 | 优先级 | 估算 |
-|----|------|--------|------|
-| SMART-001 | 应用窗口识别 | High | 5pts |
-| SMART-002 | 静默时段智能调整 | Medium | 3pts |
-| SMART-003 | 工作时间自动识别 | Medium | 3pts |
-| SMART-004 | 多显示器支持优化 | Low | 2pts |
+NFR1: 性能 - 应用启动时间 <3秒，截图处理延迟 <2秒，AI 分析延迟 <10秒，日报生成时间 <30秒(100条记录)，内存占用 <200MB
+NFR2: 安全 - API Key 本地加密存储 (AES-256)，不上传用户数据到除 AI API 外的任何服务，截图仅本地处理和存储
+NFR3: 兼容性 - Windows 10+ / macOS 11+ / Ubuntu 20.04+，截图支持 Graphics Capture API (Windows) / xcap (macOS/Linux)
+NFR4: 可用性 - 离线模式正常，AI 调用失败时保留截图并提示重试，自动重连
 
----
+**From Architecture Section 10:**
 
-### Epic 3: AI 能力提升
+NFR5: 截图去重优化 - 指纹对比 + 阈值，减少 70% AI 调用
+NFR6: 数据库索引 - timestamp DESC 查询 <10ms
+NFR7: 前端轮询优化 - 30秒间隔降低 IPC 调用频率
 
-**目标**: 增强 AI 分析和总结能力，提供更精准的工作洞察
+**已实现:**
+- NFR1 性能基准测试 ✅ (CORE-008)
+- NFR2 安全 ✅ (CORE-006 API Key 加密)
+- NFR4 可用性 ✅ (CORE-004 错误处理)
+- NFR5 截图去重 ✅ (v3.0.0)
+- NFR6 数据库索引 ✅ (PERF-004)
+- NFR7 前端轮询优化 ✅ (PERF-003 虚拟滚动)
 
-**优先级**: P1
-**预计周期**: Sprint 3-4
+### Additional Requirements
 
-#### Stories
+**From Architecture:**
 
-| ID | 故事 | 优先级 | 估算 |
-|----|------|--------|------|
-| AI-001 | 多模型支持配置 | High | 3pts |
-| AI-002 | 自定义分析 Prompt | High | 2pts |
-| AI-003 | 自定义日报模板 | Medium | 3pts |
-| AI-004 | 工作分类标签生成 | Medium | 5pts |
-| AI-005A | Ollama API 集成 | Low | 5pts |
-| AI-005B | 本地模型配置界面 | Low | 3pts |
-| AI-006 | 自定义 API Headers (支持 OpenRouter/Azure/Claude 等) | High | 3pts |
+AR1: Tauri v2 框架 - 必须使用 Tauri v2 的插件系统
+AR2: Rust 后端 - 所有核心逻辑在 Rust 端实现
+AR3: SQLite 数据库 - 单文件数据库，便于备份和迁移
+AR4: Vue 3 前端 - 使用 Composition API 和 `<script setup>`
+AR5: TailwindCSS - 唯一样式方案，无独立 CSS 文件
+AR6: 跨平台截图 - Windows: Windows Graphics Capture API, macOS/Linux: xcap
+AR7: 日志系统 - 日志文件保存在用户目录项目命名的文件夹下
+AR8: 构建相关操作 - 必须放在 GitHub Actions 上执行（本地缺少多环境构建环境）
 
----
+**From PRD Section 10:**
 
-### Epic 4: 数据管理与检索
+AR9: AI API 成本控制 - 支持本地模型，可配置调用频率
+AR10: 截图隐私 - 支持白名单模式
 
-**目标**: 提供历史记录管理和全文检索能力
+### UX Design Requirements
 
-**优先级**: P2
-**预计周期**: Sprint 4-5
+（无 UX Design 文档 - planning-artifacts 中不存在 UX 相关文件）
 
-#### Stories
+### FR Coverage Map
 
-| ID | 故事 | 优先级 | 估算 |
-|----|------|--------|------|
-| DATA-001 | 历史记录浏览 | High | 3pts |
-| DATA-002 | 全文搜索功能 | High | 5pts |
-| DATA-003 | 标签系统 | Medium | 5pts |
-| DATA-004 | 数据导出 (JSON/MD) | Low | 3pts |
-| DATA-005 | 数据备份与恢复 | Low | 3pts |
-| DATA-006 | 多 Obsidian Vault 支持 | Low | 3pts |
+| FR | 描述 | Epic | Story | 状态 |
+|----|------|------|-------|------|
+| FR1 | 自动感知 | Epic 1 | CORE-001~CORE-008 | ✅ 已实现 |
+| FR2 | 闪念胶囊 | Epic 1 | CORE-001~CORE-008 | ✅ 已实现 |
+| FR3 | AI 日报生成 | Epic 1, Epic 5 | CORE-003, REPORT-001~004 | ✅ 已实现 |
+| FR4 | 截图回顾 | Epic 1, Epic 4 | CORE-002, DATA-001 | ✅ 已实现 |
+| FR5 | 系统托盘 | Epic 1 | CORE-005 | ✅ 已实现 |
+| FR6 | 设置管理 | Epic 1 | CORE-001 | ✅ 已实现 |
+| FR7 | 工作时段管理 | Epic 8 | SESSION-001~005 | ✅ 已实现 |
+| FR8 | 智能截图质量评分 | Epic 7 | EXP-002 | ✅ 已实现 (v3.2.0) |
+| FR9 | 工作时间线可视化 | Epic 7 | EXP-001 | ✅ 已实现 (v3.2.0) |
+| FR10 | 今日工作摘要 Widget | Epic 7 | EXP-005 | ✅ 已实现 (v3.2.0) |
 
----
+## Epic List
 
-### Epic 5: 周报月报功能
+### Epic 11: 数据增强与稳定性 (Data Enhancement & Stability)
 
-**目标**: 扩展时间维度，支持更长周期的工作总结
+**Goal:** 增强数据管理能力、提升系统稳定性、为未来扩展打好基础
 
-**优先级**: P2
-**预计周期**: Sprint 5-6
+**Priority:** P1
 
-#### Stories
+**Stories:**
 
-| ID | 故事 | 优先级 | 估算 |
-|----|------|--------|------|
-| REPORT-001 | 周报生成 | High | 5pts |
-| REPORT-002 | 月报生成 | Medium | 5pts |
-| REPORT-003 | 自定义报告周期 | Low | 3pts |
-| REPORT-004 | 报告对比分析 | Low | 5pts |
+- [ ] DATA-007: 多语言日报导出
+- [ ] DATA-008: 数据统计面板
+- [ ] STAB-001: 错误边界与优雅降级
+- [ ] STAB-002: 自动备份与恢复
 
----
-
-### Epic 6: 集成与扩展
-
-**目标**: 与其他工具集成，扩展应用场景
-
-**优先级**: P3
-**预计周期**: Sprint 6+
-
-**注意**: 此 Epic 功能为未来规划，不在当前 Sprint 范围内
-
-#### Stories
-
-| ID | 故事 | 优先级 | 估算 | 状态 |
-|----|------|--------|------|------|
-| INT-001 | Notion 导出支持 | Medium | 5pts | ✅ 已完成 |
-| INT-002 | Logseq 导出支持 | Low | 3pts | ✅ 已完成 |
-| ~~INT-003A~~ | ~~GitHub API 集成~~ | ~~Low~~ | ~~5pts~~ | 🗑️ 已移除 (v3.0.0) |
-| ~~INT-003B~~ | ~~工时统计计算与展示~~ | ~~Low~~ | ~~3pts~~ | 🗑️ 已移除 (v3.0.0) |
-| INT-004 | Slack/钉钉通知 | Low | 5pts | ✅ 已完成 |
-
----
-
-### Epic 7: 核心体验深化 (Core Experience)
-
-**目标**: 最大化用户记录日常工作的体验、效率和准确性
-
-**优先级**: P1
-**预计周期**: 下一个 Sprint
-
-> **产品聚焦说明**: 本 Epic 是产品使命回归——所有 Story 必须直接回答：
-> "这个功能是否让用户更好地记录/回顾/理解自己的工作？"
-
-#### Stories
-
-| ID | 故事 | 优先级 | 估算 | 核心价值 |
-|----|------|--------|------|---------|
-| EXP-001 | 工作时间线视图 | High | 5pts | 让用户直观看到一天工作全貌 |
-| EXP-002 | 截图质量过滤（低信息量自动跳过） | High | 3pts | 减少噪音，提升记录精准度 |
-| EXP-003 | 记录重分析（手动触发 AI 重新分析单条记录） | High | 2pts | 让用户修正低质量分析结果 |
-| EXP-004 | 全文搜索 | Medium | 5pts | 快速找回历史记录 |
-| EXP-005 | 今日工作摘要 Widget（实时更新） | Medium | 3pts | 随时感知当天已记录了什么 |
-
----
-
-### Epic 8: 工作时段感知分析 (Session-Aware Analysis)
-
-**目标**: 将截图分析从"逐张即时分析"重构为"工作时段批量上下文分析"，同时支持用户编辑和手动触发
-
-**优先级**: P0
-**预计周期**: 下一个 Sprint (v3.0.0)
-
-> **设计原则**: 工作是连续的。分析必须有上下文才有意义。用户对自己的工作最了解，AI 只是辅助。
-
-#### Stories
-
-| ID | 故事 | 优先级 | 估算 | 说明 |
-|----|------|--------|------|------|
-| SESSION-001 | 捕获与分析解耦 + 时段管理 | P0 | 5pts | 重构 capture_and_store() 移除即时分析；新增 sessions 表和 session_manager 模块；时段检测（30min 间隔可配置） |
-| SESSION-002 | 时段批量上下文分析 | P0 | 5pts | 实现 analyze_session()：收集时段截图 + 上一时段上下文 → 批量发送 AI → 返回每张截图分析 + 时段摘要 |
-| SESSION-003 | 分析结果用户编辑 | P0 | 3pts | 截图级编辑 user_notes + 时段级编辑 user_summary + 前端 UI + 优先展示用户内容 |
-| SESSION-004 | 手动触发分析 | P1 | 2pts | 用户选择时段手动触发分析，复用 SESSION-002 分析管线 |
-| SESSION-005 | 日报生成适配 | P1 | 3pts | synthesis 改为基于时段分析结果，优先使用 user_summary，按时段组织内容 |
-| CLEAN-001 | 移除 GitHub 集成 | P0 | 2pts | 删除 github.rs、GitHubStatsPanel.vue 及所有引用 |
-
-**Story 依赖关系**:
-```
-SESSION-001 (基础) ─→ SESSION-002 (分析) ─→ SESSION-005 (日报)
-                  ─→ SESSION-003 (编辑)
-                  ─→ SESSION-004 (手动触发)
-CLEAN-001 (独立，无依赖)
-```
-
----
-
-### Epic 10: 体验极致化 (Experience Perfection)
-
-**目标**: 修复 Issue #76 AI 配置问题，新增新用户引导、性能优化、国际化/多主题支持
-
-**优先级**: P1
-**Epic 类型**: MINOR
-**来源**: Issue #76 + plan.md 未来规划
-
-**Stories**:
-
-| ID | 故事 | 优先级 | 估算 | 来源 |
-|----|------|--------|------|------|
-| PERF-001 | AI 配置完善（代理支持） | P0 | 3pts | Issue #76 |
-| PERF-002 | 新用户引导 | P1 | 3pts | plan.md 未来规划 |
-| PERF-003 | 性能优化 - 截图加载 | P1 | 3pts | plan.md 未来规划 |
-| PERF-004 | 性能优化 - 数据库查询 | P1 | 2pts | plan.md 未来规划 |
-| PERF-005 | 多语言支持 (i18n) | P2 | 3pts | plan.md 未来规划 |
-| PERF-006 | 浅色主题支持 | P2 | 3pts | plan.md 未来规划 |
-
-#### Story 10.1: AI 配置完善（代理支持）
-
-**来源**: Issue #76 - AI的base url 以及test model的配置不全，怀疑代理的问题，最好把代理一起页也放在配置里面，让用户自己决定是否用代理
-
-**验收条件**:
-
-**Given** 用户首次配置 AI API
-**When** 填写 API Base URL 和 API Key
-**Then** 显示完整的配置选项，包括代理设置
-
-**Given** 用户启用代理配置
-**When** 填写代理地址和端口
-**Then** 所有 AI API 请求通过指定代理发送
-
-**Given** 用户配置完成后
-**When** 点击"测试连接"按钮
-**Then** 验证 API 连接并显示成功/失败结果，包含详细错误信息
-
-**Given** 用户填写了 Test Model
-**When** 测试连接时
-**Then** 使用配置的 Test Model 进行验证
-
-#### Story 10.2: 新用户引导
-
-**来源**: plan.md 未来规划 - 新用户引导 / 首屏体验优化
-
-**验收条件**:
-
-**Given** 新用户首次启动应用
-**When** 没有任何配置
-**Then** 自动弹出引导流程
-
-**Given** 引导流程中
-**When** 用户完成 API 配置
-**Then** 提供"测试连接"按钮，验证配置有效性
-
-**Given** 引导流程中
-**When** 用户选择 Obsidian Vault 路径
-**Then** 验证路径有效性并显示确认
-
-**Given** 引导流程中
-**When** 用户跳过某些步骤
-**Then** 之后可以在设置中补充配置
-
-#### Story 10.3: 性能优化 - 截图加载
-
-**来源**: plan.md 未来规划 - 性能优化（大量截图时的流畅度）
-
-**验收条件**:
-
-**Given** 用户有 100+ 张截图
-**When** 打开截图画廊
-**Then** 首次加载时间 < 2 秒，使用虚拟滚动仅渲染可见区域
-
-**Given** 用户滚动截图画廊
-**When** 快速滚动
-**Then** 保持 60fps 流畅滚动，无卡顿
-
-**Given** 用户查看截图详情
-**When** 打开截图 Modal
-**Then** 缩略图到原图的加载是渐进的，先显示模糊版本再清晰化
-
-#### Story 10.4: 性能优化 - 数据库查询
-
-**来源**: plan.md 未来规划 - 性能优化
-
-**验收条件**:
-
-**Given** 数据库有 1000+ 条记录
-**When** 执行全文搜索
-**Then** 搜索结果在 1 秒内返回
-
-**Given** 用户按日期筛选记录
-**When** 选择日期范围
-**Then** 查询使用索引，响应时间 < 500ms
-
-**Given** 用户浏览历史记录
-**When** 分页加载下一页
-**Then** 使用游标分页，避免 OFFSET 性能问题
-
-#### Story 10.5: 多语言支持 (i18n)
-
-**来源**: plan.md 未来规划 - 多语言支持
-
-**验收条件**:
-
-**Given** 用户在设置中选择语言
-**When** 切换到 English
-**Then** 所有界面文字显示英文
-
-**Given** 用户在设置中选择语言
-**When** 切换到 中文
-**Then** 所有界面文字显示中文
-
-**Given** 用户首次启动
-**When** 自动检测系统语言
-**Then** 默认使用检测到的语言（如果支持）
-
-**Given** 应用已生成日报
-**When** 用户切换语言
-**Then** 已生成的日报内容不受影响（仅界面变化）
-
-#### Story 10.6: 浅色主题支持
-
-**来源**: plan.md 未来规划 - 多语言支持
-
-**验收条件**:
-
-**Given** 用户在设置中选择主题
-**When** 切换到 Light Theme
-**Then** 所有组件使用浅色配色方案
-
-**Given** 用户在设置中选择主题
-**When** 切换到 Dark Theme
-**Then** 所有组件使用深色配色方案
-
-**Given** 用户选择"跟随系统"
-**When** 系统主题变化
-**Then** 应用自动切换对应主题
-
-**Given** 主题切换时
-**When** 用户正在使用应用
-**Then** 主题平滑过渡，无闪烁
-
----
-
-## Sprint 计划
-
-### Sprint 6（下一个 Sprint）
-
-**目标**: 体验极致化 — 修复 AI 配置问题，优化性能，完善用户体验
-
-**Stories**:
-- [ ] PERF-001: AI 配置完善（代理支持） - **P0，Issue #76 修复**
-- [ ] PERF-002: 新用户引导
-- [ ] PERF-003: 性能优化 - 截图加载
-- [ ] PERF-004: 性能优化 - 数据库查询
-- [ ] PERF-005: 多语言支持
-- [ ] PERF-006: 浅色主题支持
-
-**变更说明**: Epic 10 为新规划，基于 Issue #76 和 plan.md 未来规划
-
----
-
-## 风险与缓解
-
-| 风险 | 影响 Epic | 缓解措施 |
-|-----|----------|---------|
-| 代理配置复杂性 | Epic 10 | 提供清晰的 UI，验证后端代理设置 |
-| 性能优化可能引入回归 | Epic 10 | 每个优化单独测试，覆盖主流场景 |
-| i18n 翻译工作量 | Epic 10 | 优先支持核心界面，中文默认 |
-
----
-
-## P3 功能 (暂缓，不规划 Story)
-
-以下功能为 P3 优先级，在核心体验成熟前不创建对应 Story：
-
-| 功能 | PRD 参考 | 暂缓原因 |
-|-----|---------|---------|
-| 更多 IM 集成（企业微信/飞书等） | Section 11 | 属于集成扩展类，不直接提升记录体验 |
-| 更多导出目标（超出 Notion/Logseq） | Section 11 | 同上 |
-
-> **2026-03-22 战略调整 v1**：集成类功能扩展暂缓，聚焦核心体验深化（Epic 7）。
-> **2026-03-22 战略调整 v2**：移除 GitHub 集成（INT-003A/B）；核心分析管线重设计为工作时段感知分析（Epic 8）。
-> **2026-03-26 战略调整 v3**：Epic 10 体验极致化 — 修复 AI 配置问题，优化性能，完善用户体验。
-
----
-
-**文档创建**: 2026-03-13
-**最后更新**: 2026-03-26
-**版本**: 3.0
-
-**目标**: 完善核心功能，提升用户体验，补充非功能需求
-
-**Stories**:
-- [ ] CORE-001: 设置界面优化
-- [ ] CORE-002: 截图画廊增强
-- [ ] CORE-003: 日报生成模板优化
-- [ ] CORE-005: 系统托盘菜单完善
-- [ ] CORE-006: API Key 加密存储 (NFR 7.2 安全)
-
-**NFR 覆盖说明**:
-- CORE-006 覆盖 API Key 加密存储 (NFR 7.2 安全)
-- CORE-004 (Sprint 2) 将覆盖网络重连逻辑 (NFR 7.4 可用性)
-- CORE-008 (Sprint 3) 将覆盖性能基准测试 (NFR 7.1 性能)
-
----
-
-### Sprint 2
-
-**目标**: 智能捕获优化 + 自定义 Prompt + NFR
-
-**Stories**:
-- [ ] CORE-004: 错误处理与用户提示
-- [ ] CORE-007: 离线模式支持 (NFR 可用性)
-- [ ] SMART-001: 应用窗口识别
-- [ ] SMART-002: 静默时段智能调整
-- [ ] AI-002: 自定义分析 Prompt
-
----
-
-### Sprint 3
-
-**目标**: AI 能力提升 + 数据管理 + 兼容性测试
-
-**Stories**:
-- [ ] AI-001: 多模型支持配置
-- [ ] AI-003: 自定义日报模板
-- [ ] DATA-001: 历史记录浏览
-- [ ] DATA-002: 全文搜索功能
-- [ ] CORE-008: 跨平台兼容性测试 (NFR 兼容性)
-
----
-
-### Sprint 4 ✅ 已完成
-
-**目标**: 核心体验深化——回归产品使命
-
-**Stories**:
-- [x] EXP-001: 工作时间线视图
-- [x] EXP-002: 截图质量过滤
-- [x] EXP-003: 记录重分析
-- [x] EXP-004: 全文搜索
-- [x] EXP-005: 今日工作摘要 Widget
-
----
-
-### Sprint 5（下一 Sprint）
-
-**目标**: 工作时段感知分析 — 核心分析管线重设计 (v3.0.0)
-
-**Stories**:
-- [ ] CLEAN-001: 移除 GitHub 集成
-- [ ] SESSION-001: 捕获与分析解耦 + 时段管理
-- [ ] SESSION-002: 时段批量上下文分析
-- [ ] SESSION-003: 分析结果用户编辑
-- [ ] SESSION-004: 手动触发分析
-- [ ] SESSION-005: 日报生成适配
-
-> **Sprint 准入原则**: 所有 Story 须通过 PRD 2.1 功能准入三问验证
-> **变更依据**: Sprint Change Proposal v2 (2026-03-22)
-
----
-
-## 依赖关系图
-
-```
-Epic 1 (核心完善)
-    └─→ Epic 2 (智能捕获)
-        └─→ Epic 3 (AI 能力)
-            └─→ Epic 4 (数据管理)
-                └─→ Epic 5 (周报月报)
-                    └─→ Epic 6 (集成扩展, GitHub 已移除)
-                    └─→ Epic 7 (核心体验深化)
-                        └─→ Epic 8 (工作时段感知分析) ← 当前重心
-```
-
----
-
-## 风险与缓解
-
-| 风险 | 影响 Epic | 缓解措施 |
-|-----|----------|---------|
-| Vision API 成本高 | Epic 2, 3 | 支持本地模型，优化调用频率 |
-| 跨平台兼容性 | Epic 2 | 充分测试各平台截图功能 |
-| 大数据量性能 | Epic 4 | 分页加载，索引优化 |
-| 集成复杂度 | Epic 6 | 优先支持成熟 API |
-| 分析管线重构风险 | Epic 8 | 分阶段实施，每个 Story 独立可测试；向后兼容现有数据 |
-
----
-
-## P3 功能 (暂缓，不规划 Story)
-
-以下功能为 P3 优先级，在核心体验成熟前不创建对应 Story：
-
-| 功能 | PRD 参考 | 暂缓原因 |
-|-----|---------|---------|
-| 更多 IM 集成（企业微信/飞书等） | Section 11 | 属于集成扩展类，不直接提升记录体验 |
-| 更多导出目标（超出 Notion/Logseq） | Section 11 | 同上 |
-
-> **2026-03-22 战略调整 v1**：集成类功能扩展暂缓，聚焦核心体验深化（Epic 7）。
-> **2026-03-22 战略调整 v2**：移除 GitHub 集成（INT-003A/B）；核心分析管线重设计为工作时段感知分析（Epic 8）。
-> 详见：`_bmad-output/planning-artifacts/sprint-change-proposal-2026-03-22-v2.md`
-
----
-
-**文档创建**: 2026-03-13
-**最后更新**: 2026-03-22
-**版本**: 2.0
