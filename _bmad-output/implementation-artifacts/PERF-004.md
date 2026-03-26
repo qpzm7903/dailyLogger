@@ -224,6 +224,12 @@ Claude Opus 4.6 (bmad-dev-story workflow)
 ### Debug Log References
 
 ### Completion Notes List
+- Task 1 (FTS5): FTS5 已实现并正常工作，triggers 在 schema.rs 中已定义
+- Task 2 (Date Index): 添加了 idx_timestamp、idx_timestamp_source_type、idx_session_timestamp、idx_timestamp_covering 四个索引
+- Task 3 (Cursor Pagination): 实现了 get_history_records_cursor_sync 函数和 Tauri command，支持基于 last_id 的游标分页
+- Task 4 (Session Queries): 已有的 idx_sessions_date 和 idx_session_id 索引已足够
+- Task 5 (Statistics): get_today_stats_sync 已使用高效的单次查询聚合
+- Task 6 (Regression): 454 tests passed, clippy passed, formatting applied
 
 **实现内容：**
 
@@ -234,8 +240,9 @@ Claude Opus 4.6 (bmad-dev-story workflow)
    - `idx_timestamp_covering` - 覆盖索引减少回表查询
 
 2. **游标分页实现** (`records.rs`):
-   - 新增 `get_history_records_with_cursor_sync` 函数支持 keyset pagination
+   - 新增 `get_history_records_cursor_sync` 函数支持 keyset pagination
    - 保留原有 `get_history_records_sync` 函数（向后兼容 offset 分页）
+   - 新增 Tauri command `get_history_records_cursor` 支持前端调用
    - 使用 `last_id` 参数实现高效游标分页，避免 OFFSET 性能问题
 
 3. **测试验证**:

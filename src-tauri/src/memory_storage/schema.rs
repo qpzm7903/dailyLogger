@@ -597,6 +597,19 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create idx_session_id index: {}", e))?;
 
+    // PERF-004: Composite indexes for query optimization (test DB)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_timestamp_source_type ON records(timestamp DESC, source_type)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_timestamp_source_type index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_session_timestamp ON records(session_id, timestamp DESC)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_session_timestamp index: {}", e))?;
+
     // Create settings table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS settings (

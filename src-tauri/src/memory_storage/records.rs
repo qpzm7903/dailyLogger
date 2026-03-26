@@ -759,6 +759,135 @@ pub fn get_history_records_with_cursor_sync(
     Ok(records)
 }
 
+/// PERF-004: Cursor-based pagination for history records
+/// Uses keyset pagination instead of OFFSET for better performance with large datasets
+///
+/// - start_date/end_date: YYYY-MM-DD format (local timezone)
+/// - source_type: None for all, Some("auto") or Some("manual") for filtering
+/// - last_id: Cursor - ID of the last record from previous page (None for first page)
+/// - page_size: number of records per page (default 50)
+pub fn get_history_records_cursor_sync(
+    start_date: String,
+    end_date: String,
+    source_type: Option<String>,
+    last_id: Option<i64>,
+    page_size: i64,
+) -> Result<Vec<Record>, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
+    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
+
+    // Parse end_date (YYYY-MM-DD) to local end of day 23:59:59
+    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
+        .and_hms_opt(23, 59, 59)
+        .unwrap();
+
+    // Convert to UTC RFC3339
+    let start_utc = start_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    let end_utc = end_naive
+        .and_local_timezone(chrono::Local)
+        .unwrap()
+        .with_timezone(&chrono::Utc)
+        .to_rfc3339();
+
+    // Helper to map row to Record
+    fn map_row(row: &rusqlite::Row) -> rusqlite::Result<Record> {
+        Ok(Record {
+            id: row.get(0)?,
+            timestamp: row.get(1)?,
+            source_type: row.get(2)?,
+            content: row.get(3)?,
+            screenshot_path: row.get(4)?,
+            monitor_info: row.get(5)?,
+            tags: row.get(6)?,
+            user_notes: row.get(7)?,
+            session_id: row.get(8)?,
+            analysis_status: row.get(9)?,
+        })
+    }
+
+    // Build query with cursor-based pagination and execute
+    match (source_type, last_id) {
+        (Some(st), Some(lid)) if st == "auto" || st == "manual" => {
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3 AND id < ?4
+                     ORDER BY id DESC LIMIT ?5",
+                )
+                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            let records = stmt
+                .query_map(params![start_utc, end_utc, st, lid, page_size], map_row)
+                .map_err(|e| format!("Failed to query records: {}", e))?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("Failed to collect records: {}", e))?;
+            Ok(records)
+        }
+        (Some(st), None) if st == "auto" || st == "manual" => {
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
+                     ORDER BY id DESC LIMIT ?4",
+                )
+                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            let records = stmt
+                .query_map(params![start_utc, end_utc, st, page_size], map_row)
+                .map_err(|e| format!("Failed to query records: {}", e))?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("Failed to collect records: {}", e))?;
+            Ok(records)
+        }
+        (None, Some(lid)) => {
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2 AND id < ?3
+                     ORDER BY id DESC LIMIT ?4",
+                )
+                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            let records = stmt
+                .query_map(params![start_utc, end_utc, lid, page_size], map_row)
+                .map_err(|e| format!("Failed to query records: {}", e))?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("Failed to collect records: {}", e))?;
+            Ok(records)
+        }
+        (None, None) => {
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2
+                     ORDER BY id DESC LIMIT ?3",
+                )
+                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            let records = stmt
+                .query_map(params![start_utc, end_utc, page_size], map_row)
+                .map_err(|e| format!("Failed to query records: {}", e))?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("Failed to collect records: {}", e))?;
+            Ok(records)
+        }
+        (Some(st), _) => Err(format!(
+            "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
+            st
+        )),
+    }
+}
+
 /// Full-text search on records content
 /// - query: search keyword(s)
 /// - order_by: "rank" (relevance) or "time" (timestamp DESC)
@@ -927,6 +1056,19 @@ pub async fn get_history_records(
     let page = page.unwrap_or(0);
     let page_size = page_size.unwrap_or(50);
     get_history_records_sync(start_date, end_date, source_type, page, page_size)
+}
+
+/// PERF-004: Get history records with cursor-based pagination
+#[command]
+pub async fn get_history_records_cursor(
+    start_date: String,
+    end_date: String,
+    source_type: Option<String>,
+    last_id: Option<i64>,
+    page_size: Option<i64>,
+) -> Result<Vec<Record>, String> {
+    let page_size = page_size.unwrap_or(50);
+    get_history_records_cursor_sync(start_date, end_date, source_type, last_id, page_size)
 }
 
 /// Full-text search on records content
