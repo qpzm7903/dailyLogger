@@ -1,6 +1,6 @@
 # Story 9.3: 侧边栏导航升级 (Sidebar Navigation Upgrade)
 
-Status: in-progress
+Status: done
 
 ## Story
 
