@@ -23,9 +23,9 @@ jobs:
           - platform: 'ubuntu-24.04'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -36,12 +36,14 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-on-failure: true
 
-      - name: Install Linux dependencies
+      - name: Cache Linux apt packages
         if: matrix.platform == 'ubuntu-24.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev libpipewire-0.3-dev libgbm-dev libegl-dev libgbm-dev libegl-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev libpipewire-0.3-dev libgbm-dev libegl-dev
+          version: 1.0
 
       - run: npm ci
 
@@ -62,14 +64,14 @@ jobs:
 
       - name: Upload macOS artifact
         if: matrix.platform == 'macos-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: app-macos
           path: src-tauri/target/release/bundle/**/*
 
       - name: Upload Windows artifact
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: app-windows
           path: |
@@ -78,7 +80,7 @@ jobs:
 
       - name: Upload Linux artifact
         if: matrix.platform == 'ubuntu-24.04'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: app-linux
           path: src-tauri/target/release/daily-logger
@@ -94,7 +96,7 @@ jobs:
       release_id: ${{ steps.create.outputs.release_id }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Extract version changes
         id: changelog
@@ -199,9 +201,9 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -214,6 +216,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-on-failure: true
 
       - run: npm ci
 
@@ -236,9 +239,9 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -249,6 +252,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-on-failure: true
 
       - run: npm ci
 
@@ -277,9 +281,9 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -290,11 +294,13 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-on-failure: true
 
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev libpipewire-0.3-dev libgbm-dev libegl-dev
+      - name: Cache Linux apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev libpipewire-0.3-dev libgbm-dev libegl-dev
+          version: 1.0
 
       - run: npm ci
 
@@ -318,8 +324,6 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
-
       - name: Publish release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
