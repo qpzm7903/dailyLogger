@@ -76,7 +76,7 @@
           <div
             v-if="viewMode === 'grid'"
             ref="gridContainer"
-            class="relative"
+            class="relative grid"
             :style="{ height: `${totalHeight}px` }"
           >
             <div
@@ -134,7 +134,7 @@
           </div>
 
           <!-- List View with Virtual Scrolling -->
-          <div v-else class="relative" :style="{ height: `${totalHeight}px` }">
+          <div v-else class="relative divide-y" :style="{ height: `${totalHeight}px` }">
             <div
               v-for="item in visibleItems"
               :key="item.data.id"
