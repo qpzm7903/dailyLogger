@@ -24,6 +24,7 @@
     "stopped": "Stopped",
     "screenshot": "Screenshot",
     "screenshotting": "Capturing…",
+    "screenshotAnalysisComplete": "Screenshot analysis complete",
     "analyze": "Analyze",
     "start": "Start",
     "stop": "Stop"
@@ -332,6 +333,11 @@
     "periodAEndBeforeStart": "Period A end date cannot be before start date",
     "periodBEndBeforeStart": "Period B end date cannot be before start date",
     "generateSuccess": "Comparison report generated successfully"
+  },
+  "report": {
+    "dailySuccess": "Daily report generated",
+    "weeklySuccess": "Weekly report generated",
+    "monthlySuccess": "Monthly report generated"
   },
   "customReport": {
     "title": "Custom Report",
@@ -773,6 +779,8 @@
     "processing": "Processing...",
     "start": "Start Analysis",
     "successMessage": "Successfully reanalyzed {count} records",
+    "partialSuccess": "Reanalysis complete: {success}/{total} succeeded, {failed} failed",
+    "fullSuccess": "Reanalysis complete: {count} records updated",
     "allFailed": "All records failed to analyze",
     "errorMessage": "Reanalysis failed, please check API configuration"
   },

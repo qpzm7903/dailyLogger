@@ -296,7 +296,7 @@ const triggerCapture = async () => {
   try {
     await invoke('trigger_capture')
     await loadTodayRecords()
-    showSuccess('截图分析完成')
+    showSuccess(t('autoCapture.screenshotAnalysisComplete'))
   } catch (err) {
     console.error('Failed to trigger capture:', err)
     showError(String(err), triggerCapture)
@@ -361,7 +361,7 @@ const generateSummary = async () => {
   try {
     const result = await invoke<string>('generate_daily_summary')
     summaryPath.value = result
-    showSuccess('日报生成成功')
+    showSuccess(t('report.dailySuccess'))
   } catch (err) {
     console.error('Failed to generate summary:', err)
     showError(String(err), generateSummary)
@@ -376,7 +376,7 @@ const generateWeeklyReport = async () => {
   try {
     const result = await invoke<string>('generate_weekly_report')
     weeklyReportPath.value = result
-    showSuccess('周报生成成功')
+    showSuccess(t('report.weeklySuccess'))
   } catch (err) {
     console.error('Failed to generate weekly report:', err)
     showError(String(err), generateWeeklyReport)
@@ -391,7 +391,7 @@ const generateMonthlyReport = async () => {
   try {
     const result = await invoke<string>('generate_monthly_report')
     monthlyReportPath.value = result
-    showSuccess('月报生成成功')
+    showSuccess(t('report.monthlySuccess'))
   } catch (err) {
     console.error('Failed to generate monthly report:', err)
     showError(String(err), generateMonthlyReport)
@@ -407,9 +407,9 @@ const reanalyzeTodayRecords = async () => {
   try {
     const result = await invoke<{ total: number; success: number; failed: number; errors: string[] }>('reanalyze_today_records')
     if (result.failed > 0) {
-      showError(`重新分析完成: ${result.success}/${result.total} 成功，${result.failed} 失败`)
+      showError(t('reanalyze.partialSuccess', { success: result.success, total: result.total, failed: result.failed }))
     } else {
-      showSuccess(`重新分析完成: ${result.success} 条记录已更新`)
+      showSuccess(t('reanalyze.fullSuccess', { count: result.success }))
     }
     // Refresh records after reanalysis
     await loadTodayRecords()
