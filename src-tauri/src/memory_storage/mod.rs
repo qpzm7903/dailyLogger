@@ -101,6 +101,8 @@ pub struct Settings {
     pub proxy_password: Option<String>,
     // PERF-001: 测试模型名称
     pub test_model_name: Option<String>,
+    // PERF-002: 新用户引导完成标志
+    pub onboarding_completed: Option<bool>,
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)

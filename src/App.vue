@@ -118,6 +118,8 @@
       <Transition name="scale" mode="out-in">
         <ReanalyzeByDateModal v-if="isOpen('reanalyzeByDate')" @close="close('reanalyzeByDate')" @reanalyzed="handleReanalyzedByDate" />
       </Transition>
+      <!-- PERF-002: Onboarding Modal -->
+      <OnboardingModal v-if="showOnboarding" @close="showOnboarding = false" @completed="showOnboarding = false" />
       <Transition name="slide-up" mode="out-in">
         <SessionListModal
           v-if="isOpen('sessionList')"
@@ -157,6 +159,7 @@ import Dashboard from './components/layout/Dashboard.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import BackupModal from './components/BackupModal.vue'
 import QuickNoteModal from './components/QuickNoteModal.vue'
+import OnboardingModal from './components/OnboardingModal.vue'
 import ScreenshotModal from './components/ScreenshotModal.vue'
 import ScreenshotGallery from './components/ScreenshotGallery.vue'
 import DailySummaryViewer from './components/DailySummaryViewer.vue'
@@ -219,6 +222,9 @@ const selectedSession = ref<Session | null>(null)
 
 // UX-010: useModal for centralized modal management
 const { isOpen, open, close } = useModal()
+
+// PERF-002: Onboarding state
+const showOnboarding = ref(false)
 
 // Computed
 const screenshotCount = computed<number>(() => {
@@ -545,6 +551,14 @@ onMounted(async () => {
 
   await loadSettings()
   await loadTodayRecords()
+
+  // PERF-002: Check if onboarding is needed
+  try {
+    const settings = await invoke<Settings>('get_settings')
+    if (!settings.api_base_url || !settings.onboarding_completed) {
+      showOnboarding.value = true
+    }
+  } catch { /* ignore */ }
 })
 
 onUnmounted(async () => {

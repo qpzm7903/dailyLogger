@@ -25,6 +25,8 @@ export interface Settings {
   custom_prompt?: string
   default_obsidian_vault?: string
   obsidian_vaults?: ObsidianVault[]
+  // PERF-002: Onboarding completed flag
+  onboarding_completed?: boolean
 }
 
 export interface ObsidianVault {

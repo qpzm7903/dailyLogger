@@ -302,6 +302,12 @@ pub fn init_database() -> Result<(), String> {
     // PERF-001: 测试模型名称
     let _ = conn.execute("ALTER TABLE settings ADD COLUMN test_model_name TEXT", []);
 
+    // PERF-002: 新用户引导完成标志
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN onboarding_completed INTEGER DEFAULT 0",
+        [],
+    );
+
     // SESSION-001: sessions 表 - 工作时段管理
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sessions (
@@ -622,7 +628,8 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             proxy_port INTEGER DEFAULT 8080,
             proxy_username TEXT,
             proxy_password TEXT,
-            test_model_name TEXT
+            test_model_name TEXT,
+            onboarding_completed INTEGER DEFAULT 0
         )",
         [],
     )

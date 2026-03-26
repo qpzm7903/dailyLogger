@@ -883,6 +883,7 @@ mod tests {
             proxy_username: None,
             proxy_password: None,
             test_model_name: None,
+            onboarding_completed: None,
         }
     }
 
@@ -2116,6 +2117,8 @@ mod benchmarks {
             proxy_password: None,
             // PERF-001: Test model name
             test_model_name: None,
+            // PERF-002: Onboarding completed flag
+            onboarding_completed: None,
         }
     }
 
