@@ -154,11 +154,7 @@ pub fn create_http_client_with_proxy(
                         {
                             if !username.is_empty() {
                                 proxy_obj = proxy_obj.basic_auth(username, password);
-                                tracing::info!(
-                                    "Using authenticated proxy: {}:{}",
-                                    host,
-                                    port
-                                );
+                                tracing::info!("Using authenticated proxy: {}:{}", host, port);
                             }
                         } else {
                             tracing::info!("Using proxy: {}:{}", host, port);

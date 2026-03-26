@@ -292,27 +292,15 @@ pub fn init_database() -> Result<(), String> {
         "ALTER TABLE settings ADD COLUMN proxy_enabled INTEGER DEFAULT 0",
         [],
     );
-    let _ = conn.execute(
-        "ALTER TABLE settings ADD COLUMN proxy_host TEXT",
-        [],
-    );
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN proxy_host TEXT", []);
     let _ = conn.execute(
         "ALTER TABLE settings ADD COLUMN proxy_port INTEGER DEFAULT 8080",
         [],
     );
-    let _ = conn.execute(
-        "ALTER TABLE settings ADD COLUMN proxy_username TEXT",
-        [],
-    );
-    let _ = conn.execute(
-        "ALTER TABLE settings ADD COLUMN proxy_password TEXT",
-        [],
-    );
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN proxy_username TEXT", []);
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN proxy_password TEXT", []);
     // PERF-001: 测试模型名称
-    let _ = conn.execute(
-        "ALTER TABLE settings ADD COLUMN test_model_name TEXT",
-        [],
-    );
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN test_model_name TEXT", []);
 
     // SESSION-001: sessions 表 - 工作时段管理
     conn.execute(

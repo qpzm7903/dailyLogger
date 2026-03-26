@@ -390,6 +390,7 @@ pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult,
 /// This function detects if the endpoint is Ollama and adjusts the request accordingly:
 /// - For Ollama: No API key required, uses empty string if not provided
 /// - For OpenAI: API key is required
+#[allow(clippy::too_many_arguments)]
 #[command]
 pub async fn test_api_connection_with_ollama(
     api_base_url: String,

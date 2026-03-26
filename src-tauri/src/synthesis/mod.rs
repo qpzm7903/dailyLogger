@@ -82,7 +82,8 @@ async fn call_llm_api(
     let endpoint = format!("{}/chat/completions", config.api_base_url);
 
     // Create HTTP client with proxy configuration
-    let client = crate::create_http_client_with_proxy(&endpoint, 120, Some(config.proxy_config.clone()))?;
+    let client =
+        crate::create_http_client_with_proxy(&endpoint, 120, Some(config.proxy_config.clone()))?;
 
     let request_body = serde_json::json!({
         "model": config.model_name,
