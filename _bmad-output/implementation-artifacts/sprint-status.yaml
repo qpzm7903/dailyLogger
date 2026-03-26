@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (SESSION-004 code review complete, marked done)
+last_updated: 2026-03-26 (SESSION-005 story created, UX-2 duplicate fixed)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -124,7 +124,7 @@ development_status:
   SESSION-003: done
   SESSION-003-retrospective: done
   SESSION-004: done
-  SESSION-005: backlog
+  SESSION-005: ready-for-dev
   epic-8-retrospective: done
 
   # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 新规划
@@ -132,7 +132,6 @@ development_status:
   UX-1-design-tokens: done
   UX-1-retrospective: done
   UX-2-button-normalization: ready-for-dev
-  UX-2-button-normalization: backlog
   UX-3-sidebar-upgrade: backlog
   UX-4-dashboard-reorganization: backlog
   UX-5-interaction-polish: backlog
