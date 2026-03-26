@@ -1,6 +1,6 @@
 # Story 9.4: 仪表板信息架构重组 (Dashboard Reorganization)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -55,36 +55,36 @@ UX-4 在此基础上重组仪表板信息架构，优化数据呈现和空间利
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Header 实时状态栏 (AC: #1)
-  - [ ] 1.1 分析现有 Header.vue 结构
-  - [ ] 1.2 添加自动捕获状态指示器（useAutoCapture 或后端状态）
-  - [ ] 1.3 添加今日记录数统计（从数据库实时查询）
-  - [ ] 1.4 添加状态过渡动画
-  - [ ] 1.5 使用语义化颜色（--color-status-success/running/paused）
+- [x] Task 1: Header 实时状态栏 (AC: #1)
+  - [x] 1.1 分析现有 Header.vue 结构
+  - [x] 1.2 添加自动捕获状态指示器（useAutoCapture 或后端状态）
+  - [x] 1.3 添加今日记录数统计（从数据库实时查询）
+  - [x] 1.4 添加状态过渡动画
+  - [x] 1.5 使用语义化颜色（--color-status-success/running/paused）
 
-- [ ] Task 2: 记录列表优化 (AC: #2)
-  - [ ] 2.1 分析 Dashboard.vue 中记录列表的当前实现
-  - [ ] 2.2 移除 max-h-80 限制
-  - [ ] 2.3 实现虚拟滚动或分页（每页 20 条）
-  - [ ] 2.4 确保滚动行为流畅，消除双层滚动
-  - [ ] 2.5 响应式设计适配
+- [x] Task 2: 记录列表优化 (AC: #2)
+  - [x] 2.1 分析 Dashboard.vue 中记录列表的当前实现
+  - [x] 2.2 移除 max-h-80 限制
+  - [x] 2.3 实现虚拟滚动或分页（每页 20 条）
+  - [x] 2.4 确保滚动行为流畅，消除双层滚动
+  - [x] 2.5 响应式设计适配
 
-- [ ] Task 3: 输出文件卡片 Tab 式改造 (AC: #3)
-  - [ ] 3.1 分析当前 ReportCard/DailySummaryViewer 结构
-  - [ ] 3.2 设计 Tab 切换组件（日报/周报/月报）
-  - [ ] 3.3 统一空状态展示
-  - [ ] 3.4 添加 Tab 切换动画
+- [x] Task 3: 输出文件卡片 Tab 式改造 (AC: #3)
+  - [x] 3.1 分析当前 ReportCard/DailySummaryViewer 结构
+  - [x] 3.2 设计 Tab 切换组件（日报/周报/月报）
+  - [x] 3.3 统一空状态展示
+  - [x] 3.4 添加 Tab 切换动画
 
-- [ ] Task 4: 卡片样式更新 (AC: #4)
-  - [ ] 4.1 优化自动捕获卡片布局
-  - [ ] 4.2 优化速记卡片布局
-  - [ ] 4.3 调整视觉权重（主操作更突出）
-  - [ ] 4.4 使用设计令牌保持一致性
+- [x] Task 4: 卡片样式更新 (AC: #4)
+  - [x] 4.1 优化自动捕获卡片布局
+  - [x] 4.2 优化速记卡片布局
+  - [x] 4.3 调整视觉权重（主操作更突出）
+  - [x] 4.4 使用设计令牌保持一致性
 
-- [ ] Task 5: 验证与测试 (AC: #5)
-  - [ ] 5.1 运行 `npm run test` 确保测试通过
-  - [ ] 5.2 运行 `npm run lint` 确保无警告
-  - [ ] 5.3 运行 `npm run typecheck` 确保无错误
+- [x] Task 5: 验证与测试 (AC: #5)
+  - [x] 5.1 运行 `npm run test` 确保测试通过
+  - [x] 5.2 运行 `npm run lint` 确保无警告
+  - [x] 5.3 运行 `npm run typecheck` 确保无错误
 
 ## Dev Notes
 
@@ -229,3 +229,20 @@ claude-opus-4-6
 
 ### Completion Notes List
 
+- **Task 1 (Header 实时状态栏)**: 添加了 `autoCaptureEnabled` 和 `todayRecordsCount` props 到 Header.vue，显示自动捕获状态（运行中/已暂停）和今日记录数。使用语义化颜色 `--color-status-success` 和过渡动画。
+- **Task 2 (记录列表优化)**: 移除了 `max-h-80` 限制，实现了分页功能（每页20条），添加了"加载更多"按钮。解决了双层滚动问题。
+- **Task 3 (输出文件 Tab 式改造)**: 将分散的日报/周报/月报卡片整合为 Tab 切换组件，统一了空状态展示为"尚未生成"。自定义报告和对比报告移至下方单独区域。
+- **Task 4 (卡片样式更新)**: 优化了自动捕获卡片和速记卡片的布局，将 padding 从 p-5 减小到 p-4，移除了描述文字以减少视觉噪音，按钮更紧凑。
+- **Task 5 (验证与测试)**: 所有前端测试通过（927个），类型检查通过，linting 通过。Rust 测试通过。
+
+## File List
+
+- `src/components/layout/Header.vue` - 添加实时状态栏（自动捕获状态 + 记录数）
+- `src/components/layout/Dashboard.vue` - 记录列表分页 + 输出文件 Tab 化 + 卡片样式优化
+- `src/locales/zh-CN.json` - 添加 header.running/paused/records, dashboard.loadMore, outputTabs.* 翻译
+- `src/locales/en.json` - 添加对应英译翻译
+- `src/__tests__/Dashboard.test.ts` - 更新测试以适配 Tab 布局
+
+## Change Log
+
+- 2026-03-26: 完成 UX-4-dashboard-reorganization 全部任务，标记为 review 状态

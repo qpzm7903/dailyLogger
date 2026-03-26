@@ -3,34 +3,33 @@
     <div class="max-w-4xl mx-auto space-y-6">
       <!-- Top Cards: Auto Capture & Quick Note -->
       <div :class="isDesktop ? 'grid grid-cols-2 gap-4' : ''">
-        <!-- Auto Capture Card -->
+        <!-- Auto Capture Card (UX-4: Task 4 - compact layout) -->
         <div
           v-if="isDesktop"
-          class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+          class="bg-dark/60 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
         >
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">🖥️</span>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xl">🖥️</span>
             <h2 class="font-medium text-white">{{ t('autoCapture.title') }}</h2>
           </div>
-          <p class="text-sm text-gray-400 mb-4">{{ t('autoCapture.description') }}</p>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span
-                :class="autoCaptureEnabled ? 'bg-green-400 animate-pulse' : 'bg-gray-500'"
-                class="w-2 h-2 rounded-full inline-block"
+                :class="autoCaptureEnabled ? 'bg-status-success animate-pulse' : 'bg-gray-500'"
+                class="w-2 h-2 rounded-full inline-block transition-colors duration-300"
               ></span>
               <span class="text-xs text-gray-400">
                 {{ autoCaptureEnabled ? t('autoCapture.running') : t('autoCapture.stopped') }}
               </span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
               <button
                 @click="$emit('takeScreenshot')"
                 :disabled="isCapturing"
                 class="btn btn-ghost btn-sm"
                 :title="t('autoCapture.screenshot')"
               >
-                {{ isCapturing ? t('autoCapture.screenshotting') : '📸 ' + t('autoCapture.screenshot') }}
+                {{ isCapturing ? t('autoCapture.screenshotting') : '📸' }}
               </button>
               <button
                 @click="$emit('triggerCapture')"
@@ -38,7 +37,7 @@
                 class="btn btn-ghost btn-sm"
                 :title="t('autoCapture.analyze')"
               >
-                🤖 {{ t('autoCapture.analyze') }}
+                🤖
               </button>
               <button
                 @click="$emit('toggleAutoCapture')"
@@ -50,15 +49,14 @@
           </div>
         </div>
 
-        <!-- Quick Note Card -->
+        <!-- Quick Note Card (UX-4: Task 4 - compact layout) -->
         <div
-          class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+          class="bg-dark/60 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
         >
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">⚡</span>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xl">⚡</span>
             <h2 class="font-medium text-white">{{ t('quickNote.title') }}</h2>
           </div>
-          <p class="text-sm text-gray-400 mb-4">{{ isDesktop ? t('quickNote.shortcut') : '' }}</p>
           <div class="flex items-center justify-between">
             <span class="text-xs text-gray-500">{{ t('quickNote.todayRecords', { count: quickNotesCount }) }}</span>
             <button
@@ -160,9 +158,9 @@
         <div v-if="filteredRecords.length === 0" class="text-center py-8 text-gray-500">
           {{ todayRecords.length === 0 ? '暂无记录' : '无匹配标签的记录' }}
         </div>
-        <div v-else class="space-y-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+        <div v-else class="space-y-3 pr-1 custom-scrollbar">
           <div
-            v-for="record in filteredRecords"
+            v-for="record in paginatedRecords"
             :key="record.id"
             @click="record.source_type === 'auto' && record.screenshot_path && openScreenshot(record)"
             :class="record.source_type === 'auto' && record.screenshot_path
@@ -210,9 +208,19 @@
             </div>
           </div>
         </div>
+
+        <!-- Load More Button (UX-4: Task 2 - pagination) -->
+        <div v-if="hasMore" class="mt-4 text-center">
+          <button
+            @click="loadMore"
+            class="btn btn-secondary btn-sm"
+          >
+            {{ t('dashboard.loadMore', { current: paginatedRecords.length, total: filteredRecords.length }) }}
+          </button>
+        </div>
       </div>
 
-      <!-- Output Files Card -->
+      <!-- Output Files Card (UX-4: Task 3 - Tab-based) -->
       <div
         class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
       >
@@ -229,58 +237,89 @@
           </button>
         </div>
 
-        <!-- Daily Report -->
-        <div v-if="summaryPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50 mb-3">
-          <p class="text-xs text-gray-500 mb-1">日报</p>
-          <p
-            @click="$emit('open', 'summaryViewer')"
-            class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
-          >{{ summaryPath }}</p>
-        </div>
-        <div v-else class="text-center py-4 text-gray-500 text-sm">
-          尚未生成日报
-        </div>
-
-        <!-- Weekly Report -->
-        <div v-if="weeklyReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
-          <p class="text-xs text-gray-500 mb-1">周报</p>
-          <p
-            @click="$emit('open', 'weeklyReportViewer')"
-            class="text-sm text-gray-300 cursor-pointer hover:text-green-400 hover:underline"
-          >{{ weeklyReportPath }}</p>
-        </div>
-        <div v-if="!weeklyReportPath && summaryPath" class="text-center py-2 text-gray-500 text-sm">
-          尚未生成周报
-        </div>
-
-        <!-- Monthly Report -->
-        <div v-if="monthlyReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
-          <p class="text-xs text-gray-500 mb-1">月报</p>
-          <p
-            @click="$emit('open', 'monthlyReportViewer')"
-            class="text-sm text-gray-300 cursor-pointer hover:text-purple-400 hover:underline"
-          >{{ monthlyReportPath }}</p>
-        </div>
-        <div v-if="!monthlyReportPath && summaryPath" class="text-center py-2 text-gray-500 text-sm">
-          尚未生成月报
+        <!-- Tab Buttons -->
+        <div class="flex gap-1 mb-4 p-1 bg-surface-0/50 rounded-xl">
+          <button
+            @click="activeOutputTab = 'daily'"
+            :class="activeOutputTab === 'daily' ? 'bg-surface-2 text-white' : 'text-gray-400 hover:text-white'"
+            class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200"
+          >
+            {{ t('outputTabs.daily') }}
+          </button>
+          <button
+            @click="activeOutputTab = 'weekly'"
+            :class="activeOutputTab === 'weekly' ? 'bg-surface-2 text-white' : 'text-gray-400 hover:text-white'"
+            class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200"
+          >
+            {{ t('outputTabs.weekly') }}
+          </button>
+          <button
+            @click="activeOutputTab = 'monthly'"
+            :class="activeOutputTab === 'monthly' ? 'bg-surface-2 text-white' : 'text-gray-400 hover:text-white'"
+            class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200"
+          >
+            {{ t('outputTabs.monthly') }}
+          </button>
         </div>
 
-        <!-- Custom Report -->
-        <div v-if="customReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
-          <p class="text-xs text-gray-500 mb-1">自定义报告</p>
-          <p
-            @click="$emit('open', 'customReportViewer')"
-            class="text-sm text-gray-300 cursor-pointer hover:text-orange-400 hover:underline"
-          >{{ customReportPath }}</p>
+        <!-- Tab Content -->
+        <div class="min-h-[80px]">
+          <!-- Daily Report Tab -->
+          <div v-if="activeOutputTab === 'daily'" class="space-y-2">
+            <div v-if="summaryPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+              <p
+                @click="$emit('open', 'summaryViewer')"
+                class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
+              >{{ summaryPath }}</p>
+            </div>
+            <div v-else class="text-center py-6 text-gray-500 text-sm">
+              {{ t('outputTabs.notGenerated') }}
+            </div>
+          </div>
+
+          <!-- Weekly Report Tab -->
+          <div v-if="activeOutputTab === 'weekly'" class="space-y-2">
+            <div v-if="weeklyReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+              <p
+                @click="$emit('open', 'weeklyReportViewer')"
+                class="text-sm text-gray-300 cursor-pointer hover:text-green-400 hover:underline"
+              >{{ weeklyReportPath }}</p>
+            </div>
+            <div v-else class="text-center py-6 text-gray-500 text-sm">
+              {{ t('outputTabs.notGenerated') }}
+            </div>
+          </div>
+
+          <!-- Monthly Report Tab -->
+          <div v-if="activeOutputTab === 'monthly'" class="space-y-2">
+            <div v-if="monthlyReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+              <p
+                @click="$emit('open', 'monthlyReportViewer')"
+                class="text-sm text-gray-300 cursor-pointer hover:text-purple-400 hover:underline"
+              >{{ monthlyReportPath }}</p>
+            </div>
+            <div v-else class="text-center py-6 text-gray-500 text-sm">
+              {{ t('outputTabs.notGenerated') }}
+            </div>
+          </div>
         </div>
 
-        <!-- Comparison Report -->
-        <div v-if="comparisonReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
-          <p class="text-xs text-gray-500 mb-1">对比分析报告</p>
-          <p
-            @click="$emit('open', 'comparisonReportViewer')"
-            class="text-sm text-gray-300 cursor-pointer hover:text-teal-400 hover:underline"
-          >{{ comparisonReportPath }}</p>
+        <!-- Additional Reports (Custom & Comparison) -->
+        <div v-if="customReportPath || comparisonReportPath" class="mt-4 pt-4 border-t border-gray-700/50 space-y-2">
+          <div v-if="customReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+            <p class="text-xs text-gray-500 mb-1">{{ t('outputTabs.custom') }}</p>
+            <p
+              @click="$emit('open', 'customReportViewer')"
+              class="text-sm text-gray-300 cursor-pointer hover:text-orange-400 hover:underline"
+            >{{ customReportPath }}</p>
+          </div>
+          <div v-if="comparisonReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+            <p class="text-xs text-gray-500 mb-1">{{ t('outputTabs.comparison') }}</p>
+            <p
+              @click="$emit('open', 'comparisonReportViewer')"
+              class="text-sm text-gray-300 cursor-pointer hover:text-teal-400 hover:underline"
+            >{{ comparisonReportPath }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -334,6 +373,14 @@ const TAG_VISIBLE_THRESHOLD = 6
 const tagFilterExpanded = ref(false)
 const timelineWidgetRef = ref<InstanceType<typeof TimelineWidget> | null>(null)
 const todaySummaryWidgetRef = ref<InstanceType<typeof TodaySummaryWidget> | null>(null)
+
+// Pagination state (UX-4: Task 2)
+const currentPage = ref(1)
+const PAGE_SIZE = 20
+
+// Output files tab state (UX-4: Task 3)
+type OutputTab = 'daily' | 'weekly' | 'monthly'
+const activeOutputTab = ref<OutputTab>('daily')
 
 // Refresh TimelineWidget and TodaySummaryWidget when todayRecords changes (AC 3.3: real-time update)
 watch(() => props.todayRecords, (newRecords, oldRecords) => {
@@ -389,6 +436,26 @@ const filteredRecords = computed<LogRecord[]>(() => {
     return tags.includes(selectedTagFilter.value)
   })
 })
+
+// Pagination computed (UX-4: Task 2 - remove max-h-80, add pagination)
+const totalPages = computed(() => Math.ceil(filteredRecords.value.length / PAGE_SIZE))
+const hasMore = computed(() => currentPage.value < totalPages.value)
+const paginatedRecords = computed(() => {
+  const start = 0
+  const end = currentPage.value * PAGE_SIZE
+  return filteredRecords.value.slice(start, end)
+})
+
+// Reset pagination when filter changes
+watch(selectedTagFilter, () => {
+  currentPage.value = 1
+})
+
+const loadMore = () => {
+  if (hasMore.value) {
+    currentPage.value++
+  }
+}
 
 // Methods
 const formatTime = (timestamp: string): string => {

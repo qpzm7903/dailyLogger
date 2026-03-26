@@ -16,6 +16,8 @@
         :isOnline="isOnline"
         :offlineQueueCount="offlineQueueCount"
         :currentTime="currentTime"
+        :autoCaptureEnabled="autoCaptureEnabled"
+        :todayRecordsCount="todayRecords.length"
         @showOfflineQueue="open('offlineQueue')"
       />
 

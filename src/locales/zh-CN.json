@@ -5,6 +5,9 @@
   "header": {
     "offlineMode": "离线模式",
     "pendingSync": "{count} 个待同步",
+    "running": "运行中",
+    "paused": "已暂停",
+    "records": "条记录",
     "log": "日志",
     "history": "历史",
     "search": "搜索",
@@ -761,5 +764,16 @@
     "manualNotes": "手动速记",
     "busiestHour": "最活跃时段",
     "records": "条"
+  },
+  "dashboard": {
+    "loadMore": "加载更多 ({current}/{total})"
+  },
+  "outputTabs": {
+    "daily": "日报",
+    "weekly": "周报",
+    "monthly": "月报",
+    "custom": "自定义报告",
+    "comparison": "对比分析",
+    "notGenerated": "尚未生成"
   }
 }

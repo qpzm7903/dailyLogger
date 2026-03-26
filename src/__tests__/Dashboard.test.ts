@@ -28,7 +28,14 @@ vi.mock('vue-i18n', () => {
             'quickNote.shortcut': 'Alt+Space',
             'quickNote.todayRecords': 'Today: {count}',
             'quickNote.record': 'Record',
-            'reportHistory.title': 'Report History'
+            'reportHistory.title': 'Report History',
+            'dashboard.loadMore': 'Load More ({current}/{total})',
+            'outputTabs.daily': 'Daily',
+            'outputTabs.weekly': 'Weekly',
+            'outputTabs.monthly': 'Monthly',
+            'outputTabs.custom': 'Custom Report',
+            'outputTabs.comparison': 'Comparison',
+            'outputTabs.notGenerated': 'Not generated yet'
           }
           let result = translations[key] || key
           if (params) {
@@ -469,9 +476,17 @@ describe('Dashboard.vue - Output Files Card', () => {
     })
     await nextTick()
 
+    // Click on weekly tab to show weekly report
+    const buttons = wrapper.findAll('button')
+    const weeklyButton = buttons.find(btn => btn.text() === 'Weekly')
+    if (weeklyButton) {
+      await weeklyButton.trigger('click')
+    }
+    await nextTick()
+
     const html = wrapper.html()
     expect(html).toContain('/path/to/weekly-report.md')
-    expect(html).toContain('周报')
+    expect(html).toContain('Weekly')
   })
 
   it('shows monthly report path when monthlyReportPath is provided', async () => {
@@ -480,9 +495,17 @@ describe('Dashboard.vue - Output Files Card', () => {
     })
     await nextTick()
 
+    // Click on monthly tab to show monthly report
+    const buttons = wrapper.findAll('button')
+    const monthlyButton = buttons.find(btn => btn.text() === 'Monthly')
+    if (monthlyButton) {
+      await monthlyButton.trigger('click')
+    }
+    await nextTick()
+
     const html = wrapper.html()
     expect(html).toContain('/path/to/monthly-report.md')
-    expect(html).toContain('月报')
+    expect(html).toContain('Monthly')
   })
 
   it('shows placeholder when no daily report generated', async () => {
@@ -492,6 +515,6 @@ describe('Dashboard.vue - Output Files Card', () => {
     await nextTick()
 
     const html = wrapper.html()
-    expect(html).toContain('尚未生成日报')
+    expect(html).toContain('Not generated yet')
   })
 })

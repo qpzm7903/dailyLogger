@@ -5,6 +5,9 @@
   "header": {
     "offlineMode": "Offline Mode",
     "pendingSync": "{count} pending sync",
+    "running": "Running",
+    "paused": "Paused",
+    "records": "records",
     "log": "Log",
     "history": "History",
     "search": "Search",
@@ -765,5 +768,16 @@
     "manualNotes": "Manual Notes",
     "busiestHour": "Busiest Hour",
     "records": "records"
+  },
+  "dashboard": {
+    "loadMore": "Load More ({current}/{total})"
+  },
+  "outputTabs": {
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "custom": "Custom Report",
+    "comparison": "Comparison",
+    "notGenerated": "Not generated yet"
   }
 }
