@@ -140,8 +140,8 @@ development_status:
   UX-5-interaction-polish: done
   epic-9-retrospective: done
 
-  # Epic 10: 体验极致化 (PERF) — Partial Retro (3/6 Stories Done)
-  epic-10: in_progress
+  # Epic 10: 体验极致化 (PERF) — Complete
+  epic-10: done
   PERF-001: done
   PERF-001-retrospective: done
   PERF-002: done
@@ -152,4 +152,4 @@ development_status:
   PERF-004-retrospective: done
   PERF-005: done
   PERF-006: done
-  epic-10-retrospective: pending  # Awaiting PERF-005/006 completion
+  epic-10-retrospective: done
