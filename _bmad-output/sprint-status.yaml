@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (PERF-005 code review passed, marked done)
+last_updated: 2026-03-26 (PERF-006 story created, ready for dev)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -151,5 +151,5 @@ development_status:
   PERF-004: done  # Code review passed (critical: command not registered - fixed)
   PERF-004-retrospective: done
   PERF-005: done
-  PERF-006: backlog
+  PERF-006: ready-for-dev
   epic-10-retrospective: pending  # Awaiting PERF-005/006 completion
