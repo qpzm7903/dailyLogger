@@ -346,6 +346,34 @@ pub fn init_database() -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create idx_session_id index: {}", e))?;
 
+    // PERF-004: Add missing timestamp index and composite indexes for query optimization
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_timestamp ON records(timestamp DESC)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_timestamp index: {}", e))?;
+
+    // Composite index: time range + source type filtering (covers date筛选查询)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_timestamp_source_type ON records(timestamp DESC, source_type)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_timestamp_source_type index: {}", e))?;
+
+    // Composite index: session + timestamp for session-scoped queries (覆盖时段内截图排序)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_session_timestamp ON records(session_id, timestamp DESC)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_session_timestamp index: {}", e))?;
+
+    // Covering index: reduces table lookups for common select columns
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_timestamp_covering ON records(timestamp DESC, id, content, screenshot_path)",
+        [],
+    )
+    .map_err(|e| format!("Failed to create idx_timestamp_covering index: {}", e))?;
+
     // DATA-002: FTS5 全文搜索虚拟表
     // 使用 unicode61 tokenizer（Windows 兼容性：移除 tokenchars 以避免解析错误）
     tracing::info!("init_database: Creating FTS5 table");

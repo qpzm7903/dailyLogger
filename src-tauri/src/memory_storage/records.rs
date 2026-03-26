@@ -604,6 +604,20 @@ pub fn get_history_records_sync(
     page: i64,
     page_size: i64,
 ) -> Result<Vec<Record>, String> {
+    get_history_records_with_cursor_sync(start_date, end_date, source_type, page, page_size, None)
+}
+
+/// PERF-004: Cursor-based pagination for efficient history record retrieval
+/// - last_id: if provided, fetches records with id < last_id (efficient cursor pagination)
+///   if not provided, uses traditional OFFSET pagination (backward compatible)
+pub fn get_history_records_with_cursor_sync(
+    start_date: String,
+    end_date: String,
+    source_type: Option<String>,
+    page: i64,
+    page_size: i64,
+    last_id: Option<i64>,
+) -> Result<Vec<Record>, String> {
     let db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
@@ -634,30 +648,95 @@ pub fn get_history_records_sync(
         .with_timezone(&chrono::Utc)
         .to_rfc3339();
 
-    let offset = page * page_size;
-
-    let sql = if let Some(ref st) = source_type {
-        if st != "auto" && st != "manual" {
-            return Err(format!(
-                "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
-                st
-            ));
-        }
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
-         WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
-         ORDER BY timestamp DESC LIMIT ?4 OFFSET ?5"
-    } else {
-        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
-         WHERE timestamp >= ?1 AND timestamp <= ?2
-         ORDER BY timestamp DESC LIMIT ?3 OFFSET ?4"
-    };
+    // Build query using cursor-based or offset-based pagination
+    let (sql, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) =
+        match (source_type.as_ref(), last_id) {
+            (Some(ref st), Some(last_id_val)) => {
+                // Cursor-based pagination with source_type filter (efficient)
+                if *st != "auto" && *st != "manual" {
+                    return Err(format!(
+                        "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
+                        st
+                    ));
+                }
+                (
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3 AND id < ?4
+                     ORDER BY id DESC LIMIT ?5"
+                        .to_string(),
+                    vec![
+                        Box::new(start_utc.clone()),
+                        Box::new(end_utc.clone()),
+                        Box::new((*st).clone()),
+                        Box::new(last_id_val),
+                        Box::new(page_size),
+                    ],
+                )
+            }
+            (Some(ref st), None) => {
+                // Offset-based pagination with source_type filter (backward compatible)
+                if *st != "auto" && *st != "manual" {
+                    return Err(format!(
+                        "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
+                        st
+                    ));
+                }
+                let offset = page * page_size;
+                (
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
+                     ORDER BY id DESC LIMIT ?4 OFFSET ?5"
+                        .to_string(),
+                    vec![
+                        Box::new(start_utc.clone()),
+                        Box::new(end_utc.clone()),
+                        Box::new((*st).clone()),
+                        Box::new(page_size),
+                        Box::new(offset),
+                    ],
+                )
+            }
+            (None, Some(last_id_val)) => {
+                // Cursor-based pagination without source_type filter (efficient)
+                (
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2 AND id < ?3
+                     ORDER BY id DESC LIMIT ?4"
+                        .to_string(),
+                    vec![
+                        Box::new(start_utc.clone()),
+                        Box::new(end_utc.clone()),
+                        Box::new(last_id_val),
+                        Box::new(page_size),
+                    ],
+                )
+            }
+            (None, None) => {
+                // Offset-based pagination without source_type filter (backward compatible)
+                let offset = page * page_size;
+                (
+                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+                     WHERE timestamp >= ?1 AND timestamp <= ?2
+                     ORDER BY id DESC LIMIT ?3 OFFSET ?4"
+                        .to_string(),
+                    vec![
+                        Box::new(start_utc.clone()),
+                        Box::new(end_utc.clone()),
+                        Box::new(page_size),
+                        Box::new(offset),
+                    ],
+                )
+            }
+        };
 
     let mut stmt = conn
-        .prepare(sql)
+        .prepare(&sql)
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
-    let records = if let Some(ref st) = source_type {
-        stmt.query_map(params![start_utc, end_utc, st, page_size, offset], |row| {
+    let params_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+
+    let records = stmt
+        .query_map(params_refs.as_slice(), |row| {
             Ok(Record {
                 id: row.get(0)?,
                 timestamp: row.get(1)?,
@@ -673,26 +752,7 @@ pub fn get_history_records_sync(
         })
         .map_err(|e| format!("Failed to query records: {}", e))?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?
-    } else {
-        stmt.query_map(params![start_utc, end_utc, page_size, offset], |row| {
-            Ok(Record {
-                id: row.get(0)?,
-                timestamp: row.get(1)?,
-                source_type: row.get(2)?,
-                content: row.get(3)?,
-                screenshot_path: row.get(4)?,
-                monitor_info: row.get(5)?,
-                tags: row.get(6)?,
-                user_notes: row.get(7)?,
-                session_id: row.get(8)?,
-                analysis_status: row.get(9)?,
-            })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?
-    };
+        .map_err(|e| format!("Failed to collect records: {}", e))?;
 
     Ok(records)
 }

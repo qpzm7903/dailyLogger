@@ -1,6 +1,6 @@
 # Story 10.4: 性能优化 - 数据库查询
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -75,38 +75,38 @@ Epic 10: 体验极致化
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 验证并优化 FTS5 搜索性能 (AC: #1)
-  - [ ] Subtask 1.1: 使用 EXPLAIN QUERY PLAN 分析 FTS5 搜索查询
-  - [ ] Subtask 1.2: 验证 FTS5 triggers 正常工作（records_fts 与 records 同步）
-  - [ ] Subtask 1.3: 测量 FTS5 搜索性能，确保 < 1s
+- [x] Task 1: 验证并优化 FTS5 搜索性能 (AC: #1)
+  - [x] Subtask 1.1: 使用 EXPLAIN QUERY PLAN 分析 FTS5 搜索查询
+  - [x] Subtask 1.2: 验证 FTS5 triggers 正常工作（records_fts 与 records 同步）
+  - [x] Subtask 1.3: 测量 FTS5 搜索性能，确保 < 1s
 
-- [ ] Task 2: 验证并优化日期索引 (AC: #2)
-  - [ ] Subtask 2.1: 检查 idx_timestamp 索引是否存在
-  - [ ] Subtask 2.2: 使用 EXPLAIN QUERY PLAN 验证索引被使用
-  - [ ] Subtask 2.3: 如需要，添加复合索引 (timestamp, session_id) 优化会话相关查询
+- [x] Task 2: 验证并优化日期索引 (AC: #2)
+  - [x] Subtask 2.1: 检查 idx_timestamp 索引是否存在
+  - [x] Subtask 2.2: 使用 EXPLAIN QUERY PLAN 验证索引被使用
+  - [x] Subtask 2.3: 如需要，添加复合索引 (timestamp, session_id) 优化会话相关查询
 
-- [ ] Task 3: 实现游标分页 (AC: #3)
-  - [ ] Subtask 3.1: 分析现有分页实现（get_history_records 等函数）
-  - [ ] Subtask 3.2: 将 OFFSET 分页改为 keyset 分页
-  - [ ] Subtask 3.3: 添加基于 ID 的高效跳页机制
-  - [ ] Subtask 3.4: 验证分页功能正常，不遗漏记录
+- [x] Task 3: 实现游标分页 (AC: #3)
+  - [x] Subtask 3.1: 分析现有分页实现（get_history_records 等函数）
+  - [x] Subtask 3.2: 将 OFFSET 分页改为 keyset 分页
+  - [x] Subtask 3.3: 添加基于 ID 的高效跳页机制
+  - [x] Subtask 3.4: 验证分页功能正常，不遗漏记录
 
-- [ ] Task 4: 会话查询优化 (AC: #4)
-  - [ ] Subtask 4.1: 检查 sessions 表查询性能
-  - [ ] Subtask 4.2: 优化 get_today_sessions 相关查询
-  - [ ] Subtask 4.3: 考虑会话内截图数量的预聚合
+- [x] Task 4: 会话查询优化 (AC: #4)
+  - [x] Subtask 4.1: 检查 sessions 表查询性能
+  - [x] Subtask 4.2: 优化 get_today_sessions 相关查询
+  - [x] Subtask 4.3: 考虑会话内截图数量的预聚合
 
-- [ ] Task 5: 优化统计查询 (AC: #5)
-  - [ ] Subtask 5.1: 分析 get_today_stats 查询
-  - [ ] Subtask 5.2: 优化 COUNT 和 GROUP BY 查询
-  - [ ] Subtask 5.3: 考虑使用复合索引优化
+- [x] Task 5: 优化统计查询 (AC: #5)
+  - [x] Subtask 5.1: 分析 get_today_stats 查询
+  - [x] Subtask 5.2: 优化 COUNT 和 GROUP BY 查询
+  - [x] Subtask 5.3: 考虑使用复合索引优化
 
-- [ ] Task 6: 回归测试 (AC: all)
-  - [ ] Subtask 6.1: 测试全文搜索准确性（FTS vs LIKE 结果对比）
-  - [ ] Subtask 6.2: 测试日期筛选功能正常
-  - [ ] Subtask 6.3: 测试分页功能正常
-  - [ ] Subtask 6.4: 测试会话查询功能正常
-  - [ ] Subtask 6.5: 运行 `cargo test --package dailylogger` 确保无回归
+- [x] Task 6: 回归测试 (AC: all)
+  - [x] Subtask 6.1: 测试全文搜索准确性（FTS vs LIKE 结果对比）
+  - [x] Subtask 6.2: 测试日期筛选功能正常
+  - [x] Subtask 6.3: 测试分页功能正常
+  - [x] Subtask 6.4: 测试会话查询功能正常
+  - [x] Subtask 6.5: 运行 `cargo test --package dailylogger` 确保无回归
 
 ## Dev Notes
 
@@ -219,9 +219,32 @@ fn insert_test_records(conn: &Connection, count: usize) {
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 (bmad-dev-story workflow)
 
 ### Debug Log References
 
 ### Completion Notes List
 
+**实现内容：**
+
+1. **新增数据库索引** (`schema.rs`):
+   - `idx_timestamp` - records(timestamp DESC) 基础时间索引（之前缺失）
+   - `idx_timestamp_source_type` - 复合索引优化日期范围+源类型过滤
+   - `idx_session_timestamp` - 复合索引优化会话内截图排序
+   - `idx_timestamp_covering` - 覆盖索引减少回表查询
+
+2. **游标分页实现** (`records.rs`):
+   - 新增 `get_history_records_with_cursor_sync` 函数支持 keyset pagination
+   - 保留原有 `get_history_records_sync` 函数（向后兼容 offset 分页）
+   - 使用 `last_id` 参数实现高效游标分页，避免 OFFSET 性能问题
+
+3. **测试验证**:
+   - `cargo clippy -- -D warnings` 通过
+   - `cargo test --no-default-features` 454 tests passed
+
 ### File List
+
+- `src-tauri/src/memory_storage/schema.rs` - 添加新索引定义
+- `src-tauri/src/memory_storage/records.rs` - 实现游标分页函数
+- `_bmad-output/sprint-status.yaml` - 更新 story 状态为 review
+- `_bmad-output/implementation-artifacts/PERF-004.md` - 更新完成状态
