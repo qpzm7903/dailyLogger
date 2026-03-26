@@ -723,8 +723,8 @@ mod tests_statistics {
 
     #[test]
     fn test_get_statistics_empty_database() {
-        use rusqlite::Connection;
         use crate::memory_storage::schema::init_test_database;
+        use rusqlite::Connection;
 
         // Create in-memory database for testing
         let conn = Connection::open_in_memory().unwrap();
@@ -741,21 +741,33 @@ mod tests_statistics {
 
         // Call count functions directly (these are sync)
         let screenshot_count = count_screenshots_in_range(
-            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             &start,
             &end,
         )
         .unwrap();
 
         let session_count = count_sessions_in_range(
-            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             &start,
             &end,
         )
         .unwrap();
 
         let record_count = count_records_in_range(
-            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             &start,
             &end,
         )
@@ -769,9 +781,9 @@ mod tests_statistics {
 
     #[test]
     fn test_get_statistics_with_data() {
-        use rusqlite::Connection;
-        use rusqlite::params;
         use crate::memory_storage::schema::init_test_database;
+        use rusqlite::params;
+        use rusqlite::Connection;
 
         // Create in-memory database for testing
         let conn = Connection::open_in_memory().unwrap();
@@ -818,14 +830,22 @@ mod tests_statistics {
 
         // Call count functions
         let screenshot_count = count_screenshots_in_range(
-            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             &start,
             &end,
         )
         .unwrap();
 
         let record_count = count_records_in_range(
-            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             &start,
             &end,
         )
@@ -838,9 +858,9 @@ mod tests_statistics {
 
     #[test]
     fn test_get_statistics_with_sessions() {
-        use rusqlite::Connection;
-        use rusqlite::params;
         use crate::memory_storage::schema::init_test_database;
+        use rusqlite::params;
+        use rusqlite::Connection;
 
         // Create in-memory database for testing
         let conn = Connection::open_in_memory().unwrap();
@@ -878,7 +898,11 @@ mod tests_statistics {
 
         // Call count functions
         let session_count = count_sessions_in_range(
-            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             &start,
             &end,
         )
@@ -890,9 +914,9 @@ mod tests_statistics {
 
     #[test]
     fn test_get_statistics_analysis_success_rate() {
-        use rusqlite::Connection;
-        use rusqlite::params;
         use crate::memory_storage::schema::init_test_database;
+        use rusqlite::params;
+        use rusqlite::Connection;
 
         // Create in-memory database for testing
         let conn = Connection::open_in_memory().unwrap();
@@ -946,7 +970,11 @@ mod tests_statistics {
 
         // Call analysis success rate function
         let success_rate = get_analysis_success_rate(
-            crate::memory_storage::DB_CONNECTION.lock().unwrap().as_ref().unwrap(),
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             &start,
             &end,
         )
@@ -960,11 +988,7 @@ mod tests_statistics {
     fn test_get_statistics_invalid_range_type() {
         // Test that invalid range_type returns error
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let result = rt.block_on(get_statistics(
-            "invalid".to_string(),
-            None,
-            None,
-        ));
+        let result = rt.block_on(get_statistics("invalid".to_string(), None, None));
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid range_type"));
     }
@@ -974,11 +998,7 @@ mod tests_statistics {
         let rt = tokio::runtime::Runtime::new().unwrap();
 
         // Custom range without dates should fail
-        let result = rt.block_on(get_statistics(
-            "custom".to_string(),
-            None,
-            None,
-        ));
+        let result = rt.block_on(get_statistics("custom".to_string(), None, None));
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("custom_start is required"));
 
