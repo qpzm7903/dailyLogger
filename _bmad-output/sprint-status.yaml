@@ -157,8 +157,8 @@ development_status:
   epic-10-retrospective: done  # Completed 2026-03-26
 
   # Epic 11: 数据增强与稳定性 (DATA-ENHANCEMENT)
-  epic-11: backlog
-  data-007: backlog  # 多语言日报导出
+  epic-11: in-progress
+  data-007: ready-for-dev
   data-008: backlog  # 数据统计面板
   stab-001: backlog  # 错误边界与优雅降级
   stab-002: backlog  # 自动备份与恢复
