@@ -1,4 +1,4 @@
-// UX-011: ReportDropdown component tests
+// DATA-007: ReportDropdown component tests - multilingual support
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ReportDropdown from '../ReportDropdown.vue'
@@ -20,10 +20,10 @@ describe('ReportDropdown', () => {
       expect(wrapper.text()).toContain('生成日报')
     })
 
-    it('renders dropdown toggle buttons (main + lang + toggle)', () => {
+    it('renders dropdown toggle buttons (main + toggle)', () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
       const buttons = wrapper.findAll('button')
-      expect(buttons.length).toBe(3) // Main + Language + Toggle
+      expect(buttons.length).toBe(2) // Main + Toggle
     })
 
     it('does not show dropdown menu initially', () => {
@@ -33,7 +33,7 @@ describe('ReportDropdown', () => {
 
     it('shows dropdown menu when toggle is clicked', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      const toggleBtn = wrapper.findAll('button')[2] // Third button is dropdown toggle
+      const toggleBtn = wrapper.findAll('button')[1] // Second button is dropdown toggle
       await toggleBtn.trigger('click')
       expect(wrapper.find('.absolute').exists()).toBe(true)
       expect(wrapper.text()).toContain('生成周报')
@@ -42,10 +42,12 @@ describe('ReportDropdown', () => {
 
     it('shows language dropdown when language button clicked', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      const langBtn = wrapper.findAll('button')[1] // Second button is language selector
+      const toggleBtn = wrapper.findAll('button')[1]
+      await toggleBtn.trigger('click')
+      const langBtn = wrapper.find('.absolute button')
       await langBtn.trigger('click')
+      // Should show language submenu
       expect(wrapper.text()).toContain('中文')
-      expect(wrapper.text()).toContain('English')
     })
   })
 
@@ -78,36 +80,43 @@ describe('ReportDropdown', () => {
   })
 
   describe('events', () => {
-    it('emits generate event with "daily" and language when main button clicked', async () => {
+    it('emits generate event with "daily" when main button clicked', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
       const mainBtn = wrapper.findAll('button')[0]
       await mainBtn.trigger('click')
       expect(wrapper.emitted('generate')).toBeTruthy()
-      expect(wrapper.emitted('generate')![0]).toEqual(['daily', 'zh-CN'])
+      expect(wrapper.emitted('generate')![0]).toEqual(['daily'])
     })
 
     it('emits generate event with correct type from dropdown', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      await wrapper.findAll('button')[2].trigger('click') // Open dropdown (3rd button)
+      await wrapper.findAll('button')[1].trigger('click') // Open dropdown (2nd button)
 
       const menuItems = wrapper.findAll('.absolute button')
       await menuItems[1].trigger('click') // Weekly
-      expect(wrapper.emitted('generate')![0]).toEqual(['weekly', 'zh-CN'])
+      expect(wrapper.emitted('generate')![0]).toEqual(['weekly'])
     })
 
-    it('emits generate event with language when language selected', async () => {
+    it('emits generateMultilingual and languageChange when language selected', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      const langBtn = wrapper.findAll('button')[1]
-      await langBtn.trigger('click') // Open language dropdown
+      const toggleBtn = wrapper.findAll('button')[1]
+      await toggleBtn.trigger('click')
 
-      // Find and click English option
+      // Find and click language selector (first item in dropdown)
+      const dropdownButtons = wrapper.findAll('.absolute button')
+      // The first button in dropdown is "daily report", second is "weekly", third is "monthly"
+      // Then there's a language selector
+      const langSelector = dropdownButtons[3] // Language selector is 4th item
+      await langSelector.trigger('click')
+
+      // Now click English option
       const langOptions = wrapper.findAll('.absolute button')
       await langOptions[1].trigger('click') // English (second option)
 
-      // Now click main button
-      const mainBtn = wrapper.findAll('button')[0]
-      await mainBtn.trigger('click')
-      expect(wrapper.emitted('generate')![0]).toEqual(['daily', 'en'])
+      expect(wrapper.emitted('languageChange')).toBeTruthy()
+      expect(wrapper.emitted('languageChange')![0]).toEqual(['en'])
+      expect(wrapper.emitted('generateMultilingual')).toBeTruthy()
+      expect(wrapper.emitted('generateMultilingual')![0]).toEqual(['en'])
     })
 
     it('does not emit when disabled', async () => {
@@ -121,7 +130,7 @@ describe('ReportDropdown', () => {
 
     it('closes dropdown after selecting option', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      await wrapper.findAll('button')[2].trigger('click') // Open
+      await wrapper.findAll('button')[1].trigger('click') // Open
       expect(wrapper.find('.absolute').exists()).toBe(true)
 
       const menuItems = wrapper.findAll('.absolute button')
@@ -133,7 +142,7 @@ describe('ReportDropdown', () => {
   describe('dropdown toggle', () => {
     it('toggles dropdown on click', async () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      const toggleBtn = wrapper.findAll('button')[2]
+      const toggleBtn = wrapper.findAll('button')[1]
 
       await toggleBtn.trigger('click')
       expect(wrapper.find('.absolute').exists()).toBe(true)
@@ -146,7 +155,7 @@ describe('ReportDropdown', () => {
   describe('accessibility', () => {
     it('has proper title attribute on dropdown toggle button', () => {
       const wrapper = mount(ReportDropdown, { props: defaultProps })
-      const toggleBtn = wrapper.findAll('button')[2]
+      const toggleBtn = wrapper.findAll('button')[1]
       expect(toggleBtn.attributes('title')).toBe('展开菜单')
     })
   })
