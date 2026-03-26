@@ -1,6 +1,6 @@
 # Story 10.4: 性能优化 - 数据库查询
 
-Status: in-progress
+Status: review (fixes applied)
 
 ## Code Review Findings
 
@@ -12,12 +12,12 @@ Status: in-progress
 
 ### HIGH Severity Issues (Must Fix)
 
-1. **Command NOT registered in main.rs**
+1. **Command NOT registered in main.rs** — ✅ FIXED
    - **File:** `src-tauri/src/main.rs` (around line 393)
    - **Severity:** HIGH
    - **Description:** `get_history_records_cursor` is defined in `records.rs` with `#[command]` macro but is NOT registered in main.rs's `.register()` call. The frontend cannot call this new API.
    - **Evidence:** `main.rs:393` shows `get_history_records` is registered, but no `get_history_records_cursor` registration exists
-   - **Fix Required:** Add `daily_logger_lib::memory_storage::get_history_records_cursor` to the `.register()` call in main.rs
+   - **Fix Applied:** Added `daily_logger_lib::memory_storage::get_history_records_cursor` to the `.register()` call in main.rs (line 394)
 
 ---
 
@@ -37,7 +37,7 @@ Status: in-progress
 |---------------------|--------|----------|
 | FTS5 全文搜索性能 | ✅ IMPLEMENTED | FTS5 triggers in schema.rs working |
 | 日期筛选索引优化 | ✅ IMPLEMENTED | idx_timestamp added in schema.rs:351 |
-| 游标分页优化 | ⚠️ PARTIAL | Function implemented but not registered |
+| 游标分页优化 | ✅ IMPLEMENTED | Function implemented and now registered |
 | 会话查询优化 | ✅ IMPLEMENTED | idx_session_timestamp added |
 | 统计查询优化 | ✅ IMPLEMENTED | get_today_stats uses efficient aggregation |
 
@@ -47,7 +47,7 @@ Status: in-progress
 |------|--------|----------|
 | Task 1: FTS5 搜索性能 | ✅ DONE | FTS5 triggers verified in schema.rs |
 | Task 2: 日期索引优化 | ✅ DONE | idx_timestamp verified in schema.rs:351 |
-| Task 3: 游标分页 | ⚠️ PARTIAL | Implemented but not registered |
+| Task 3: 游标分页 | ✅ DONE | Function implemented and registered in main.rs |
 | Task 4: 会话查询优化 | ✅ DONE | idx_session_timestamp in schema.rs:365 |
 | Task 5: 统计查询优化 | ✅ DONE | get_today_stats uses efficient query |
 | Task 6: 回归测试 | ✅ DONE | 454 tests passed, clippy passed |
@@ -57,12 +57,12 @@ Status: in-progress
 ### Files Changed
 
 - `src-tauri/src/memory_storage/schema.rs` - 索引定义 (✅ correct)
-- `src-tauri/src/memory_storage/records.rs` - 游标分页实现 (⚠️ not registered)
-- `src-tauri/src/main.rs` - ⚠️ MISSING registration of new command
+- `src-tauri/src/memory_storage/records.rs` - 游标分页实现 (✅ registered)
+- `src-tauri/src/main.rs` - ✅ FIXED: command now registered at line 394
 
 ---
 
-**Conclusion:** Story implementation is complete but blocked by a critical registration issue. The new `get_history_records_cursor` command cannot be called by the frontend because it's not registered in main.rs. This must be fixed before the story can be marked as done.
+**Conclusion:** Story implementation is complete. All HIGH severity issues have been fixed. The `get_history_records_cursor` command is now properly registered in main.rs and available to the frontend.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

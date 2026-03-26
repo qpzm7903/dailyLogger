@@ -391,6 +391,7 @@ fn main() {
             daily_logger_lib::memory_storage::get_model_info,
             daily_logger_lib::memory_storage::delete_record,
             daily_logger_lib::memory_storage::get_history_records,
+            daily_logger_lib::memory_storage::get_history_records_cursor,
             daily_logger_lib::memory_storage::search_records,
             daily_logger_lib::memory_storage::get_default_tag_categories,
             daily_logger_lib::memory_storage::get_all_tags,
