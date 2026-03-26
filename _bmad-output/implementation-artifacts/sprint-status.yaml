@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-26 (Epic 9 complete; Epic 10 started with PERF-001)
+# last_updated: 2026-03-26 (PERF-001 & PERF-002 completed; Epic 10 ongoing)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -142,4 +142,7 @@ development_status:
 
   # Epic 10: 体验极致化 (PERF) — 进行中
   epic-10: in-progress
-  PERF-001: ready-for-dev
+  PERF-001: done
+  PERF-001-retrospective: done
+  PERF-002: done
+  PERF-002-retrospective: done
