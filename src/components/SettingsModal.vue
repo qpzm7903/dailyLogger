@@ -335,14 +335,28 @@ const settings = ref({
   notion_api_key: null as string | null,
   notion_database_id: null as string | null,
   slack_webhook_url: null as string | null,
-  dingtalk_webhook_url: null as string | null
+  dingtalk_webhook_url: null as string | null,
+  custom_headers: '[]',
+  proxy_enabled: false,
+  proxy_host: '',
+  proxy_port: 8080,
+  proxy_username: '',
+  proxy_password: '',
+  test_model_name: ''
 })
 
 // Derived state for sub-components
 const basicSettings = computed(() => ({
   api_base_url: settings.value.api_base_url,
   api_key: settings.value.api_key,
-  model_name: settings.value.model_name
+  model_name: settings.value.model_name,
+  custom_headers: settings.value.custom_headers,
+  proxy_enabled: settings.value.proxy_enabled,
+  proxy_host: settings.value.proxy_host,
+  proxy_port: settings.value.proxy_port,
+  proxy_username: settings.value.proxy_username,
+  proxy_password: settings.value.proxy_password,
+  test_model_name: settings.value.test_model_name
 }))
 
 const aiSettings = computed(() => ({
@@ -394,6 +408,13 @@ function updateBasicSettings(newSettings: typeof basicSettings.value) {
   settings.value.api_base_url = newSettings.api_base_url
   settings.value.api_key = newSettings.api_key
   settings.value.model_name = newSettings.model_name
+  settings.value.custom_headers = newSettings.custom_headers
+  settings.value.proxy_enabled = newSettings.proxy_enabled
+  settings.value.proxy_host = newSettings.proxy_host
+  settings.value.proxy_port = newSettings.proxy_port
+  settings.value.proxy_username = newSettings.proxy_username
+  settings.value.proxy_password = newSettings.proxy_password
+  settings.value.test_model_name = newSettings.test_model_name
 }
 
 function updateAISettings(newSettings: typeof aiSettings.value) {
