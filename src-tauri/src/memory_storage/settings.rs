@@ -26,7 +26,9 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 comparison_report_prompt, logseq_graphs,
                 notion_api_key, notion_database_id,
                 slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers,
-                quality_filter_enabled, quality_filter_threshold, session_gap_minutes
+                quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
+                proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,
+                test_model_name
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
