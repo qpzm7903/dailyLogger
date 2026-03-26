@@ -6,12 +6,15 @@
 import { test, expect } from '../fixtures/base-test';
 
 test.describe('设置流程', () => {
+  // Settings button is now in the Sidebar (UX-3 sidebar upgrade)
+  const getSettingsButton = (page: any) => page.locator('aside button').filter({ hasText: '设置' }).or(page.locator('aside button[title="设置"]'));
+
   test('打开设置弹窗', async ({ page }) => {
     await page.goto('/');
     await page.locator('header').waitFor({ state: 'visible', timeout: 15000 });
 
-    // 打开设置弹窗
-    await page.locator('button:has-text("⚙️")').click();
+    // 打开设置弹窗 (settings button is in sidebar)
+    await getSettingsButton(page).click();
     const modal = page.locator('.fixed.inset-0').first();
     await modal.waitFor({ state: 'visible', timeout: 5000 });
 
@@ -23,8 +26,8 @@ test.describe('设置流程', () => {
     await page.goto('/');
     await page.locator('header').waitFor({ state: 'visible', timeout: 15000 });
 
-    // 打开设置
-    await page.locator('button:has-text("⚙️")').click();
+    // 打开设置 (settings button is in sidebar)
+    await getSettingsButton(page).click();
     const modal = page.locator('.fixed.inset-0').first();
     await modal.waitFor({ state: 'visible', timeout: 5000 });
 
@@ -37,8 +40,8 @@ test.describe('设置流程', () => {
     await page.goto('/');
     await page.locator('header').waitFor({ state: 'visible', timeout: 15000 });
 
-    // 打开设置
-    await page.locator('button:has-text("⚙️")').click();
+    // 打开设置 (settings button is in sidebar)
+    await getSettingsButton(page).click();
     const modal = page.locator('.fixed.inset-0').first();
     await modal.waitFor({ state: 'visible', timeout: 5000 });
 
@@ -60,8 +63,8 @@ test.describe('设置流程', () => {
     await page.goto('/');
     await page.locator('header').waitFor({ state: 'visible', timeout: 15000 });
 
-    // 打开设置
-    await page.locator('button:has-text("⚙️")').click();
+    // 打开设置 (settings button is in sidebar)
+    await getSettingsButton(page).click();
     const modal = page.locator('.fixed.inset-0').first();
     await modal.waitFor({ state: 'visible', timeout: 5000 });
 
@@ -77,8 +80,8 @@ test.describe('设置流程', () => {
     await page.goto('/');
     await page.locator('header').waitFor({ state: 'visible', timeout: 15000 });
 
-    // 打开设置
-    await page.locator('button:has-text("⚙️")').click();
+    // 打开设置 (settings button is in sidebar)
+    await getSettingsButton(page).click();
     const modal = page.locator('.fixed.inset-0').first();
     await modal.waitFor({ state: 'visible', timeout: 5000 });
 
