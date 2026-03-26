@@ -41,6 +41,7 @@ export function createSettings(overrides: Partial<Settings> = {}): Settings {
     custom_prompt: '',
     default_obsidian_vault: undefined,
     obsidian_vaults: [],
+    onboarding_completed: true,
     ...overrides,
   };
 }
