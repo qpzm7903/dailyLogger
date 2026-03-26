@@ -5,7 +5,7 @@ import BasicSettings from '../BasicSettings.vue'
 
 // Mock Tauri API
 vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn()
+  invoke: vi.fn().mockResolvedValue(undefined)
 }))
 
 // Mock toast store

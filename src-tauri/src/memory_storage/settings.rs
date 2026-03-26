@@ -28,7 +28,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers,
                 quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
                 proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,
-                test_model_name, onboarding_completed
+                test_model_name, onboarding_completed, language
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -114,6 +114,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 onboarding_completed: row
                     .get::<_, Option<i32>>("onboarding_completed")?
                     .map(|v| v != 0),
+                // PERF-005: Language setting
+                language: row.get("language")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -334,7 +336,8 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             proxy_username = :proxy_username,
             proxy_password = :proxy_password,
             test_model_name = :test_model_name,
-            onboarding_completed = :onboarding_completed
+            onboarding_completed = :onboarding_completed,
+            language = :language
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -392,6 +395,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":proxy_password": encrypted_proxy_password,
             ":test_model_name": settings.test_model_name,
             ":onboarding_completed": settings.onboarding_completed.map(|v| if v { 1 } else { 0 }),
+            ":language": settings.language,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

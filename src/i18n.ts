@@ -1,11 +1,13 @@
 import { createI18n } from 'vue-i18n'
 import en from './locales/en.json'
 import zhCN from './locales/zh-CN.json'
+import { invoke } from '@tauri-apps/api/core'
+import type { Settings } from './types/tauri'
 
 // Type for locale
 export type Locale = 'en' | 'zh-CN'
 
-// Detect system language
+// Detect system language (fallback when no backend/localStorage)
 function detectLanguage(): Locale {
   // Check localStorage first
   const stored = localStorage.getItem('dailylogger-locale')
@@ -19,6 +21,22 @@ function detectLanguage(): Locale {
     return 'zh-CN'
   }
   return 'en'
+}
+
+// Load language from backend settings (async)
+export async function loadLanguageFromBackend(): Promise<void> {
+  try {
+    const settings = await invoke<Settings>('get_settings')
+    if (settings.language === 'en' || settings.language === 'zh-CN') {
+      // Backend setting takes priority
+      setLocale(settings.language as Locale)
+    }
+  } catch (e) {
+    console.warn('Failed to load language from backend:', e)
+    // Fallback to localStorage/browser detection if backend fails
+    const fallback = detectLanguage()
+    setLocale(fallback)
+  }
 }
 
 const i18n = createI18n({

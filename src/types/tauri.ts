@@ -27,6 +27,8 @@ export interface Settings {
   obsidian_vaults?: ObsidianVault[]
   // PERF-002: Onboarding completed flag
   onboarding_completed?: boolean
+  // PERF-005: Language setting
+  language?: string
 }
 
 export interface ObsidianVault {

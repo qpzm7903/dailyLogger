@@ -103,6 +103,8 @@ pub struct Settings {
     pub test_model_name: Option<String>,
     // PERF-002: 新用户引导完成标志
     pub onboarding_completed: Option<bool>,
+    // PERF-005: 语言设置
+    pub language: Option<String>,
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)

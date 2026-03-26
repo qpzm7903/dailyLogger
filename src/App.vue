@@ -149,6 +149,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { usePlatform } from './composables/usePlatform'
 import { useModal } from './composables/useModal'
+import { loadLanguageFromBackend } from './i18n'
 
 // Layout Components
 import Sidebar from './components/layout/Sidebar.vue'
@@ -550,6 +551,8 @@ onMounted(async () => {
   }
 
   await loadSettings()
+  // PERF-005: Load language from backend after settings are loaded
+  await loadLanguageFromBackend()
   await loadTodayRecords()
 
   // PERF-002: Check if onboarding is needed

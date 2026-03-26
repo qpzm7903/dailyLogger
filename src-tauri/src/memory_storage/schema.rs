@@ -308,6 +308,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // PERF-005: 语言设置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN language TEXT DEFAULT 'en'",
+        [],
+    );
+
     // SESSION-001: sessions 表 - 工作时段管理
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sessions (
@@ -670,7 +676,8 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             proxy_username TEXT,
             proxy_password TEXT,
             test_model_name TEXT,
-            onboarding_completed INTEGER DEFAULT 0
+            onboarding_completed INTEGER DEFAULT 0,
+            language TEXT DEFAULT 'en'
         )",
         [],
     )

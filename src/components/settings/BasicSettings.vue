@@ -710,6 +710,11 @@ function openCopyModelModal(source: string) {
 function changeLanguage(lang: Locale) {
   setLocale(lang)
   locale.value = lang
+  // PERF-005: Save language to backend for persistence
+  localSettings.value.language = lang
+  invoke('save_settings', { settings: localSettings.value }).catch(err => {
+    console.error('Failed to save language setting:', err)
+  })
 }
 
 // AI-006: Custom Headers Methods

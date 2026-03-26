@@ -884,6 +884,7 @@ mod tests {
             proxy_password: None,
             test_model_name: None,
             onboarding_completed: None,
+            language: None,
         }
     }
 
@@ -2119,6 +2120,8 @@ mod benchmarks {
             test_model_name: None,
             // PERF-002: Onboarding completed flag
             onboarding_completed: None,
+            // PERF-005: Language setting
+            language: None,
         }
     }
 
