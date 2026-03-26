@@ -1,4 +1,4 @@
-// UX-010: useModal composable
+// UX-5: useModal composable
 // Centralized modal management - replaces 21 individual showXxx ref variables
 
 import { ref, readonly, onMounted, onUnmounted, type Ref, type DeepReadonly } from 'vue'

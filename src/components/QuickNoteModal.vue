@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
+  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
     <div class="bg-dark rounded-2xl w-[600px] border border-gray-700 shadow-2xl">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -43,9 +43,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePlatform } from '../composables/usePlatform'
+import { useFocusTrap } from '../composables/useFocusTrap'
 
 const { locale } = useI18n()
 const { isDesktop } = usePlatform()
@@ -54,6 +55,10 @@ const emit = defineEmits<{(e: 'close'): void; (e: 'save', content: string): void
 const content = ref('')
 const inputRef = ref<HTMLTextAreaElement | null>(null)
 const currentTime = ref('')
+
+// Focus trap for accessibility (UX-5)
+const containerRef = ref<HTMLElement | null>(null)
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(containerRef)
 
 const updateTime = () => {
   currentTime.value = new Date().toLocaleString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US', {
@@ -76,5 +81,10 @@ onMounted(() => {
   nextTick(() => {
     inputRef.value?.focus()
   })
+  activateFocusTrap()
+})
+
+onBeforeUnmount(() => {
+  deactivateFocusTrap()
 })
 </script>

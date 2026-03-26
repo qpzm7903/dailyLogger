@@ -155,7 +155,10 @@
         </div>
 
         <!-- Records List -->
-        <EmptyState v-if="filteredRecords.length === 0" type="generic" :description="todayRecords.length === 0 ? t('emptyState.screenshots') : '无匹配标签的记录'" />
+        <!-- Loading skeleton -->
+        <SkeletonLoader v-if="isLoading" :count="3" />
+        <!-- Empty state -->
+        <EmptyState v-else-if="filteredRecords.length === 0" type="generic" :description="todayRecords.length === 0 ? t('emptyState.screenshots') : '无匹配标签的记录'" />
         <div v-else class="space-y-3 pr-1 custom-scrollbar">
           <div
             v-for="record in paginatedRecords"
@@ -343,6 +346,7 @@ const props = defineProps<{
   isDesktop: boolean
   autoCaptureEnabled: boolean
   isCapturing: boolean
+  isLoading: boolean
   quickNotesCount: number
   todayRecords: LogRecord[]
   isGenerating: boolean

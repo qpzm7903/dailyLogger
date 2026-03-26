@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
+  <div ref="containerRef" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
     <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden border border-gray-700 flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">📷 {{ t('screenshotGallery.title') }}</h2>
@@ -182,12 +182,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import ScreenshotModal from './ScreenshotModal.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonLoader from './SkeletonLoader.vue'
+import { useFocusTrap } from '../composables/useFocusTrap'
 import type { LogRecord } from '../types/tauri'
 import { showToast } from '../stores/toast'
 
@@ -204,6 +205,10 @@ interface ScreenAnalysis {
 
 const { t } = useI18n()
 const emit = defineEmits<{(e: 'close'): void}>()
+
+// Focus trap for accessibility (UX-5)
+const containerRef = ref<HTMLElement | null>(null)
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(containerRef)
 
 const screenshots = ref<ScreenshotRecord[]>([])
 const showDetail = ref(false)
@@ -427,5 +432,10 @@ const reanalyzeRecord = async (screenshot: ScreenshotRecord) => {
 
 onMounted(() => {
   loadScreenshots()
+  activateFocusTrap()
+})
+
+onBeforeUnmount(() => {
+  deactivateFocusTrap()
 })
 </script>
