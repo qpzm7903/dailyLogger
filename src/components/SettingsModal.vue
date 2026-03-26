@@ -404,17 +404,28 @@ const graphs = ref<Graph[]>([])
 const monitors = ref<Monitor[]>([])
 
 // Update handlers for sub-components
-function updateBasicSettings(newSettings: typeof basicSettings.value) {
+function updateBasicSettings(newSettings: {
+  api_base_url: string
+  api_key: string
+  model_name: string
+  custom_headers?: string
+  proxy_enabled?: boolean
+  proxy_host?: string
+  proxy_port?: number
+  proxy_username?: string
+  proxy_password?: string
+  test_model_name?: string
+}) {
   settings.value.api_base_url = newSettings.api_base_url
   settings.value.api_key = newSettings.api_key
   settings.value.model_name = newSettings.model_name
-  settings.value.custom_headers = newSettings.custom_headers
-  settings.value.proxy_enabled = newSettings.proxy_enabled
-  settings.value.proxy_host = newSettings.proxy_host
-  settings.value.proxy_port = newSettings.proxy_port
-  settings.value.proxy_username = newSettings.proxy_username
-  settings.value.proxy_password = newSettings.proxy_password
-  settings.value.test_model_name = newSettings.test_model_name
+  settings.value.custom_headers = newSettings.custom_headers ?? settings.value.custom_headers
+  settings.value.proxy_enabled = newSettings.proxy_enabled ?? settings.value.proxy_enabled
+  settings.value.proxy_host = newSettings.proxy_host ?? settings.value.proxy_host
+  settings.value.proxy_port = newSettings.proxy_port ?? settings.value.proxy_port
+  settings.value.proxy_username = newSettings.proxy_username ?? settings.value.proxy_username
+  settings.value.proxy_password = newSettings.proxy_password ?? settings.value.proxy_password
+  settings.value.test_model_name = newSettings.test_model_name ?? settings.value.test_model_name
 }
 
 function updateAISettings(newSettings: typeof aiSettings.value) {
