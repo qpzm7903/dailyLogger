@@ -1,6 +1,6 @@
 # Story 9.3: 侧边栏导航升级 (Sidebar Navigation Upgrade)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -56,37 +56,37 @@ UX-1 (设计令牌体系建立) 和 UX-2 (按钮组件规范化) 已完成，建
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 安装 lucide-vue-next 依赖 (AC: #3)
-  - [ ] 1.1 执行 `npm install lucide-vue-next`
-  - [ ] 1.2 验证 package.json 已添加依赖
+- [x] Task 1: 安装 lucide-vue-next 依赖 (AC: #3)
+  - [x] 1.1 执行 `npm install lucide-vue-next`
+  - [x] 1.2 验证 package.json 已添加依赖
 
-- [ ] Task 2: 修改 Sidebar.vue 添加可折叠状态 (AC: #2)
-  - [ ] 2.1 添加 `isCollapsed` ref 状态（默认 false）
-  - [ ] 2.2 侧边栏宽度动态绑定：`isCollapsed ? 'w-16' : 'w-48'`
-  - [ ] 2.3 导航项文字标签条件渲染：`v-if="!isCollapsed"`
-  - [ ] 2.4 添加折叠/展开切换按钮（底部）
-  - [ ] 2.5 Tooltip 在折叠状态时显示完整标签文字
+- [x] Task 2: 修改 Sidebar.vue 添加可折叠状态 (AC: #2)
+  - [x] 2.1 添加 `isCollapsed` ref 状态（默认 false）
+  - [x] 2.2 侧边栏宽度动态绑定：`isCollapsed ? 'w-16' : 'w-48'`
+  - [x] 2.3 导航项文字标签条件渲染：`v-if="!isCollapsed"`
+  - [x] 2.4 添加折叠/展开切换按钮（底部）
+  - [x] 2.5 Tooltip 在折叠状态时显示完整标签文字
 
-- [ ] Task 3: 实现侧边栏激活状态 (AC: #1)
-  - [ ] 3.1 Sidebar.vue 引入 `useModal()` 获取 `activeModal`
-  - [ ] 3.2 每个导航项添加激活态条件类：`isActive ? 'bg-primary/20 text-white' : ''`
-  - [ ] 3.3 激活态使用设计令牌颜色（--color-action-primary 相关样式）
+- [x] Task 3: 实现侧边栏激活状态 (AC: #1)
+  - [x] 3.1 Sidebar.vue 引入 `useModal()` 获取 `activeModal`
+  - [x] 3.2 每个导航项添加激活态条件类：`isActive ? 'bg-primary/20 text-white' : ''`
+  - [x] 3.3 激活态使用设计令牌颜色（--color-action-primary 相关样式）
 
-- [ ] Task 4: 替换 emoji 为 Lucide 图标 (AC: #3)
-  - [ ] 4.1 导入所有需要的 Lucide 图标组件
-  - [ ] 4.2 替换 navItems 中的 emoji icon 为 Lucide 组件
-  - [ ] 4.3 设置图标默认颜色为 `text-gray-400`，激活态为 `text-white`
-  - [ ] 4.4 设置图标尺寸为 20x20（class="w-5 h-5"）
+- [x] Task 4: 替换 emoji 为 Lucide 图标 (AC: #3)
+  - [x] 4.1 导入所有需要的 Lucide 图标组件
+  - [x] 4.2 替换 navItems 中的 emoji icon 为 Lucide 组件
+  - [x] 4.3 设置图标默认颜色为 `text-gray-400`，激活态为 `text-white`
+  - [x] 4.4 设置图标尺寸为 20x20（class="w-5 h-5"）
 
-- [ ] Task 5: Logo 区域添加版本号 (AC: #4)
-  - [ ] 5.1 在 Logo 下方添加版本号文本
-  - [ ] 5.2 版本号使用 `text-gray-500 text-xs` 样式
-  - [ ] 5.3 折叠状态时隐藏版本号
+- [x] Task 5: Logo 区域添加版本号 (AC: #4)
+  - [x] 5.1 在 Logo 下方添加版本号文本
+  - [x] 5.2 版本号使用 `text-gray-500 text-xs` 样式
+  - [x] 5.3 折叠状态时隐藏版本号
 
-- [ ] Task 6: 验证与测试 (AC: #5)
-  - [ ] 6.1 运行 `npm run test` 确保测试通过
-  - [ ] 6.2 运行 `npm run lint` 确保无警告
-  - [ ] 6.3 运行 `npm run typecheck` 确保无错误
+- [x] Task 6: 验证与测试 (AC: #5)
+  - [x] 6.1 运行 `npm run test` 确保测试通过 (927 tests passed)
+  - [x] 6.2 运行 `npm run lint` 确保无警告 (passed)
+  - [x] 6.3 运行 `npm run typecheck` 确保无错误 (passed)
   - [ ] 6.4 本地预览 `npm run tauri dev` 确认（CLI 环境无法验证 UI，需要人工验收）
 
 ## Dev Notes
@@ -214,4 +214,32 @@ claude-opus-4-6
 
 ### Completion Notes List
 
+- Task 1: ✅ 安装 lucide-vue-next@1.0.0 依赖
+- Task 2: ✅ Sidebar.vue 添加可折叠状态
+  - 添加 `isCollapsed = ref(false)` 本地状态
+  - 侧边栏宽度动态绑定：折叠时 `w-16`，展开时 `w-48`
+  - 导航项文字标签条件渲染：`v-if="!isCollapsed"`
+  - 底部添加折叠/展开切换按钮（ChevronLeft/ChevronRight 图标）
+  - 折叠状态保留 tooltip 显示
+- Task 3: ✅ 实现侧边栏激活状态
+  - 引入 `useModal()` 获取 `activeModal` readonly ref
+  - 每个导航项添加激活态条件类：`isActive(item.modalId) ? 'bg-primary/20 text-white' : 'text-gray-400 hover:text-white'`
+  - 激活态使用设计令牌颜色 `bg-primary/20`
+- Task 4: ✅ 替换 emoji 为 Lucide 图标
+  - 导入 FileText, History, Search, Tags, Upload, TrendingUp, Database, Settings, ChevronLeft, ChevronRight
+  - 替换所有 emoji 图标为对应 Lucide 组件
+  - 图标尺寸：`w-5 h-5` (20x20)
+- Task 5: ✅ Logo 区域添加版本号
+  - 在 Logo 下方添加 `v2.14.0` 版本号
+  - 使用 `text-gray-500 text-xs` 样式
+  - 折叠状态时隐藏版本号
+- Task 6: ✅ 验证与测试
+  - 927 tests passed
+  - vue-tsc --noEmit passed
+  - cargo fmt + cargo clippy passed
+
 ### File List
+
+- `src/components/layout/Sidebar.vue` - 完全重构：添加折叠状态、激活高亮、Lucide图标、版本号显示
+- `package.json` - 添加 lucide-vue-next@1.0.0 依赖
+- `package-lock.json` - 依赖更新
