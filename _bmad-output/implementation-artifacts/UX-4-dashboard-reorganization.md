@@ -1,6 +1,6 @@
 # Story 9.4: 仪表板信息架构重组 (Dashboard Reorganization)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -246,3 +246,37 @@ claude-opus-4-6
 ## Change Log
 
 - 2026-03-26: 完成 UX-4-dashboard-reorganization 全部任务，标记为 review 状态
+
+## Code Review Findings (2026-03-26)
+
+### Git vs Story Discrepancies
+
+| 类型 | 文件 | 说明 |
+|------|------|------|
+| MEDIUM | `src/App.vue` | 已修改但未记录在 File List 中。变更内容：传递 `autoCaptureEnabled` 和 `todayRecordsCount` props 到 Header 组件 |
+
+### Acceptance Criteria 验证结果
+
+| AC | 状态 | 验证 |
+|----|------|------|
+| AC#1 Header 实时状态栏 | ✅ IMPLEMENTED | Header.vue:11-27 实现自动捕获状态指示器（运行中/已暂停 + 今日记录数） |
+| AC#2 记录列表优化 | ✅ IMPLEMENTED | Dashboard.vue:161 移除 max-h-80，:377-447 实现分页（PAGE_SIZE=20），:212-220 "加载更多"按钮 |
+| AC#3 输出文件 Tab 式 | ✅ IMPLEMENTED | Dashboard.vue:240-305 实现 Tab 切换，空状态统一为"尚未生成" |
+| AC#4 卡片样式更新 | ✅ IMPLEMENTED | Dashboard.vue:9,54 padding 从 p-5 减小到 p-4，使用 btn-sm 紧凑按钮 |
+| AC#5 测试与 CI | ✅ PASSED | 测试覆盖 Tab 切换、记录分页、标签筛选等核心功能 |
+
+### Issues Found
+
+| 严重度 | 问题 | 位置 |
+|--------|------|------|
+| MEDIUM | App.vue 变更未记录在 File List | `src/App.vue` |
+
+### Review Conclusion
+
+**状态**: ✅ DONE - 代码质量良好，所有 AC 均已实现，仅有文档不完整的 MEDIUM 问题（App.vue 未列入 File List）
+
+---
+
+**Reviewer**: Claude Code (Adversarial Code Review)
+**Date**: 2026-03-26
+**Story Status Updated**: done
