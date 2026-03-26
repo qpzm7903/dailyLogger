@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-26 (Epic 10 partial retrospective completed: PERF-001/002/003 done, epic-10-retrospective done)
+# last_updated: 2026-03-26 (PERF-004 story created, ready for dev)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -148,4 +148,7 @@ development_status:
   PERF-002-retrospective: done
   PERF-003: done
   PERF-003-retrospective: done
+  PERF-004: ready-for-dev
+  PERF-005: backlog
+  PERF-006: backlog
   epic-10-retrospective: done  # Partial - awaiting PERF-004/005/006 completion
