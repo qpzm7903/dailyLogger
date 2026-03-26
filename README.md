@@ -223,7 +223,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.1.1
+**最新版本**: v3.2.0
+- AI 代理配置支持：为 AI API 请求添加代理配置，支持企业防火墙场景和代理认证（PERF-001）
+- 新增 proxy_enabled、proxy_host、proxy_port、proxy_username、proxy_password 字段
+- 新增 test_model_name 字段，测试连接时优先使用
+- 前端 BasicSettings 添加可折叠代理配置面板
+
+**v3.1.1（CI 修复）**:
 - CI 修复：修复 Build and Release workflow 中 publish-release job 缺少 checkout 步骤导致 v3.1.0 release publish 失败的问题
 
 **v3.0.0（工作时段感知分析 + GitHub 移除）**:
