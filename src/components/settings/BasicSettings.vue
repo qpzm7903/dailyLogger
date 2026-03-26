@@ -474,7 +474,7 @@ interface Props {
     // PERF-001: Test model name
     test_model_name?: string
     // PERF-005: Language setting
-    language?: string
+    language?: Locale
   }
 }
 
