@@ -148,7 +148,7 @@ development_status:
   PERF-002-retrospective: done
   PERF-003: done
   PERF-003-retrospective: done
-  PERF-004: review
+  PERF-004: in_progress
   PERF-005: backlog
   PERF-006: backlog
   epic-10-retrospective: done  # Partial - awaiting PERF-004/005/006 completion
