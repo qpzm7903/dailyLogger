@@ -1,6 +1,6 @@
 # Story 8.3: 分析结果用户编辑
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -333,3 +333,76 @@ fn build_daily_report_content(sessions: Vec<Session>) -> String {
 - src-tauri/src/memory_storage/records.rs
 - src-tauri/src/synthesis/mod.rs
 - src/components/ScreenshotModal.vue
+
+---
+
+## Code Review Findings
+
+**Review Date:** 2026-03-26
+**Reviewer:** bmad-code-review
+**Review Status:** FAILED - Issues Found
+
+### Summary
+
+The story SESSION-003 was prematurely marked as "review" while Task 4 (session editing UI) remains incomplete. The commit `ecc9157` only implemented backend Rust changes - no Vue frontend files were modified.
+
+### Critical Issues
+
+1. **Task 4 (Session Editing UI) NOT IMPLEMENTED (HIGH SEVERITY)**
+   - AC #3 requires frontend UI for session summary editing via `SessionDetailView.vue`
+   - Story Dev Notes claim `src/components/SessionDetailView.vue` as a **new file** but it **does not exist**
+   - Task 4 subtasks remain all `[ ]` (unchecked):
+     - [ ] 4.1 添加"编辑摘要"按钮
+     - [ ] 4.2 添加 textarea
+     - [ ] 4.3 保存/取消逻辑
+     - [ ] 4.4 调用 Tauri command
+     - [ ] 4.5 更新展示
+   - **Impact:** Users cannot edit session-level AI summaries, which is a core AC
+
+### Git vs Story Discrepancy
+
+| File Listed in Dev Notes | Actually Changed in Commit |
+|---|---|
+| src/components/SessionDetailView.vue (new) | NOT CREATED |
+| src/components/ScreenshotModal.vue (modified) | NOT MODIFIED in ecc9157 |
+
+### Acceptance Criteria Validation
+
+| AC | Description | Status | Evidence |
+|---|---|---|---|
+| AC #1 | Screenshot user notes | ✅ IMPLEMENTED | records.rs:582 sets `analysis_status='user_edited'` |
+| AC #2 | Session user summary | ✅ IMPLEMENTED | session_manager/mod.rs:681-703 |
+| AC #3 | Frontend screenshot UI | ✅ IMPLEMENTED | ScreenshotModal.vue (done in commit 0b2363b) |
+| AC #3 | Frontend session UI | ❌ MISSING | SessionDetailView.vue not created |
+| AC #4 | Daily report synthesis | ✅ IMPLEMENTED | synthesis/mod.rs:468-474 |
+| AC #5 | Tauri commands | ✅ IMPLEMENTED | Both registered in main.rs |
+| AC #6 | Backward compatibility | ✅ IMPLEMENTED | NULL handling correct |
+| AC #7 | Tests | ✅ PASSING | 444 tests pass, clippy 0 warnings |
+
+### Required Actions
+
+1. **Create `src/components/SessionDetailView.vue`** with:
+   - Display of session summary (prefer user_summary over ai_summary)
+   - "Edit Summary" button to enter edit mode
+   - textarea for editing user_summary
+   - Save/Cancel buttons
+   - Call `invoke('update_session_user_summary', {sessionId, userSummary})`
+   - Emit updated session on save
+
+2. **Update story status** from "review" to "in-progress" until Task 4 is complete
+
+3. **Update Dev Notes File List** to remove incorrect claims about SessionDetailView.vue being created (it hasn't been)
+
+### Verification Commands
+
+```bash
+# Verify SessionDetailView.vue does not exist
+ls -la src/components/SessionDetailView.vue  # Should return: No such file
+
+# Verify no Vue files in commit
+git show ecc9157 --stat | grep vue  # Should return: empty
+
+# Verify backend changes are correct
+cargo clippy --all-targets --all-features -- -D warnings  # Should pass
+cargo test --no-default-features  # Should show: 444 passed
+```
