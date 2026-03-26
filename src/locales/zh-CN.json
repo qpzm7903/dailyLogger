@@ -658,7 +658,8 @@
     "unknown": "未知",
     "view": "查看",
     "loadMore": "加载更多 ({count} 条剩余)",
-    "loadingMore": "加载中..."
+    "loadingMore": "加载中...",
+    "loadError": "加载失败"
   },
   "tagFilter": {
     "title": "标签筛选:",

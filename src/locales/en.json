@@ -662,7 +662,8 @@
     "unknown": "Unknown",
     "view": "View",
     "loadMore": "Load More ({count} remaining)",
-    "loadingMore": "Loading..."
+    "loadingMore": "Loading...",
+    "loadError": "Load failed"
   },
   "tagFilter": {
     "title": "Tag Filter:",

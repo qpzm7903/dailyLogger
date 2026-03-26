@@ -64,32 +64,45 @@
         </span>
       </div>
 
-      <div class="flex-1 overflow-auto p-6" ref="scrollContainer" @scroll="handleScroll">
+      <div class="flex-1 overflow-auto p-6" ref="scrollContainer" @scroll="onScroll">
         <!-- Loading skeleton -->
         <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <SkeletonLoader :count="6" />
         </div>
         <EmptyState v-else-if="screenshots.length === 0" type="screenshots" :description="t('emptyState.screenshots')" />
 
-        <!-- Empty state -->
-        <EmptyState v-else-if="screenshots.length === 0" type="screenshots" :description="t('emptyState.screenshots')" />
-
         <template v-else>
           <!-- Grid View -->
-          <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            v-if="viewMode === 'grid'"
+            ref="gridContainer"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
             <div
               v-for="screenshot in paginatedScreenshots"
               :key="screenshot.id"
               @click="openScreenshot(screenshot)"
               class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary transition-colors"
             >
-              <div class="aspect-video relative bg-gray-800">
+              <div class="aspect-video relative bg-gray-800 overflow-hidden">
+                <!-- Blur-up placeholder -->
+                <div
+                  v-if="!screenshot.thumbnailLoaded && !screenshot.thumbnailError && !screenshot.thumbnail"
+                  class="absolute inset-0 bg-gray-700 animate-pulse"
+                />
+                <!-- Blur-up image transition -->
                 <img
                   v-if="screenshot.thumbnail"
                   :src="screenshot.thumbnail"
                   :alt="String(screenshot.id)"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover transition-all duration-300"
+                  :class="screenshot.thumbnailLoaded ? 'blur-0 scale-100' : 'blur-lg scale-110'"
+                  @load="onThumbnailLoad(screenshot)"
+                  @error="onThumbnailError(screenshot)"
                 />
+                <div v-else-if="screenshot.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500">
+                  {{ t('screenshotGallery.loadError') }}
+                </div>
                 <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
                   {{ t('screenshotGallery.loading') }}
                 </div>
@@ -97,7 +110,7 @@
               <div class="p-2">
                 <p class="text-xs text-gray-500">{{ formatTimeShort(screenshot.timestamp) }}</p>
                 <p class="text-xs text-gray-400 truncate">{{ parseContent(screenshot.content) }}</p>
-                <!-- EXP-003: Reanalyze button for grid view -->
+                <!-- Reanalyze button -->
                 <div class="mt-1 flex justify-end">
                   <button
                     @click.stop="reanalyzeRecord(screenshot)"
@@ -122,14 +135,24 @@
               @click="openScreenshot(screenshot)"
               class="flex items-center py-3 px-4 bg-darker rounded-lg mb-2 cursor-pointer hover:bg-gray-800 transition-colors"
             >
-              <!-- Thumbnail -->
-              <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4">
+              <!-- Thumbnail with blur-up -->
+              <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4 relative">
+                <div
+                  v-if="!screenshot.thumbnailLoaded && !screenshot.thumbnailError && !screenshot.thumbnail"
+                  class="absolute inset-0 bg-gray-700 animate-pulse"
+                />
                 <img
                   v-if="screenshot.thumbnail"
                   :src="screenshot.thumbnail"
                   :alt="String(screenshot.id)"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover transition-all duration-300"
+                  :class="screenshot.thumbnailLoaded ? 'blur-0 scale-100' : 'blur-lg scale-110'"
+                  @load="onThumbnailLoad(screenshot)"
+                  @error="onThumbnailError(screenshot)"
                 />
+                <div v-else-if="screenshot.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                  !
+                </div>
               </div>
               <!-- Time -->
               <div class="w-20 flex-shrink-0">
@@ -141,7 +164,7 @@
               </div>
               <!-- Actions -->
               <div class="flex-shrink-0 flex items-center gap-2">
-                <!-- EXP-003: Reanalyze button for list view -->
+                <!-- Reanalyze button -->
                 <button
                   @click.stop="reanalyzeRecord(screenshot)"
                   :disabled="reanalyzingIds.has(screenshot.id)"
@@ -194,12 +217,14 @@ import ScreenshotModal from './ScreenshotModal.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonLoader from './SkeletonLoader.vue'
 import { useModal } from '../composables/useModal'
+import { useThumbnailCache } from '../composables/useThumbnailCache'
 import type { LogRecord } from '../types/tauri'
 import { showToast } from '../stores/toast'
 
 interface ScreenshotRecord extends LogRecord {
   thumbnail?: string
   thumbnailLoaded?: boolean
+  thumbnailError?: boolean
 }
 
 interface ScreenAnalysis {
@@ -223,9 +248,13 @@ const currentPage = ref(1)
 const pageSize = 20
 const isLoadingMore = ref(false)
 const scrollContainer = ref<HTMLElement | null>(null)
+const gridContainer = ref<HTMLElement | null>(null)
 const reanalyzingIds = ref(new Set<number>())
 
-// Computed: paginated screenshots for AC4
+// Thumbnail cache for memory optimization
+const { getThumbnail, hasThumbnail: hasCachedThumbnail } = useThumbnailCache()
+
+// Computed: paginated screenshots (maintains backward compatibility)
 const paginatedScreenshots = computed(() => {
   const end = currentPage.value * pageSize
   return screenshots.value.slice(0, end)
@@ -259,32 +288,59 @@ const parseContent = (content: string) => {
   }
 }
 
-// UX-023: Lazy load thumbnails only for visible items
+// Load thumbnail with cache
+const loadThumbnail = async (record: ScreenshotRecord) => {
+  if (!record.screenshot_path) return
+
+  // Skip if already loaded or has error
+  if (record.thumbnailLoaded || record.thumbnail || record.thumbnailError) return
+
+  try {
+    // Use thumbnail cache if available
+    if (hasCachedThumbnail(record.screenshot_path)) {
+      const cached = await getThumbnail(record.screenshot_path, async () => '')
+      record.thumbnail = cached
+      record.thumbnailLoaded = true
+      return
+    }
+
+    const thumbnail = await invoke<string>('get_screenshot', { path: record.screenshot_path })
+    record.thumbnail = thumbnail
+    record.thumbnailLoaded = true
+    record.thumbnailError = false
+  } catch (err) {
+    console.error('Failed to load thumbnail:', err)
+    record.thumbnailError = true
+  }
+}
+
+// On thumbnail load handler
+const onThumbnailLoad = (record: ScreenshotRecord) => {
+  record.thumbnailLoaded = true
+}
+
+// On thumbnail error handler
+const onThumbnailError = (record: ScreenshotRecord) => {
+  record.thumbnailError = true
+  record.thumbnailLoaded = false
+}
+
+// Load thumbnails for current page (lazy loading for performance)
 const loadThumbnailsForPage = async (page: number) => {
   const start = (page - 1) * pageSize
   const end = page * pageSize
   const records = screenshots.value.slice(start, end)
 
   for (const record of records) {
-    // Skip if already loaded or loading
-    if (record.thumbnailLoaded || record.thumbnail) continue
-
-    try {
-      const thumbnail = await invoke<string>('get_screenshot', { path: record.screenshot_path })
-      record.thumbnail = thumbnail
-      record.thumbnailLoaded = true
-    } catch (err) {
-      console.error('Failed to load thumbnail:', err)
-    }
+    await loadThumbnail(record)
   }
 }
 
-// Legacy function for compatibility - now just marks as needing load
+// Legacy function for compatibility
 const loadThumbnails = async (records: ScreenshotRecord[]) => {
-  // UX-023: Don't load all thumbnails upfront, just mark them
-  // Thumbnails will be loaded lazily via loadThumbnailsForPage
   records.forEach(r => {
     r.thumbnailLoaded = false
+    r.thumbnailError = false
   })
 }
 
@@ -295,13 +351,13 @@ const loadScreenshots = async () => {
     // Filter only auto records with screenshots
     const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path) as ScreenshotRecord[]
 
-    // UX-023: Don't load thumbnails upfront - they will be lazy loaded
     autoRecords.forEach(r => {
       r.thumbnailLoaded = false
+      r.thumbnailError = false
     })
 
     screenshots.value = autoRecords
-    currentPage.value = 1 // Reset pagination
+    currentPage.value = 1
 
     // Load thumbnails for first page
     await loadThumbnailsForPage(1)
@@ -323,18 +379,16 @@ const applyFilter = async () => {
       startDate: startDate.value,
       endDate: endDate.value
     })
-    // Filter only auto records with screenshots
     const autoRecords = records.filter(r => r.source_type === 'auto' && r.screenshot_path) as ScreenshotRecord[]
 
-    // UX-023: Don't load thumbnails upfront
     autoRecords.forEach(r => {
       r.thumbnailLoaded = false
+      r.thumbnailError = false
     })
 
     screenshots.value = autoRecords
-    currentPage.value = 1 // Reset pagination
+    currentPage.value = 1
 
-    // Load thumbnails for first page
     await loadThumbnailsForPage(1)
   } catch (err) {
     console.error('Failed to filter screenshots:', err)
@@ -354,7 +408,7 @@ const loadMore = async () => {
     isLoadingMore.value = true
     try {
       const nextPage = currentPage.value + 1
-      // UX-023: Load thumbnails for new page before incrementing
+      // Load thumbnails for new page before incrementing
       await loadThumbnailsForPage(nextPage)
       currentPage.value = nextPage
     } finally {
@@ -363,50 +417,58 @@ const loadMore = async () => {
   }
 }
 
-const handleScroll = (event: Event) => {
-  const target = event.target as HTMLElement
-  const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight
+// RAF-throttled scroll handler for 60fps performance
+let rafId: number | null = null
+const onScroll = (event: Event) => {
+  if (rafId !== null) return
 
-  // Load more when user scrolls to bottom (within 100px threshold)
-  if (scrollBottom < 100 && hasMorePages.value && !isLoadingMore.value) {
-    loadMore()
-  }
+  rafId = requestAnimationFrame(() => {
+    const target = event.target as HTMLElement
+    const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight
+
+    // Auto-load more when user scrolls to bottom (within 100px threshold)
+    if (scrollBottom < 100 && hasMorePages.value && !isLoadingMore.value) {
+      loadMore()
+    }
+    rafId = null
+  })
 }
 
 const openScreenshot = async (screenshot: ScreenshotRecord) => {
-  // UX-023: Ensure thumbnail is loaded when opening
+  // Ensure thumbnail is loaded when opening
   if (!screenshot.thumbnail && !screenshot.thumbnailLoaded) {
     try {
       const thumbnail = await invoke<string>('get_screenshot', { path: screenshot.screenshot_path })
       screenshot.thumbnail = thumbnail
       screenshot.thumbnailLoaded = true
+      screenshot.thumbnailError = false
     } catch (err) {
       console.error('Failed to load thumbnail:', err)
+      screenshot.thumbnailError = true
     }
   }
   selectedScreenshot.value = screenshot
   showDetail.value = true
 }
 
-// FEAT-001: Handle record updated from reanalysis
+// Handle record updated from reanalysis
 const handleRecordUpdated = (updatedRecord: LogRecord) => {
-  // Update the record in the screenshots array
   const index = screenshots.value.findIndex(s => s.id === updatedRecord.id)
   if (index !== -1) {
-    // Preserve the thumbnail
     const thumbnail = screenshots.value[index].thumbnail
     const thumbnailLoaded = screenshots.value[index].thumbnailLoaded
-    screenshots.value[index] = { ...updatedRecord, thumbnail, thumbnailLoaded } as ScreenshotRecord
+    const thumbnailError = screenshots.value[index].thumbnailError
+    screenshots.value[index] = { ...updatedRecord, thumbnail, thumbnailLoaded, thumbnailError } as ScreenshotRecord
   }
-  // Also update the selected screenshot
   if (selectedScreenshot.value && selectedScreenshot.value.id === updatedRecord.id) {
     const thumbnail = selectedScreenshot.value.thumbnail
     const thumbnailLoaded = selectedScreenshot.value.thumbnailLoaded
-    selectedScreenshot.value = { ...updatedRecord, thumbnail, thumbnailLoaded } as ScreenshotRecord
+    const thumbnailError = selectedScreenshot.value.thumbnailError
+    selectedScreenshot.value = { ...updatedRecord, thumbnail, thumbnailLoaded, thumbnailError } as ScreenshotRecord
   }
 }
 
-// EXP-003: Reanalyze a single record
+// Reanalyze a single record
 const reanalyzeRecord = async (screenshot: ScreenshotRecord) => {
   if (reanalyzingIds.value.has(screenshot.id)) return
 
@@ -414,13 +476,11 @@ const reanalyzeRecord = async (screenshot: ScreenshotRecord) => {
   try {
     const analysis = await invoke<ScreenAnalysis>('reanalyze_record', { recordId: screenshot.id })
 
-    // Update the record content
     const updatedRecord: ScreenshotRecord = {
       ...screenshot,
       content: JSON.stringify(analysis)
     }
 
-    // Update in the screenshots array
     const index = screenshots.value.findIndex(s => s.id === screenshot.id)
     if (index !== -1) {
       screenshots.value[index] = updatedRecord
