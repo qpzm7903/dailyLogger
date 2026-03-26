@@ -34,13 +34,6 @@
       >
         <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
         <span v-if="!isCollapsed" class="text-sm whitespace-nowrap">{{ item.label }}</span>
-        <!-- Tooltip for collapsed state -->
-        <span
-          v-if="isCollapsed"
-          class="absolute left-14 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
-        >
-          {{ item.label }}
-        </span>
       </button>
     </nav>
 
@@ -58,12 +51,6 @@
       >
         <Settings class="w-5 h-5 flex-shrink-0" />
         <span v-if="!isCollapsed" class="text-sm whitespace-nowrap">设置</span>
-        <span
-          v-if="isCollapsed"
-          class="absolute left-14 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
-        >
-          设置
-        </span>
       </button>
 
       <!-- Collapse/Expand Toggle -->

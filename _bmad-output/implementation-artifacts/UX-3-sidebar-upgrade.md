@@ -322,4 +322,14 @@ claude-opus-4-6
 
 ### Review Action Items
 
-- [ ] [AI-Review][HIGH] Fix tooltip implementation in Sidebar.vue (see details above)
+- [x] [AI-Review][HIGH] Fix tooltip implementation in Sidebar.vue (see details above) - **FIXED: Removed broken CSS tooltip spans, relying on native `:title` attribute**
+
+## Dev Agent Record - Fix Pass (2026-03-26)
+
+### Fix Summary
+- **Issue:** Tooltip implementation was broken - `group-hover:opacity-100` CSS pattern doesn't work because the button doesn't have `group` class and tooltip is a sibling not a child
+- **Fix:** Removed the broken CSS tooltip spans (lines 37-43 and 61-66 in original), relying on native browser `:title` attribute for tooltip functionality
+- **Verification:** All 927 tests passed, vue-tsc --noEmit passed
+
+### File Changed
+- `src/components/layout/Sidebar.vue` - Removed broken tooltip spans, kept native `:title` attribute
