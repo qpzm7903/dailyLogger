@@ -103,6 +103,8 @@ pub struct Session {
     pub user_summary: Option<String>,     // 用户自写的时段摘要
     pub context_for_next: Option<String>, // 传递给下一时段分析的上下文
     pub status: SessionStatus,
+    #[serde(default)]
+    pub screenshot_count: Option<i64>,    // 时段内的截图数量
 }
 
 impl Default for Session {
@@ -117,6 +119,7 @@ impl Default for Session {
             user_summary: None,
             context_for_next: None,
             status: SessionStatus::Active,
+            screenshot_count: None,
         }
     }
 }
@@ -254,11 +257,12 @@ fn get_active_session_with_conn(
     date: &str,
 ) -> Result<Option<Session>, String> {
     let result = conn.query_row(
-        "SELECT id, date, start_time, end_time, ai_summary, user_summary, context_for_next, status
-             FROM sessions
-             WHERE date = ?1 AND status = 'active'
-             ORDER BY start_time DESC
-             LIMIT 1",
+        "SELECT s.id, s.date, s.start_time, s.end_time, s.ai_summary, s.user_summary, s.context_for_next, s.status,
+                (SELECT COUNT(*) FROM records WHERE session_id = s.id AND screenshot_path IS NOT NULL) as screenshot_count
+         FROM sessions s
+         WHERE s.date = ?1 AND s.status = 'active'
+         ORDER BY s.start_time DESC
+         LIMIT 1",
         params![date],
         |row| {
             Ok(Session {
@@ -270,6 +274,7 @@ fn get_active_session_with_conn(
                 user_summary: row.get(5)?,
                 context_for_next: row.get(6)?,
                 status: SessionStatus::from(row.get::<_, String>(7)?),
+                screenshot_count: row.get(8)?,
             })
         },
     );
@@ -334,10 +339,11 @@ fn get_sessions_by_date_with_conn(
 ) -> Result<Vec<Session>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, date, start_time, end_time, ai_summary, user_summary, context_for_next, status
-             FROM sessions
-             WHERE date = ?1
-             ORDER BY start_time ASC",
+            "SELECT s.id, s.date, s.start_time, s.end_time, s.ai_summary, s.user_summary, s.context_for_next, s.status,
+                    (SELECT COUNT(*) FROM records WHERE session_id = s.id AND screenshot_path IS NOT NULL) as screenshot_count
+             FROM sessions s
+             WHERE s.date = ?1
+             ORDER BY s.start_time ASC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
@@ -352,6 +358,7 @@ fn get_sessions_by_date_with_conn(
                 user_summary: row.get(5)?,
                 context_for_next: row.get(6)?,
                 status: SessionStatus::from(row.get::<_, String>(7)?),
+                screenshot_count: row.get(8)?,
             })
         })
         .map_err(|e| format!("Failed to query sessions: {}", e))?

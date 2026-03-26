@@ -120,6 +120,12 @@
               按日期重新分析
             </button>
             <button
+              @click="$emit('open', 'sessionList')"
+              class="btn btn-secondary btn-sm"
+            >
+              时段管理
+            </button>
+            <button
               @click="$emit('reanalyzeToday')"
               class="btn btn-secondary btn-sm"
             >

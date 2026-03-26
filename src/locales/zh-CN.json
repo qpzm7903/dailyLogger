@@ -232,6 +232,34 @@
     "summarySaved": "摘要已保存",
     "summarySaveFailed": "保存摘要失败: {error}"
   },
+  "sessionList": {
+    "title": "时段列表",
+    "filter": "筛选",
+    "pending": "待分析",
+    "analyzed": "已分析",
+    "all": "全部",
+    "selected": "已选择",
+    "loading": "加载中...",
+    "noSessions": "暂无时段",
+    "screenshotCount": "{count} 张截图",
+    "ongoing": "进行中",
+    "analyze": "分析",
+    "analyzing": "分析中...",
+    "analyzeSelected": "分析选中 ({count})",
+    "analyzingProgress": "分析中，请稍候...",
+    "analyzeSuccess": "分析完成",
+    "analyzeFailed": "分析失败: {error}",
+    "batchAnalyzeSuccess": "已成功分析 {count} 个时段",
+    "batchAnalyzePartial": "批量分析完成：成功 {success} 个，失败 {fail} 个",
+    "view": "查看",
+    "close": "关闭",
+    "loadFailed": "加载时段失败: {error}",
+    "status": {
+      "active": "进行中",
+      "ended": "已结束",
+      "analyzed": "已分析"
+    }
+  },
   "logViewer": {
     "title": "运行日志",
     "refresh": "刷新",

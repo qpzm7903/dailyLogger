@@ -115,6 +115,22 @@
       <Transition name="scale" mode="out-in">
         <ReanalyzeByDateModal v-if="isOpen('reanalyzeByDate')" @close="close('reanalyzeByDate')" @reanalyzed="handleReanalyzedByDate" />
       </Transition>
+      <Transition name="slide-up" mode="out-in">
+        <SessionListModal
+          v-if="isOpen('sessionList')"
+          @close="close('sessionList')"
+          @viewSession="handleViewSession"
+          @sessionAnalyzed="handleSessionAnalyzed"
+        />
+      </Transition>
+      <Transition name="slide-up" mode="out-in">
+        <SessionDetailView
+          v-if="selectedSession !== null"
+          :session="selectedSession!"
+          @close="selectedSession = null"
+          @updated="handleSessionUpdated"
+        />
+      </Transition>
       <Toast />
     </Teleport>
   </div>
@@ -154,9 +170,23 @@ import Toast from './components/Toast.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
 import OfflineQueueModal from './components/OfflineQueueModal.vue'
 import ReanalyzeByDateModal from './components/ReanalyzeByDateModal.vue'
+import SessionListModal from './components/SessionListModal.vue'
+import SessionDetailView from './components/SessionDetailView.vue'
 
 import { showError, showSuccess, initToastI18n } from './stores/toast'
 import type { LogRecord, Tag, Settings } from './types/tauri'
+
+interface Session {
+  id: number
+  date: string
+  start_time: string
+  end_time: string | null
+  ai_summary: string | null
+  user_summary: string | null
+  context_for_next: string | null
+  status: 'active' | 'ended' | 'analyzed'
+  screenshot_count?: number
+}
 
 const { t } = useI18n()
 const { isDesktop } = usePlatform()
@@ -180,6 +210,7 @@ const customReportPath = ref('')
 const comparisonReportPath = ref('')
 const selectedScreenshot = ref<LogRecord | null>(null)
 const initialFilterTag = ref<Tag | null>(null)
+const selectedSession = ref<Session | null>(null)
 
 // UX-010: useModal for centralized modal management
 const { isOpen, open, close } = useModal()
@@ -391,6 +422,19 @@ const handleComparisonReportGenerated = (path: string) => {
 const handleReanalyzedByDate = async () => {
   // Refresh records after reanalysis
   await loadTodayRecords()
+}
+
+const handleViewSession = (session: Session) => {
+  selectedSession.value = session
+}
+
+const handleSessionUpdated = (session: Session) => {
+  selectedSession.value = null
+}
+
+const handleSessionAnalyzed = (session: Session) => {
+  // Optionally refresh records or do other updates
+  loadTodayRecords()
 }
 
 const handleViewReportFile = (path: string) => {

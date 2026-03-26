@@ -232,6 +232,34 @@
     "summarySaved": "Summary saved",
     "summarySaveFailed": "Failed to save summary: {error}"
   },
+  "sessionList": {
+    "title": "Sessions",
+    "filter": "Filter",
+    "pending": "Pending",
+    "analyzed": "Analyzed",
+    "all": "All",
+    "selected": "selected",
+    "loading": "Loading...",
+    "noSessions": "No sessions",
+    "screenshotCount": "{count} screenshots",
+    "ongoing": "Ongoing",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing...",
+    "analyzeSelected": "Analyze Selected ({count})",
+    "analyzingProgress": "Analyzing, please wait...",
+    "analyzeSuccess": "Analysis complete",
+    "analyzeFailed": "Analysis failed: {error}",
+    "batchAnalyzeSuccess": "Successfully analyzed {count} sessions",
+    "batchAnalyzePartial": "Batch analysis complete: {success} succeeded, {fail} failed",
+    "view": "View",
+    "close": "Close",
+    "loadFailed": "Failed to load sessions: {error}",
+    "status": {
+      "active": "Active",
+      "ended": "Ended",
+      "analyzed": "Analyzed"
+    }
+  },
   "logViewer": {
     "title": "Runtime Logs",
     "refresh": "Refresh",
