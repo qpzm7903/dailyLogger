@@ -65,13 +65,14 @@
       </div>
 
       <div class="flex-1 overflow-auto p-6" ref="scrollContainer" @scroll="handleScroll">
-        <!-- Skeleton loader while loading -->
-        <SkeletonLoader v-if="isLoading" variant="gallery" :count="6" />
+        <!-- Loading skeleton -->
+        <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SkeletonLoader :count="6" />
+        </div>
+        <EmptyState v-else-if="screenshots.length === 0" type="screenshots" :description="t('emptyState.screenshots')" />
 
         <!-- Empty state -->
-        <EmptyState v-else-if="screenshots.length === 0" type="screenshots">
-          {{ t('screenshotGallery.noScreenshots') }}
-        </EmptyState>
+        <EmptyState v-else-if="screenshots.length === 0" type="screenshots" :description="t('emptyState.screenshots')" />
 
         <template v-else>
           <!-- Grid View -->

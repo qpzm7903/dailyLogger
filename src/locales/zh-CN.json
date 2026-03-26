@@ -627,6 +627,12 @@
     "tabCapture": "捕获策略",
     "tabOutput": "输出与集成"
   },
+  "emptyState": {
+    "screenshots": "暂无截图记录，开始工作后会自动捕获",
+    "dailyReport": "尚未生成日报，运行自动捕获后将在一天结束时生成",
+    "searchResults": "未找到匹配的记录",
+    "generic": "暂无内容"
+  },
   "screenshotGallery": {
     "title": "截图画廊",
     "gridView": "网格",

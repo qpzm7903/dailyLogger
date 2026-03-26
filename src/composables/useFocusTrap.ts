@@ -1,51 +1,71 @@
-// UX-5: Focus trap composable for modal accessibility
-// Implements focus trap pattern: focus stays within modal, Tab cycles within modal
+// UX-5: useFocusTrap composable
+// Focus trap implementation for modal accessibility
 
-import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue'
+import { ref, onBeforeUnmount, type Ref } from 'vue'
 
 export interface UseFocusTrapOptions {
-  /** Whether to auto-activate when container is mounted */
-  autoActivate?: boolean
-  /** Callback when trap is activated */
+  /** Callback when focus trap is activated */
   onActivate?: () => void
-  /** Callback when trap is deactivated */
+  /** Callback when focus trap is deactivated */
   onDeactivate?: () => void
 }
 
-export interface UseFocusTrapReturn {
-  /** Container ref to attach to the modal element */
-  containerRef: Ref<HTMLElement | null>
-  /** Whether the trap is currently active */
-  isActive: Ref<boolean>
-  /** Trigger element that opened the modal (for focus restoration) */
-  triggerElement: Ref<HTMLElement | null>
-  /** Activate the focus trap */
-  activate: (trigger?: HTMLElement) => void
-  /** Deactivate the focus trap and restore focus */
+/**
+ * useFocusTrap composable
+ *
+ * Provides focus trap functionality for modals:
+ * - When activated, focuses the first focusable element inside the container
+ * - Tab key cycles focus within the container (focus cannot escape)
+ * - When deactivated, restores focus to the previously focused element
+ *
+ * @example
+ * ```ts
+ * const containerRef = ref<HTMLElement | null>(null)
+ * const { activate, deactivate } = useFocusTrap(containerRef)
+ * ```
+ */
+export function useFocusTrap(
+  containerRef: Ref<HTMLElement | null>,
+  options: UseFocusTrapOptions = {}
+): {
+  activate: () => void
   deactivate: () => void
-}
-
-const FOCUSABLE_SELECTORS = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-  'details > summary',
-].join(', ')
-
-export function useFocusTrap(options: UseFocusTrapOptions = {}): UseFocusTrapReturn {
-  const containerRef = ref<HTMLElement | null>(null)
+  isActive: Ref<boolean>
+} {
   const isActive = ref(false)
-  const triggerElement = ref<HTMLElement | null>(null)
+  let previousActiveElement: HTMLElement | null = null
 
+  // Get all focusable elements within the container
   const getFocusableElements = (): HTMLElement[] => {
     if (!containerRef.value) return []
-    return Array.from(containerRef.value.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS))
+
+    const selector = [
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      'a[href]',
+      '[tabindex]:not([tabindex="-1"])',
+      '[contenteditable="true"]',
+    ].join(', ')
+
+    return Array.from(containerRef.value.querySelectorAll<HTMLElement>(selector))
   }
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  // Find the first focusable element
+  const getFirstFocusable = (): HTMLElement | null => {
+    const focusable = getFocusableElements()
+    return focusable.length > 0 ? focusable[0] : null
+  }
+
+  // Find the last focusable element
+  const getLastFocusable = (): HTMLElement | null => {
+    const focusable = getFocusableElements()
+    return focusable.length > 0 ? focusable[focusable.length - 1] : null
+  }
+
+  // Handle keydown event for Tab trapping
+  const handleKeydown = (event: KeyboardEvent) => {
     if (!isActive.value || event.key !== 'Tab') return
 
     const focusable = getFocusableElements()
@@ -54,14 +74,14 @@ export function useFocusTrap(options: UseFocusTrapOptions = {}): UseFocusTrapRet
     const first = focusable[0]
     const last = focusable[focusable.length - 1]
 
+    // Shift + Tab: if focus is on first element, move to last
     if (event.shiftKey) {
-      // Shift+Tab: if on first element, wrap to last
       if (document.activeElement === first) {
         event.preventDefault()
         last.focus()
       }
     } else {
-      // Tab: if on last element, wrap to first
+      // Tab: if focus is on last element, move to first
       if (document.activeElement === last) {
         event.preventDefault()
         first.focus()
@@ -69,20 +89,23 @@ export function useFocusTrap(options: UseFocusTrapOptions = {}): UseFocusTrapRet
     }
   }
 
-  const activate = (trigger?: HTMLElement) => {
+  const activate = () => {
     if (isActive.value) return
 
-    // Remember trigger element for restoration later
-    triggerElement.value = trigger || document.activeElement as HTMLElement
+    // Remember the currently focused element
+    previousActiveElement = document.activeElement as HTMLElement
 
+    // Set isActive flag
     isActive.value = true
-    document.addEventListener('keydown', handleKeyDown)
 
-    // Move focus to first focusable element in modal
+    // Add keydown listener
+    document.addEventListener('keydown', handleKeydown)
+
+    // Focus the first focusable element after a brief delay to ensure DOM is ready
     requestAnimationFrame(() => {
-      const focusable = getFocusableElements()
-      if (focusable.length > 0) {
-        focusable[0].focus()
+      const firstFocusable = getFirstFocusable()
+      if (firstFocusable) {
+        firstFocusable.focus()
       } else if (containerRef.value) {
         // If no focusable elements, focus the container itself
         containerRef.value.focus()
@@ -95,28 +118,28 @@ export function useFocusTrap(options: UseFocusTrapOptions = {}): UseFocusTrapRet
   const deactivate = () => {
     if (!isActive.value) return
 
-    isActive.value = false
-    document.removeEventListener('keydown', handleKeyDown)
+    // Remove keydown listener
+    document.removeEventListener('keydown', handleKeydown)
 
-    // Restore focus to trigger element
-    if (triggerElement.value && triggerElement.value.isConnected) {
-      triggerElement.value.focus()
+    // Restore focus to the previously focused element
+    if (previousActiveElement && previousActiveElement.focus) {
+      previousActiveElement.focus()
     }
 
+    isActive.value = false
     options.onDeactivate?.()
   }
 
+  // Cleanup on unmount
   onBeforeUnmount(() => {
     if (isActive.value) {
-      deactivate()
+      document.removeEventListener('keydown', handleKeydown)
     }
   })
 
   return {
-    containerRef,
-    isActive,
-    triggerElement,
     activate,
     deactivate,
+    isActive,
   }
 }

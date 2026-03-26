@@ -155,9 +155,7 @@
 
         <!-- Records List -->
         <SkeletonLoader v-if="props.isLoading" :count="5" />
-        <EmptyState v-else-if="filteredRecords.length === 0" type="screenshots">
-          {{ todayRecords.length === 0 ? '暂无记录' : '无匹配标签的记录' }}
-        </EmptyState>
+        <EmptyState v-else-if="filteredRecords.length === 0" type="generic" :description="todayRecords.length === 0 ? t('emptyState.screenshots') : '无匹配标签的记录'" />
         <div v-else class="space-y-3 pr-1 custom-scrollbar">
           <div
             v-for="record in paginatedRecords"

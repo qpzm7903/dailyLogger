@@ -4,7 +4,7 @@
       v-for="i in count"
       :key="i"
       class="h-16 rounded-lg shimmer"
-      :class="{ 'h-24': i === 1 && variant === 'gallery' }"
+      :class="{ 'w-full': true }"
     />
   </div>
 </template>
@@ -12,12 +12,11 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
+    /** Number of skeleton items to show */
     count?: number
-    variant?: 'default' | 'gallery'
   }>(),
   {
     count: 3,
-    variant: 'default',
   }
 )
 </script>

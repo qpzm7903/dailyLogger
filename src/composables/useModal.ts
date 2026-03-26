@@ -1,9 +1,8 @@
-// UX-010: useModal composable
+// UX-5: useModal composable
 // Centralized modal management - replaces 21 individual showXxx ref variables
-// UX-5: Extended with ESC key listener and focus trap integration
+// UX-5: Extended with ESC key listener
 
 import { ref, readonly, onMounted, onUnmounted, type Ref, type DeepReadonly } from 'vue'
-import { useFocusTrap, type UseFocusTrapReturn } from './useFocusTrap'
 
 // Modal ID type - all possible modal identifiers
 export type ModalId =
@@ -34,9 +33,6 @@ export type ModalId =
 // Module-level state (singleton pattern)
 const activeModal: Ref<ModalId | null> = ref(null)
 const previousActiveElement = ref<HTMLElement | null>(null)
-
-// Focus trap instance (singleton)
-let focusTrap: UseFocusTrapReturn | null = null
 let escListenerRegistered = false
 
 export interface UseModalReturn {
@@ -51,7 +47,12 @@ export interface UseModalReturn {
   /** Toggle a modal's open/close state */
   toggle: (id: ModalId) => void
   /** Focus trap control for modal components */
-  focusTrap: UseFocusTrapReturn
+  focusTrap: {
+    activate: () => void
+    deactivate: () => void
+    isActive: Ref<boolean>
+    containerRef: Ref<HTMLElement | null>
+  }
 }
 
 /**
@@ -60,11 +61,11 @@ export interface UseModalReturn {
  * Provides centralized modal state management.
  * Only one modal can be open at a time.
  *
- * UX-5: Automatically handles ESC key to close modals and manages focus trap.
+ * UX-5: Automatically handles ESC key to close modals.
  *
  * @example
  * ```ts
- * const { isOpen, open, close, toggle, focusTrap } = useModal()
+ * const { isOpen, open, close, toggle } = useModal()
  *
  * // Check if modal is open
  * if (isOpen('settings')) { ... }
@@ -77,25 +78,14 @@ export interface UseModalReturn {
  *
  * // Toggle modal
  * toggle('quickNote')
- *
- * // In modal component template:
- * // <div :ref="focusTrap.containerRef">...</div>
- * // In modal onMounted: focusTrap.activate(event.currentTarget as HTMLElement)
- * // In modal onBeforeUnmount: focusTrap.deactivate()
  * ```
  */
 export function useModal(): UseModalReturn {
-  // Lazily create focus trap instance
-  if (!focusTrap) {
-    focusTrap = useFocusTrap({
-      onDeactivate: () => {
-        // When focus trap deactivates, close the modal
-        activeModal.value = null
-      },
-    })
-  }
+  const focusTrapContainerRef = ref<HTMLElement | null>(null)
+  const focusTrapActive = ref(false)
+  let focusTrapPreviousElement: HTMLElement | null = null
 
-  const handleEscKey = (event: KeyboardEvent) => {
+  const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && activeModal.value !== null) {
       event.preventDefault()
       activeModal.value = null
@@ -104,9 +94,66 @@ export function useModal(): UseModalReturn {
 
   const ensureEscListener = () => {
     if (!escListenerRegistered) {
-      document.addEventListener('keydown', handleEscKey)
+      document.addEventListener('keydown', handleKeydown)
       escListenerRegistered = true
     }
+  }
+
+  const getFocusableElements = (): HTMLElement[] => {
+    if (!focusTrapContainerRef.value) return []
+    const selector = [
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      'a[href]',
+      '[tabindex]:not([tabindex="-1"])',
+      '[contenteditable="true"]',
+    ].join(', ')
+    return Array.from(focusTrapContainerRef.value.querySelectorAll<HTMLElement>(selector))
+  }
+
+  const handleTabKey = (event: KeyboardEvent) => {
+    if (!focusTrapActive.value || event.key !== 'Tab') return
+    const focusable = getFocusableElements()
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (event.shiftKey) {
+      if (document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      }
+    } else {
+      if (document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+  }
+
+  const activateFocusTrap = () => {
+    if (focusTrapActive.value) return
+    focusTrapPreviousElement = document.activeElement as HTMLElement
+    focusTrapActive.value = true
+    document.addEventListener('keydown', handleTabKey)
+    requestAnimationFrame(() => {
+      const focusable = getFocusableElements()
+      if (focusable.length > 0) {
+        focusable[0].focus()
+      } else if (focusTrapContainerRef.value) {
+        focusTrapContainerRef.value.focus()
+      }
+    })
+  }
+
+  const deactivateFocusTrap = () => {
+    if (!focusTrapActive.value) return
+    document.removeEventListener('keydown', handleTabKey)
+    if (focusTrapPreviousElement && focusTrapPreviousElement.focus) {
+      focusTrapPreviousElement.focus()
+    }
+    focusTrapActive.value = false
   }
 
   const isOpen = (id: ModalId): boolean => {
@@ -114,46 +161,35 @@ export function useModal(): UseModalReturn {
   }
 
   const open = (id: ModalId): void => {
-    // If same modal is already open, do nothing
     if (activeModal.value === id) return
-
-    // Remember the currently focused element before opening modal
     previousActiveElement.value = document.activeElement as HTMLElement
-
-    // Ensure ESC listener is registered
     ensureEscListener()
-
-    // Set new active modal (automatically closes any previous one)
     activeModal.value = id
   }
 
   const close = (id?: ModalId): void => {
     if (id === undefined) {
-      // Close current modal
       activeModal.value = null
+      deactivateFocusTrap()
+      if (previousActiveElement.value && previousActiveElement.value.focus) {
+        previousActiveElement.value.focus()
+      }
     } else {
-      // Close specific modal only if it's currently open
       if (activeModal.value === id) {
         activeModal.value = null
+        deactivateFocusTrap()
+        if (previousActiveElement.value && previousActiveElement.value.focus) {
+          previousActiveElement.value.focus()
+        }
       }
-    }
-
-    // Deactivate focus trap when modal closes
-    if (focusTrap && activeModal.value === null) {
-      focusTrap.deactivate()
     }
   }
 
   const toggle = (id: ModalId): void => {
     if (activeModal.value === id) {
-      activeModal.value = null
-      if (focusTrap) {
-        focusTrap.deactivate()
-      }
+      close(id)
     } else {
-      previousActiveElement.value = document.activeElement as HTMLElement
-      ensureEscListener()
-      activeModal.value = id
+      open(id)
     }
   }
 
@@ -163,6 +199,11 @@ export function useModal(): UseModalReturn {
     open,
     close,
     toggle,
-    focusTrap: focusTrap!,
+    focusTrap: {
+      activate: activateFocusTrap,
+      deactivate: deactivateFocusTrap,
+      isActive: focusTrapActive,
+      containerRef: focusTrapContainerRef,
+    },
   }
 }
