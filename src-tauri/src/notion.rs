@@ -4,7 +4,7 @@
 //! using the Notion API.
 
 use crate::create_http_client;
-use pulldown_cmark::{Event, Parser, Tag};
+use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
@@ -304,14 +304,14 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
 
     for event in parser {
         match event {
-            Event::Start(Tag::Heading(_level, _, _)) => {
+            Event::Start(Tag::Heading { level: _, .. }) => {
                 // Flush any pending paragraph
                 if !rich_text_builder.is_empty() {
                     blocks.push(NotionBlock::paragraph(rich_text_builder.build()));
                 }
                 rich_text_builder.clear();
             }
-            Event::End(Tag::Heading(level, _, _)) => {
+            Event::End(TagEnd::Heading(level)) => {
                 let rich_text = rich_text_builder.build();
                 if !(rich_text.is_empty()
                     || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
@@ -331,7 +331,7 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
             Event::Start(Tag::Paragraph) => {
                 rich_text_builder.clear();
             }
-            Event::End(Tag::Paragraph) => {
+            Event::End(TagEnd::Paragraph) => {
                 if in_blockquote {
                     // Blockquote handles its own content
                 } else if !rich_text_builder.is_empty() {
@@ -342,13 +342,13 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
             Event::Start(Tag::List(start_number)) => {
                 is_numbered_list = start_number.is_some();
             }
-            Event::End(Tag::List(_)) => {
+            Event::End(TagEnd::List(_)) => {
                 is_numbered_list = false;
             }
             Event::Start(Tag::Item) => {
                 rich_text_builder.clear();
             }
-            Event::End(Tag::Item) => {
+            Event::End(TagEnd::Item) => {
                 let rich_text = rich_text_builder.build();
                 if !(rich_text.is_empty()
                     || rich_text.len() == 1 && rich_text[0].text.content.is_empty())
@@ -369,7 +369,7 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
                 };
                 code_content.clear();
             }
-            Event::End(Tag::CodeBlock(_)) => {
+            Event::End(TagEnd::CodeBlock) => {
                 in_code_block = false;
                 let text = code_content.trim();
                 if !text.is_empty() {
@@ -379,11 +379,11 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
                 code_content.clear();
                 code_language = None;
             }
-            Event::Start(Tag::BlockQuote) => {
+            Event::Start(Tag::BlockQuote(_)) => {
                 in_blockquote = true;
                 blockquote_builder.clear();
             }
-            Event::End(Tag::BlockQuote) => {
+            Event::End(TagEnd::BlockQuote(_)) => {
                 in_blockquote = false;
                 let rich_text = blockquote_builder.build();
                 if !(rich_text.is_empty()
@@ -400,7 +400,7 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
                     rich_text_builder.set_bold(true);
                 }
             }
-            Event::End(Tag::Strong) => {
+            Event::End(TagEnd::Strong) => {
                 if in_blockquote {
                     blockquote_builder.set_bold(false);
                 } else {
@@ -414,7 +414,7 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
                     rich_text_builder.set_italic(true);
                 }
             }
-            Event::End(Tag::Emphasis) => {
+            Event::End(TagEnd::Emphasis) => {
                 if in_blockquote {
                     blockquote_builder.set_italic(false);
                 } else {
@@ -428,7 +428,7 @@ pub fn markdown_to_notion_blocks(markdown: &str) -> Vec<NotionBlock> {
                     rich_text_builder.set_strikethrough(true);
                 }
             }
-            Event::End(Tag::Strikethrough) => {
+            Event::End(TagEnd::Strikethrough) => {
                 if in_blockquote {
                     blockquote_builder.set_strikethrough(false);
                 } else {
