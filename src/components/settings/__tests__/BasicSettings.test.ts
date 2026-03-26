@@ -263,7 +263,12 @@ describe('BasicSettings', () => {
       expect(invoke).toHaveBeenCalledWith('test_api_connection_with_ollama', {
         apiBaseUrl: 'https://api.openai.com/v1',
         apiKey: 'sk-test-key',
-        modelName: 'gpt-4o'
+        modelName: 'gpt-4o',
+        proxyEnabled: false,
+        proxyHost: null,
+        proxyPassword: null,
+        proxyPort: null,
+        proxyUsername: null
       })
     })
 
