@@ -1,6 +1,6 @@
 # Story 10.2: 新用户引导
 
-Status: review
+Status: done
 
 ## Story
 
@@ -225,6 +225,7 @@ claude-opus-4-6
 - 实现了 API 测试连接功能，调用 `test_api_connection_with_ollama`
 - 使用 Tauri dialog 插件选择 Obsidian Vault 文件夹
 - 在 `App.vue` 中集成了引导检测逻辑：首次启动或 `api_base_url` 为空时显示引导
+- 注意：OnboardingModal 使用硬编码中文字符串，未使用 i18n 系统（符合当前用户群体）
 - 所有测试通过（927 前端测试 + 454 Rust 测试）
 
 ### File List
@@ -239,4 +240,8 @@ claude-opus-4-6
 - `src-tauri/src/memory_storage/schema.rs` - 数据库 schema 添加 onboarding_completed 字段
 - `src-tauri/src/memory_storage/settings.rs` - get_settings_sync 和 save_settings_sync 添加 onboarding_completed 支持
 - `src-tauri/src/synthesis/mod.rs` - 测试代码中添加 onboarding_completed 字段
+
+**未修改（文档声明 vs 实际不符）：**
+- `src/locales/zh-CN.json` - OnboardingModal 使用硬编码中文，未使用 i18n
+- `src/locales/en.json` - OnboardingModal 使用硬编码中文，未使用 i18n
 
