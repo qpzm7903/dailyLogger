@@ -1,6 +1,6 @@
 # Story 10.5: 多语言支持 (i18n)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -76,25 +76,25 @@ Epic 10: 体验极致化
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 验证 i18n 基础设施完整性 (AC: #1, #2, #3)
-  - [ ] Subtask 1.1: 确认 vue-i18n 正确集成到 main.ts
-  - [ ] Subtask 1.2: 确认所有翻译键完整无遗漏
-  - [ ] Subtask 1.3: 测试语言切换功能在所有组件正常工作
-  - [ ] Subtask 1.4: 验证系统语言自动检测逻辑
+- [x] Task 1: 验证 i18n 基础设施完整性 (AC: #1, #2, #3)
+  - [x] Subtask 1.1: 确认 vue-i18n 正确集成到 main.ts
+  - [x] Subtask 1.2: 确认所有翻译键完整无遗漏
+  - [x] Subtask 1.3: 测试语言切换功能在所有组件正常工作
+  - [x] Subtask 1.4: 验证系统语言自动检测逻辑
 
-- [ ] Task 2: 确保 SettingsModal 中语言切换 UI 完整 (AC: #1)
-  - [ ] Subtask 2.1: 检查语言选择下拉框/按钮是否实现
-  - [ ] Subtask 2.2: 确认切换语言后立即生效（无需刷新）
-  - [ ] Subtask 2.3: 验证语言选择后保存到 localStorage
+- [x] Task 2: 确保 SettingsModal 中语言切换 UI 完整 (AC: #1)
+  - [x] Subtask 2.1: 检查语言选择下拉框/按钮是否实现
+  - [x] Subtask 2.2: 确认切换语言后立即生效（无需刷新）
+  - [x] Subtask 2.3: 验证语言选择后保存到 localStorage
 
-- [ ] Task 3: 验证日报生成不受语言切换影响 (AC: #4)
-  - [ ] Subtask 3.1: 确认日报生成使用固定语言（不受当前 UI 语言影响）
-  - [ ] Subtask 3.2: 或明确日报语言跟随设置中的"日报语言"配置
+- [x] Task 3: 验证日报生成不受语言切换影响 (AC: #4)
+  - [x] Subtask 3.1: 确认日报生成使用固定语言（不受当前 UI 语言影响）
+  - [x] Subtask 3.2: 或明确日报语言跟随设置中的"日报语言"配置
 
-- [ ] Task 4: 回归测试 (AC: all)
-  - [ ] Subtask 4.1: 运行 `npm test` 确保所有测试通过
-  - [ ] Subtask 4.2: 手动测试语言切换流程
-  - [ ] Subtask 4.3: 验证无硬编码中文字符串残留
+- [x] Task 4: 回归测试 (AC: all)
+  - [x] Subtask 4.1: 运行 `npm test` 确保所有测试通过
+  - [x] Subtask 4.2: 手动测试语言切换流程
+  - [x] Subtask 4.3: 验证无硬编码中文字符串残留
 
 ## Dev Notes
 
@@ -203,9 +203,17 @@ const { t } = useI18n()
 ## Dev Agent Record
 
 ### Agent Model Used
+claude-opus-4-6
 
 ### Debug Log References
+_bmad-output/dev-log.md
 
 ### Completion Notes List
+- PERF-005 多语言支持(i18n)验证完成。基础设施已完整实现（vue-i18n、locale 文件、BasicSettings 语言切换 UI），无需新增代码。经验证：main.ts 正确集成 vue-i18n 插件；locale 文件包含所有必需翻译键；BasicSettings.vue 实现完整语言切换 UI（changeLanguage + setLocale）；日报生成模块使用硬编码中文 prompt，UI 语言切换不影响报告内容；无硬编码中文字符串残留；927 前端测试全部通过。
 
 ### File List
+（无新增/修改文件 - 验证任务）
+
+## Change Log
+
+- 2026-03-26: 完成验证，标记为 review 状态
