@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-26 (SESSION-003 story created)
+last_updated: 2026-03-26 (SESSION-003 done + Epic-8 retrospective completed)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -121,10 +121,10 @@ development_status:
   SESSION-001-retrospective: done
   SESSION-002: done
   SESSION-002-retrospective: done
-  SESSION-003: in-progress
+  SESSION-003: done
   SESSION-004: backlog
   SESSION-005: backlog
-  epic-8-retrospective: optional
+  epic-8-retrospective: done
 
   # Epic 9: 视觉与交互体验系统化升级 (UX-REDESIGN) — 新规划
   epic-9: backlog
