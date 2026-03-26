@@ -1,9 +1,9 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-26
-> 当前版本: v3.2.0 (AI 代理配置支持)
+> 当前版本: v3.2.0 (体验极致化)
 > 下一版本: v3.3.0（待规划）
-> Milestone: v2.0.0 架构瘦身 → v2.6.0 集成与扩展 → v2.10.0 核心体验深化 → v3.0.0 分析管线重设计 → v3.1.1 CI 修复 → v3.2.0 AI 代理配置
+> Milestone: v2.0.0 架构瘦身 → v2.6.0 集成与扩展 → v2.10.0 核心体验深化 → v3.0.0 分析管线重设计 → v3.1.1 CI 修复 → v3.2.0 体验极致化
 
 ---
 
@@ -87,9 +87,9 @@
 
 ---
 
-## v3.2.0（AI 代理配置支持）✅ 完成
+## v3.2.0（体验极致化）✅ 完成
 
-**目标**: 为 AI API 请求添加代理配置支持，支持企业防火墙场景和代理认证
+**目标**: UI/UX 全面升级，性能优化，新用户引导，多语言支持
 
 **版本类型**: MINOR（功能增强）
 
@@ -98,29 +98,38 @@
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
 | PERF-001 | AI 代理配置（Proxy 支持 + 代理认证） | 2pts | HIGH | ✅ 完成 |
+| PERF-002 | 新用户引导（OnboardingModal + API 测试连接） | 2pts | HIGH | ✅ 完成 |
+| PERF-003 | 性能优化 - 截图加载（虚拟滚动 + blur-up + 缩略图缓存） | 3pts | HIGH | ✅ 完成 |
+| PERF-004 | 性能优化 - 数据库查询（索引优化 + 游标分页） | 3pts | HIGH | ✅ 完成 |
+| PERF-005 | 多语言支持（vue-i18n 基础设施验证 + 语言切换 UI） | 2pts | HIGH | ✅ 完成 |
+| PERF-006 | 浅色主题支持（CSS 变量 + Tailwind @theme + 主题切换） | 3pts | MEDIUM | ✅ 完成 |
 
 **主要变更**：
-- 数据库：新增 proxy_enabled、proxy_host、proxy_port、proxy_username、proxy_password、test_model_name 字段
-- 前端：BasicSettings 添加可折叠代理配置面板
-- 后端：新增 ProxyConfig 结构体和 create_http_client_with_proxy() 函数
-- 所有 AI API 调用路径（synthesis、session_manager、ollama、auto_perception）均支持代理
-- 新增 Test Model 字段，测试连接时优先使用
+- AI 代理配置：数据库新增 proxy 字段，前端可折叠配置面板，后端全链路支持
+- 新用户引导：3 步引导流程，API 测试连接验证，onboarding_completed 持久化
+- 截图加载优化：虚拟滚动 composable + blur-up 渐进式加载 + 缩略图缓存
+- 数据库查询优化：4 个新索引 + 游标分页 API
+- 多语言支持：vue-i18n 基础设施验证，8 个新 i18n key
+- 浅色主题：.light CSS 类覆盖 CSS 变量，系统主题自动检测
 
 ---
 
-## 未来规划（体验极致化）⏳ 规划中
+## 未来规划（待规划）⏳ 规划中
 
-**目标**: UI/UX 全面升级，性能优化，新用户引导
-
-| Phase | 功能 |
-|-------|------|
-| 1 | UI/UX 全面升级（基于 v1.77 spec 的完善版） |
-| 2 | 性能优化（大量截图时的流畅度） |
-| 3 | 新用户引导 / 首屏体验优化 |
+**目标**: 待定
 
 ---
 
 ## 已完成版本（主要功能版本摘要）
+
+### v3.2.0 — 体验极致化 ✅
+- AI 代理配置：HTTP 代理 + 认证支持
+- 新用户引导：3 步 Onboarding 流程
+- 截图加载优化：虚拟滚动 + blur-up + 缩略图缓存
+- 数据库查询优化：4 索引 + 游标分页
+- 多语言支持：vue-i18n 验证，en/zh-CN
+- 浅色主题：CSS 变量 + 主题切换 UI
+- Epic 10 全部 6 个 Story 完成
 
 ### v2.10.0 — 今日摘要 Widget ✅
 - Dashboard 实时统计 Widget：记录数、时间跨度、活跃时段
