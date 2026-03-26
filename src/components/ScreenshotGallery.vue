@@ -72,112 +72,123 @@
         <EmptyState v-else-if="screenshots.length === 0" type="screenshots" :description="t('emptyState.screenshots')" />
 
         <template v-else>
-          <!-- Grid View -->
+          <!-- Grid View with Virtual Scrolling -->
           <div
             v-if="viewMode === 'grid'"
             ref="gridContainer"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            class="relative"
+            :style="{ height: `${totalHeight}px` }"
           >
             <div
-              v-for="screenshot in paginatedScreenshots"
-              :key="screenshot.id"
-              @click="openScreenshot(screenshot)"
-              class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary transition-colors"
+              v-for="item in visibleItems"
+              :key="item.data.id"
+              :style="item.style"
+              class="absolute left-0 right-0 p-2"
             >
-              <div class="aspect-video relative bg-gray-800 overflow-hidden">
-                <!-- Blur-up placeholder -->
-                <div
-                  v-if="!screenshot.thumbnailLoaded && !screenshot.thumbnailError && !screenshot.thumbnail"
-                  class="absolute inset-0 bg-gray-700 animate-pulse"
-                />
-                <!-- Blur-up image transition -->
-                <img
-                  v-if="screenshot.thumbnail"
-                  :src="screenshot.thumbnail"
-                  :alt="String(screenshot.id)"
-                  class="w-full h-full object-cover transition-all duration-300"
-                  :class="screenshot.thumbnailLoaded ? 'blur-0 scale-100' : 'blur-lg scale-110'"
-                  @load="onThumbnailLoad(screenshot)"
-                  @error="onThumbnailError(screenshot)"
-                />
-                <div v-else-if="screenshot.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500">
-                  {{ t('screenshotGallery.loadError') }}
+              <div
+                @click="openScreenshot(item.data)"
+                class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary transition-colors"
+              >
+                <div class="aspect-video relative bg-gray-800 overflow-hidden">
+                  <!-- Blur-up placeholder -->
+                  <div
+                    v-if="!item.data.thumbnailLoaded && !item.data.thumbnailError && !item.data.thumbnail"
+                    class="absolute inset-0 bg-gray-700 animate-pulse"
+                  />
+                  <!-- Blur-up image transition -->
+                  <img
+                    v-if="item.data.thumbnail"
+                    :src="item.data.thumbnail"
+                    :alt="String(item.data.id)"
+                    class="w-full h-full object-cover transition-all duration-300"
+                    :class="item.data.thumbnailLoaded ? 'blur-0 scale-100' : 'blur-lg scale-110'"
+                    @load="onThumbnailLoad(item.data)"
+                    @error="onThumbnailError(item.data)"
+                  />
+                  <div v-else-if="item.data.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500">
+                    {{ t('screenshotGallery.loadError') }}
+                  </div>
+                  <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
+                    {{ t('screenshotGallery.loading') }}
+                  </div>
                 </div>
-                <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
-                  {{ t('screenshotGallery.loading') }}
-                </div>
-              </div>
-              <div class="p-2">
-                <p class="text-xs text-gray-500">{{ formatTimeShort(screenshot.timestamp) }}</p>
-                <p class="text-xs text-gray-400 truncate">{{ parseContent(screenshot.content) }}</p>
-                <!-- Reanalyze button -->
-                <div class="mt-1 flex justify-end">
-                  <button
-                    @click.stop="reanalyzeRecord(screenshot)"
-                    :disabled="reanalyzingIds.has(screenshot.id)"
-                    class="px-2 py-0.5 text-xs rounded transition-colors"
-                    :class="reanalyzingIds.has(screenshot.id)
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                      : 'bg-primary/20 hover:bg-primary/30 text-primary'"
-                  >
-                    {{ reanalyzingIds.has(screenshot.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
-                  </button>
+                <div class="p-2">
+                  <p class="text-xs text-gray-500">{{ formatTimeShort(item.data.timestamp) }}</p>
+                  <p class="text-xs text-gray-400 truncate">{{ parseContent(item.data.content) }}</p>
+                  <!-- Reanalyze button -->
+                  <div class="mt-1 flex justify-end">
+                    <button
+                      @click.stop="reanalyzeRecord(item.data)"
+                      :disabled="reanalyzingIds.has(item.data.id)"
+                      class="px-2 py-0.5 text-xs rounded transition-colors"
+                      :class="reanalyzingIds.has(item.data.id)
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'bg-primary/20 hover:bg-primary/30 text-primary'"
+                    >
+                      {{ reanalyzingIds.has(item.data.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- List View -->
-          <div v-else class="flex flex-col divide-y divide-gray-700">
+          <!-- List View with Virtual Scrolling -->
+          <div v-else class="relative" :style="{ height: `${totalHeight}px` }">
             <div
-              v-for="screenshot in paginatedScreenshots"
-              :key="screenshot.id"
-              @click="openScreenshot(screenshot)"
-              class="flex items-center py-3 px-4 bg-darker rounded-lg mb-2 cursor-pointer hover:bg-gray-800 transition-colors"
+              v-for="item in visibleItems"
+              :key="item.data.id"
+              :style="item.style"
+              class="absolute left-0 right-0 px-4 py-3"
             >
-              <!-- Thumbnail with blur-up -->
-              <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4 relative">
-                <div
-                  v-if="!screenshot.thumbnailLoaded && !screenshot.thumbnailError && !screenshot.thumbnail"
-                  class="absolute inset-0 bg-gray-700 animate-pulse"
-                />
-                <img
-                  v-if="screenshot.thumbnail"
-                  :src="screenshot.thumbnail"
-                  :alt="String(screenshot.id)"
-                  class="w-full h-full object-cover transition-all duration-300"
-                  :class="screenshot.thumbnailLoaded ? 'blur-0 scale-100' : 'blur-lg scale-110'"
-                  @load="onThumbnailLoad(screenshot)"
-                  @error="onThumbnailError(screenshot)"
-                />
-                <div v-else-if="screenshot.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500 text-xs">
-                  !
+              <div
+                @click="openScreenshot(item.data)"
+                class="flex items-center py-3 px-4 bg-darker rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
+              >
+                <!-- Thumbnail with blur-up -->
+                <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4 relative">
+                  <div
+                    v-if="!item.data.thumbnailLoaded && !item.data.thumbnailError && !item.data.thumbnail"
+                    class="absolute inset-0 bg-gray-700 animate-pulse"
+                  />
+                  <img
+                    v-if="item.data.thumbnail"
+                    :src="item.data.thumbnail"
+                    :alt="String(item.data.id)"
+                    class="w-full h-full object-cover transition-all duration-300"
+                    :class="item.data.thumbnailLoaded ? 'blur-0 scale-100' : 'blur-lg scale-110'"
+                    @load="onThumbnailLoad(item.data)"
+                    @error="onThumbnailError(item.data)"
+                  />
+                  <div v-else-if="item.data.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                    !
+                  </div>
                 </div>
-              </div>
-              <!-- Time -->
-              <div class="w-20 flex-shrink-0">
-                <span class="text-sm text-gray-400">{{ formatTimeShort(screenshot.timestamp) }}</span>
-              </div>
-              <!-- AI Summary -->
-              <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-300 truncate">{{ parseContent(screenshot.content) }}</p>
-              </div>
-              <!-- Actions -->
-              <div class="flex-shrink-0 flex items-center gap-2">
-                <!-- Reanalyze button -->
-                <button
-                  @click.stop="reanalyzeRecord(screenshot)"
-                  :disabled="reanalyzingIds.has(screenshot.id)"
-                  class="px-2 py-1 text-xs rounded transition-colors"
-                  :class="reanalyzingIds.has(screenshot.id)
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-primary/20 hover:bg-primary/30 text-primary'"
-                >
-                  {{ reanalyzingIds.has(screenshot.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
-                </button>
-                <button class="text-xs text-gray-400 hover:text-primary transition-colors">
-                  {{ t('screenshotGallery.view') }}
-                </button>
+                <!-- Time -->
+                <div class="w-20 flex-shrink-0">
+                  <span class="text-sm text-gray-400">{{ formatTimeShort(item.data.timestamp) }}</span>
+                </div>
+                <!-- AI Summary -->
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-gray-300 truncate">{{ parseContent(item.data.content) }}</p>
+                </div>
+                <!-- Actions -->
+                <div class="flex-shrink-0 flex items-center gap-2">
+                  <!-- Reanalyze button -->
+                  <button
+                    @click.stop="reanalyzeRecord(item.data)"
+                    :disabled="reanalyzingIds.has(item.data.id)"
+                    class="px-2 py-1 text-xs rounded transition-colors"
+                    :class="reanalyzingIds.has(item.data.id)
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-primary/20 hover:bg-primary/30 text-primary'"
+                  >
+                    {{ reanalyzingIds.has(item.data.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
+                  </button>
+                  <button class="text-xs text-gray-400 hover:text-primary transition-colors">
+                    {{ t('screenshotGallery.view') }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -217,6 +228,7 @@ import ScreenshotModal from './ScreenshotModal.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonLoader from './SkeletonLoader.vue'
 import { useModal } from '../composables/useModal'
+import { useVirtualScroll } from '../composables/useVirtualScroll'
 import { useThumbnailCache } from '../composables/useThumbnailCache'
 import type { LogRecord } from '../types/tauri'
 import { showToast } from '../stores/toast'
@@ -253,6 +265,16 @@ const reanalyzingIds = ref(new Set<number>())
 
 // Thumbnail cache for memory optimization
 const { getThumbnail, hasThumbnail: hasCachedThumbnail } = useThumbnailCache()
+
+// Virtual scroll for performance with large lists
+const screenshotsRef = computed(() => screenshots.value)
+const ITEM_HEIGHT = 220 // Estimated height per screenshot card (including margin)
+const { visibleItems, totalHeight } = useVirtualScroll({
+  itemHeight: ITEM_HEIGHT,
+  containerRef: scrollContainer,
+  items: screenshotsRef,
+  buffer: 5
+})
 
 // Computed: paginated screenshots (maintains backward compatibility)
 const paginatedScreenshots = computed(() => {
@@ -296,18 +318,16 @@ const loadThumbnail = async (record: ScreenshotRecord) => {
   if (record.thumbnailLoaded || record.thumbnail || record.thumbnailError) return
 
   try {
-    // Use thumbnail cache if available
-    if (hasCachedThumbnail(record.screenshot_path)) {
-      const cached = await getThumbnail(record.screenshot_path, async () => '')
+    // Check cache first using the getThumbnail function
+    const cached = await getThumbnail(record.screenshot_path, async (path) => {
+      return await invoke<string>('get_screenshot', { path })
+    })
+
+    if (cached) {
       record.thumbnail = cached
       record.thumbnailLoaded = true
-      return
+      record.thumbnailError = false
     }
-
-    const thumbnail = await invoke<string>('get_screenshot', { path: record.screenshot_path })
-    record.thumbnail = thumbnail
-    record.thumbnailLoaded = true
-    record.thumbnailError = false
   } catch (err) {
     console.error('Failed to load thumbnail:', err)
     record.thumbnailError = true
@@ -423,15 +443,23 @@ const onScroll = (event: Event) => {
   if (rafId !== null) return
 
   rafId = requestAnimationFrame(() => {
-    const target = event.target as HTMLElement
-    const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight
-
-    // Auto-load more when user scrolls to bottom (within 100px threshold)
-    if (scrollBottom < 100 && hasMorePages.value && !isLoadingMore.value) {
-      loadMore()
-    }
+    // Load thumbnails for visible items when they come into view
+    loadThumbnailsForVisibleItems()
     rafId = null
   })
+}
+
+// Load thumbnails for currently visible items (used by virtual scroll)
+const loadThumbnailsForVisibleItems = async () => {
+  if (visibleItems.value.length === 0) return
+
+  // Load thumbnails for visible items that haven't been loaded yet
+  const visibleRecords = visibleItems.value.map(item => item.data)
+  for (const record of visibleRecords) {
+    if (!record.thumbnailLoaded && !record.thumbnail && !record.thumbnailError) {
+      await loadThumbnail(record)
+    }
+  }
 }
 
 const openScreenshot = async (screenshot: ScreenshotRecord) => {
