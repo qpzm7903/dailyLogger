@@ -25,7 +25,7 @@ on:
       - 'plan.md'
 
 jobs:
-  # ── PR 构建：验证三平台均可编译 ──────────────────────────────────────────────
+  # ── PR 构建：仅验证三平台可编译，不生成安装包 ────────────────────────────────
   build-pr:
     name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}
@@ -63,43 +63,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Build (macOS)
-        if: matrix.platform == 'macos-latest'
-        run: npm run tauri build
-
-      - name: Build Windows app
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          '{"bundle":{"targets":["nsis"]}}' | Out-File -FilePath nsis-only.json -Encoding utf8 -NoNewline
-          npm run tauri build -- --config nsis-only.json
-
-      - name: Build (Linux)
-        if: matrix.platform == 'ubuntu-24.04'
-        run: npm run tauri build
-
-      - name: Upload macOS artifact
-        if: matrix.platform == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-macos
-          path: src-tauri/target/release/bundle/**/*
-
-      - name: Upload Windows artifact
-        if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-windows
-          path: |
-            src-tauri/target/release/bundle/nsis/*-setup.exe
-            src-tauri/target/release/daily-logger.exe
-
-      - name: Upload Linux artifact
-        if: matrix.platform == 'ubuntu-24.04'
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-linux
-          path: src-tauri/target/release/daily-logger
+      - name: Verify desktop build (no bundle)
+        run: npm run build:desktop:release:nobundle
 
   # ── Tag 推送：先建 Release，再并行构建三平台，最后发布 ──────────────────────────
   create-release:
@@ -237,7 +202,7 @@ jobs:
       - run: npm ci
 
       - name: Build macOS app
-        run: npm run tauri build -- --target aarch64-apple-darwin
+        run: npm run build:desktop:release -- --target aarch64-apple-darwin
 
       - name: Upload DMG to release
         env:
@@ -276,7 +241,7 @@ jobs:
         shell: pwsh
         run: |
           '{"bundle":{"targets":["nsis"]}}' | Out-File -FilePath nsis-only.json -Encoding utf8 -NoNewline
-          npm run tauri build -- --config nsis-only.json
+          npm run build:desktop:release -- --config nsis-only.json
 
       - name: Upload installer and portable to release
         shell: bash
@@ -320,8 +285,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Build Linux app
-        run: npm run tauri build
+      - name: Build Linux binary (no bundle)
+        run: npm run build:desktop:release:nobundle
 
       - name: Upload tar.gz to release
         env:

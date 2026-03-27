@@ -65,10 +65,20 @@ npm install
 npm run tauri dev
 ```
 
-### 生产构建
+### 构建
+
+#### 本地快速构建
 
 ```bash
-npm run tauri build
+npm run build:desktop:local
+# 输出: src-tauri/target/local/
+# 用途: 本地验证前端产物 + Rust 桌面二进制，不生成安装包
+```
+
+#### 正式发布构建
+
+```bash
+npm run build:desktop:release
 # 输出: src-tauri/target/release/bundle/
 ```
 

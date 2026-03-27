@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:frontend": "vite build",
+    "build:desktop:local": "npm run build:frontend && cargo build --manifest-path src-tauri/Cargo.toml --profile local",
+    "build:desktop:release": "tauri build",
+    "build:desktop:release:nobundle": "tauri build --no-bundle",
     "preview": "vite preview",
     "tauri": "tauri",
     "test": "vitest run",
