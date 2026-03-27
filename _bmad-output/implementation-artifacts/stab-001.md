@@ -307,3 +307,8 @@ minimax-m2.7-highspeed
   - 修改 App.vue：导入 ErrorBoundary 并用 `<ErrorBoundary>` 包裹主内容
   - 添加 i18n 翻译：zh-CN.json 和 en.json 中的 errorBoundary.title
 
+- 2026-03-27: 修复 E2E 测试问题 - ErrorToast 阻止了 Save 按钮点击
+  - ErrorToast: 改为非阻塞模式 (z-50 -> z-40, pointer-events-none on container)
+  - 保持 dismiss 按钮可点击 (pointer-events-auto)
+  - 确保错误提示不会阻止用户与其他 UI 元素交互
+
