@@ -872,9 +872,11 @@ mod tests_statistics {
             *db = Some(conn);
         }
 
-        // Insert test sessions
-        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        // Get today's range first to ensure consistent date
+        let (start, end) = get_today_range();
+        let date_part = &start[..10]; // "YYYY-MM-DD"
 
+        // Insert test sessions
         {
             let db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
             let conn = db.as_ref().unwrap();
@@ -882,19 +884,16 @@ mod tests_statistics {
             // Insert two sessions for today
             conn.execute(
                 "INSERT INTO sessions (date, start_time, end_time, status) VALUES (?1, '09:00', '12:00', 'completed')",
-                params![today],
+                params![date_part],
             )
             .unwrap();
 
             conn.execute(
                 "INSERT INTO sessions (date, start_time, end_time, status) VALUES (?1, '14:00', '18:00', 'completed')",
-                params![today],
+                params![date_part],
             )
             .unwrap();
         }
-
-        // Get today's range
-        let (start, end) = get_today_range();
 
         // Call count functions
         let session_count = count_sessions_in_range(
