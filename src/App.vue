@@ -1,198 +1,75 @@
 <template>
-  <ErrorBoundary>
-    <div class="h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] flex">
-    <!-- UX-003: Offline status top banner -->
-    <OfflineBanner :isOnline="isOnline" />
+  <AppShell
+    :isDesktop="isDesktop"
+    :currentTime="currentTime"
+    :isOnline="isOnline"
+    :offlineQueueCount="offlineQueueCount"
+    :autoCaptureEnabled="autoCaptureEnabled"
+    :quickNotesCount="quickNotesCount"
+    :todayRecords="todayRecords"
+    :isLoadingTodayRecords="isLoadingTodayRecords"
+    :isGenerating="isGenerating"
+    :isGeneratingWeekly="isGeneratingWeekly"
+    :isGeneratingMonthly="isGeneratingMonthly"
+    :isCapturing="isCapturing"
+    :screenshotCount="screenshotCount"
+    :summaryPath="summaryPath"
+    :weeklyReportPath="weeklyReportPath"
+    :monthlyReportPath="monthlyReportPath"
+    :customReportPath="customReportPath"
+    :comparisonReportPath="comparisonReportPath"
+    @open="open"
+    @takeScreenshot="takeScreenshot"
+    @triggerCapture="triggerCapture"
+    @toggleAutoCapture="toggleAutoCapture"
+    @openQuickNote="openQuickNote"
+    @generateReport="handleReportGenerate"
+    @generateMultilingualReport="handleGenerateMultilingualReport"
+    @languageChange="handleLanguageChange"
+    @customAction="handleCustomAction"
+    @viewScreenshot="openScreenshot"
+  />
 
-    <!-- Sidebar Navigation -->
-    <Sidebar
-      :offlineQueueCount="offlineQueueCount"
-      @open="open"
-    />
-
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- Header -->
-      <Header
-        :isOnline="isOnline"
-        :offlineQueueCount="offlineQueueCount"
-        :currentTime="currentTime"
-        :autoCaptureEnabled="autoCaptureEnabled"
-        :todayRecordsCount="todayRecords.length"
-        @showOfflineQueue="open('offlineQueue')"
-      />
-
-      <!-- Dashboard -->
-      <Dashboard
-        :isDesktop="isDesktop"
-        :autoCaptureEnabled="autoCaptureEnabled"
-        :isCapturing="isCapturing"
-        :isLoading="isLoadingTodayRecords"
-        :quickNotesCount="quickNotesCount"
-        :todayRecords="todayRecords"
-        :isGenerating="isGenerating"
-        :isGeneratingWeekly="isGeneratingWeekly"
-        :isGeneratingMonthly="isGeneratingMonthly"
-        :screenshotCount="screenshotCount"
-        :summaryPath="summaryPath"
-        :weeklyReportPath="weeklyReportPath"
-        :monthlyReportPath="monthlyReportPath"
-        :customReportPath="customReportPath"
-        :comparisonReportPath="comparisonReportPath"
-        @open="open"
-        @takeScreenshot="takeScreenshot"
-        @triggerCapture="triggerCapture"
-        @toggleAutoCapture="toggleAutoCapture"
-        @openQuickNote="openQuickNote"
-        @generateReport="handleReportGenerate"
-        @generateMultilingualReport="handleGenerateMultilingualReport"
-        @languageChange="handleLanguageChange"
-        @customAction="handleCustomAction"
-        @viewScreenshot="openScreenshot"
-      />
-    </div>
-
-    <!-- Modal Container with Teleport and Transitions -->
-    <Teleport to="body">
-      <Transition name="fade" mode="out-in">
-        <SettingsModal v-if="isOpen('settings')" @close="close('settings')" />
-      </Transition>
-      <Transition name="scale" mode="out-in">
-        <BackupModal v-if="isOpen('backup')" @close="close('backup')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <QuickNoteModal v-if="isOpen('quickNote')" @close="close('quickNote')" @save="handleQuickNote" />
-      </Transition>
-      <Transition name="scale" mode="out-in">
-        <ScreenshotModal v-if="isOpen('screenshot')" :record="selectedScreenshot!" @close="close('screenshot')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <ScreenshotGallery v-if="isOpen('screenshotGallery')" @close="close('screenshotGallery')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <DailySummaryViewer v-if="isOpen('summaryViewer')" :summaryPath="summaryPath!" @close="close('summaryViewer')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <DailySummaryViewer v-if="isOpen('weeklyReportViewer')" :summaryPath="weeklyReportPath!" @close="close('weeklyReportViewer')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <DailySummaryViewer v-if="isOpen('monthlyReportViewer')" :summaryPath="monthlyReportPath!" @close="close('monthlyReportViewer')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <DailySummaryViewer v-if="isOpen('customReportViewer')" :summaryPath="customReportPath!" @close="close('customReportViewer')" />
-      </Transition>
-      <Transition name="scale" mode="out-in">
-        <CustomReportModal v-if="isOpen('customReport')" @close="close('customReport')" @generated="handleCustomReportGenerated" />
-      </Transition>
-      <Transition name="scale" mode="out-in">
-        <ReportComparisonModal v-if="isOpen('comparisonReport')" @close="close('comparisonReport')" @generated="handleComparisonReportGenerated" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <DailySummaryViewer v-if="isOpen('comparisonReportViewer')" :summaryPath="comparisonReportPath!" @close="close('comparisonReportViewer')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <ReportHistoryViewer v-if="isOpen('reportHistory')" @close="close('reportHistory')" @viewFile="handleViewReportFile" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <LogViewer v-if="isOpen('logViewer')" @close="close('logViewer')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <HistoryViewer v-if="isOpen('historyViewer')" :initialTag="initialFilterTag" @close="close('historyViewer'); initialFilterTag = null" />
-      </Transition>
-      <Transition name="fade" mode="out-in">
-        <SearchPanel v-if="isOpen('search')" @close="close('search')" @viewScreenshot="handleSearchViewScreenshot" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <TagCloud v-if="isOpen('tagCloud')" @close="close('tagCloud')" @tagSelected="handleTagSelected" />
-      </Transition>
-      <Transition name="scale" mode="out-in">
-        <ExportModal v-if="isOpen('export')" @close="close('export')" />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <TimelineVisualization
-          v-if="isOpen('timeline')"
-          @close="close('timeline')"
-          @viewScreenshot="handleTimelineViewScreenshot"
-        />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <OfflineQueueModal v-if="isOpen('offlineQueue')" @close="close('offlineQueue')" />
-      </Transition>
-      <Transition name="scale" mode="out-in">
-        <ReanalyzeByDateModal v-if="isOpen('reanalyzeByDate')" @close="close('reanalyzeByDate')" @reanalyzed="handleReanalyzedByDate" />
-      </Transition>
-      <!-- PERF-002: Onboarding Modal -->
-      <OnboardingModal v-if="showOnboarding" @close="showOnboarding = false" @completed="showOnboarding = false" />
-      <Transition name="slide-up" mode="out-in">
-        <SessionListModal
-          v-if="isOpen('sessionList')"
-          @close="close('sessionList')"
-          @viewSession="handleViewSession"
-          @sessionAnalyzed="handleSessionAnalyzed"
-        />
-      </Transition>
-      <Transition name="slide-up" mode="out-in">
-        <SessionDetailView
-          v-if="selectedSession !== null"
-          :session="selectedSession!"
-          @close="selectedSession = null"
-          @updated="handleSessionUpdated"
-        />
-      </Transition>
-      <Transition name="scale" mode="out-in">
-        <StatisticsPanel v-if="isOpen('statistics')" @close="close('statistics')" />
-      </Transition>
-      <Toast />
-    </Teleport>
-  </div>
-  </ErrorBoundary>
+  <AppModals
+    :isOpen="isOpen"
+    :selectedScreenshot="selectedScreenshot"
+    :initialFilterTag="initialFilterTag"
+    :selectedSession="selectedSession"
+    :showOnboarding="showOnboarding"
+    :summaryPath="summaryPath"
+    :weeklyReportPath="weeklyReportPath"
+    :monthlyReportPath="monthlyReportPath"
+    :customReportPath="customReportPath"
+    :comparisonReportPath="comparisonReportPath"
+    @close="closeModal"
+    @quickNoteSave="handleQuickNote"
+    @viewReportFile="handleViewReportFile"
+    @searchViewScreenshot="handleSearchViewScreenshot"
+    @tagSelected="handleTagSelected"
+    @timelineViewScreenshot="handleTimelineViewScreenshot"
+    @reanalyzedByDate="handleReanalyzedByDate"
+    @viewSession="handleViewSession"
+    @sessionUpdated="handleSessionUpdated"
+    @sessionAnalyzed="handleSessionAnalyzed"
+    @customReportGenerated="handleCustomReportGenerated"
+    @comparisonReportGenerated="handleComparisonReportGenerated"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { usePlatform } from './composables/usePlatform'
-import { useModal } from './composables/useModal'
-import { loadLanguageFromBackend } from './i18n'
-import { initTheme } from './theme'
+import { useModal, type ModalId } from './composables/useModal'
+import { useAppBootstrap } from './app/useAppBootstrap'
 
-// Layout Components
-import Sidebar from './components/layout/Sidebar.vue'
-import Header from './components/layout/Header.vue'
-import Dashboard from './components/layout/Dashboard.vue'
+// App shell and modals
+import AppShell from './app/AppShell.vue'
+import AppModals from './app/AppModals.vue'
 
-// Error Boundary
-import ErrorBoundary from './components/ErrorBoundary.vue'
-
-// Modal Components
-import SettingsModal from './components/SettingsModal.vue'
-import BackupModal from './components/BackupModal.vue'
-import QuickNoteModal from './components/QuickNoteModal.vue'
-import OnboardingModal from './components/OnboardingModal.vue'
-import ScreenshotModal from './components/ScreenshotModal.vue'
-import ScreenshotGallery from './components/ScreenshotGallery.vue'
-import DailySummaryViewer from './components/DailySummaryViewer.vue'
-import ReportHistoryViewer from './components/ReportHistoryViewer.vue'
-import LogViewer from './components/LogViewer.vue'
-import HistoryViewer from './components/HistoryViewer.vue'
-import SearchPanel from './components/SearchPanel.vue'
-import TagCloud from './components/TagCloud.vue'
-import ExportModal from './components/ExportModal.vue'
-import CustomReportModal from './components/CustomReportModal.vue'
-import ReportComparisonModal from './components/ReportComparisonModal.vue'
-import TimelineVisualization from './components/TimelineVisualization.vue'
-import Toast from './components/Toast.vue'
-import OfflineBanner from './components/OfflineBanner.vue'
-import OfflineQueueModal from './components/OfflineQueueModal.vue'
-import ReanalyzeByDateModal from './components/ReanalyzeByDateModal.vue'
-import SessionListModal from './components/SessionListModal.vue'
-import SessionDetailView from './components/SessionDetailView.vue'
-import StatisticsPanel from './components/StatisticsPanel.vue'
-
-import { showError, showSuccess, initToastI18n } from './stores/toast'
+// Toast and errors
+import { showError, showSuccess } from './stores/toast'
 import type { LogRecord, Tag, Settings } from './types/tauri'
 
 interface Session {
@@ -209,6 +86,9 @@ interface Session {
 
 const { t } = useI18n()
 const { isDesktop } = usePlatform()
+
+// Modal management
+const { isOpen, open: openModal, close } = useModal()
 
 // State
 const currentTime = ref('')
@@ -232,11 +112,6 @@ const comparisonReportPath = ref('')
 const selectedScreenshot = ref<LogRecord | null>(null)
 const initialFilterTag = ref<Tag | null>(null)
 const selectedSession = ref<Session | null>(null)
-
-// UX-010: useModal for centralized modal management
-const { isOpen, open, close } = useModal()
-
-// PERF-002: Onboarding state
 const showOnboarding = ref(false)
 
 // Computed
@@ -244,25 +119,33 @@ const screenshotCount = computed<number>(() => {
   return todayRecords.value.filter(r => r.source_type === 'auto' && r.screenshot_path).length
 })
 
-// Event listeners cleanup
-let timeInterval: ReturnType<typeof setInterval> | null = null
-let recordsRefreshInterval: ReturnType<typeof setInterval> | null = null
-let unlistenTrayOpenSettings: UnlistenFn | null = null
-let unlistenTrayOpenQuickNote: UnlistenFn | null = null
-let unlistenNetworkStatus: UnlistenFn | null = null
-let unlistenQueueUpdated: UnlistenFn | null = null
-let networkCheckInterval: ReturnType<typeof setInterval> | null = null
+// Bootstrap the app
+const {
+  init: bootstrapInit,
+  cleanup: bootstrapCleanup
+} = useAppBootstrap({
+  isDesktop: isDesktop.value,
+  openModal,
+  updateAutoCaptureEnabled: (enabled) => { autoCaptureEnabled.value = enabled },
+  updateQuickNotesCount: (count) => { quickNotesCount.value = count },
+  updateTodayRecords: (records) => { todayRecords.value = records },
+  updateIsLoadingTodayRecords: (loading) => { isLoadingTodayRecords.value = loading },
+  updateShowOnboarding: (show) => { showOnboarding.value = show },
+  updateReportPaths: (paths) => {
+    summaryPath.value = paths.summaryPath
+    weeklyReportPath.value = paths.weeklyReportPath
+    monthlyReportPath.value = paths.monthlyReportPath
+    customReportPath.value = paths.customReportPath
+    comparisonReportPath.value = paths.comparisonReportPath
+  },
+  t
+})
 
-// Methods
-const updateTime = () => {
-  currentTime.value = new Date().toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+// Modal helpers
+const open = (modal: ModalId) => openModal(modal)
+const closeModal = (modal?: ModalId) => close(modal)
 
+// Business actions
 const toggleAutoCapture = async () => {
   try {
     if (autoCaptureEnabled.value) {
@@ -284,7 +167,6 @@ const toggleAutoCapture = async () => {
 
 const takeScreenshot = async () => {
   if (isCapturing.value) return
-  // STAB-001 AC3: 离线时截图功能仍然可用（本地操作）
   isCapturing.value = true
   try {
     const path = await invoke<string>('take_screenshot')
@@ -298,7 +180,6 @@ const takeScreenshot = async () => {
     open('screenshot')
   } catch (err) {
     console.error('Failed to take screenshot:', err)
-    // STAB-001 AC5: 截图失败处理 - 记录错误但不中断流程
     if (String(err).includes('permission') || String(err).includes('Permission')) {
       showError(t('error.screenshotPermissionDenied'))
     } else {
@@ -339,7 +220,6 @@ const handleTimelineViewScreenshot = (record: LogRecord) => {
   open('screenshot')
 }
 
-// EXP-004: Handle search result screenshot viewing
 const handleSearchViewScreenshot = (record: LogRecord) => {
   close('search')
   selectedScreenshot.value = record
@@ -376,7 +256,6 @@ const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
 
 const handleGenerateMultilingualReport = async (language: string) => {
   if (isGenerating.value) return
-  // STAB-001 AC3: 离线时 AI 功能不可用
   if (!isOnline.value) {
     showError(t('offlineBanner.offline'))
     return
@@ -410,7 +289,6 @@ const handleLanguageChange = async (language: string) => {
 
 const generateSummary = async () => {
   if (isGenerating.value) return
-  // STAB-001 AC3: 离线时 AI 功能不可用
   if (!isOnline.value) {
     showError(t('offlineBanner.offline'))
     return
@@ -430,7 +308,6 @@ const generateSummary = async () => {
 
 const generateWeeklyReport = async () => {
   if (isGeneratingWeekly.value) return
-  // STAB-001 AC3: 离线时 AI 功能不可用
   if (!isOnline.value) {
     showError(t('offlineBanner.offline'))
     return
@@ -450,7 +327,6 @@ const generateWeeklyReport = async () => {
 
 const generateMonthlyReport = async () => {
   if (isGeneratingMonthly.value) return
-  // STAB-001 AC3: 离线时 AI 功能不可用
   if (!isOnline.value) {
     showError(t('offlineBanner.offline'))
     return
@@ -468,10 +344,8 @@ const generateMonthlyReport = async () => {
   }
 }
 
-// FEAT-003 (#63): Batch reanalyze all today's screenshot records
 const reanalyzeTodayRecords = async () => {
   if (isReanalyzing.value) return
-  // STAB-001 AC3: 离线时 AI 功能不可用
   if (!isOnline.value) {
     showError(t('offlineBanner.offline'))
     return
@@ -484,7 +358,6 @@ const reanalyzeTodayRecords = async () => {
     } else {
       showSuccess(t('reanalyze.fullSuccess', { count: result.success }))
     }
-    // Refresh records after reanalysis
     await loadTodayRecords()
   } catch (err) {
     console.error('Failed to reanalyze records:', err)
@@ -508,9 +381,7 @@ const handleComparisonReportGenerated = (path: string) => {
   comparisonReportPath.value = path
 }
 
-// FEAT-004 (#64): Handle reanalysis by date completion
 const handleReanalyzedByDate = async () => {
-  // Refresh records after reanalysis
   await loadTodayRecords()
 }
 
@@ -523,7 +394,6 @@ const handleSessionUpdated = (session: Session) => {
 }
 
 const handleSessionAnalyzed = (session: Session) => {
-  // Optionally refresh records or do other updates
   loadTodayRecords()
 }
 
@@ -532,6 +402,7 @@ const handleViewReportFile = (path: string) => {
   open('summaryViewer')
 }
 
+// Load today's records (used by several handlers)
 const loadTodayRecords = async () => {
   isLoadingTodayRecords.value = true
   try {
@@ -557,99 +428,12 @@ const loadTodayRecords = async () => {
   }
 }
 
-const loadSettings = async () => {
-  try {
-    const settings = await invoke<Settings>('get_settings')
-    autoCaptureEnabled.value = settings.auto_capture_enabled || false
-    summaryPath.value = settings.last_summary_path || ''
-    weeklyReportPath.value = (settings as Settings & { last_weekly_report_path?: string }).last_weekly_report_path || ''
-    monthlyReportPath.value = (settings as Settings & { last_monthly_report_path?: string }).last_monthly_report_path || ''
-    customReportPath.value = (settings as Settings & { last_custom_report_path?: string }).last_custom_report_path || ''
-  } catch (err) {
-    console.error('Failed to load settings:', err)
-  }
-}
-
+// App lifecycle
 onMounted(async () => {
-  initTheme()
-  initToastI18n(useI18n())
-
-  updateTime()
-  timeInterval = setInterval(updateTime, 1000)
-  recordsRefreshInterval = setInterval(loadTodayRecords, 30000)
-
-  try {
-    isOnline.value = await invoke<boolean>('get_network_status')
-  } catch { /* ignore */ }
-
-  try {
-    const queueStatus = await invoke<{ pending_count: number }>('get_offline_queue_status')
-    offlineQueueCount.value = queueStatus.pending_count || 0
-  } catch { /* ignore */ }
-
-  unlistenNetworkStatus = await listen<boolean>('network-status-changed', (event) => {
-    isOnline.value = event.payload
-  })
-
-  unlistenQueueUpdated = await listen<{ pending_count: number }>('offline-queue-updated', (event) => {
-    offlineQueueCount.value = event.payload?.pending_count || 0
-  })
-
-  networkCheckInterval = setInterval(async () => {
-    try {
-      isOnline.value = await invoke<boolean>('check_network_status')
-      const queueStatus = await invoke<{ pending_count: number }>('get_offline_queue_status')
-      offlineQueueCount.value = queueStatus.pending_count || 0
-    } catch { /* ignore */ }
-  }, 60000)
-
-  unlistenTrayOpenSettings = await listen('tray-open-settings', () => {
-    open('settings')
-  })
-
-  unlistenTrayOpenQuickNote = await listen('tray-open-quick-note', () => {
-    open('quickNote')
-  })
-
-  if (isDesktop) {
-    try {
-      await register('Alt+Space', (event) => {
-        if (event.state === 'Pressed') {
-          open('quickNote')
-        }
-      })
-    } catch (err) {
-      console.error('Failed to register global shortcut:', err)
-    }
-  }
-
-  await loadSettings()
-  // PERF-005: Load language from backend after settings are loaded
-  await loadLanguageFromBackend()
-  await loadTodayRecords()
-
-  // PERF-002: Check if onboarding is needed
-  try {
-    const settings = await invoke<Settings>('get_settings')
-    if (!settings.api_base_url || !settings.onboarding_completed) {
-      showOnboarding.value = true
-    }
-  } catch { /* ignore */ }
+  await bootstrapInit()
 })
 
 onUnmounted(async () => {
-  if (timeInterval) clearInterval(timeInterval)
-  if (recordsRefreshInterval) clearInterval(recordsRefreshInterval)
-  if (networkCheckInterval) clearInterval(networkCheckInterval)
-  if (unlistenTrayOpenSettings) unlistenTrayOpenSettings()
-  if (unlistenTrayOpenQuickNote) unlistenTrayOpenQuickNote()
-  if (unlistenNetworkStatus) unlistenNetworkStatus()
-  if (unlistenQueueUpdated) unlistenQueueUpdated()
-
-  if (isDesktop) {
-    try {
-      await unregister('Alt+Space')
-    } catch { /* ignore */ }
-  }
+  await bootstrapCleanup()
 })
 </script>
