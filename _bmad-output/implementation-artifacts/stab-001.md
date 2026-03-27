@@ -1,6 +1,6 @@
 # Story 11.3: STAB-001 - 错误边界与优雅降级
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -273,6 +273,17 @@ minimax-m2.7-highspeed
 - src-tauri/src/memory_storage/schema.rs (添加 check_connection 和 ensure_connection 函数)
 - src-tauri/src/memory_storage/mod.rs (添加数据库连接和错误场景测试)
 - src/App.vue (添加离线检查)
+
+## Code Review Findings (2026-03-27)
+
+### HIGH: ErrorBoundary.vue 未集成到 App.vue
+- **AC1 要求**: "在前端设置 Vue 错误边界组件 (ErrorBoundary.vue)"，且 Dev Notes 明确指出 "ErrorBoundary.vue (wraps App content)"
+- **当前状态**: App.vue 的 `<template>` 直接使用组件，未用 `<ErrorBoundary>` 包裹
+- **影响**: AC1（全局错误边界）未完全实现
+- **修复**: 在 App.vue 中用 `<ErrorBoundary>` 包裹主要内容
+
+### Status After Review: in-progress
+（因 HIGH 问题未修复，Story 状态保持 in-progress）
 
 ## Change Log
 
