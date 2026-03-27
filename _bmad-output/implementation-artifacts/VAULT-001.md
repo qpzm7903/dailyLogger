@@ -1,6 +1,6 @@
 # Story 12.1: VAULT-001 - 多 Obsidian Vault 支持
 
-Status: ready-for-dev
+Status: in-progress (Task 1.1-1.3 Rust backend done, awaiting Task 2-3 for full vault selection)
 
 ## Story
 
@@ -17,10 +17,10 @@ So that I can keep work records organized by project context.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 扩展 ObsidianVault 数据结构，添加项目检测配置 (AC: #2)
-  - [ ] 1.1 在 `ObsidianVault` struct 中添加 `window_patterns: Vec<String>` 字段，用于匹配窗口标题
-  - [ ] 1.2 添加 `auto_detect_vault_by_window: bool` 设置项到 settings 表
-  - [ ] 1.3 更新 Rust 端 `ObsidianVault` struct 和序列化逻辑
+- [x] Task 1: 扩展 ObsidianVault 数据结构，添加项目检测配置 (AC: #2)
+  - [x] 1.1 在 `ObsidianVault` struct 中添加 `window_patterns: Vec<String>` 字段，用于匹配窗口标题
+  - [x] 1.2 添加 `auto_detect_vault_by_window: bool` 设置项到 settings 表
+  - [x] 1.3 更新 Rust 端 `ObsidianVault` struct 和序列化逻辑
   - [ ] 1.4 更新前端 `ObsidianVault` TypeScript 接口和 OutputSettings.vue
 
 - [ ] Task 2: Rust 后端 - 修改 generate_daily_summary 支持 vault 参数 (AC: #1, #3)
