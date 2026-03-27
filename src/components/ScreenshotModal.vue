@@ -89,10 +89,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showToast } from '../stores/toast'
 import type { LogRecord } from '../types/tauri'
+import { captureActions } from '../features/capture/actions'
+import { recordsActions } from '../features/records/actions'
 
 interface WindowInfo {
   title?: string
@@ -181,7 +182,7 @@ const getWindowIcon = (processName?: string) => {
 const loadScreenshot = async () => {
   if (props.record.screenshot_path) {
     try {
-      screenshotData.value = await invoke<string>('get_screenshot', { path: props.record.screenshot_path })
+      screenshotData.value = await captureActions.getScreenshot(props.record.screenshot_path)
     } catch (err) {
       console.error('Failed to load screenshot:', err)
       screenshotData.value = ''
@@ -195,7 +196,7 @@ const handleReanalyze = async () => {
 
   isReanalyzing.value = true
   try {
-    const analysis = await invoke<ScreenAnalysis>('reanalyze_record', { recordId: props.record.id })
+    const analysis = await captureActions.reanalyzeRecord(props.record.id)
 
     // Update the record content
     const updatedRecord = {
@@ -219,10 +220,7 @@ const saveUserNotes = async () => {
 
   isSavingNotes.value = true
   try {
-    await invoke('update_record_user_notes', {
-      id: props.record.id,
-      userNotes: userNotes.value || null
-    })
+    await recordsActions.updateRecordUserNotes(props.record.id, userNotes.value || null)
 
     originalUserNotes.value = userNotes.value
     showToast(t('screenshotModal.notesSaved'), { type: 'success' })

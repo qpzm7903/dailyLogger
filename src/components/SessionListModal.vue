@@ -132,9 +132,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showToast } from '../stores/toast'
+import { sessionActions } from '../features/sessions/actions'
 
 interface Session {
   id: number
@@ -176,7 +176,7 @@ const filteredSessions = computed(() => {
 const loadSessions = async () => {
   isLoading.value = true
   try {
-    sessions.value = await invoke<Session[]>('get_today_sessions')
+    sessions.value = await sessionActions.getTodaySessions()
   } catch (err) {
     const errorMsg = String(err)
     showToast(t('sessionList.loadFailed', { error: errorMsg }), { type: 'error' })
@@ -224,7 +224,7 @@ const analyzeSession = async (session: Session) => {
   analyzingSessionId.value = session.id
 
   try {
-    await invoke('analyze_session', { sessionId: session.id })
+    await sessionActions.analyzeSession(session.id)
     showToast(t('sessionList.analyzeSuccess'), { type: 'success' })
 
     // Update session status locally
@@ -256,7 +256,7 @@ const analyzeSelected = async () => {
   for (const sessionId of sessionIds) {
     analyzingSessionId.value = sessionId
     try {
-      await invoke('analyze_session', { sessionId })
+      await sessionActions.analyzeSession(sessionId)
       successCount++
 
       // Update session status locally

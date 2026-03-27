@@ -26,7 +26,7 @@
 - 每个版本都必须保持行为兼容、可测试、可回滚，而不是长期悬空分支
 - 多 Vault、标签、导出等功能扩展顺延到架构稳定之后再继续推进
 
-### v3.4.0（架构收口一期）🔄 规划中
+### v3.4.0（架构收口一期）🔄 进行中
 
 **目标**: 先拆入口和调用边界，让视图组件不再直接承担业务动作与 IPC 细节，让 Tauri 入口不再同时承担启动、托盘、命令编排和业务实现。
 
@@ -34,18 +34,18 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| ARCH-001 | 拆分前端应用壳：从 `App.vue` 提取 AppShell、AppModals、Bootstrap 生命周期逻辑 | 3pts | P0 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
-| ARCH-002 | 建立统一 Tauri IPC Client 和 feature actions，组件不再直接散落 `invoke(...)` | 3pts | P0 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
+| ARCH-001 | 拆分前端应用壳：从 `App.vue` 提取 AppShell、AppModals、Bootstrap 生命周期逻辑 | 3pts | P0 | ✅ 完成 | `specs/ARCH-001-architecture-refactor.md` |
+| ARCH-002 | 建立统一 Tauri IPC Client 和 feature actions，组件不再直接散落 `invoke(...)` | 3pts | P0 | 🔄 进行中（基础设施已创建，核心组件已更新） | `specs/ARCH-001-architecture-refactor.md` |
 | ARCH-003 | 拆分 `src-tauri/src/main.rs`：提取 logging、tray、command registry、builder setup | 3pts | P0 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
 | ARCH-004 | 建立 `commands -> services` 调用边界，避免命令入口继续承载业务实现 | 3pts | P1 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
 | ARCH-005 | 为本轮重构补齐回归基线：typecheck、前端测试、关键 Tauri 流程验证清单 | 2pts | P1 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
 
 **验收重点**:
 
-- `src/App.vue` 降级为根壳层，或由 `src/app/` 目录承接初始化与编排职责
-- `src/components/`、`src/components/layout/` 中不再直接调用 `invoke(...)`
-- `src-tauri/src/main.rs` 只保留启动装配，托盘、日志、命令注册移入独立模块
-- 重构完成后，现有功能行为、测试和类型检查结果与重构前保持一致
+- `src/App.vue` 降级为根壳层，或由 `src/app/` 目录承接初始化与编排职责 ✅
+- `src/components/`、`src/components/layout/` 中不再直接调用 `invoke(...)` 🔄 进行中（已更新 App.vue、AppModals.vue）
+- `src-tauri/src/main.rs` 只保留启动装配，托盘、日志、命令注册移入独立模块 ⏳
+- 重构完成后，现有功能行为、测试和类型检查结果与重构前保持一致 ✅
 
 ### 未来 Milestone 概要
 

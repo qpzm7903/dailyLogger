@@ -94,7 +94,6 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
 import type { LogRecord, Tag, Settings } from '../types/tauri'
 import type { ModalId } from '../composables/useModal'
 
@@ -124,6 +123,9 @@ import StatisticsPanel from '../components/StatisticsPanel.vue'
 
 import { showError, showSuccess } from '../stores/toast'
 import { useI18n } from 'vue-i18n'
+
+// Feature actions
+import { addQuickNote } from '../features/capture/actions'
 
 interface Session {
   id: number
@@ -175,7 +177,7 @@ const close = (id?: ModalId) => {
 
 const handleQuickNote = async (content: string) => {
   try {
-    await invoke('add_quick_note', { content })
+    await addQuickNote(content)
     emit('close', 'quickNote')
     // Note: loadTodayRecords should be called by parent after this event
     showSuccess(t('quickNote.savedSuccess'))

@@ -59,7 +59,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { invoke } from '@tauri-apps/api/core'
 import { usePlatform } from './composables/usePlatform'
 import { useModal, type ModalId } from './composables/useModal'
 import { useAppBootstrap } from './app/useAppBootstrap'
@@ -71,6 +70,13 @@ import AppModals from './app/AppModals.vue'
 // Toast and errors
 import { showError, showSuccess } from './stores/toast'
 import type { LogRecord, Tag, Settings } from './types/tauri'
+
+// Feature actions
+import { captureActions, addQuickNote } from './features/capture/actions'
+import { reportActions } from './features/reports/actions'
+import { settingsActions } from './features/settings/actions'
+import { recordsActions } from './features/records/actions'
+import { systemActions } from './features/system/actions'
 
 interface Session {
   id: number
@@ -149,13 +155,13 @@ const closeModal = (modal?: ModalId) => close(modal)
 const toggleAutoCapture = async () => {
   try {
     if (autoCaptureEnabled.value) {
-      await invoke('stop_auto_capture')
+      await captureActions.stopAutoCapture()
     } else {
-      await invoke('start_auto_capture')
+      await captureActions.startAutoCapture()
     }
     autoCaptureEnabled.value = !autoCaptureEnabled.value
-    const currentSettings = await invoke<Settings>('get_settings')
-    await invoke('save_settings', { settings: { ...currentSettings, auto_capture_enabled: autoCaptureEnabled.value } })
+    const currentSettings = await settingsActions.getSettings()
+    await settingsActions.saveSettings({ ...currentSettings, auto_capture_enabled: autoCaptureEnabled.value })
     if (autoCaptureEnabled.value) {
       await loadTodayRecords()
     }
@@ -169,7 +175,7 @@ const takeScreenshot = async () => {
   if (isCapturing.value) return
   isCapturing.value = true
   try {
-    const path = await invoke<string>('take_screenshot')
+    const path = await captureActions.takeScreenshot()
     selectedScreenshot.value = {
       id: 0,
       screenshot_path: path,
@@ -194,7 +200,7 @@ const triggerCapture = async () => {
   if (isCapturing.value) return
   isCapturing.value = true
   try {
-    await invoke('trigger_capture')
+    await captureActions.triggerCapture()
     await loadTodayRecords()
     showSuccess(t('autoCapture.screenshotAnalysisComplete'))
   } catch (err) {
@@ -228,7 +234,7 @@ const handleSearchViewScreenshot = (record: LogRecord) => {
 
 const handleQuickNote = async (content: string) => {
   try {
-    await invoke('add_quick_note', { content })
+    await addQuickNote(content)
     close('quickNote')
     await loadTodayRecords()
     showSuccess(t('quickNote.savedSuccess'))
@@ -262,7 +268,7 @@ const handleGenerateMultilingualReport = async (language: string) => {
   }
   isGenerating.value = true
   try {
-    const result = await invoke<string>('generate_multilingual_daily_summary', { targetLang: language })
+    const result = await reportActions.generateMultilingualDailySummary(language)
     summaryPath.value = result
     showSuccess(t('report.multilingualSuccess'))
   } catch (err) {
@@ -275,12 +281,10 @@ const handleGenerateMultilingualReport = async (language: string) => {
 
 const handleLanguageChange = async (language: string) => {
   try {
-    const currentSettings = await invoke<Settings>('get_settings')
-    await invoke('save_settings', {
-      settings: {
-        ...currentSettings,
-        preferred_language: language,
-      }
+    const currentSettings = await settingsActions.getSettings()
+    await settingsActions.saveSettings({
+      ...currentSettings,
+      preferred_language: language,
     })
   } catch (err) {
     console.error('Failed to save language preference:', err)
@@ -295,7 +299,7 @@ const generateSummary = async () => {
   }
   isGenerating.value = true
   try {
-    const result = await invoke<string>('generate_daily_summary')
+    const result = await reportActions.generateDailySummary()
     summaryPath.value = result
     showSuccess(t('report.dailySuccess'))
   } catch (err) {
@@ -314,7 +318,7 @@ const generateWeeklyReport = async () => {
   }
   isGeneratingWeekly.value = true
   try {
-    const result = await invoke<string>('generate_weekly_report')
+    const result = await reportActions.generateWeeklyReport()
     weeklyReportPath.value = result
     showSuccess(t('report.weeklySuccess'))
   } catch (err) {
@@ -333,7 +337,7 @@ const generateMonthlyReport = async () => {
   }
   isGeneratingMonthly.value = true
   try {
-    const result = await invoke<string>('generate_monthly_report')
+    const result = await reportActions.generateMonthlyReport()
     monthlyReportPath.value = result
     showSuccess(t('report.monthlySuccess'))
   } catch (err) {
@@ -352,7 +356,7 @@ const reanalyzeTodayRecords = async () => {
   }
   isReanalyzing.value = true
   try {
-    const result = await invoke<{ total: number; success: number; failed: number; errors: string[] }>('reanalyze_today_records')
+    const result = await reportActions.reanalyzeTodayRecords()
     if (result.failed > 0) {
       showError(t('reanalyze.partialSuccess', { success: result.success, total: result.total, failed: result.failed }))
     } else {
@@ -406,15 +410,15 @@ const handleViewReportFile = (path: string) => {
 const loadTodayRecords = async () => {
   isLoadingTodayRecords.value = true
   try {
-    const records = await invoke<LogRecord[]>('get_today_records')
+    const records = await recordsActions.getTodayRecords()
     todayRecords.value = records
     quickNotesCount.value = records.filter(r => r.source_type === 'manual').length
 
     try {
-      const status = await invoke<boolean>('check_network_status')
+      const status = await systemActions.checkNetworkStatus()
       isOnline.value = status
 
-      const queueStatus = await invoke<{ pending_count: number }>('get_offline_queue_status')
+      const queueStatus = await systemActions.getOfflineQueueStatus()
       offlineQueueCount.value = queueStatus.pending_count
     } catch (e) {
       console.error('Failed to check network status:', e)
