@@ -12,8 +12,8 @@
 
 use crate::services::capture_service::{
     get_auto_capture_status_service, get_default_analysis_prompt_service,
-    get_quality_filter_stats_service, get_work_time_status_service,
-    reanalyze_record_service, reanalyze_records_by_date_service, reanalyze_today_records_service,
+    get_quality_filter_stats_service, get_work_time_status_service, reanalyze_record_service,
+    reanalyze_records_by_date_service, reanalyze_today_records_service,
     reset_quality_filter_counter_service, retry_screenshot_analysis_service,
     start_auto_capture_service, stop_auto_capture_service, take_screenshot_service,
     trigger_capture_service, CaptureSettings, QualityFilterStats, ReanalyzeResult, ScreenAnalysis,
@@ -216,7 +216,7 @@ fn load_capture_settings_internal() -> CaptureSettings {
 
 fn load_work_time_settings_internal() -> WorkTimeSettings {
     crate::services::capture_service::load_capture_settings(); // Use the service function indirectly
-    // Re-implement since it's needed here
+                                                               // Re-implement since it's needed here
     match crate::memory_storage::get_settings_sync() {
         Ok(s) => WorkTimeSettings {
             auto_detect_work_time: s.auto_detect_work_time.unwrap_or(true),

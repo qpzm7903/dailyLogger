@@ -16,8 +16,8 @@ use daily_logger_lib::get_app_data_dir;
 /// Build tooltip text for tray icon showing status and today's record count.
 #[cfg(feature = "screenshot")]
 pub fn build_tray_tooltip() -> String {
-    use daily_logger_lib::auto_perception::is_auto_capture_running;
     use daily_logger_lib::memory_storage::get_today_record_count_sync;
+    use daily_logger_lib::services::capture_service::is_auto_capture_running;
 
     let status = if is_auto_capture_running() {
         "捕获中"

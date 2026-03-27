@@ -12,9 +12,9 @@ use tauri::{
 };
 
 #[cfg(feature = "screenshot")]
-use daily_logger_lib::auto_perception::{
-    is_auto_capture_running, start_auto_capture, stop_auto_capture,
-};
+use daily_logger_lib::commands::capture_commands::{start_auto_capture, stop_auto_capture};
+#[cfg(feature = "screenshot")]
+use daily_logger_lib::services::capture_service::is_auto_capture_running;
 
 use crate::bootstrap::logging::build_tray_tooltip;
 

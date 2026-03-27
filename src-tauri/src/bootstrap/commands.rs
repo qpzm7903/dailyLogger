@@ -100,33 +100,33 @@ pub fn register_commands(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
         daily_logger_lib::offline_queue::process_offline_queue,
         // Auto perception commands (screenshot feature)
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::start_auto_capture,
+        daily_logger_lib::commands::capture_commands::start_auto_capture,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::stop_auto_capture,
+        daily_logger_lib::commands::capture_commands::stop_auto_capture,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::trigger_capture,
+        daily_logger_lib::commands::capture_commands::trigger_capture,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::take_screenshot,
+        daily_logger_lib::commands::capture_commands::take_screenshot,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::reanalyze_record,
+        daily_logger_lib::commands::capture_commands::reanalyze_record,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::reanalyze_today_records,
+        daily_logger_lib::commands::capture_commands::reanalyze_today_records,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::reanalyze_records_by_date,
+        daily_logger_lib::commands::capture_commands::reanalyze_records_by_date,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::get_default_analysis_prompt,
+        daily_logger_lib::commands::capture_commands::get_default_analysis_prompt,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::get_auto_capture_status,
+        daily_logger_lib::commands::capture_commands::get_auto_capture_status,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::get_work_time_status,
+        daily_logger_lib::commands::capture_commands::get_work_time_status,
         // Monitor commands
         #[cfg(feature = "screenshot")]
         daily_logger_lib::monitor::get_monitors,
         // EXP-002: Quality filter stats
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::get_quality_filter_stats,
+        daily_logger_lib::commands::capture_commands::get_quality_filter_stats,
         #[cfg(feature = "screenshot")]
-        daily_logger_lib::auto_perception::reset_quality_filter_counter,
+        daily_logger_lib::commands::capture_commands::reset_quality_filter_counter,
         // Timeline commands
         daily_logger_lib::timeline::get_timeline_today,
         daily_logger_lib::timeline::get_timeline_for_date,

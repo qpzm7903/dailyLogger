@@ -8,6 +8,8 @@
 //! - Business logic resides in the `services` module
 //! - This module re-exports commands for a clean public API
 
+#[cfg(feature = "screenshot")]
+pub mod capture_commands;
 pub mod model_commands;
 pub mod report_commands;
 pub mod session_commands;
@@ -60,6 +62,15 @@ pub use crate::commands::session_commands::{
     analyze_session, get_session_screenshots, get_today_sessions, update_session_user_summary,
 };
 
+// Capture commands (thin wrappers delegating to services)
+#[cfg(feature = "screenshot")]
+pub use crate::commands::capture_commands::{
+    get_auto_capture_status, get_default_analysis_prompt, get_quality_filter_stats,
+    get_work_time_status, reanalyze_record, reanalyze_records_by_date, reanalyze_today_records,
+    reset_quality_filter_counter, start_auto_capture, stop_auto_capture, take_screenshot,
+    trigger_capture,
+};
+
 // Report commands (thin wrappers delegating to services)
 pub use crate::commands::report_commands::{
     compare_reports, generate_custom_report, generate_daily_summary, generate_monthly_report,
@@ -103,15 +114,6 @@ pub use crate::offline_queue::{
 };
 
 // Screenshot/Auto perception commands
-#[cfg(feature = "screenshot")]
-pub use crate::auto_perception::{
-    get_auto_capture_status, get_default_analysis_prompt, get_quality_filter_stats,
-    get_work_time_status, reanalyze_record, reanalyze_records_by_date, reanalyze_today_records,
-    reset_quality_filter_counter, start_auto_capture, stop_auto_capture, take_screenshot,
-    trigger_capture,
-};
-
-// Monitor commands
 #[cfg(feature = "screenshot")]
 pub use crate::monitor::get_monitors;
 
