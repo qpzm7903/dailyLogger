@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-26 (DATA-007: review)
+# last_updated: 2026-03-27 (epic-12 and epic-13 added)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-27 (epic-11 retrospective completed)
+last_updated: 2026-03-27 (epic-12 and epic-13 added)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -165,3 +165,17 @@ development_status:
   stab-001-retrospective: done
   stab-002: done  # Code review passed 2026-03-27
   epic-11-retrospective: done  # Completed 2026-03-27
+
+  # Epic 12: 多维度输出与标签管理 (OUTPUT)
+  epic-12: backlog
+  VAULT-001: backlog
+  TAG-001: backlog
+  EXPORT-001: backlog
+  epic-12-retrospective: optional
+
+  # Epic 13: 技术债务清偿 (DEBT)
+  epic-13: backlog
+  DEBT-001: backlog
+  DEBT-002: backlog
+  DEBT-003: backlog
+  epic-13-retrospective: optional
