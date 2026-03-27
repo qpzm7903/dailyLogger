@@ -175,6 +175,7 @@ interface Vault {
   name: string
   path: string
   is_default?: boolean
+  window_patterns?: string[]
 }
 
 interface Graph {

@@ -25,6 +25,7 @@ export interface Settings {
   custom_prompt?: string
   default_obsidian_vault?: string
   obsidian_vaults?: ObsidianVault[]
+  auto_detect_vault_by_window?: boolean
   // PERF-002: Onboarding completed flag
   onboarding_completed?: boolean
   // PERF-005: Language setting
@@ -38,6 +39,7 @@ export interface ObsidianVault {
   name: string
   path: string
   is_default?: boolean
+  window_patterns?: string[]
 }
 
 export interface UpdateSettingsArgs {
