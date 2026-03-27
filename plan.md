@@ -35,8 +35,8 @@
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
 | ARCH-001 | 拆分前端应用壳：从 `App.vue` 提取 AppShell、AppModals、Bootstrap 生命周期逻辑 | 3pts | P0 | ✅ 完成 | `specs/ARCH-001-architecture-refactor.md` |
-| ARCH-002 | 建立统一 Tauri IPC Client 和 feature actions，组件不再直接散落 `invoke(...)` | 3pts | P0 | 🔄 进行中（基础设施已创建，核心组件已更新） | `specs/ARCH-001-architecture-refactor.md` |
-| ARCH-003 | 拆分 `src-tauri/src/main.rs`：提取 logging、tray、command registry、builder setup | 3pts | P0 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
+| ARCH-002 | 建立统一 Tauri IPC Client 和 feature actions，组件不再直接散落 `invoke(...)` | 3pts | P0 | ✅ 完成 | `specs/ARCH-001-architecture-refactor.md` |
+| ARCH-003 | 拆分 `src-tauri/src/main.rs`：提取 logging、tray、command registry、builder setup | 3pts | P0 | ✅ 完成 | `specs/ARCH-001-architecture-refactor.md` |
 | ARCH-004 | 建立 `commands -> services` 调用边界，避免命令入口继续承载业务实现 | 3pts | P1 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
 | ARCH-005 | 为本轮重构补齐回归基线：typecheck、前端测试、关键 Tauri 流程验证清单 | 2pts | P1 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
 
