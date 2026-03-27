@@ -358,6 +358,9 @@ pub fn init_database() -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create sessions table: {}", e))?;
 
+    // Migrate: add date column if not exists (for existing databases from pre-SESSION-001)
+    let _ = conn.execute("ALTER TABLE sessions ADD COLUMN date TEXT", []);
+
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date)",
         [],
@@ -658,6 +661,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         [],
     )
     .map_err(|e| format!("Failed to create sessions table: {}", e))?;
+
+    // Migrate: add date column if not exists (for existing test databases)
+    let _ = conn.execute("ALTER TABLE sessions ADD COLUMN date TEXT", []);
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date)",
