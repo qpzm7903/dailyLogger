@@ -1,6 +1,6 @@
 # Story 11.2: DATA-008 - 数据统计面板
 
-Status: review
+Status: done
 
 ## Story
 

@@ -159,7 +159,8 @@ development_status:
   # Epic 11: 数据增强与稳定性 (DATA-ENHANCEMENT)
   epic-11: in-progress
   data-007: done  # CI passed 2026-03-26
-  data-008: in-progress  # 数据统计面板 - code review found issues (partial export, missing tests)
+  data-008: done  # Retrospective completed 2026-03-27
+  data-008-retrospective: done
   stab-001: done  # Retrospective completed 2026-03-27
   stab-001-retrospective: done
   stab-002: backlog  # 自动备份与恢复
