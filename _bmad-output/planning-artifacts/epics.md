@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ["step-01-validate-prerequisites"]
+stepsCompleted: ["step-01-validate-prerequisites", "step-02-design-epics", "step-03-create-stories"]
 inputDocuments: ["/workspace/_bmad-output/planning-artifacts/PRD.md", "/workspace/_bmad-output/planning-artifacts/architecture.md"]
 ---
 
@@ -7,57 +7,40 @@ inputDocuments: ["/workspace/_bmad-output/planning-artifacts/PRD.md", "/workspac
 
 ## Overview
 
-This document provides the complete epic and story breakdown for DailyLogger, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
+This document provides the complete epic and story breakdown for DailyLogger v3.4.0, decomposing the remaining requirements from the PRD, Architecture requirements, and identified technical debt into implementable stories.
 
 ## Requirements Inventory
 
-### Functional Requirements
+### Functional Requirements (Remaining from PRD Section 11)
 
-**From PRD Section 6 (Implemented Features):**
+**未实现的 P2 功能:**
 
-FR1: 自动感知 - 定时截取屏幕并按工作时段组织，通过批量上下文分析提供准确的工作记录
-FR2: 闪念胶囊 - 全局快捷键快速记录想法，不打断工作流
-FR3: AI 日报生成 - 汇总全天记录，生成结构化 Markdown 日报
-FR4: 截图回顾 - 网格展示当日截图缩略图，点击查看大图
-FR5: 系统托盘 - 最小化到托盘，后台静默运行
-FR6: 设置管理 - 配置应用参数（API、截图间隔、Obsidian路径等）
-FR7: 工作时段管理 - 将连续截图按工作时段自动分组，以时段为单位进行上下文感知的 AI 分析
+FR11: 多 Obsidian Vault 支持 - 支持不同项目输出到不同 Vault
+FR12: 标签系统 - 手动给记录打标签便于检索
+FR13: 数据导出 - 导出 JSON/Markdown 备份
 
-**From PRD Section 11 (Future Planning - 未实现):**
-
-FR8: 智能截图质量评分 - 自动识别低质量截图并过滤，减少记录噪音 (P1)
-FR9: 工作时间线可视化 - 图形化展示一天工作流，让用户直观回顾 (P1)
-FR10: 今日工作摘要 Widget - 实时展示当天已记录内容，随时感知进度 (P1)
-
-**已实现 (Epic 7 - EXP-001~EXP-005):**
-- EXP-001: 工作时间线视图 ✅
-- EXP-002: 截图质量过滤 ✅
-- EXP-003: 记录重分析 ✅
-- EXP-004: 全文搜索 ✅ (注意：PRD FR10 全文搜索与 EXP-004 重复)
-- EXP-005: 今日工作摘要 Widget ✅
+**已实现 (v3.0.0 ~ v3.3.0):**
+- FR1~FR7: 核心功能 (自动感知、闪念胶囊、日报生成、截图回顾、系统托盘、设置管理、工作时段管理)
+- FR8: 智能截图质量评分 (EXP-002)
+- FR9: 工作时间线可视化 (EXP-001)
+- FR10: 今日工作摘要 Widget (EXP-005)
+- FR_全文搜索: 全文搜索 (EXP-004)
+- FR_记录重分析: 记录重分析 (EXP-003)
 
 ### NonFunctional Requirements
 
-**From PRD Section 7:**
+**From PRD Section 7 (未完全解决):**
 
 NFR1: 性能 - 应用启动时间 <3秒，截图处理延迟 <2秒，AI 分析延迟 <10秒，日报生成时间 <30秒(100条记录)，内存占用 <200MB
 NFR2: 安全 - API Key 本地加密存储 (AES-256)，不上传用户数据到除 AI API 外的任何服务，截图仅本地处理和存储
-NFR3: 兼容性 - Windows 10+ / macOS 11+ / Ubuntu 20.04+，截图支持 Graphics Capture API (Windows) / xcap (macOS/Linux)
+NFR3: 兼容性 - Windows 10+ / macOS 11+ / Ubuntu 20.04+
 NFR4: 可用性 - 离线模式正常，AI 调用失败时保留截图并提示重试，自动重连
-
-**From Architecture Section 10:**
-
-NFR5: 截图去重优化 - 指纹对比 + 阈值，减少 70% AI 调用
-NFR6: 数据库索引 - timestamp DESC 查询 <10ms
-NFR7: 前端轮询优化 - 30秒间隔降低 IPC 调用频率
 
 **已实现:**
 - NFR1 性能基准测试 ✅ (CORE-008)
 - NFR2 安全 ✅ (CORE-006 API Key 加密)
 - NFR4 可用性 ✅ (CORE-004 错误处理)
-- NFR5 截图去重 ✅ (v3.0.0)
-- NFR6 数据库索引 ✅ (PERF-004)
-- NFR7 前端轮询优化 ✅ (PERF-003 虚拟滚动)
+- NFR5~NFR7 ✅ (v3.0.0 ~ v3.3.0)
 
 ### Additional Requirements
 
@@ -68,46 +51,179 @@ AR2: Rust 后端 - 所有核心逻辑在 Rust 端实现
 AR3: SQLite 数据库 - 单文件数据库，便于备份和迁移
 AR4: Vue 3 前端 - 使用 Composition API 和 `<script setup>`
 AR5: TailwindCSS - 唯一样式方案，无独立 CSS 文件
-AR6: 跨平台截图 - Windows: Windows Graphics Capture API, macOS/Linux: xcap
-AR7: 日志系统 - 日志文件保存在用户目录项目命名的文件夹下
-AR8: 构建相关操作 - 必须放在 GitHub Actions 上执行（本地缺少多环境构建环境）
+AR6: 日志系统 - 日志文件保存在用户目录项目命名的文件夹下
+AR7: 构建相关操作 - 必须放在 GitHub Actions 上执行
 
-**From PRD Section 10:**
+**From Project Retrospective (Technical Debt):**
 
-AR9: AI API 成本控制 - 支持本地模型，可配置调用频率
-AR10: 截图隐私 - 支持白名单模式
+TD1: 测试数据库 schema 统一 - 创建 `setup_test_db_with_schema()` 机制 (High)
+TD2: 数据库版本迁移 - 引入 schema_version 表或 Tauri 迁移机制 (High)
+TD3: 前端组件测试覆盖 - 至少测试组件挂载、props 渲染、事件触发 (Medium)
+TD4: 371 处硬编码颜色迁移 - PERF-006 组件颜色迁移到 CSS 变量 (Medium)
+TD5: 游标分页前端集成 - PERF-004 API 准备就绪但前端未使用 (Medium)
 
 ### UX Design Requirements
 
-（无 UX Design 文档 - planning-artifacts 中不存在 UX 相关文件）
+（无独立 UX Design 文档 - UX 需求从 Epic 9/10 的实现中继承）
 
 ### FR Coverage Map
 
 | FR | 描述 | Epic | Story | 状态 |
 |----|------|------|-------|------|
-| FR1 | 自动感知 | Epic 1 | CORE-001~CORE-008 | ✅ 已实现 |
-| FR2 | 闪念胶囊 | Epic 1 | CORE-001~CORE-008 | ✅ 已实现 |
-| FR3 | AI 日报生成 | Epic 1, Epic 5 | CORE-003, REPORT-001~004 | ✅ 已实现 |
-| FR4 | 截图回顾 | Epic 1, Epic 4 | CORE-002, DATA-001 | ✅ 已实现 |
-| FR5 | 系统托盘 | Epic 1 | CORE-005 | ✅ 已实现 |
-| FR6 | 设置管理 | Epic 1 | CORE-001 | ✅ 已实现 |
-| FR7 | 工作时段管理 | Epic 8 | SESSION-001~005 | ✅ 已实现 |
-| FR8 | 智能截图质量评分 | Epic 7 | EXP-002 | ✅ 已实现 (v3.2.0) |
-| FR9 | 工作时间线可视化 | Epic 7 | EXP-001 | ✅ 已实现 (v3.2.0) |
-| FR10 | 今日工作摘要 Widget | Epic 7 | EXP-005 | ✅ 已实现 (v3.2.0) |
+| FR1~FR7 | 核心功能 | Epic 1~8 | CORE/SESSION | ✅ 已实现 |
+| FR8 | 智能截图质量评分 | Epic 7 | EXP-002 | ✅ 已实现 |
+| FR9 | 工作时间线可视化 | Epic 7 | EXP-001 | ✅ 已实现 |
+| FR10 | 今日工作摘要 Widget | Epic 7 | EXP-005 | ✅ 已实现 |
+| FR_搜索 | 全文搜索 | Epic 7 | EXP-004 | ✅ 已实现 |
+| FR_重分析 | 记录重分析 | Epic 7 | EXP-003 | ✅ 已实现 |
+| FR11 | 多 Obsidian Vault 支持 | Epic 12 | VAULT-001 | ⏳ 待实现 |
+| FR12 | 标签系统 | Epic 12 | TAG-001 | ⏳ 待实现 |
+| FR13 | 数据导出 | Epic 13 | EXPORT-001 | ⏳ 待实现 |
 
 ## Epic List
 
-### Epic 11: 数据增强与稳定性 (Data Enhancement & Stability)
+### Epic 12: 多维度输出与标签管理 (OUTPUT)
 
-**Goal:** 增强数据管理能力、提升系统稳定性、为未来扩展打好基础
+**Goal:** 扩展输出能力，支持多 Vault、标签分类和数据导出，让用户更好地组织和复用工作记录
+
+**Priority:** P2
+
+**Stories:**
+
+- [ ] VAULT-001: 多 Obsidian Vault 支持
+- [ ] TAG-001: 统一标签系统
+- [ ] EXPORT-001: 数据导出功能 (JSON/Markdown)
+
+---
+
+### Epic 13: 技术债务清偿 (DEBT)
+
+**Goal:** 清偿关键技术债务，提升代码质量、测试覆盖和长期可维护性
 
 **Priority:** P1
 
 **Stories:**
 
-- [ ] DATA-007: 多语言日报导出
-- [ ] DATA-008: 数据统计面板
-- [ ] STAB-001: 错误边界与优雅降级
-- [ ] STAB-002: 自动备份与恢复
+- [ ] DEBT-001: 测试数据库 schema 统一
+- [ ] DEBT-002: 数据库版本迁移机制
+- [ ] DEBT-003: 组件颜色迁移到 CSS 变量
 
+---
+
+## Epic 12: 多维度输出与标签管理 (OUTPUT)
+
+**Goal:** 扩展输出能力，支持多 Vault、标签分类和数据导出，让用户更好地组织和复用工作记录
+
+### Story 12.1: VAULT-001 - 多 Obsidian Vault 支持
+
+As a software developer who works on multiple projects,
+I want to output daily reports to different Obsidian Vaults based on the project I'm working on,
+So that I can keep work records organized by project context.
+
+**Acceptance Criteria:**
+
+**Given** 用户配置了多个 Obsidian Vault 路径，When 生成日报，Then 可以选择目标 Vault
+
+**Given** 用户在设置中启用了项目检测（如通过窗口标题），When 自动生成日报，Then 自动输出到对应项目的 Vault
+
+**Given** 用户手动选择 Vault，When 点击生成日报，Then 输出到用户指定的 Vault
+
+**Given** 单个 Vault 配置，When 使用应用，Then 行为与之前一致（向后兼容）
+
+---
+
+### Story 12.2: TAG-001 - 统一标签系统
+
+As a knowledge worker,
+I want to add tags to my records,
+So that I can categorize and quickly find related work entries across different days.
+
+**Acceptance Criteria:**
+
+**Given** 用户查看单条记录，When 点击添加标签，Then 可以输入或选择标签
+
+**Given** 用户添加标签，When 保存，Then 标签持久化到数据库
+
+**Given** 用户在截图查看页面，When 添加/编辑标签，Then 标签与该截图记录关联
+
+**Given** 用户在时段摘要页面，When 添加/编辑标签，Then 标签与该时段关联
+
+**Given** 标签系统存在，When 用户开始输入，Then 显示已有标签的自动补全建议
+
+**Given** AI-004 和 DATA-003 的标签数据结构不一致，When 实现 TAG-001，Then 统一使用单一标签存储方案
+
+---
+
+### Story 12.3: EXPORT-001 - 数据导出功能
+
+As a user who wants to backup my data,
+I want to export my records in JSON and Markdown formats,
+So that I can create backups or migrate data to other systems.
+
+**Acceptance Criteria:**
+
+**Given** 用户在设置中打开导出功能，When 点击导出，Then 可以选择日期范围
+
+**Given** 用户选择日期范围，When 点击导出 JSON，Then 生成包含所有记录（含截图路径）的 JSON 文件
+
+**Given** 用户选择日期范围，When 点击导出 Markdown，Then 生成包含所有记录的可读 Markdown 文件
+
+**Given** 导出大文件时，When 导出进行中，Then 显示进度条
+
+**Given** 导出过程中，When 发生错误，Then 显示具体错误信息并允许重试
+
+---
+
+## Epic 13: 技术债务清偿 (DEBT)
+
+**Goal:** 清偿关键技术债务，提升代码质量、测试覆盖和长期可维护性
+
+### Story 13.1: DEBT-001 - 测试数据库 schema 统一
+
+As a developer,
+I want a unified test database initialization mechanism,
+So that all tests use a consistent schema and we avoid schema drift.
+
+**Acceptance Criteria:**
+
+**Given** 测试运行，When 测试需要数据库，Then 使用 `setup_test_db_with_schema()` 初始化一致 schema
+
+**Given** schema 变更，When 新测试运行，Then `setup_test_db_with_schema()` 自动应用最新 schema
+
+**Given** 已有测试，When 重构为使用新机制，Then 所有 27+ 受影响测试更新完成
+
+---
+
+### Story 13.2: DEBT-002 - 数据库版本迁移机制
+
+As a developer,
+I want a database migration mechanism with version tracking,
+So that schema changes are applied reliably across upgrades.
+
+**Acceptance Criteria:**
+
+**Given** 应用启动，When 数据库版本低于当前版本，Then 自动执行迁移脚本
+
+**Given** 迁移执行，When 迁移成功，Then 更新 schema_version 表
+
+**Given** 迁移执行，When 迁移失败，Then 回滚并显示错误日志
+
+**Given** settings 表有 15+ 字段，When 执行迁移，Then 使用幂等模式避免重复添加字段
+
+---
+
+### Story 13.3: DEBT-003 - 组件颜色迁移到 CSS 变量
+
+As a developer,
+I want all UI components to use CSS variables instead of hardcoded colors,
+So that the light/dark theme system works completely and consistently.
+
+**Acceptance Criteria:**
+
+**Given** 371 处硬编码颜色引用，When 重构，Then 所有引用迁移到 CSS 变量（`--color-*`）
+
+**Given** 浅色主题启用，When 用户切换主题，Then 所有组件颜色正确切换
+
+**Given** 深色主题启用，When 用户切换主题，Then 所有组件颜色正确切换
+
+**Given** 颜色迁移完成，When UI 验收，Then 无视觉回归
