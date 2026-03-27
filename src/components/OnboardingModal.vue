@@ -197,6 +197,7 @@
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { settingsActions } from '../features/settings/actions'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -242,7 +243,7 @@ const connectionTested = ref(false)
 
 onMounted(async () => {
   try {
-    const settings = await invoke<Settings>('get_settings')
+    const settings = await settingsActions.getSettings()
     apiBaseUrl.value = settings.api_base_url || ''
     apiKey.value = settings.api_key || ''
     modelName.value = settings.model_name || ''
@@ -324,9 +325,9 @@ function skip() {
 
 async function completeOnboarding() {
   try {
-    const currentSettings = await invoke<Settings>('get_settings')
+    const currentSettings = await settingsActions.getSettings()
 
-    const updatedSettings: Partial<Settings> = {
+    const updatedSettings: Record<string, string | boolean | null> = {
       onboarding_completed: true,
     }
 
@@ -344,9 +345,7 @@ async function completeOnboarding() {
       updatedSettings.obsidian_path = obsidianPath.value
     }
 
-    await invoke('save_settings', {
-      settings: { ...currentSettings, ...updatedSettings },
-    })
+    await settingsActions.saveSettings({ ...currentSettings, ...updatedSettings } as Partial<Settings>)
 
     isCompleted.value = true
 

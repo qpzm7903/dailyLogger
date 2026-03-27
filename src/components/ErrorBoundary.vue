@@ -48,12 +48,11 @@ onErrorCaptured((error, instance, info) => {
 // Send error to backend for logging
 async function logErrorToBackend(error: Error | null, info: string) {
   try {
-    const { invoke } = await import('@tauri-apps/api/core')
-    await invoke('log_frontend_error', {
-      message: error?.message || 'Unknown error',
-      stack: error?.stack || '',
-      source: info,
-    })
+    const { systemActions } = await import('../features/system/actions')
+    await systemActions.logFrontendError(
+      error?.message || 'Unknown error',
+      error?.stack || ''
+    )
   } catch (e) {
     console.warn('[ErrorBoundary] Failed to log error to backend:', e)
   }

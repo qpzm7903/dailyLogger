@@ -1,6 +1,6 @@
 # Story: ARCH-002 - 建立统一 Tauri IPC Client
 
-**Status**: in_progress (IPC client infrastructure created, core components updated)
+**Status**: ✅ Completed (all components migrated to unified IPC client)
 
 ## Story
 

@@ -193,6 +193,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { showSuccess, showError } from '../stores/toast'
+import { recordsActions } from '../features/records/actions'
 import TagFilter from './TagFilter.vue'
 import TagBadge from './TagBadge.vue'
 import type { LogRecord, Tag } from '../types/tauri'
@@ -413,7 +414,7 @@ async function deleteRecord() {
   isDeleting.value = true
 
   try {
-    await invoke('delete_record', { id: recordToDelete.value.id })
+    await recordsActions.deleteRecord(recordToDelete.value.id)
 
     // Remove from local list
     records.value = records.value.filter(r => r.id !== recordToDelete.value!.id)

@@ -247,6 +247,7 @@ import { useI18n } from 'vue-i18n'
 import { useFocusTrap } from '../composables/useFocusTrap'
 import { BasicSettings, AISettings, CaptureSettings, OutputSettings } from './settings'
 import type { Settings } from '../types/tauri'
+import { settingsActions } from '../features/settings/actions'
 
 // Types
 interface Monitor {
@@ -508,7 +509,7 @@ function confirmClose() {
 
 async function loadSettings() {
   try {
-    const loaded = await invoke<Partial<Settings>>('get_settings')
+    const loaded = await settingsActions.getSettings()
     settings.value = { ...settings.value, ...loaded } as typeof settings.value
 
     // Parse auxiliary data
@@ -527,12 +528,12 @@ async function loadSettings() {
     // Load default prompts if custom prompts are empty (Issue #56)
     if (!settings.value.analysis_prompt || settings.value.analysis_prompt.trim() === '') {
       try {
-        settings.value.analysis_prompt = await invoke('get_default_analysis_prompt')
+        settings.value.analysis_prompt = await settingsActions.getDefaultAnalysisPrompt()
       } catch { /* ignore */ }
     }
     if (!settings.value.summary_prompt || settings.value.summary_prompt.trim() === '') {
       try {
-        settings.value.summary_prompt = await invoke('get_default_summary_prompt')
+        settings.value.summary_prompt = await settingsActions.getDefaultSummaryPrompt()
       } catch { /* ignore */ }
     }
 
@@ -566,7 +567,7 @@ async function saveSettings() {
       logseq_graphs: JSON.stringify(graphs.value)
     }
 
-    await invoke('save_settings', { settings: settingsToSave })
+    await settingsActions.saveSettings(settingsToSave as unknown as Partial<Settings>)
     saveStatus.value = 'ok'
     showSuccess(t('settings.settingsSaved'))
     setTimeout(() => emit('close'), 800)
@@ -583,7 +584,7 @@ async function saveSettings() {
 // Modal handlers
 async function openDefaultPromptModal() {
   try {
-    defaultPromptContent.value = await invoke('get_default_analysis_prompt')
+    defaultPromptContent.value = await settingsActions.getDefaultAnalysisPrompt()
     showDefaultPromptModal.value = true
   } catch (err) {
     showError(err)
@@ -592,7 +593,7 @@ async function openDefaultPromptModal() {
 
 async function openDefaultSummaryPromptModal() {
   try {
-    defaultSummaryPromptContent.value = await invoke('get_default_summary_prompt')
+    defaultSummaryPromptContent.value = await settingsActions.getDefaultSummaryPrompt()
     showDefaultSummaryPromptModal.value = true
   } catch (err) {
     showError(err)
@@ -601,7 +602,7 @@ async function openDefaultSummaryPromptModal() {
 
 async function openDefaultTagCategoriesModal() {
   try {
-    defaultTagCategoriesContent.value = await invoke('get_default_tag_categories')
+    defaultTagCategoriesContent.value = JSON.parse(await settingsActions.getDefaultTagCategories())
     showDefaultTagCategoriesModal.value = true
   } catch (err) {
     showError(err)

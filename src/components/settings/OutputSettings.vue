@@ -169,6 +169,7 @@ import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError, showSuccess } from '../../stores/toast'
+import { systemActions } from '../../features/system/actions'
 
 // Props
 interface Vault {
@@ -390,7 +391,7 @@ async function exportLogs() {
   exportError.value = ''
 
   try {
-    await invoke('export_logs')
+    await systemActions.exportLogs()
     showSuccess(t('settings.logsExported'))
   } catch (err) {
     exportError.value = String(err)

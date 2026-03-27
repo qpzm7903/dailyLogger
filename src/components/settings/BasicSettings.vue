@@ -529,6 +529,8 @@ import { getTheme, setTheme } from '../../theme'
 import type { Locale } from '@/i18n'
 import type { Theme } from '@/theme'
 import { usePlatform } from '../../composables/usePlatform'
+import { settingsActions } from '../../features/settings/actions'
+import { systemActions } from '../../features/system/actions'
 import {
   isOllamaEndpoint,
   formatModelSize,
@@ -828,7 +830,7 @@ function changeLanguage(lang: Locale) {
   locale.value = lang
   // PERF-005: Save language to backend for persistence
   localSettings.value.language = lang
-  invoke('save_settings', { settings: localSettings.value }).catch(err => {
+  settingsActions.saveSettings(localSettings.value).catch(err => {
     console.error('Failed to save language setting:', err)
   })
 }
@@ -853,10 +855,10 @@ function toggleAutoBackup() {
 async function triggerManualBackup() {
   isTriggeringBackup.value = true
   try {
-    await invoke('trigger_auto_backup')
+    await systemActions.triggerAutoBackup()
     // Reload settings to get updated last_backup_at
-    const updatedSettings = await invoke<typeof localSettings.value>('get_settings')
-    localSettings.value = { ...localSettings.value, ...updatedSettings }
+    const updatedSettings = await settingsActions.getSettings()
+    localSettings.value = { ...localSettings.value, ...updatedSettings } as typeof localSettings.value
     showSuccess(t('settings.autoBackupTriggerSuccess'))
   } catch (err) {
     console.error('Failed to trigger auto backup:', err)

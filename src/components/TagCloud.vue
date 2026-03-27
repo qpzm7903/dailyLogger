@@ -81,6 +81,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
 import { getColorClassInteractive } from '../utils/tagColors'
+import { tagActions } from '../features/records/actions'
 import type { Tag } from '../types/tauri'
 
 interface TagWithUsage extends Tag {
@@ -144,7 +145,7 @@ async function confirmDelete() {
 
   isDeleting.value = true
   try {
-    await invoke('delete_manual_tag', { id: tagToDelete.value.id })
+    await tagActions.deleteManualTag(tagToDelete.value.id)
     tags.value = tags.value.filter(t => t.id !== tagToDelete.value!.id)
     if (selectedTag.value?.id === tagToDelete.value.id) {
       selectedTag.value = null

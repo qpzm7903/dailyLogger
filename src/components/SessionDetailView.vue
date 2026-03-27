@@ -87,9 +87,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showToast } from '../stores/toast'
+import { sessionActions } from '../features/sessions/actions'
 
 interface Session {
   id: number
@@ -156,10 +156,10 @@ const saveSummary = async () => {
 
   isSaving.value = true
   try {
-    await invoke('update_session_user_summary', {
-      sessionId: props.session.id,
-      userSummary: editingSummary.value || null
-    })
+    await sessionActions.updateSessionUserSummary(
+      props.session.id,
+      editingSummary.value || null || ''
+    )
 
     const updatedSession = {
       ...props.session,

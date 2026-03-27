@@ -43,10 +43,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useI18n } from 'vue-i18n'
 import { usePlatform } from '../composables/usePlatform'
+import { systemActions } from '../features/system/actions'
 
 const { t } = useI18n()
 const { isDesktop } = usePlatform()
@@ -76,7 +76,7 @@ const save = async () => {
 
   isSaving.value = true
   try {
-    await invoke('tray_quick_note', { content: content.value.trim() })
+    await systemActions.trayQuickNote(content.value.trim())
     await closeWindow()
   } catch (err) {
     console.error('Failed to save quick note:', err)

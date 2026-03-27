@@ -99,6 +99,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import { systemActions } from '../features/system/actions'
 
 interface ExportResult {
   record_count: number
@@ -166,7 +167,7 @@ async function doExport() {
 async function openExportDir() {
   if (!exportResult.value?.path) return
   try {
-    await invoke('open_export_dir', { path: exportResult.value.path })
+    await systemActions.openExportDir(exportResult.value.path)
   } catch (err) {
     console.error('Failed to open export directory:', err)
   }

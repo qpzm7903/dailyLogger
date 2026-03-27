@@ -81,6 +81,7 @@ import { useI18n } from 'vue-i18n'
 import { showSuccess, showError } from '../stores/toast'
 import TagBadge from './TagBadge.vue'
 import type { Tag } from '../types/tauri'
+import { tagActions } from '../features/records/actions'
 
 interface TagWithUsage extends Tag {
   usage_count?: number
@@ -155,7 +156,7 @@ async function selectTag(tag: Tag) {
   }
 
   try {
-    await invoke('add_tag_to_record', { recordId: props.recordId, tagId: tag.id })
+    await tagActions.addTagToRecord(props.recordId, tag.id)
     emit('update:modelValue', [...props.modelValue, tag])
     searchQuery.value = ''
     showDropdown.value = false
@@ -196,7 +197,7 @@ async function createOrSelectTag() {
     })
 
     // Add to record
-    await invoke('add_tag_to_record', { recordId: props.recordId, tagId: newTag.id })
+    await tagActions.addTagToRecord(props.recordId, newTag.id)
 
     // Update local state
     allTags.value.push(newTag)
@@ -215,7 +216,7 @@ async function createOrSelectTag() {
 // Remove tag from record
 async function removeTag(tagId: number) {
   try {
-    await invoke('remove_tag_from_record', { recordId: props.recordId, tagId })
+    await tagActions.removeTagFromRecord(props.recordId, tagId)
     emit('update:modelValue', props.modelValue.filter(t => t.id !== tagId))
   } catch (e) {
     showError(String(e))

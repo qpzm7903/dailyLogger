@@ -225,6 +225,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { systemActions } from '../features/system/actions'
 
 interface BackupInfo {
   path: string
@@ -349,7 +350,7 @@ async function deleteBackupFile(path: string) {
   if (!confirm(t('backup.confirmDeleteBackup'))) return
 
   try {
-    await invoke('delete_backup', { backupPath: path })
+    await systemActions.deleteBackup(path)
     await loadBackups()
   } catch (e) {
     console.error('Failed to delete backup:', e)

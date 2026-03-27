@@ -193,6 +193,7 @@ import { useI18n } from 'vue-i18n'
 import { showError, showSuccess } from '../../stores/toast'
 import { usePlatform } from '../../composables/usePlatform'
 import { type ModelInfo } from './shared/types'
+import { settingsActions } from '../../features/settings/actions'
 
 // Props
 interface Props {
@@ -296,7 +297,7 @@ function showDefaultPrompt() {
 
 async function resetPrompt() {
   try {
-    localSettings.value.analysis_prompt = await invoke('get_default_analysis_prompt')
+    localSettings.value.analysis_prompt = await settingsActions.getDefaultAnalysisPrompt()
   } catch (err) {
     console.error('Failed to get default analysis prompt:', err)
     localSettings.value.analysis_prompt = ''
@@ -309,7 +310,7 @@ function showDefaultSummaryPrompt() {
 
 async function resetSummaryPrompt() {
   try {
-    localSettings.value.summary_prompt = await invoke('get_default_summary_prompt')
+    localSettings.value.summary_prompt = await settingsActions.getDefaultSummaryPrompt()
   } catch (err) {
     console.error('Failed to get default summary prompt:', err)
     localSettings.value.summary_prompt = ''
