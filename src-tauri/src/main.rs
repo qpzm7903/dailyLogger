@@ -488,6 +488,8 @@ fn main() {
             daily_logger_lib::session_manager::update_session_user_summary,
             // DATA-008: Statistics panel
             daily_logger_lib::memory_storage::get_statistics,
+            // STAB-002: Auto backup scheduler
+            daily_logger_lib::auto_backup_scheduler::trigger_auto_backup,
         ])
         .setup(|app| {
             write_diagnostic_file("Tauri setup started");

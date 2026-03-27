@@ -430,6 +430,85 @@
       </div>
     </div>
 
+    <!-- STAB-002: Auto Backup Settings -->
+    <div>
+      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.autoBackup') }}</h3>
+      <div class="space-y-3">
+        <!-- Auto Backup Toggle -->
+        <div class="flex items-center justify-between">
+          <label class="text-xs text-gray-300">{{ $t('settings.autoBackupEnabled') }}</label>
+          <button
+            @click="toggleAutoBackup"
+            type="button"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+            :class="localSettings.auto_backup_enabled ? 'bg-primary' : 'bg-gray-600'"
+          >
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+              :class="localSettings.auto_backup_enabled ? 'translate-x-6' : 'translate-x-1'"
+            />
+          </button>
+        </div>
+
+        <!-- Auto Backup Interval (shown when enabled) -->
+        <div v-if="localSettings.auto_backup_enabled">
+          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.autoBackupInterval') }}</label>
+          <select
+            v-model="localSettings.auto_backup_interval"
+            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+          >
+            <option value="daily">{{ $t('settings.autoBackupIntervalDaily') }}</option>
+            <option value="weekly">{{ $t('settings.autoBackupIntervalWeekly') }}</option>
+            <option value="monthly">{{ $t('settings.autoBackupIntervalMonthly') }}</option>
+          </select>
+        </div>
+
+        <!-- Auto Backup Retention (shown when enabled) -->
+        <div v-if="localSettings.auto_backup_enabled">
+          <label class="text-xs text-gray-300 block mb-1">
+            {{ $t('settings.autoBackupRetention') }}
+          </label>
+          <input
+            v-model.number="localSettings.auto_backup_retention"
+            type="number"
+            min="3"
+            max="20"
+            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+          />
+          <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.autoBackupRetentionHint') }}</span>
+        </div>
+
+        <!-- Last Auto Backup Status (shown when enabled) -->
+        <div v-if="localSettings.auto_backup_enabled && localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-gray-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400">{{ $t('settings.autoBackupLastTime') }}</span>
+            <span class="text-xs text-gray-300">{{ formatLastBackupTime(localSettings.last_auto_backup_at) }}</span>
+          </div>
+          <button
+            @click="triggerManualBackup"
+            :disabled="isTriggeringBackup"
+            type="button"
+            class="mt-2 w-full px-3 py-1.5 text-xs bg-primary hover:bg-primary/80 disabled:opacity-50 rounded-lg transition-colors"
+          >
+            {{ isTriggeringBackup ? $t('settings.autoBackupTriggering') : $t('settings.autoBackupTriggerNow') }}
+          </button>
+        </div>
+
+        <!-- No backup yet (shown when enabled but no last backup) -->
+        <div v-if="localSettings.auto_backup_enabled && !localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-gray-700">
+          <span class="text-xs text-gray-400">{{ $t('settings.autoBackupNoBackupYet') }}</span>
+          <button
+            @click="triggerManualBackup"
+            :disabled="isTriggeringBackup"
+            type="button"
+            class="mt-2 w-full px-3 py-1.5 text-xs bg-primary hover:bg-primary/80 disabled:opacity-50 rounded-lg transition-colors"
+          >
+            {{ isTriggeringBackup ? $t('settings.autoBackupTriggering') : $t('settings.autoBackupTriggerNow') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Shortcuts -->
     <div v-if="isDesktop">
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
@@ -475,6 +554,11 @@ interface Props {
     test_model_name?: string
     // PERF-005: Language setting
     language?: Locale
+    // STAB-002: Auto backup settings
+    auto_backup_enabled?: boolean
+    auto_backup_interval?: string
+    auto_backup_retention?: number
+    last_auto_backup_at?: string
   }
 }
 
@@ -753,6 +837,42 @@ function changeLanguage(lang: Locale) {
 function changeTheme(theme: Theme) {
   setTheme(theme)
   currentTheme.value = theme
+}
+
+// STAB-002: Auto Backup Settings
+const isTriggeringBackup = ref(false)
+
+function toggleAutoBackup() {
+  localSettings.value.auto_backup_enabled = !localSettings.value.auto_backup_enabled
+  // Reset last backup time when disabling
+  if (!localSettings.value.auto_backup_enabled) {
+    localSettings.value.last_auto_backup_at = undefined
+  }
+}
+
+async function triggerManualBackup() {
+  isTriggeringBackup.value = true
+  try {
+    await invoke('trigger_auto_backup')
+    // Reload settings to get updated last_backup_at
+    const updatedSettings = await invoke('get_settings')
+    localSettings.value = { ...localSettings.value, ...updatedSettings } as typeof localSettings.value
+    showSuccess(t('settings.autoBackupTriggerSuccess'))
+  } catch (err) {
+    console.error('Failed to trigger auto backup:', err)
+    showError(String(err))
+  } finally {
+    isTriggeringBackup.value = false
+  }
+}
+
+function formatLastBackupTime(timestamp: string): string {
+  try {
+    const date = new Date(timestamp)
+    return date.toLocaleString()
+  } catch {
+    return timestamp
+  }
 }
 
 // AI-006: Custom Headers Methods

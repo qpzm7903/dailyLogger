@@ -33,31 +33,35 @@ pub struct RestoreResult {
     pub auto_backup_created: bool,
 }
 
-/// manifest.json 结构
-#[derive(Debug, Serialize, Deserialize)]
-struct BackupManifest {
-    version: String,
-    created_at: String,
-    record_count: usize,
-    screenshot_count: usize,
+/// Backup manifest structure for zip archives
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupManifest {
+    pub version: String,
+    pub created_at: String,
+    pub record_count: usize,
+    pub screenshot_count: usize,
 }
 
-fn get_db_path() -> PathBuf {
+/// Get database file path
+pub fn get_db_path() -> PathBuf {
     crate::get_app_data_dir().join("data").join("local.db")
 }
 
-fn get_screenshots_dir() -> PathBuf {
+/// Get screenshots directory path
+pub fn get_screenshots_dir() -> PathBuf {
     crate::get_app_data_dir().join("screenshots")
 }
 
-fn get_default_backup_dir() -> PathBuf {
+/// Get the default backup directory: `<Documents>/DailyLogger/backups`.
+pub fn get_default_backup_dir() -> PathBuf {
     dirs::document_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join("DailyLogger")
         .join("backups")
 }
 
-fn count_screenshots() -> usize {
+/// Count screenshots in the app's screenshots directory
+pub fn count_screenshots() -> usize {
     count_screenshots_in_dir(&get_screenshots_dir())
 }
 
@@ -77,7 +81,7 @@ fn count_screenshots_in_dir(dir: &Path) -> usize {
 }
 
 /// Copy all files from `src_dir` to `dst_dir` (non-recursive, files only).
-fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> Result<(), String> {
+pub fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> Result<(), String> {
     if !src_dir.exists() {
         return Ok(());
     }
@@ -296,6 +300,70 @@ fn get_backup_info_internal(path: &Path) -> Result<BackupInfo, String> {
         record_count: manifest.record_count,
         screenshot_count: manifest.screenshot_count,
     })
+}
+
+/// Clean up old automatic backups, keeping only the most recent ones based on retention policy.
+/// Only cleans up files with "auto-" prefix (automatic backups), not manual backups.
+pub fn cleanup_old_auto_backups() -> Result<usize, String> {
+    use crate::memory_storage::get_settings_sync;
+
+    let retention = match get_settings_sync() {
+        Ok(settings) => settings.auto_backup_retention.unwrap_or(5).clamp(3, 20) as usize,
+        Err(_) => 5,
+    };
+
+    let backup_dir = get_default_backup_dir();
+
+    if !backup_dir.exists() {
+        return Ok(0);
+    }
+
+    // Collect all auto backup files (with "auto-" prefix)
+    let mut auto_backups: Vec<_> = fs::read_dir(&backup_dir)
+        .map_err(|e| e.to_string())?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| {
+            let path = entry.path();
+            // Only include files with .zip extension and auto- prefix
+            path.extension().is_some_and(|ext| ext == "zip")
+                && path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.starts_with("auto-"))
+        })
+        .collect();
+
+    // If we have more auto backups than the retention limit, delete the oldest ones
+    if auto_backups.len() > retention {
+        // Sort by modification time (oldest first)
+        auto_backups.sort_by_key(|entry| {
+            entry
+                .metadata()
+                .and_then(|m| m.modified())
+                .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+        });
+
+        // Calculate how many to delete
+        let to_delete = auto_backups.len() - retention;
+
+        let mut deleted = 0;
+        for entry in auto_backups.iter().take(to_delete) {
+            let path = entry.path();
+            match fs::remove_file(&path) {
+                Ok(_) => {
+                    tracing::info!("Deleted old auto backup: {}", path.display());
+                    deleted += 1;
+                }
+                Err(e) => {
+                    tracing::error!("Failed to delete old auto backup {:?}: {}", path, e);
+                }
+            }
+        }
+
+        Ok(deleted)
+    } else {
+        Ok(0)
+    }
 }
 
 /// 删除备份

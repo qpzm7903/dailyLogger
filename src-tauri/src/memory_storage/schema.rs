@@ -324,6 +324,24 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // STAB-002: 自动备份配置
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN auto_backup_enabled INTEGER DEFAULT 0",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN auto_backup_interval TEXT DEFAULT 'daily'",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN auto_backup_retention INTEGER DEFAULT 5",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN last_auto_backup_at TEXT",
+        [],
+    );
+
     // SESSION-001: sessions 表 - 工作时段管理
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sessions (
@@ -729,7 +747,11 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             onboarding_completed INTEGER DEFAULT 0,
             language TEXT DEFAULT 'en',
             preferred_language TEXT DEFAULT 'zh-CN',
-            supported_languages TEXT DEFAULT '[\"zh-CN\",\"en\",\"ja\"]'
+            supported_languages TEXT DEFAULT '[\"zh-CN\",\"en\",\"ja\"]',
+            auto_backup_enabled INTEGER DEFAULT 0,
+            auto_backup_interval TEXT DEFAULT 'daily',
+            auto_backup_retention INTEGER DEFAULT 5,
+            last_auto_backup_at TEXT
         )",
         [],
     )

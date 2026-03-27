@@ -29,7 +29,9 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
                 proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,
                 test_model_name, onboarding_completed, language,
-                preferred_language, supported_languages
+                preferred_language, supported_languages,
+                auto_backup_enabled, auto_backup_interval, auto_backup_retention,
+                last_auto_backup_at
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -120,6 +122,13 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 // DATA-007: Multi-language settings
                 preferred_language: row.get("preferred_language")?,
                 supported_languages: row.get("supported_languages")?,
+                // STAB-002: Auto backup settings
+                auto_backup_enabled: row
+                    .get::<_, Option<i32>>("auto_backup_enabled")?
+                    .map(|v| v != 0),
+                auto_backup_interval: row.get("auto_backup_interval")?,
+                auto_backup_retention: row.get("auto_backup_retention")?,
+                last_auto_backup_at: row.get("last_auto_backup_at")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;
@@ -341,7 +350,13 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             proxy_password = :proxy_password,
             test_model_name = :test_model_name,
             onboarding_completed = :onboarding_completed,
-            language = :language
+            language = :language,
+            preferred_language = :preferred_language,
+            supported_languages = :supported_languages,
+            auto_backup_enabled = :auto_backup_enabled,
+            auto_backup_interval = :auto_backup_interval,
+            auto_backup_retention = :auto_backup_retention,
+            last_auto_backup_at = :last_auto_backup_at
          WHERE id = 1",
         rusqlite::named_params! {
             ":api_base_url": settings.api_base_url,
@@ -400,6 +415,12 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":test_model_name": settings.test_model_name,
             ":onboarding_completed": settings.onboarding_completed.map(|v| if v { 1 } else { 0 }),
             ":language": settings.language,
+            ":preferred_language": settings.preferred_language,
+            ":supported_languages": settings.supported_languages,
+            ":auto_backup_enabled": settings.auto_backup_enabled.map(|v| if v { 1 } else { 0 }),
+            ":auto_backup_interval": settings.auto_backup_interval,
+            ":auto_backup_retention": settings.auto_backup_retention,
+            ":last_auto_backup_at": settings.last_auto_backup_at,
         },
     )
     .map_err(|e| format!("Failed to save settings: {}", e))?;

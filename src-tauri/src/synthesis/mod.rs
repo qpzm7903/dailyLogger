@@ -1149,6 +1149,11 @@ mod tests {
             // DATA-007: Multi-language settings
             preferred_language: None,
             supported_languages: None,
+            // STAB-002: Auto backup settings
+            auto_backup_enabled: None,
+            auto_backup_interval: None,
+            auto_backup_retention: None,
+            last_auto_backup_at: None,
         }
     }
 
@@ -2392,6 +2397,11 @@ mod benchmarks {
             // DATA-007: Multi-language settings
             preferred_language: None,
             supported_languages: None,
+            // STAB-002: Auto backup settings
+            auto_backup_enabled: None,
+            auto_backup_interval: None,
+            auto_backup_retention: None,
+            last_auto_backup_at: None,
         }
     }
 

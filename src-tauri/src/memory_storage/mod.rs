@@ -108,6 +108,11 @@ pub struct Settings {
     // DATA-007: 多语言日报配置
     pub preferred_language: Option<String>, // 首选语言，如 "zh-CN", "en"
     pub supported_languages: Option<String>, // 支持的语言列表，JSON 数组
+    // STAB-002: 自动备份配置
+    pub auto_backup_enabled: Option<bool>,
+    pub auto_backup_interval: Option<String>, // "daily" | "weekly" | "monthly"
+    pub auto_backup_retention: Option<i32>,   // 保留数量，3-20
+    pub last_auto_backup_at: Option<String>,  // RFC3339 时间戳
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)
