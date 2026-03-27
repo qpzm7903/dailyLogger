@@ -54,15 +54,15 @@ pub fn register_commands(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
         daily_logger_lib::commands::session_commands::update_session_user_summary,
         // DATA-008: Statistics panel
         daily_logger_lib::memory_storage::get_statistics,
-        // Synthesis commands
-        daily_logger_lib::synthesis::generate_daily_summary,
-        daily_logger_lib::synthesis::generate_multilingual_daily_summary,
-        daily_logger_lib::synthesis::get_supported_languages,
-        daily_logger_lib::synthesis::get_default_summary_prompt,
-        daily_logger_lib::synthesis::generate_weekly_report,
-        daily_logger_lib::synthesis::generate_monthly_report,
-        daily_logger_lib::synthesis::generate_custom_report,
-        daily_logger_lib::synthesis::compare_reports,
+        // Report commands
+        daily_logger_lib::commands::report_commands::generate_daily_summary,
+        daily_logger_lib::commands::report_commands::generate_multilingual_daily_summary,
+        daily_logger_lib::commands::report_commands::get_supported_languages,
+        daily_logger_lib::commands::report_commands::get_default_summary_prompt,
+        daily_logger_lib::commands::report_commands::generate_weekly_report,
+        daily_logger_lib::commands::report_commands::generate_monthly_report,
+        daily_logger_lib::commands::report_commands::generate_custom_report,
+        daily_logger_lib::commands::report_commands::compare_reports,
         // DATA-004: Data export
         daily_logger_lib::export::export_records,
         daily_logger_lib::export::open_export_dir,

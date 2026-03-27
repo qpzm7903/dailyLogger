@@ -1,7 +1,6 @@
 use chrono::Datelike;
 use rusqlite::params;
 use std::path::PathBuf;
-use tauri::command;
 
 use crate::dingtalk;
 use crate::memory_storage::{self, Record, Settings};
@@ -54,9 +53,9 @@ fn calculate_retry_delay(attempt: u32) -> u64 {
         .max(capped_delay / 2)
 }
 
-/// API configuration extracted from Settings for LLM calls.
-#[derive(Debug)]
-struct ApiConfig {
+/// API configuration extracted from Settings for LLLM calls.
+#[derive(Debug, Clone)]
+pub struct ApiConfig {
     api_base_url: String,
     api_key: String,
     model_name: String,
@@ -68,7 +67,7 @@ struct ApiConfig {
 }
 
 /// Extract API configuration from settings (shared by all report generators).
-fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
+pub fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
     let api_base_url = settings
         .api_base_url
         .clone()
@@ -247,7 +246,7 @@ async fn call_llm_api(
 }
 
 /// STAB-001: Wrapper for call_llm_api with retry logic for transient errors
-async fn call_llm_api_with_retry(
+pub async fn call_llm_api_with_retry(
     config: &ApiConfig,
     prompt: &str,
     max_tokens: u32,
@@ -285,7 +284,7 @@ async fn call_llm_api_with_retry(
 }
 
 /// Write report content to the Obsidian output directory and return the full path.
-fn write_report_to_obsidian(
+pub fn write_report_to_obsidian(
     obsidian_path: &str,
     filename: &str,
     content: &str,
@@ -303,7 +302,7 @@ fn write_report_to_obsidian(
 /// INT-002: Write report content to Logseq output directory if configured.
 /// Logseq stores user-created pages in the `pages` folder inside the graph root.
 /// Returns Some(path) if written successfully, None if Logseq not configured.
-fn write_report_to_logseq(
+pub fn write_report_to_logseq(
     settings: &memory_storage::Settings,
     filename: &str,
     content: &str,
@@ -337,7 +336,7 @@ fn write_report_to_logseq(
 /// INT-004: Send report notifications to Slack and DingTalk.
 /// This function sends notifications to configured channels after a report is generated.
 /// Errors are logged but do not affect the main report generation flow.
-fn send_report_notifications(settings: &Settings, title: &str, content: &str) {
+pub fn send_report_notifications(settings: &Settings, title: &str, content: &str) {
     // Send to Slack if configured
     if slack::is_slack_configured(settings) {
         match slack::send_to_slack_sync(settings, title, content) {
@@ -811,7 +810,7 @@ const TRANSLATION_PROMPT: &str = r#"你是一个专业的技术文档翻译助�
 请翻译："#;
 
 /// Translate the report content to the target language
-async fn translate_report(
+pub async fn translate_report(
     config: &ApiConfig,
     original_report: &str,
     target_lang: &str,
@@ -825,7 +824,6 @@ async fn translate_report(
 }
 
 /// Get the list of supported languages
-#[command]
 pub fn get_supported_languages() -> Vec<(String, String)> {
     SUPPORTED_LANGUAGES
         .iter()
@@ -846,7 +844,6 @@ pub fn generate_summary_filename_with_lang(settings: &Settings, lang: &str) -> S
     format!("{}{}.md", title, suffix)
 }
 
-#[command]
 pub async fn generate_daily_summary() -> Result<String, String> {
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
@@ -978,7 +975,6 @@ pub async fn generate_daily_summary() -> Result<String, String> {
 }
 
 // DATA-007: Multi-language daily report command
-#[command]
 pub async fn generate_multilingual_daily_summary(target_lang: String) -> Result<String, String> {
     if !crate::network_status::is_online() {
         return Err("当前处于离线状态，多语言日报生成需要网络连接".to_string());
@@ -1013,7 +1009,7 @@ pub async fn generate_multilingual_daily_summary(target_lang: String) -> Result<
 }
 
 /// Helper function to generate base daily summary content
-async fn generate_base_daily_summary(
+pub async fn generate_base_daily_summary(
     settings: &Settings,
     api_config: &ApiConfig,
 ) -> Result<String, String> {
@@ -1840,7 +1836,6 @@ mod tests {
 
 /// Returns the default summary prompt template.
 /// This is used when the user has not configured a custom prompt.
-#[command]
 pub fn get_default_summary_prompt() -> String {
     DEFAULT_SUMMARY_PROMPT.to_string()
 }
@@ -1869,7 +1864,6 @@ pub fn generate_weekly_report_filename(week_start_day: i32) -> String {
 }
 
 /// Generate weekly report - REPORT-001
-#[command]
 pub async fn generate_weekly_report() -> Result<String, String> {
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
@@ -1929,7 +1923,6 @@ pub async fn generate_weekly_report() -> Result<String, String> {
 }
 
 /// Generate monthly report - REPORT-002
-#[command]
 pub async fn generate_monthly_report() -> Result<String, String> {
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
@@ -2033,7 +2026,6 @@ pub fn get_quarter_range() -> (String, String) {
 }
 
 /// Generate custom period report - REPORT-003
-#[command]
 pub async fn generate_custom_report(
     start_date: String,
     end_date: String,
@@ -2110,7 +2102,6 @@ pub async fn generate_custom_report(
 }
 
 /// Generate comparison report between two time periods - REPORT-004
-#[command]
 pub async fn compare_reports(
     start_date_a: String,
     end_date_a: String,

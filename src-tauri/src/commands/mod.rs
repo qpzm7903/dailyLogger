@@ -9,6 +9,7 @@
 //! - This module re-exports commands for a clean public API
 
 pub mod model_commands;
+pub mod report_commands;
 pub mod session_commands;
 pub mod settings_commands;
 
@@ -59,8 +60,8 @@ pub use crate::commands::session_commands::{
     analyze_session, get_session_screenshots, get_today_sessions, update_session_user_summary,
 };
 
-// Synthesis/Report commands
-pub use crate::synthesis::{
+// Report commands (thin wrappers delegating to services)
+pub use crate::commands::report_commands::{
     compare_reports, generate_custom_report, generate_daily_summary, generate_monthly_report,
     generate_multilingual_daily_summary, generate_weekly_report, get_default_summary_prompt,
     get_supported_languages,

@@ -9,6 +9,7 @@
 //! - Commands (in `commands/`) are responsible for error mapping to Tauri responses
 
 pub mod model_service;
+pub mod report_service;
 pub mod session_service;
 pub mod settings_service;
 
