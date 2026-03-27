@@ -83,6 +83,9 @@
       "screenshot": "Check screenshot permission settings",
       "timeout": "Check your network and retry",
       "unknown": "Retry or contact support"
+    },
+    "errorBoundary": {
+      "title": "Application Error"
     }
   },
   "toast": {

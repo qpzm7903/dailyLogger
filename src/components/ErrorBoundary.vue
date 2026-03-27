@@ -1,9 +1,24 @@
 <template>
-  <slot />
+  <div class="error-boundary-wrapper">
+    <slot />
+    <ErrorToast
+      v-if="hasError && errorInfo"
+      type="error"
+      :title="t('errorBoundary.title')"
+      :message="errorInfo.error?.message || 'Unknown error'"
+      :duration="0"
+      :dismissible="true"
+      @dismiss="resetError"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onErrorCaptured } from 'vue'
+import { useI18n } from 'vue-i18n'
+import ErrorToast from './ErrorToast.vue'
+
+const { t } = useI18n()
 
 // Error info passed to error handler
 interface ErrorInfo {
@@ -11,25 +26,16 @@ interface ErrorInfo {
   info: string
 }
 
-// Emit error to parent components
-const emit = defineEmits<{
-  (e: 'error-captured', error: ErrorInfo): void
-}>()
-
-// Track if we have an error
+// Track error state and info
 const hasError = ref(false)
+const errorInfo = ref<ErrorInfo | null>(null)
 
 // Capture errors from child components
 onErrorCaptured((error, instance, info) => {
   console.error('[ErrorBoundary] Caught error:', error, 'Info:', info)
 
   hasError.value = true
-
-  // Emit error event for parent to handle
-  emit('error-captured', {
-    error,
-    info,
-  })
+  errorInfo.value = { error, info }
 
   // Log to file via backend if available
   logErrorToBackend(error, info)
@@ -52,11 +58,11 @@ async function logErrorToBackend(error: Error | null, info: string) {
   }
 }
 
-// Reset error state - called by parent when error is acknowledged
+// Reset error state - called when user dismisses the error toast
 function resetError() {
   hasError.value = false
+  errorInfo.value = null
 }
 
-// Expose reset function
 defineExpose({ resetError })
 </script>

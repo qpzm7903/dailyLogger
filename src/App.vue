@@ -1,5 +1,6 @@
 <template>
-  <div class="h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] flex">
+  <ErrorBoundary>
+    <div class="h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] flex">
     <!-- UX-003: Offline status top banner -->
     <OfflineBanner :isOnline="isOnline" />
 
@@ -144,6 +145,7 @@
       <Toast />
     </Teleport>
   </div>
+  </ErrorBoundary>
 </template>
 
 <script setup lang="ts">
@@ -161,6 +163,9 @@ import { initTheme } from './theme'
 import Sidebar from './components/layout/Sidebar.vue'
 import Header from './components/layout/Header.vue'
 import Dashboard from './components/layout/Dashboard.vue'
+
+// Error Boundary
+import ErrorBoundary from './components/ErrorBoundary.vue'
 
 // Modal Components
 import SettingsModal from './components/SettingsModal.vue'

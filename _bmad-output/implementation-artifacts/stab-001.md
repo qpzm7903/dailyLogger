@@ -1,6 +1,6 @@
 # Story 11.3: STAB-001 - 错误边界与优雅降级
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -281,9 +281,7 @@ minimax-m2.7-highspeed
 - **当前状态**: App.vue 的 `<template>` 直接使用组件，未用 `<ErrorBoundary>` 包裹
 - **影响**: AC1（全局错误边界）未完全实现
 - **修复**: 在 App.vue 中用 `<ErrorBoundary>` 包裹主要内容
-
-### Status After Review: in-progress
-（因 HIGH 问题未修复，Story 状态保持 in-progress）
+- **状态**: ✅ 已修复 (2026-03-27)
 
 ## Change Log
 
@@ -303,4 +301,9 @@ minimax-m2.7-highspeed
   - 在 schema.rs 中添加 check_connection() 和 ensure_connection() 函数
   - add_record_with_session 调用 ensure_connection() 确保连接有效
   - 添加 test_check_connection_with_valid_connection, test_check_connection_with_no_connection, test_transaction_rollback_on_invalid_data 三个 Rust 测试
+
+- 2026-03-27: 修复 Code Review 发现的问题 - ErrorBoundary 未集成到 App.vue
+  - 修改 ErrorBoundary.vue：添加 ErrorToast 显示错误消息，使用 useI18n() 获取翻译
+  - 修改 App.vue：导入 ErrorBoundary 并用 `<ErrorBoundary>` 包裹主内容
+  - 添加 i18n 翻译：zh-CN.json 和 en.json 中的 errorBoundary.title
 

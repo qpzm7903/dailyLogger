@@ -83,6 +83,9 @@
       "screenshot": "检查截图权限设置",
       "timeout": "检查网络状况后重试",
       "unknown": "重试或联系支持"
+    },
+    "errorBoundary": {
+      "title": "应用发生错误"
     }
   },
   "toast": {
