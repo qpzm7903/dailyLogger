@@ -1083,7 +1083,7 @@ mod tests_statistics {
     // STAB-001 Task 4.2: Database connection reconnection tests
     #[test]
     fn test_check_connection_with_valid_connection() {
-        use crate::memory_storage::schema::check_connection;
+        use crate::memory_storage::schema::connection_is_valid;
         use crate::memory_storage::schema::init_test_database;
         use rusqlite::Connection;
 
@@ -1091,29 +1091,17 @@ mod tests_statistics {
         let conn = Connection::open_in_memory().unwrap();
         init_test_database(&conn).unwrap();
 
-        // Set up global DB connection
-        {
-            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
-            *db = Some(conn);
-        }
-
         // Connection should be valid
-        let is_valid = check_connection().unwrap();
+        let is_valid = connection_is_valid(Some(&conn));
         assert!(is_valid);
     }
 
     #[test]
     fn test_check_connection_with_no_connection() {
-        use crate::memory_storage::schema::check_connection;
-
-        // Clear any existing connection
-        {
-            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
-            *db = None;
-        }
+        use crate::memory_storage::schema::connection_is_valid;
 
         // Should return false (needs reconnect)
-        let is_valid = check_connection().unwrap();
+        let is_valid = connection_is_valid(None);
         assert!(!is_valid);
     }
 

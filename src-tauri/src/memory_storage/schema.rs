@@ -571,16 +571,16 @@ pub fn check_connection() -> Result<bool, String> {
     let db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = match db.as_ref() {
-        Some(c) => c,
-        None => return Ok(false), // No connection, needs reconnect
+    Ok(connection_is_valid(db.as_ref()))
+}
+
+pub(crate) fn connection_is_valid(conn: Option<&Connection>) -> bool {
+    let Some(conn) = conn else {
+        return false;
     };
 
     // Execute a simple query to check if connection is still alive
-    match conn.query_row("SELECT 1", [], |_| Ok(())) {
-        Ok(_) => Ok(true),
-        Err(_) => Ok(false), // Connection is dead, needs reconnect
-    }
+    conn.query_row("SELECT 1", [], |_| Ok(())).is_ok()
 }
 
 /// STAB-001 Task 4.2: Ensure database connection is valid, reconnect if needed
