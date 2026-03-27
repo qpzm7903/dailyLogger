@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-27 (STAB-001: in-progress)
+last_updated: 2026-03-27 (STAB-001: review)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -160,6 +160,6 @@ development_status:
   epic-11: in-progress
   data-007: done  # CI passed 2026-03-26
   data-008: in-progress  # 数据统计面板 - code review found issues (partial export, missing tests)
-  stab-001: in-progress  # 错误边界与优雅降级
+  stab-001: review  # 错误边界与优雅降级 - all tasks complete
   stab-002: backlog  # 自动备份与恢复
   epic-11-retrospective: optional
