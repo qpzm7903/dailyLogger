@@ -55,6 +55,73 @@ pub fn reset_filtered_count() {
     FILTERED_TODAY.store(0, Ordering::Relaxed);
 }
 
+// STAB-001 AC5: Screenshot error classification for user-friendly error handling
+/// Classification of screenshot capture errors
+#[derive(Debug, Clone, PartialEq)]
+pub enum ScreenshotErrorKind {
+    /// Permission denied - user should be notified to check screen capture permissions
+    PermissionDenied,
+    /// No monitors detected - hardware/configuration issue
+    NoMonitors,
+    /// Monitor index out of bounds - configuration error
+    MonitorNotFound,
+    /// Temporary failure - can retry silently
+    TemporaryFailure,
+    /// Unknown error
+    Unknown,
+}
+
+/// Classify a screenshot error message into a ScreenshotErrorKind
+/// This helps the frontend show appropriate user messages
+fn classify_screenshot_error(error: &str) -> ScreenshotErrorKind {
+    let error_lower = error.to_lowercase();
+
+    // Permission errors
+    if error_lower.contains("permission")
+        || error_lower.contains("denied")
+        || error_lower.contains("access denied")
+    {
+        return ScreenshotErrorKind::PermissionDenied;
+    }
+
+    // No monitors
+    if error_lower.contains("no monitors") || error_lower.contains("monitor not found") {
+        return ScreenshotErrorKind::NoMonitors;
+    }
+
+    // Monitor index out of bounds
+    if error_lower.contains("out of bounds") || error_lower.contains("index") {
+        return ScreenshotErrorKind::MonitorNotFound;
+    }
+
+    // Temporary failures (timeout, connection issues)
+    if error_lower.contains("timeout")
+        || error_lower.contains("busy")
+        || error_lower.contains("temporarily")
+    {
+        return ScreenshotErrorKind::TemporaryFailure;
+    }
+
+    ScreenshotErrorKind::Unknown
+}
+
+/// Get a user-friendly error message based on the error kind
+pub fn get_screenshot_error_message(kind: &ScreenshotErrorKind, original_error: &str) -> String {
+    match kind {
+        ScreenshotErrorKind::PermissionDenied => {
+            "截图权限被拒绝，请在系统设置中允许应用进行屏幕录制".to_string()
+        }
+        ScreenshotErrorKind::NoMonitors => "未检测到显示器，请检查屏幕连接".to_string(),
+        ScreenshotErrorKind::MonitorNotFound => {
+            "指定的显示器不存在，请检查多显示器配置".to_string()
+        }
+        ScreenshotErrorKind::TemporaryFailure => {
+            format!("截图暂时失败: {}，将自动重试", original_error)
+        }
+        ScreenshotErrorKind::Unknown => original_error.to_string(),
+    }
+}
+
 use once_cell::sync::Lazy;
 
 /// Compute a 64x64 grayscale thumbnail fingerprint from a base64-encoded PNG.
@@ -1020,8 +1087,14 @@ async fn capture_and_store() -> Result<(), String> {
         .capture_mode
         .parse::<CaptureMode>()
         .unwrap_or(CaptureMode::Primary);
+
+    // STAB-001 AC5: Use classified error messages for better user feedback
     let (image_base64, monitor_info) =
-        capture_screen_with_mode(capture_mode, settings.selected_monitor_index)?;
+        capture_screen_with_mode(capture_mode, settings.selected_monitor_index).map_err(|e| {
+            tracing::error!("Screenshot capture failed: {}", e);
+            let kind = classify_screenshot_error(&e);
+            get_screenshot_error_message(&kind, &e)
+        })?;
 
     // Check if screen has changed enough to warrant a full capture
     // SMART-002: should_capture now returns Option<CaptureReason> for pattern tracking
@@ -1240,7 +1313,9 @@ pub fn get_work_time_status() -> crate::work_time::WorkTimeStatus {
 pub async fn trigger_capture() -> Result<(), String> {
     capture_and_store().await.map_err(|e| {
         tracing::error!("Trigger capture failed: {}", e);
-        e
+        // STAB-001 AC5: Return user-friendly error message
+        let kind = classify_screenshot_error(&e);
+        get_screenshot_error_message(&kind, &e)
     })?;
     tracing::info!("Manual capture triggered");
     Ok(())
@@ -1262,9 +1337,22 @@ pub async fn take_screenshot() -> Result<String, String> {
         .capture_mode
         .parse::<CaptureMode>()
         .unwrap_or(CaptureMode::Primary);
-    let (image_base64, _monitor_info) =
-        capture_screen_with_mode(capture_mode, settings.selected_monitor_index)?;
-    let path = save_screenshot(&image_base64).ok_or_else(|| "截图保存失败".to_string())?;
+
+    // STAB-001 AC5: Use classified error messages for better user feedback
+    let result = capture_screen_with_mode(capture_mode, settings.selected_monitor_index);
+
+    let (image_base64, _monitor_info) = result.map_err(|e| {
+        // Log the original error
+        tracing::error!("Screenshot capture failed: {}", e);
+        // Classify and return user-friendly message
+        let kind = classify_screenshot_error(&e);
+        get_screenshot_error_message(&kind, &e)
+    })?;
+
+    let path = save_screenshot(&image_base64).ok_or_else(|| {
+        tracing::error!("Failed to save screenshot to disk");
+        "截图保存失败".to_string()
+    })?;
     tracing::info!("Screenshot saved for preview: {}", path);
     Ok(path)
 }
@@ -2393,5 +2481,103 @@ mod tests {
         // Reset again
         reset_filtered_count();
         assert_eq!(get_filtered_today(), 0);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // STAB-001: Screenshot error classification tests
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn classify_screenshot_error_permission_denied() {
+        assert_eq!(
+            classify_screenshot_error("Permission denied"),
+            ScreenshotErrorKind::PermissionDenied
+        );
+        assert_eq!(
+            classify_screenshot_error("Screen capture permission denied"),
+            ScreenshotErrorKind::PermissionDenied
+        );
+        assert_eq!(
+            classify_screenshot_error("Access denied for screen recording"),
+            ScreenshotErrorKind::PermissionDenied
+        );
+    }
+
+    #[test]
+    fn classify_screenshot_error_no_monitors() {
+        assert_eq!(
+            classify_screenshot_error("No monitors found"),
+            ScreenshotErrorKind::NoMonitors
+        );
+        assert_eq!(
+            classify_screenshot_error("No monitors to stitch"),
+            ScreenshotErrorKind::NoMonitors
+        );
+    }
+
+    #[test]
+    fn classify_screenshot_error_monitor_not_found() {
+        assert_eq!(
+            classify_screenshot_error("Monitor index 5 out of bounds (2 monitors)"),
+            ScreenshotErrorKind::MonitorNotFound
+        );
+    }
+
+    #[test]
+    fn classify_screenshot_error_temporary_failure() {
+        assert_eq!(
+            classify_screenshot_error("Capture timeout - monitor busy"),
+            ScreenshotErrorKind::TemporaryFailure
+        );
+        assert_eq!(
+            classify_screenshot_error("Temporarily unavailable"),
+            ScreenshotErrorKind::TemporaryFailure
+        );
+    }
+
+    #[test]
+    fn classify_screenshot_error_unknown() {
+        assert_eq!(
+            classify_screenshot_error("Something went wrong"),
+            ScreenshotErrorKind::Unknown
+        );
+        assert_eq!(
+            classify_screenshot_error("Failed to encode image"),
+            ScreenshotErrorKind::Unknown
+        );
+    }
+
+    #[test]
+    fn classify_screenshot_error_case_insensitive() {
+        assert_eq!(
+            classify_screenshot_error("PERMISSION DENIED"),
+            ScreenshotErrorKind::PermissionDenied
+        );
+        assert_eq!(
+            classify_screenshot_error("No Monitors Found"),
+            ScreenshotErrorKind::NoMonitors
+        );
+    }
+
+    #[test]
+    fn get_screenshot_error_message_permission() {
+        let msg = get_screenshot_error_message(
+            &ScreenshotErrorKind::PermissionDenied,
+            "Permission denied",
+        );
+        assert!(msg.contains("权限"));
+    }
+
+    #[test]
+    fn get_screenshot_error_message_no_monitors() {
+        let msg =
+            get_screenshot_error_message(&ScreenshotErrorKind::NoMonitors, "No monitors found");
+        assert!(msg.contains("显示器"));
+    }
+
+    #[test]
+    fn get_screenshot_error_message_temporary() {
+        let msg = get_screenshot_error_message(&ScreenshotErrorKind::TemporaryFailure, "timeout");
+        assert!(msg.contains("重试"));
     }
 }

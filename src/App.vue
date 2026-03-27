@@ -279,6 +279,7 @@ const toggleAutoCapture = async () => {
 
 const takeScreenshot = async () => {
   if (isCapturing.value) return
+  // STAB-001 AC3: 离线时截图功能仍然可用（本地操作）
   isCapturing.value = true
   try {
     const path = await invoke<string>('take_screenshot')
@@ -292,7 +293,12 @@ const takeScreenshot = async () => {
     open('screenshot')
   } catch (err) {
     console.error('Failed to take screenshot:', err)
-    showError(String(err), takeScreenshot)
+    // STAB-001 AC5: 截图失败处理 - 记录错误但不中断流程
+    if (String(err).includes('permission') || String(err).includes('Permission')) {
+      showError(t('error.screenshotPermissionDenied'))
+    } else {
+      showError(String(err), takeScreenshot)
+    }
   } finally {
     isCapturing.value = false
   }
@@ -365,6 +371,11 @@ const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
 
 const handleGenerateMultilingualReport = async (language: string) => {
   if (isGenerating.value) return
+  // STAB-001 AC3: 离线时 AI 功能不可用
+  if (!isOnline.value) {
+    showError(t('offlineBanner.offline'))
+    return
+  }
   isGenerating.value = true
   try {
     const result = await invoke<string>('generate_multilingual_daily_summary', { targetLang: language })
@@ -394,6 +405,11 @@ const handleLanguageChange = async (language: string) => {
 
 const generateSummary = async () => {
   if (isGenerating.value) return
+  // STAB-001 AC3: 离线时 AI 功能不可用
+  if (!isOnline.value) {
+    showError(t('offlineBanner.offline'))
+    return
+  }
   isGenerating.value = true
   try {
     const result = await invoke<string>('generate_daily_summary')
@@ -409,6 +425,11 @@ const generateSummary = async () => {
 
 const generateWeeklyReport = async () => {
   if (isGeneratingWeekly.value) return
+  // STAB-001 AC3: 离线时 AI 功能不可用
+  if (!isOnline.value) {
+    showError(t('offlineBanner.offline'))
+    return
+  }
   isGeneratingWeekly.value = true
   try {
     const result = await invoke<string>('generate_weekly_report')
@@ -424,6 +445,11 @@ const generateWeeklyReport = async () => {
 
 const generateMonthlyReport = async () => {
   if (isGeneratingMonthly.value) return
+  // STAB-001 AC3: 离线时 AI 功能不可用
+  if (!isOnline.value) {
+    showError(t('offlineBanner.offline'))
+    return
+  }
   isGeneratingMonthly.value = true
   try {
     const result = await invoke<string>('generate_monthly_report')
@@ -440,6 +466,11 @@ const generateMonthlyReport = async () => {
 // FEAT-003 (#63): Batch reanalyze all today's screenshot records
 const reanalyzeTodayRecords = async () => {
   if (isReanalyzing.value) return
+  // STAB-001 AC3: 离线时 AI 功能不可用
+  if (!isOnline.value) {
+    showError(t('offlineBanner.offline'))
+    return
+  }
   isReanalyzing.value = true
   try {
     const result = await invoke<{ total: number; success: number; failed: number; errors: string[] }>('reanalyze_today_records')

@@ -93,12 +93,29 @@ pub fn add_record_with_session(
 
     let timestamp = chrono::Utc::now().to_rfc3339();
 
-    conn.execute(
+    // STAB-001 AC4: Use explicit transaction for data integrity
+    // Begin transaction and ensure rollback on error
+    conn.execute("BEGIN TRANSACTION", [])
+        .map_err(|e| format!("Failed to begin transaction: {}", e))?;
+
+    let result = conn.execute(
         "INSERT INTO records (timestamp, source_type, content, screenshot_path, monitor_info, tags, session_id, analysis_status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'pending')",
         params![timestamp, source_type, content, screenshot_path, monitor_info, tags, session_id],
-    ).map_err(|e| format!("Failed to insert record: {}", e))?;
+    );
 
-    Ok(conn.last_insert_rowid())
+    match result {
+        Ok(_) => {
+            // Commit transaction
+            conn.execute("COMMIT", [])
+                .map_err(|e| format!("Failed to commit transaction: {}", e))?;
+            Ok(conn.last_insert_rowid())
+        }
+        Err(e) => {
+            // Rollback on error
+            let _ = conn.execute("ROLLBACK", []);
+            Err(format!("Failed to insert record: {}", e))
+        }
+    }
 }
 
 pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
