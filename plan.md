@@ -42,7 +42,7 @@
 - ✅ 模式已验证：命令为薄包装，调用 service 函数
 - ✅ Session 命令已迁移：`get_today_sessions` / `analyze_session` / `get_session_screenshots` / `update_session_user_summary` → `commands/session_commands.rs` + `services/session_service.rs`
 - ✅ Report 命令已迁移：`generate_daily_summary` / `generate_multilingual_daily_summary` / `generate_weekly_report` / `generate_monthly_report` / `generate_custom_report` / `compare_reports` → `commands/report_commands.rs` + `services/report_service.rs`
-- ⏳ 待迁移：Capture/auto_perception 等领域仍有命令含复杂业务逻辑
+- 🚧 Capture service 已创建：`services/capture_service.rs` 包含截图捕获业务逻辑，`commands/capture_commands.rs` 薄命令包装器已创建（待集成到命令层）
 
 | ARCH-005 | 为本轮重构补齐回归基线：cargo test、cargo clippy、前端 typecheck 和 test | 2pts | P1 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
 
