@@ -10,6 +10,11 @@ use tauri::command;
 
 use crate::memory_storage::{get_settings_sync, DB_CONNECTION};
 
+// STAB-001: Retry configuration for Vision API calls
+const VISION_MAX_RETRIES: u32 = 3;
+const VISION_INITIAL_RETRY_DELAY_MS: u64 = 1000;
+const VISION_MAX_RETRY_DELAY_MS: u64 = 10000;
+
 /// Default prompt for session batch analysis
 const DEFAULT_SESSION_ANALYSIS_PROMPT: &str = r#"你是一个工作分析助手。用户在一段时间内连续工作了 N 分钟，期间截取了多张屏幕截图。
 
@@ -604,6 +609,74 @@ async fn call_vision_api_batch(
     Ok(analysis)
 }
 
+// STAB-001: Retry helpers for Vision API calls
+
+/// Check if an error is retryable (transient network errors, timeouts, 5xx errors)
+fn is_retryable_error(error: &str) -> bool {
+    let error_lower = error.to_lowercase();
+    error_lower.contains("connection")
+        || error_lower.contains("timeout")
+        || error_lower.contains("timed out")
+        || error_lower.contains("network")
+        || error_lower.contains("dns")
+        || error_lower.contains("reset")
+        || error_lower.contains("refused")
+        || error_lower.contains("500")
+        || error_lower.contains("502")
+        || error_lower.contains("503")
+        || error_lower.contains("504")
+        || error_lower.contains("429")
+        || error_lower.contains("rate limit")
+}
+
+/// Calculate delay for next retry with exponential backoff and jitter
+fn calculate_retry_delay(attempt: u32) -> u64 {
+    let exponential_delay = VISION_INITIAL_RETRY_DELAY_MS * 2u64.pow(attempt - 1);
+    let capped_delay = exponential_delay.min(VISION_MAX_RETRY_DELAY_MS);
+    let jitter_range = capped_delay / 4;
+    let jitter = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+        % jitter_range;
+    capped_delay - jitter_range / 2 + jitter
+}
+
+/// SESSION-002: Wrapper for call_vision_api_batch with retry logic
+async fn call_vision_api_batch_with_retry(
+    request: &serde_json::Value,
+    config: &ApiConfig,
+) -> Result<SessionAnalysisResponse, String> {
+    let mut last_error = String::new();
+
+    for attempt in 1..=VISION_MAX_RETRIES {
+        match call_vision_api_batch(request, config).await {
+            Ok(result) => return Ok(result),
+            Err(e) => {
+                last_error = e.clone();
+                if attempt < VISION_MAX_RETRIES && is_retryable_error(&e) {
+                    let delay = calculate_retry_delay(attempt);
+                    tracing::warn!(
+                        "Vision API call failed (attempt {}/{}), retrying in {}ms: {}",
+                        attempt,
+                        VISION_MAX_RETRIES,
+                        delay,
+                        e
+                    );
+                    tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    Err(format!(
+        "Vision API call failed after {} attempts: {}",
+        VISION_MAX_RETRIES, last_error
+    ))
+}
+
 /// SESSION-002: Analyze a session's screenshots in batch
 ///
 /// Collects all pending screenshots in a session, sends them to the Vision API
@@ -642,8 +715,8 @@ pub async fn analyze_session(session_id: i64) -> Result<(), String> {
     // 4. Build multi-image request
     let request = build_multi_image_request(&screenshots, previous_context.as_deref(), &config)?;
 
-    // 5. Call Vision API
-    let response = call_vision_api_batch(&request, &config).await?;
+    // 5. Call Vision API (with retry logic for transient errors)
+    let response = call_vision_api_batch_with_retry(&request, &config).await?;
 
     // 6. Validate response
     if response.per_screenshot_analysis.len() != screenshots.len() {

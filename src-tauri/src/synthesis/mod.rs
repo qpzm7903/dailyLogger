@@ -9,6 +9,51 @@ use crate::notion;
 use crate::session_manager::{Session, SessionStatus};
 use crate::slack;
 
+// STAB-001: Retry configuration for AI API calls
+const MAX_RETRIES: u32 = 3;
+const INITIAL_RETRY_DELAY_MS: u64 = 1000; // 1 second
+const MAX_RETRY_DELAY_MS: u64 = 10000; // 10 seconds
+
+/// Check if an error is retryable (transient network errors, timeouts, 5xx errors)
+fn is_retryable_error(error: &str) -> bool {
+    let error_lower = error.to_lowercase();
+    // Network-related errors
+    error_lower.contains("connection")
+        || error_lower.contains("timeout")
+        || error_lower.contains("timed out")
+        || error_lower.contains("network")
+        || error_lower.contains("dns")
+        || error_lower.contains("reset")
+        || error_lower.contains("refused")
+        // Server errors (5xx)
+        || error_lower.contains("500")
+        || error_lower.contains("502")
+        || error_lower.contains("503")
+        || error_lower.contains("504")
+        // Rate limiting
+        || error_lower.contains("429")
+        || error_lower.contains("rate limit")
+        || error_lower.contains("too many requests")
+}
+
+/// Calculate delay for next retry with exponential backoff and jitter
+fn calculate_retry_delay(attempt: u32) -> u64 {
+    let exponential_delay = INITIAL_RETRY_DELAY_MS * 2u64.pow(attempt - 1);
+    let capped_delay = exponential_delay.min(MAX_RETRY_DELAY_MS);
+    // Add jitter (±25%)
+    let jitter_range = capped_delay / 4;
+    let jitter = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+        % jitter_range;
+    // Apply jitter: base - 25% to base + 25%, then cap at MAX_RETRY_DELAY_MS
+    let delay_with_jitter = capped_delay - jitter_range / 2 + jitter;
+    delay_with_jitter
+        .min(MAX_RETRY_DELAY_MS)
+        .max(capped_delay / 2)
+}
+
 /// API configuration extracted from Settings for LLM calls.
 #[derive(Debug)]
 struct ApiConfig {
@@ -199,6 +244,44 @@ async fn call_llm_api(
     );
 
     Ok(content)
+}
+
+/// STAB-001: Wrapper for call_llm_api with retry logic for transient errors
+async fn call_llm_api_with_retry(
+    config: &ApiConfig,
+    prompt: &str,
+    max_tokens: u32,
+    caller: &str,
+) -> Result<String, String> {
+    let mut last_error = String::new();
+
+    for attempt in 1..=MAX_RETRIES {
+        match call_llm_api(config, prompt, max_tokens, caller).await {
+            Ok(result) => return Ok(result),
+            Err(e) => {
+                last_error = e.clone();
+                if attempt < MAX_RETRIES && is_retryable_error(&e) {
+                    let delay = calculate_retry_delay(attempt);
+                    tracing::warn!(
+                        "LLM API call failed (attempt {}/{}), retrying in {}ms: {}",
+                        attempt,
+                        MAX_RETRIES,
+                        delay,
+                        e
+                    );
+                    tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
+                } else {
+                    // Non-retryable error or max retries reached
+                    break;
+                }
+            }
+        }
+    }
+
+    Err(format!(
+        "LLM API call failed after {} attempts: {}",
+        MAX_RETRIES, last_error
+    ))
 }
 
 /// Write report content to the Obsidian output directory and return the full path.
@@ -738,7 +821,7 @@ async fn translate_report(
         .replace("{language}", lang_name)
         .replace("{original_report}", original_report);
 
-    call_llm_api(config, &prompt, 3000, "translate_report").await
+    call_llm_api_with_retry(config, &prompt, 3000, "translate_report").await
 }
 
 /// Get the list of supported languages
@@ -808,7 +891,8 @@ pub async fn generate_daily_summary() -> Result<String, String> {
                 .replace("{github_activity}", "");
 
             let summary =
-                call_llm_api(&api_config, &prompt, 2000, "generate_daily_summary").await?;
+                call_llm_api_with_retry(&api_config, &prompt, 2000, "generate_daily_summary")
+                    .await?;
 
             let filename = generate_summary_filename(&settings);
             let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
@@ -861,7 +945,8 @@ pub async fn generate_daily_summary() -> Result<String, String> {
         .replace("{records}", &records_text)
         .replace("{github_activity}", ""); // GitHub integration removed in v3.0.0
 
-    let summary = call_llm_api(&api_config, &prompt, 2000, "generate_daily_summary").await?;
+    let summary =
+        call_llm_api_with_retry(&api_config, &prompt, 2000, "generate_daily_summary").await?;
 
     let filename = generate_summary_filename(&settings);
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
@@ -956,7 +1041,8 @@ async fn generate_base_daily_summary(
                 .replace("{records}", &content)
                 .replace("{github_activity}", "");
 
-            return call_llm_api(api_config, &prompt, 2000, "generate_daily_summary").await;
+            return call_llm_api_with_retry(api_config, &prompt, 2000, "generate_daily_summary")
+                .await;
         }
     }
 
@@ -978,7 +1064,7 @@ async fn generate_base_daily_summary(
         .replace("{records}", &records_text)
         .replace("{github_activity}", "");
 
-    call_llm_api(api_config, &prompt, 2000, "generate_daily_summary").await
+    call_llm_api_with_retry(api_config, &prompt, 2000, "generate_daily_summary").await
 }
 
 #[cfg(test)]
@@ -1809,7 +1895,8 @@ pub async fn generate_weekly_report() -> Result<String, String> {
         .unwrap_or(DEFAULT_WEEKLY_REPORT_PROMPT);
     let prompt = prompt_template.replace("{records}", &records_text);
 
-    let summary = call_llm_api(&api_config, &prompt, 3000, "generate_weekly_report").await?;
+    let summary =
+        call_llm_api_with_retry(&api_config, &prompt, 3000, "generate_weekly_report").await?;
 
     let filename = generate_weekly_report_filename(week_start_day);
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
@@ -1867,7 +1954,8 @@ pub async fn generate_monthly_report() -> Result<String, String> {
         .unwrap_or(DEFAULT_MONTHLY_REPORT_PROMPT);
     let prompt = prompt_template.replace("{records}", &records_text);
 
-    let summary = call_llm_api(&api_config, &prompt, 4000, "generate_monthly_report").await?;
+    let summary =
+        call_llm_api_with_retry(&api_config, &prompt, 4000, "generate_monthly_report").await?;
 
     let filename = generate_monthly_report_filename();
     let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
@@ -1987,7 +2075,8 @@ pub async fn generate_custom_report(
         .replace("{start_date}", &start_date)
         .replace("{end_date}", &end_date);
 
-    let summary = call_llm_api(&api_config, &prompt, 4000, "generate_custom_report").await?;
+    let summary =
+        call_llm_api_with_retry(&api_config, &prompt, 4000, "generate_custom_report").await?;
 
     let name = report_name.as_deref().unwrap_or("自定义报告");
     let filename = generate_custom_report_filename(name, &start_date, &end_date);
@@ -2088,7 +2177,7 @@ pub async fn compare_reports(
         .replace("{start_date_b}", &start_date_b)
         .replace("{end_date_b}", &end_date_b);
 
-    let summary = call_llm_api(&api_config, &prompt, 4000, "compare_reports").await?;
+    let summary = call_llm_api_with_retry(&api_config, &prompt, 4000, "compare_reports").await?;
 
     let filename =
         generate_comparison_report_filename(&start_date_a, &end_date_a, &start_date_b, &end_date_b);
@@ -2551,6 +2640,98 @@ mod benchmarks {
         assert_eq!(
             filename,
             "对比分析-2026-01-01~2026-01-31-vs-2026-02-01~2026-02-28.md"
+        );
+    }
+
+    // STAB-001: Tests for retry logic
+
+    #[test]
+    fn is_retryable_error_recognizes_network_errors() {
+        assert!(is_retryable_error("Connection refused"));
+        assert!(is_retryable_error("Connection timed out"));
+        assert!(is_retryable_error("DNS lookup failed"));
+        assert!(is_retryable_error("Connection reset by peer"));
+        assert!(is_retryable_error("network error"));
+        assert!(is_retryable_error("timeout"));
+    }
+
+    #[test]
+    fn is_retryable_error_recognizes_server_errors() {
+        assert!(is_retryable_error("500 Internal Server Error"));
+        assert!(is_retryable_error("502 Bad Gateway"));
+        assert!(is_retryable_error("503 Service Unavailable"));
+        assert!(is_retryable_error("504 Gateway Timeout"));
+        assert!(is_retryable_error("429 Too Many Requests"));
+        assert!(is_retryable_error("rate limit exceeded"));
+    }
+
+    #[test]
+    fn is_retryable_error_rejects_client_errors() {
+        assert!(!is_retryable_error("400 Bad Request"));
+        assert!(!is_retryable_error("401 Unauthorized"));
+        assert!(!is_retryable_error("403 Forbidden"));
+        assert!(!is_retryable_error("404 Not Found"));
+        assert!(!is_retryable_error("Invalid API key"));
+    }
+
+    #[test]
+    fn calculate_retry_delay_increases_exponentially() {
+        let delay1 = calculate_retry_delay(1);
+        let delay2 = calculate_retry_delay(2);
+        let delay3 = calculate_retry_delay(3);
+
+        // Each delay should be roughly double the previous (with jitter)
+        assert!(delay2 > delay1);
+        assert!(delay3 > delay2);
+
+        // But should be capped at MAX_RETRY_DELAY_MS
+        assert!(delay1 <= MAX_RETRY_DELAY_MS);
+        assert!(delay2 <= MAX_RETRY_DELAY_MS);
+        assert!(delay3 <= MAX_RETRY_DELAY_MS);
+    }
+
+    #[test]
+    fn calculate_retry_delay_is_within_bounds() {
+        // Test that delay is within reasonable bounds
+        for attempt in 1..=5 {
+            let delay = calculate_retry_delay(attempt);
+            // Should be at least some positive value
+            assert!(
+                delay > 0,
+                "Delay should be positive for attempt {}",
+                attempt
+            );
+            // Should not exceed max retry delay
+            assert!(
+                delay <= MAX_RETRY_DELAY_MS,
+                "Delay {} exceeds max {} for attempt {}",
+                delay,
+                MAX_RETRY_DELAY_MS,
+                attempt
+            );
+        }
+    }
+
+    #[test]
+    fn calculate_retry_delay_exponential_backoff() {
+        // Test that delay increases with attempt number (before capping)
+        let delay_1 = calculate_retry_delay(1);
+        let delay_2 = calculate_retry_delay(2);
+        let delay_3 = calculate_retry_delay(3);
+
+        // Each delay should be roughly double the previous (base without jitter)
+        // The actual values include jitter but should still follow the pattern
+        assert!(
+            delay_2 >= delay_1,
+            "Delay for attempt 2 ({}) should be >= attempt 1 ({})",
+            delay_2,
+            delay_1
+        );
+        assert!(
+            delay_3 >= delay_2,
+            "Delay for attempt 3 ({}) should be >= attempt 2 ({})",
+            delay_3,
+            delay_2
         );
     }
 }

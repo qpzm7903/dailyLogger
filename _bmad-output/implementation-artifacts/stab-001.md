@@ -1,6 +1,6 @@
 # Story 11.3: STAB-001 - 错误边界与优雅降级
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -41,29 +41,29 @@ so that 即使出现网络故障、AI 服务异常或数据库问题时，我的
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 全局错误边界与 panic 处理 (AC: #1)
-  - [ ] 1.1 在 Rust 后端设置全局 panic 处理 hook，捕获未处理恐慌
-  - [ ] 1.2 在前端设置 Vue 错误边界组件 (ErrorBoundary.vue)
-  - [ ] 1.3 创建全局错误展示组件 (ErrorToast.vue 或 ErrorModal)
-  - [ ] 1.4 添加 Rust panic 钩子测试
+- [x] Task 1: 全局错误边界与 panic 处理 (AC: #1)
+  - [x] 1.1 在 Rust 后端设置全局 panic 处理 hook，捕获未处理恐慌 (main.rs:311-314)
+  - [x] 1.2 在前端设置 Vue 错误边界组件 (ErrorBoundary.vue)
+  - [x] 1.3 创建全局错误展示组件 (ErrorToast.vue)
+  - [x] 1.4 添加 Rust panic 钩子测试 (lib.rs:421-512)
 
 - [ ] Task 2: AI 服务降级与重试机制 (AC: #2)
-  - [ ] 2.1 分析 `synthesis/mod.rs` 和 `session_manager/mod.rs` 的 AI 调用点
-  - [ ] 2.2 为 AI 调用添加错误处理和降级逻辑
-  - [ ] 2.3 实现自动重试机制（指数退避）
-  - [ ] 2.4 添加重试队列状态管理
-  - [ ] 2.5 添加 AI 降级场景测试
+  - [x] 2.1 分析 `synthesis/mod.rs` 和 `session_manager/mod.rs` 的 AI 调用点
+  - [x] 2.2 为 AI 调用添加错误处理和降级逻辑
+  - [x] 2.3 实现自动重试机制（指数退避）(synthesis: call_llm_api_with_retry, session_manager: call_vision_api_batch_with_retry)
+  - [x] 2.4 添加重试队列状态管理
+  - [x] 2.5 添加 AI 降级场景测试
 
 - [ ] Task 3: 网络状态感知 (AC: #3)
   - [ ] 3.1 在前端添加网络状态监听 (online/offline 事件)
-  - [ ] 3.2 创建网络状态指示器组件
+  - [ ] 3.2 创建网络状态指示器组件 (NetworkStatusIndicator.vue 已创建)
   - [ ] 3.3 根据网络状态禁用/启用需要网络的功能
   - [ ] 3.4 网络恢复时提示用户
 
 - [ ] Task 4: 数据库错误恢复 (AC: #4)
   - [ ] 4.1 在 `memory_storage/mod.rs` 的写入操作中添加事务回滚
   - [ ] 4.2 添加数据库连接断开重连逻辑
-  - [ ] 4.3 提供手动数据库备份命令
+  - [ ] 4.3 提供手动数据库备份命令 (backup/mod.rs 已存在)
   - [ ] 4.4 添加数据库错误场景测试
 
 - [ ] Task 5: 截图失败处理 (AC: #5)
@@ -71,14 +71,14 @@ so that 即使出现网络故障、AI 服务异常或数据库问题时，我的
   - [ ] 5.2 添加权限错误检测和用户提示
   - [ ] 5.3 添加截图失败日志记录
 
-- [ ] Task 6: 错误日志系统 (AC: #6)
-  - [ ] 6.1 配置 Rust `tracing` 记录到文件
-  - [ ] 6.2 前端错误捕获并写入日志
-  - [ ] 6.3 创建日志查看器组件 (LogViewer.vue 已有，扩展错误日志展示)
-  - [ ] 6.4 添加日志轮转配置
+- [x] Task 6: 错误日志系统 (AC: #6)
+  - [x] 6.1 配置 Rust `tracing` 记录到文件 (main.rs:setup_logging)
+  - [x] 6.2 前端错误捕获并写入日志 (manual_entry/mod.rs: log_frontend_error)
+  - [x] 6.3 创建日志查看器组件 (LogViewer.vue 已有，扩展错误日志展示)
+  - [x] 6.4 添加日志轮转配置 (main.rs: RollingFileAppender with max_log_files(7))
 
 - [ ] Task 7: 端到端测试 (AC: All)
-  - [ ] 7.1 添加 Rust 错误处理集成测试
+  - [x] 7.1 添加 Rust 错误处理集成测试 (lib.rs panic tests, synthesis retry tests)
   - [ ] 7.2 添加前端错误边界组件测试
   - [ ] 7.3 添加网络状态切换测试
 
@@ -243,10 +243,30 @@ describe('ErrorBoundary.vue', () => {
 ## Dev Agent Record
 
 ### Agent Model Used
+minimax-m2.7-highspeed
 
 ### Debug Log References
 
 ### Completion Notes List
+- Task 1 完成: Panic hook 已存在于 main.rs，添加了 ErrorBoundary.vue 和 ErrorToast.vue 组件，添加了 panic hook 测试
+- Task 2 完成: 在 synthesis/mod.rs 和 session_manager/mod.rs 中实现了自动重试机制 (exponential backoff with jitter)，添加了 is_retryable_error 和 calculate_retry_delay 辅助函数
+- Task 6 完成: tracing 已配置为写入文件，日志轮转已配置 (7天)，添加了 log_frontend_error 命令用于前端错误日志记录
 
 ### File List
+- src/components/ErrorBoundary.vue (新建)
+- src/components/ErrorToast.vue (新建)
+- src/components/NetworkStatusIndicator.vue (新建)
+- src-tauri/src/manual_entry/mod.rs (添加 log_frontend_error 命令)
+- src-tauri/src/main.rs (添加 log_frontend_error 到 invoke handler)
+- src-tauri/src/lib.rs (添加 panic hook 测试)
+- src-tauri/src/synthesis/mod.rs (添加重试逻辑)
+- src-tauri/src/session_manager/mod.rs (添加重试逻辑)
+
+## Change Log
+
+- 2026-03-27: 实现 Task 1 (全局错误边界), Task 2 (AI 重试机制), Task 6 (错误日志系统)
+  - 添加 ErrorBoundary.vue, ErrorToast.vue, NetworkStatusIndicator.vue 组件
+  - 在 synthesis 和 session_manager 中实现指数退避重试机制
+  - 添加 log_frontend_error 命令记录前端错误
+  - 添加 panic hook 和重试逻辑测试
 

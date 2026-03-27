@@ -187,6 +187,52 @@ pub async fn get_log_file_path() -> Result<String, String> {
         .ok_or_else(|| "Invalid log directory path".to_string())
 }
 
+/// STAB-001: Log frontend errors to the error log file
+/// Frontend errors are captured via window.onerror and unhandled promise rejections
+#[command]
+pub async fn log_frontend_error(
+    message: String,
+    stack: String,
+    source: String,
+) -> Result<(), String> {
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let error_msg = format!(
+        "[{}] FRONTEND ERROR\n  Message: {}\n  Source: {}\n  Stack: {}\n\n",
+        timestamp, message, source, stack
+    );
+
+    let log_dir = dirs::data_dir()
+        .ok_or_else(|| "Cannot determine data directory".to_string())?
+        .join("DailyLogger")
+        .join("logs");
+
+    // Ensure log directory exists
+    std::fs::create_dir_all(&log_dir)
+        .map_err(|e| format!("Failed to create log directory: {}", e))?;
+
+    // Write to error log file (separate from main log for easier debugging)
+    let error_log_path = log_dir.join("frontend-errors.log");
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&error_log_path)
+        .map_err(|e| format!("Failed to open error log file: {}", e))?;
+
+    use std::io::Write;
+    file.write_all(error_msg.as_bytes())
+        .map_err(|e| format!("Failed to write error log: {}", e))?;
+
+    // Also log to the main tracing system for monitoring
+    tracing::error!(
+        message = %message,
+        source = %source,
+        stack = %stack,
+        "Frontend error captured"
+    );
+
+    Ok(())
+}
+
 /// FIX-007: Report file info for listing historical reports
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct ReportFile {

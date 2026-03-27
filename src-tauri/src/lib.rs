@@ -418,3 +418,96 @@ mod tests {
         assert!(is_local_url("http://LocalHost:8080"));
     }
 }
+
+// STAB-001: Tests for error handling and panic hooks
+
+#[cfg(test)]
+mod error_handling_tests {
+    use super::*;
+
+    /// Test that the app data directory is correctly determined
+    #[test]
+    fn app_data_dir_ends_with_dailylogger() {
+        let dir = get_app_data_dir();
+        assert!(
+            dir.file_name().map_or(false, |n| n == "DailyLogger"),
+            "App data dir should end with 'DailyLogger', got {:?}",
+            dir
+        );
+    }
+
+    /// Test API key masking for various inputs
+    #[test]
+    fn mask_api_key_various_lengths() {
+        // Empty key
+        assert_eq!(mask_api_key(""), "****");
+
+        // Short key (less than 5 chars)
+        assert_eq!(mask_api_key("abc"), "abc...****");
+        assert_eq!(mask_api_key("ab"), "ab...****");
+
+        // Exactly 5 chars
+        assert_eq!(mask_api_key("12345"), "12345...****");
+
+        // Longer key
+        assert_eq!(mask_api_key("sk-abc123"), "sk-ab...****");
+
+        // Encrypted key should not reveal any part
+        assert_eq!(mask_api_key("ENC:somebase64data"), "[encrypted]");
+    }
+
+    /// Test that local URL detection works correctly
+    #[test]
+    fn local_url_detection_comprehensive() {
+        // Valid local URLs
+        assert!(is_local_url("http://localhost:8080"));
+        assert!(is_local_url("http://127.0.0.1:11434"));
+        assert!(is_local_url("http://[::1]:8080"));
+        assert!(is_local_url("http://192.168.1.100:8080"));
+        assert!(is_local_url("http://10.0.0.1:8080"));
+        assert!(is_local_url("http://172.16.0.1:8080"));
+
+        // Invalid local URLs
+        assert!(!is_local_url("https://google.com"));
+        assert!(!is_local_url("https://api.github.com"));
+        assert!(!is_local_url("http://8.8.8.8:80"));
+    }
+
+    /// Test panic hook behavior by verifying the hook is set
+    #[test]
+    fn panic_hook_can_be_set() {
+        // This test verifies that we can set a panic hook without panicking
+        let result = std::panic::catch_unwind(|| {
+            std::panic::set_hook(Box::new(|_| {}));
+        });
+        assert!(result.is_ok());
+    }
+
+    /// Test panic hook receives correct information
+    #[test]
+    fn panic_hook_receives_info() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        static HOOK_CALLED: AtomicBool = AtomicBool::new(false);
+
+        std::panic::set_hook(Box::new(|panic_info| {
+            HOOK_CALLED.store(true, Ordering::SeqCst);
+            // Verify we can extract a message from the panic info
+            let _ = panic_info.to_string();
+        }));
+
+        // Trigger a panic
+        let result = std::panic::catch_unwind(|| {
+            panic!("test panic message");
+        });
+
+        // Verify hook was called
+        assert!(result.is_err()); // catch_unwind should catch the panic
+        assert!(
+            HOOK_CALLED.load(Ordering::SeqCst),
+            "Panic hook should have been called"
+        );
+
+        // Reset panic hook
+        std::panic::set_hook(Box::new(|_| {}));
+    }
+}
