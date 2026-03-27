@@ -9,6 +9,7 @@
 //! - Commands (in `commands/`) are responsible for error mapping to Tauri responses
 
 pub mod model_service;
+pub mod session_service;
 pub mod settings_service;
 
 // Re-export business logic from existing modules
@@ -17,11 +18,16 @@ pub use crate::memory_storage::{
     get_records_by_date_range_sync, get_settings_sync, get_today_records_sync,
     get_today_stats_sync, save_settings_sync, search_records_sync, update_record_user_notes_sync,
 };
-pub use crate::session_manager::get_today_sessions_sync;
 pub use crate::synthesis::{get_default_summary_prompt, get_supported_languages};
 
 // Service functions from model_service
 pub use model_service::get_model_info_service;
+
+// Service functions from session_service
+pub use session_service::{
+    analyze_session_service, get_session_screenshots_service, get_today_sessions_service,
+    update_session_user_summary_service,
+};
 
 // Service functions from settings_service
 pub use settings_service::{get_settings_service, save_settings_service};

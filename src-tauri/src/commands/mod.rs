@@ -9,6 +9,7 @@
 //! - This module re-exports commands for a clean public API
 
 pub mod model_commands;
+pub mod session_commands;
 pub mod settings_commands;
 
 // Re-export all commands from their respective domain modules
@@ -53,8 +54,8 @@ pub use crate::memory_storage::{
     update_record_user_notes,
 };
 
-// Session commands
-pub use crate::session_manager::{
+// Session commands (thin wrappers delegating to services)
+pub use crate::commands::session_commands::{
     analyze_session, get_session_screenshots, get_today_sessions, update_session_user_summary,
 };
 

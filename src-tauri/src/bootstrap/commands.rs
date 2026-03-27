@@ -46,12 +46,12 @@ pub fn register_commands(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
         // FEAT-005: User notes for screenshot records
         daily_logger_lib::memory_storage::update_record_user_notes,
         // SESSION-001: Session management
-        daily_logger_lib::session_manager::get_today_sessions,
+        daily_logger_lib::commands::session_commands::get_today_sessions,
         // SESSION-002: Session batch analysis
-        daily_logger_lib::session_manager::analyze_session,
-        daily_logger_lib::session_manager::get_session_screenshots,
+        daily_logger_lib::commands::session_commands::analyze_session,
+        daily_logger_lib::commands::session_commands::get_session_screenshots,
         // SESSION-003: Session summary editing
-        daily_logger_lib::session_manager::update_session_user_summary,
+        daily_logger_lib::commands::session_commands::update_session_user_summary,
         // DATA-008: Statistics panel
         daily_logger_lib::memory_storage::get_statistics,
         // Synthesis commands
