@@ -1,6 +1,6 @@
 # Story 11.3: STAB-001 - 错误边界与优雅降级
 
-Status: review
+Status: done
 
 ## Story
 

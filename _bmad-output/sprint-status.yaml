@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-27 (STAB-001: review - ErrorBoundary integrated into App.vue)
+last_updated: 2026-03-27 (STAB-001: done - retrospective completed)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -160,6 +160,7 @@ development_status:
   epic-11: in-progress
   data-007: done  # CI passed 2026-03-26
   data-008: in-progress  # 数据统计面板 - code review found issues (partial export, missing tests)
-  stab-001: review  # ErrorBoundary 已集成到 App.vue - HIGH issue fixed
+  stab-001: done  # Retrospective completed 2026-03-27
+  stab-001-retrospective: done
   stab-002: backlog  # 自动备份与恢复
   epic-11-retrospective: optional
