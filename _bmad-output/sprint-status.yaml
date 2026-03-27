@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-27 (STAB-002: review passed - implementation complete)
+last_updated: 2026-03-27 (epic-11 retrospective completed)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -157,11 +157,11 @@ development_status:
   epic-10-retrospective: done  # Completed 2026-03-26
 
   # Epic 11: 数据增强与稳定性 (DATA-ENHANCEMENT)
-  epic-11: in-progress
+  epic-11: done
   data-007: done  # CI passed 2026-03-26
   data-008: done  # Retrospective completed 2026-03-27
   data-008-retrospective: done
   stab-001: done  # Retrospective completed 2026-03-27
   stab-001-retrospective: done
   stab-002: done  # Code review passed 2026-03-27
-  epic-11-retrospective: optional
+  epic-11-retrospective: done  # Completed 2026-03-27
