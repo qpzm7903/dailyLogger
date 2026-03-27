@@ -763,7 +763,8 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             auto_backup_enabled INTEGER DEFAULT 0,
             auto_backup_interval TEXT DEFAULT 'daily',
             auto_backup_retention INTEGER DEFAULT 5,
-            last_auto_backup_at TEXT
+            last_auto_backup_at TEXT,
+            auto_detect_vault_by_window INTEGER DEFAULT 0
         )",
         [],
     )
