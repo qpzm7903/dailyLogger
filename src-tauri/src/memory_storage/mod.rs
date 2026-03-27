@@ -796,7 +796,7 @@ mod tests_statistics {
         }
 
         // Get today's range first to ensure we use the same date
-        let (start, _end) = get_today_range();
+        let (start, end) = get_today_range();
 
         // Extract date from start (format: YYYY-MM-DDTHH:MM:SS)
         let date_part = &start[..10]; // "YYYY-MM-DD"
@@ -827,9 +827,6 @@ mod tests_statistics {
             )
             .unwrap();
         }
-
-        // Get today's range again for the query
-        let (start, end) = get_today_range();
 
         // Call count functions
         let screenshot_count = count_screenshots_in_range(
