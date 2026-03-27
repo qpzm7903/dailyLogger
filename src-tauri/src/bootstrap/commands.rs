@@ -25,7 +25,7 @@ pub fn register_commands(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
         daily_logger_lib::memory_storage::get_settings,
         daily_logger_lib::memory_storage::save_settings,
         daily_logger_lib::ollama::test_api_connection_with_ollama,
-        daily_logger_lib::memory_storage::get_model_info,
+        daily_logger_lib::commands::model_commands::get_model_info,
         daily_logger_lib::memory_storage::delete_record,
         daily_logger_lib::memory_storage::get_history_records,
         daily_logger_lib::memory_storage::get_history_records_cursor,

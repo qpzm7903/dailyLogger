@@ -1,15 +1,20 @@
 //! Commands module - Tauri command entry points
 //!
-//! This module acts as a facade that re-exports commands from domain modules.
-//! This provides a clear boundary between the command layer and the service layer.
+//! This module serves as the central registry for all Tauri command handlers.
+//! Commands are thin IPC adapters that delegate to service functions.
 //!
 //! Design principles:
 //! - Commands serve as thin IPC adapter layer
 //! - Business logic resides in the `services` module
 //! - This module re-exports commands for a clean public API
 
+pub mod model_commands;
+
 // Re-export all commands from their respective domain modules
 // This allows bootstrap/commands.rs to import from a single location
+
+// Model commands (delegates to services)
+pub use crate::commands::model_commands::get_model_info;
 
 // Manual entry commands
 pub use crate::manual_entry::{
@@ -29,7 +34,6 @@ pub use crate::memory_storage::{
     get_default_tag_categories,
     get_history_records,
     get_history_records_cursor,
-    get_model_info,
     get_records_by_date_range,
     get_records_by_manual_tags,
     get_records_by_tag,

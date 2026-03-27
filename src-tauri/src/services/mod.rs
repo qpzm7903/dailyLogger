@@ -1,13 +1,14 @@
 //! Services module - Business logic layer
 //!
-//! This module re-exports business logic functions from the existing modules.
-//! Over time, functions will be migrated here from their current locations to create
-//! a clear separation between command handling and business logic.
+//! This module contains business logic functions organized by domain.
+//! Commands (in `commands/`) are thin wrappers that delegate to these services.
 //!
 //! Design principles:
 //! - Services contain no `#[tauri::command]` attributes
 //! - Services use idiomatic Rust error handling
 //! - Commands (in `commands/`) are responsible for error mapping to Tauri responses
+
+pub mod model_service;
 
 // Re-export business logic from existing modules
 pub use crate::memory_storage::{
@@ -17,3 +18,6 @@ pub use crate::memory_storage::{
 };
 pub use crate::session_manager::get_today_sessions_sync;
 pub use crate::synthesis::{get_default_summary_prompt, get_supported_languages};
+
+// Service functions from model_service
+pub use model_service::get_model_info_service;
