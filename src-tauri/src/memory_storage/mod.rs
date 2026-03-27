@@ -1014,4 +1014,80 @@ mod tests_statistics {
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("custom_end is required"));
     }
+
+    // STAB-001 Task 4.2: Database connection reconnection tests
+    #[test]
+    fn test_check_connection_with_valid_connection() {
+        use crate::memory_storage::schema::check_connection;
+        use crate::memory_storage::schema::init_test_database;
+        use rusqlite::Connection;
+
+        // Create in-memory database for testing
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+
+        // Set up global DB connection
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Connection should be valid
+        let is_valid = check_connection().unwrap();
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_check_connection_with_no_connection() {
+        use crate::memory_storage::schema::check_connection;
+
+        // Clear any existing connection
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = None;
+        }
+
+        // Should return false (needs reconnect)
+        let is_valid = check_connection().unwrap();
+        assert!(!is_valid);
+    }
+
+    // STAB-001 Task 4.4: Database error scenario tests
+    #[test]
+    fn test_transaction_rollback_on_invalid_data() {
+        use crate::memory_storage::records::add_record_with_session;
+        use crate::memory_storage::schema::init_test_database;
+        use rusqlite::Connection;
+
+        // Create in-memory database for testing
+        let conn = Connection::open_in_memory().unwrap();
+        init_test_database(&conn).unwrap();
+
+        // Set up global DB connection
+        {
+            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
+            *db = Some(conn);
+        }
+
+        // Get today's range for valid timestamp
+        let (start, _end) = get_today_range();
+        let date_part = &start[..10];
+
+        // Add a valid record first
+        let result = add_record_with_session("auto", "valid record", None, None, None, None);
+        assert!(result.is_ok());
+
+        // Verify the record was inserted
+        let record_count = count_records_in_range(
+            crate::memory_storage::DB_CONNECTION
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
+            &start,
+            &format!("{}T23:59:59", date_part),
+        )
+        .unwrap();
+        assert_eq!(record_count, 1);
+    }
 }

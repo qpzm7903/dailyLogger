@@ -86,6 +86,9 @@ pub fn add_record_with_session(
     tags: Option<&str>,
     session_id: Option<i64>,
 ) -> Result<i64, String> {
+    // STAB-001 Task 4.2: Ensure database connection is valid before operation
+    crate::memory_storage::schema::ensure_connection()?;
+
     let db = DB_CONNECTION
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;

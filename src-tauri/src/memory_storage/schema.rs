@@ -538,6 +538,46 @@ pub fn init_database() -> Result<(), String> {
     Ok(())
 }
 
+/// STAB-001 Task 4.2: Check if the database connection is still valid
+/// Returns Ok(true) if connection is valid, Ok(false) if reconnect needed, Err on error
+pub fn check_connection() -> Result<bool, String> {
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = match db.as_ref() {
+        Some(c) => c,
+        None => return Ok(false), // No connection, needs reconnect
+    };
+
+    // Execute a simple query to check if connection is still alive
+    match conn.query_row("SELECT 1", [], |_| Ok(())) {
+        Ok(_) => Ok(true),
+        Err(_) => Ok(false), // Connection is dead, needs reconnect
+    }
+}
+
+/// STAB-001 Task 4.2: Ensure database connection is valid, reconnect if needed
+/// This should be called before critical database operations
+pub fn ensure_connection() -> Result<(), String> {
+    if check_connection()? {
+        return Ok(());
+    }
+
+    tracing::warn!("Database connection lost, attempting to reconnect...");
+    crate::write_diagnostic_file("ensure_connection: Connection lost, reconnecting...");
+
+    // Clear the old connection
+    {
+        let mut db = DB_CONNECTION
+            .lock()
+            .map_err(|e| format!("Lock error: {}", e))?;
+        *db = None;
+    }
+
+    // Reinitialize the database
+    init_database()
+}
+
 /// Migrate plain text API key to encrypted storage
 /// Takes a connection reference to avoid deadlock when called from init_database
 fn migrate_plain_api_key_with_conn(conn: &Connection) -> Result<(), String> {

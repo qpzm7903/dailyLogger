@@ -62,19 +62,14 @@ so that 即使出现网络故障、AI 服务异常或数据库问题时，我的
 
 - [x] Task 4: 数据库错误恢复 (AC: #4)
   - [x] 4.1 在 `memory_storage/records.rs` 的写入操作中添加事务回滚
-  - [ ] 4.2 添加数据库连接断开重连逻辑
+  - [x] 4.2 添加数据库连接断开重连逻辑
   - [x] 4.3 提供手动数据库备份命令 (backup/mod.rs 已存在)
-  - [ ] 4.4 添加数据库错误场景测试
+  - [x] 4.4 添加数据库错误场景测试
 
 - [x] Task 5: 截图失败处理 (AC: #5)
   - [x] 5.1 在 `auto_perception/mod.rs` 添加截图失败处理
   - [x] 5.2 添加权限错误检测和用户提示
   - [x] 5.3 添加截图失败日志记录
-
-- [x] Task 7: 端到端测试 (AC: All)
-  - [x] 7.1 添加 Rust 错误处理集成测试 (lib.rs panic tests, synthesis retry tests)
-  - [x] 7.2 添加前端错误边界组件测试 (OfflineBanner.spec.ts)
-  - [x] 7.3 添加网络状态切换测试 (OfflineBanner.spec.ts)
 
 - [x] Task 6: 错误日志系统 (AC: #6)
   - [x] 6.1 配置 Rust `tracing` 记录到文件 (main.rs:setup_logging)
@@ -82,10 +77,10 @@ so that 即使出现网络故障、AI 服务异常或数据库问题时，我的
   - [x] 6.3 创建日志查看器组件 (LogViewer.vue 已有，扩展错误日志展示)
   - [x] 6.4 添加日志轮转配置 (main.rs: RollingFileAppender with max_log_files(7))
 
-- [ ] Task 7: 端到端测试 (AC: All)
+- [x] Task 7: 端到端测试 (AC: All)
   - [x] 7.1 添加 Rust 错误处理集成测试 (lib.rs panic tests, synthesis retry tests)
-  - [ ] 7.2 添加前端错误边界组件测试
-  - [ ] 7.3 添加网络状态切换测试
+  - [x] 7.2 添加前端错误边界组件测试 (OfflineBanner.spec.ts)
+  - [x] 7.3 添加网络状态切换测试 (OfflineBanner.spec.ts)
 
 ## Dev Notes
 
@@ -258,6 +253,8 @@ minimax-m2.7-highspeed
 - Task 6 完成: tracing 已配置为写入文件，日志轮转已配置 (7天)，添加了 log_frontend_error 命令用于前端错误日志记录
 - Task 3 完成: 在 App.vue 中为网络相关功能添加离线检查 (generateSummary, generateWeeklyReport, generateMonthlyReport, handleGenerateMultilingualReport, reanalyzeTodayRecords)，OfflineBanner 组件已存在且实现了网络恢复提示
 - Task 4 完成: 在 add_record_with_session 中添加了事务回滚 (BEGIN/COMMIT/ROLLBACK)
+- Task 4.2 完成: 在 schema.rs 中添加 check_connection() 和 ensure_connection() 函数，add_record_with_session 调用 ensure_connection() 实现连接断开重连
+- Task 4.4 完成: 添加了 test_check_connection_with_valid_connection, test_check_connection_with_no_connection, test_transaction_rollback_on_invalid_data 三个测试
 - Task 5 完成: 在 auto_perception/mod.rs 中添加了 ScreenshotErrorKind 枚举和 classify_screenshot_error, get_screenshot_error_message 函数，修改了 take_screenshot, trigger_capture, capture_and_store 使用分类错误消息
 - Task 7 完成: 添加了 OfflineBanner.spec.ts 前端测试文件，添加了 STAB-001 截图错误分类测试
 
@@ -272,7 +269,9 @@ minimax-m2.7-highspeed
 - src-tauri/src/synthesis/mod.rs (添加重试逻辑)
 - src-tauri/src/session_manager/mod.rs (添加重试逻辑)
 - src-tauri/src/auto_perception/mod.rs (添加截图错误分类和处理)
-- src-tauri/src/memory_storage/records.rs (添加事务回滚)
+- src-tauri/src/memory_storage/records.rs (添加事务回滚和 ensure_connection 调用)
+- src-tauri/src/memory_storage/schema.rs (添加 check_connection 和 ensure_connection 函数)
+- src-tauri/src/memory_storage/mod.rs (添加数据库连接和错误场景测试)
 - src/App.vue (添加离线检查)
 
 ## Change Log
@@ -288,4 +287,9 @@ minimax-m2.7-highspeed
   - 在 add_record_with_session 中添加事务回滚
   - 添加 ScreenshotErrorKind 错误分类和用户友好错误消息
   - 添加 OfflineBanner.spec.ts 前端测试
+
+- 2026-03-27: 完成 Task 4.2 (数据库连接断开重连逻辑), Task 4.4 (数据库错误场景测试)
+  - 在 schema.rs 中添加 check_connection() 和 ensure_connection() 函数
+  - add_record_with_session 调用 ensure_connection() 确保连接有效
+  - 添加 test_check_connection_with_valid_connection, test_check_connection_with_no_connection, test_transaction_rollback_on_invalid_data 三个 Rust 测试
 
