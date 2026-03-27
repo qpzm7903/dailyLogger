@@ -8,11 +8,11 @@ use daily_logger_lib::init_app;
 mod bootstrap;
 
 use bootstrap::commands::register_commands;
+#[cfg(target_os = "windows")]
+use bootstrap::logging::{is_webview2_installed, show_webview2_error_message};
 use bootstrap::logging::{
     setup_logging, write_crash_log, write_crash_message, write_diagnostic_file,
 };
-#[cfg(target_os = "windows")]
-use bootstrap::logging::{is_webview2_installed, show_webview2_error_message};
 use bootstrap::tray::setup_tray;
 
 fn main() {
