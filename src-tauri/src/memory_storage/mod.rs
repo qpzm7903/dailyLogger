@@ -795,14 +795,13 @@ mod tests_statistics {
             *db = Some(conn);
         }
 
-        // Get today's range first to ensure we use the same date
-        let (start, end) = get_today_range();
-
-        // Extract date from start (format: YYYY-MM-DDTHH:MM:SS)
-        let date_part = &start[..10]; // "YYYY-MM-DD"
-        let timestamp1 = format!("{}T10:00:00", date_part);
-        let timestamp2 = format!("{}T11:00:00", date_part);
-        let timestamp3 = format!("{}T14:00:00", date_part);
+        // Use fixed date strings to avoid timezone-dependent failures on Windows CI
+        // The test date 2026-03-27 is arbitrary but stable across all timezones
+        let start = "2026-03-27T00:00:00".to_string();
+        let end = "2026-03-27T23:59:59.999".to_string();
+        let timestamp1 = "2026-03-27T10:00:00".to_string();
+        let timestamp2 = "2026-03-27T11:00:00".to_string();
+        let timestamp3 = "2026-03-27T14:00:00".to_string();
 
         // Insert records - one with screenshot, two without
         {
