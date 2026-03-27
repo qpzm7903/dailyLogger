@@ -9,6 +9,7 @@
 //! - Commands (in `commands/`) are responsible for error mapping to Tauri responses
 
 pub mod model_service;
+pub mod settings_service;
 
 // Re-export business logic from existing modules
 pub use crate::memory_storage::{
@@ -21,3 +22,6 @@ pub use crate::synthesis::{get_default_summary_prompt, get_supported_languages};
 
 // Service functions from model_service
 pub use model_service::get_model_info_service;
+
+// Service functions from settings_service
+pub use settings_service::{get_settings_service, save_settings_service};

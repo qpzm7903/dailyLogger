@@ -9,6 +9,7 @@
 //! - This module re-exports commands for a clean public API
 
 pub mod model_commands;
+pub mod settings_commands;
 
 // Re-export all commands from their respective domain modules
 // This allows bootstrap/commands.rs to import from a single location
@@ -16,13 +17,16 @@ pub mod model_commands;
 // Model commands (delegates to services)
 pub use crate::commands::model_commands::get_model_info;
 
+// Settings commands (thin wrappers delegating to services)
+pub use crate::commands::settings_commands::{get_settings, save_settings};
+
 // Manual entry commands
 pub use crate::manual_entry::{
     add_quick_note, get_log_file_path, get_logs_for_export, get_recent_logs, get_screenshot,
     list_report_files, log_frontend_error, open_obsidian_folder, read_file, tray_quick_note,
 };
 
-// Memory storage commands (records, settings, tags)
+// Memory storage commands (records, tags) - settings moved to commands/settings_commands.rs
 pub use crate::memory_storage::{
     add_tag_to_record,
     create_manual_tag,
@@ -37,7 +41,6 @@ pub use crate::memory_storage::{
     get_records_by_date_range,
     get_records_by_manual_tags,
     get_records_by_tag,
-    get_settings,
     get_statistics,
     get_tags_for_record,
     get_tags_for_records,
@@ -45,7 +48,6 @@ pub use crate::memory_storage::{
     get_today_records,
     get_today_stats,
     remove_tag_from_record,
-    save_settings,
     search_records,
     update_manual_tag,
     update_record_user_notes,

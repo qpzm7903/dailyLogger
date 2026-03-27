@@ -1,5 +1,4 @@
 use crate::crypto;
-use tauri::command;
 
 use super::{Settings, DB_CONNECTION};
 
@@ -436,14 +435,14 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
     Ok(())
 }
 
-// ── Async Tauri command wrappers ──
+// ── Async wrappers (for use by command layer) ──
 
-#[command]
+/// Async wrapper for getting settings (used by command layer)
 pub async fn get_settings() -> Result<Settings, String> {
     get_settings_sync()
 }
 
-#[command]
+/// Async wrapper for saving settings (used by command layer)
 pub async fn save_settings(settings: Settings) -> Result<(), String> {
     save_settings_sync(&settings)
 }
