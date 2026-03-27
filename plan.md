@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-27
-> 当前版本: v3.4.0（架构收口一期）
-> 下一版本: v3.5.0（架构收口二期）
+> 当前版本: v3.5.0（架构收口二期）
+> 下一版本: v3.6.0（架构收口三期）
 > 当前 Milestone: 架构收口与可维护性重构（v3.4.0 ~ v3.6.0）
 
 ---
@@ -26,7 +26,7 @@
 - 每个版本都必须保持行为兼容、可测试、可回滚，而不是长期悬空分支
 - 多 Vault、标签、导出等功能扩展顺延到架构稳定之后再继续推进
 
-### v3.5.0（架构收口二期）🚧 进行中
+### v3.5.0（架构收口二期）✅ 完成
 
 **目标**: 抽出 service 边界，降低命令层和具体模块实现的耦合。
 
@@ -34,7 +34,7 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 | Spec |
 |----|------|--------|--------|------|------|
-| ARCH-004 | 建立 `commands -> services` 调用边界，避免命令入口继续承载业务实现 | 3pts | P0 | 🚧 模式已建立，迁移进行中 | `specs/ARCH-001-architecture-refactor.md` |
+| ARCH-004 | 建立 `commands -> services` 调用边界，避免命令入口继续承载业务实现 | 3pts | P0 | ✅ 已完成 | `specs/ARCH-001-architecture-refactor.md` |
 
 **ARCH-004 进展记录**:
 - ✅ `get_model_info` 已迁移到 `commands/model_commands.rs` + `services/model_service.rs`
@@ -43,8 +43,9 @@
 - ✅ Session 命令已迁移：`get_today_sessions` / `analyze_session` / `get_session_screenshots` / `update_session_user_summary` → `commands/session_commands.rs` + `services/session_service.rs`
 - ✅ Report 命令已迁移：`generate_daily_summary` / `generate_multilingual_daily_summary` / `generate_weekly_report` / `generate_monthly_report` / `generate_custom_report` / `compare_reports` → `commands/report_commands.rs` + `services/report_service.rs`
 - ✅ Capture commands 已集成：`commands/capture_commands.rs` 薄命令包装器已注册到 Tauri 命令层，`auto_perception/mod.rs` 中重复命令已移除
+- ✅ 所有 486 Rust 测试和 964 前端测试通过，质量基线稳固
 
-| ARCH-005 | 为本轮重构补齐回归基线：cargo test、cargo clippy、前端 typecheck 和 test | 2pts | P1 | ⏳ 规划中 | `specs/ARCH-001-architecture-refactor.md` |
+| ARCH-005 | 为本轮重构补齐回归基线：cargo test、cargo clippy、前端 typecheck 和 test | 2pts | P1 | ✅ 已完成 | `specs/ARCH-001-architecture-refactor.md` |
 
 **验收重点**:
 
@@ -65,6 +66,11 @@
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v3.5.0 — 架构收口二期 ✅
+- 抽取 Settings/Session/Report/Capture 四个领域 service 边界
+- 命令层重构为薄 IPC 适配器，业务逻辑下沉到 services
+- 补齐回归基线：486 Rust 测试 + 964 前端测试全部通过
 
 ### v3.4.0 — 架构收口一期 ✅
 - 提取前端应用壳：AppShell、AppModals、useAppBootstrap
