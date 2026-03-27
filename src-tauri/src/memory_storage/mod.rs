@@ -73,6 +73,8 @@ pub struct Settings {
     pub last_custom_report_path: Option<String>,
     // DATA-006: 多 Obsidian Vault 支持
     pub obsidian_vaults: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
+    // VAULT-001: Auto-detect vault by active window title
+    pub auto_detect_vault_by_window: Option<bool>,
     // REPORT-004: 对比报告配置
     pub comparison_report_prompt: Option<String>,
     // INT-002: Logseq 导出支持
@@ -178,6 +180,8 @@ pub struct ObsidianVault {
     pub name: String,
     pub path: String,
     pub is_default: bool,
+    /// VAULT-001: Window title patterns for auto-detection (comma-separated, case-insensitive match)
+    pub window_patterns: Option<Vec<String>>,
 }
 
 /// INT-002: Logseq graph entry for multi-graph support
@@ -237,6 +241,67 @@ impl Settings {
         }
 
         Err("Logseq path not configured".to_string())
+    }
+
+    /// VAULT-001: Get vault by name
+    pub fn get_vault_by_name(&self, name: &str) -> Option<ObsidianVault> {
+        if let Some(ref vaults_json) = self.obsidian_vaults {
+            if let Ok(vaults) = serde_json::from_str::<Vec<ObsidianVault>>(vaults_json) {
+                if let Some(vault) = vaults.into_iter().find(|v| v.name == name) {
+                    return Some(vault);
+                }
+            }
+        }
+        None
+    }
+
+    /// VAULT-001: Get vault by active window title (for auto-detection)
+    pub fn get_vault_by_window_title(&self, title: &str) -> Option<ObsidianVault> {
+        if let Some(ref vaults_json) = self.obsidian_vaults {
+            if let Ok(vaults) = serde_json::from_str::<Vec<ObsidianVault>>(vaults_json) {
+                for vault in vaults {
+                    if let Some(ref patterns) = vault.window_patterns {
+                        if crate::window_info::matches_any(title, patterns) {
+                            return Some(vault);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// VAULT-001: Get effective output vault path
+    pub fn get_effective_vault(
+        &self,
+        vault_name: Option<&str>,
+        auto_detect: bool,
+    ) -> Result<String, String> {
+        // 1. If explicitly specified, use that vault
+        if let Some(name) = vault_name {
+            if let Some(vault) = self.get_vault_by_name(name) {
+                return Ok(vault.path.clone());
+            }
+            return Err(format!("Vault '{}' not found", name));
+        }
+
+        // 2. If auto-detect is enabled, try to detect by window
+        if auto_detect {
+            let window = crate::window_info::get_active_window();
+            if !window.title.is_empty() {
+                if let Some(vault) = self.get_vault_by_window_title(&window.title) {
+                    tracing::info!(
+                        "Auto-detected vault '{}' for window '{}'",
+                        vault.name,
+                        window.title
+                    );
+                    return Ok(vault.path.clone());
+                }
+            }
+        }
+
+        // 3. Fall back to default vault (existing logic)
+        self.get_obsidian_output_path()
     }
 }
 

@@ -23,6 +23,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
                 last_monthly_report_path, obsidian_vaults,
+                auto_detect_vault_by_window,
                 comparison_report_prompt, logseq_graphs,
                 notion_api_key, notion_database_id,
                 slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers,
@@ -88,6 +89,10 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 custom_report_prompt: row.get("custom_report_prompt")?,
                 last_custom_report_path: row.get("last_custom_report_path")?,
                 obsidian_vaults: row.get("obsidian_vaults")?,
+                // VAULT-001: Auto-detect vault by window title
+                auto_detect_vault_by_window: row
+                    .get::<_, Option<i32>>("auto_detect_vault_by_window")?
+                    .map(|v| v != 0),
                 comparison_report_prompt: row.get("comparison_report_prompt")?,
                 logseq_graphs: row.get("logseq_graphs")?,
                 notion_api_key: row.get("notion_api_key")?,
@@ -332,6 +337,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             last_custom_report_path = :last_custom_report_path,
             last_monthly_report_path = :last_monthly_report_path,
             obsidian_vaults = :obsidian_vaults,
+            auto_detect_vault_by_window = :auto_detect_vault_by_window,
             comparison_report_prompt = :comparison_report_prompt,
             logseq_graphs = :logseq_graphs,
             notion_api_key = :notion_api_key,
@@ -396,6 +402,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":last_custom_report_path": settings.last_custom_report_path,
             ":last_monthly_report_path": settings.last_monthly_report_path,
             ":obsidian_vaults": settings.obsidian_vaults,
+            ":auto_detect_vault_by_window": settings.auto_detect_vault_by_window.map(|v| if v { 1 } else { 0 }),
             ":comparison_report_prompt": settings.comparison_report_prompt,
             ":logseq_graphs": settings.logseq_graphs,
             ":notion_api_key": encrypted_notion_api_key,

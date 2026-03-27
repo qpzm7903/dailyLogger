@@ -224,6 +224,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // VAULT-001: Auto-detect vault by window title
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN auto_detect_vault_by_window INTEGER DEFAULT 0",
+        [],
+    );
+
     // REPORT-004: 对比报告配置
     let _ = conn.execute(
         "ALTER TABLE settings ADD COLUMN comparison_report_prompt TEXT",
