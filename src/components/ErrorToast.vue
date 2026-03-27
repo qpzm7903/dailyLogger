@@ -4,7 +4,7 @@
       <div
         v-if="visible"
         :class="[
-          'fixed bottom-4 right-4 z-50 max-w-md p-4 rounded-lg shadow-lg border flex items-start gap-3',
+          'fixed bottom-4 right-4 z-40 max-w-md p-4 rounded-lg shadow-lg border flex items-start gap-3 pointer-events-none',
           typeClasses
         ]"
         role="alert"
@@ -18,7 +18,7 @@
         <button
           v-if="dismissible"
           @click="dismiss"
-          class="flex-shrink-0 p-1 rounded hover:bg-black/10 transition-colors"
+          class="flex-shrink-0 p-1 rounded hover:bg-black/10 transition-colors pointer-events-auto"
           aria-label="Dismiss"
         >
           ✕

@@ -9,6 +9,7 @@
       :duration="0"
       :dismissible="true"
       @dismiss="resetError"
+      class="error-toast-wrapper"
     />
   </div>
 </template>
