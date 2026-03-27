@@ -855,8 +855,8 @@ async function triggerManualBackup() {
   try {
     await invoke('trigger_auto_backup')
     // Reload settings to get updated last_backup_at
-    const updatedSettings = await invoke('get_settings')
-    localSettings.value = { ...localSettings.value, ...updatedSettings } as typeof localSettings.value
+    const updatedSettings = await invoke<typeof localSettings.value>('get_settings')
+    localSettings.value = { ...localSettings.value, ...updatedSettings }
     showSuccess(t('settings.autoBackupTriggerSuccess'))
   } catch (err) {
     console.error('Failed to trigger auto backup:', err)
