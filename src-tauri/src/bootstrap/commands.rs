@@ -43,6 +43,9 @@ pub fn register_commands(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
         daily_logger_lib::memory_storage::get_tags_for_record,
         daily_logger_lib::memory_storage::get_tags_for_records,
         daily_logger_lib::memory_storage::get_records_by_manual_tags,
+        // TAG-001: Tag color management
+        daily_logger_lib::memory_storage::get_tag_colors,
+        daily_logger_lib::memory_storage::set_tag_color,
         // FEAT-005: User notes for screenshot records
         daily_logger_lib::memory_storage::update_record_user_notes,
         // SESSION-001: Session management

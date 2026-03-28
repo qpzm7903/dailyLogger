@@ -284,6 +284,108 @@ pub fn delete_manual_tag(id: i64) -> Result<(), String> {
     Ok(())
 }
 
+// ─── Tag Color Management (TAG-001) ───────────────────────────────────────────
+
+/// 获取所有标签的颜色映射
+#[command]
+pub fn get_tag_colors() -> Result<HashMap<String, String>, String> {
+    let db_guard = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+
+    let mut stmt = conn
+        .prepare("SELECT name, color FROM manual_tags")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let colors: HashMap<String, String> = stmt
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
+        .map_err(|e| format!("Failed to query tag colors: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    Ok(colors)
+}
+
+/// 设置标签颜色
+#[command]
+pub fn set_tag_color(tag_name: String, color: String) -> Result<(), String> {
+    // 验证颜色是否有效
+    if !PRESET_TAG_COLORS.contains(&color.as_str()) {
+        return Err(format!(
+            "无效的颜色 '{}', 可选颜色: {}",
+            color,
+            PRESET_TAG_COLORS.join(", ")
+        ));
+    }
+
+    let db_guard = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+
+    let rows_affected = conn
+        .execute(
+            "UPDATE manual_tags SET color = ?1 WHERE name = ?2",
+            params![color, tag_name],
+        )
+        .map_err(|e| format!("Failed to update tag color: {}", e))?;
+
+    if rows_affected == 0 {
+        return Err(format!("标签 '{}' 不存在", tag_name));
+    }
+
+    Ok(())
+}
+
+/// 获取颜色使用统计（用于自动分配）
+fn get_color_usage_counts() -> Result<HashMap<String, i64>, String> {
+    let db_guard = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("DB lock error: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT mt.color, COUNT(rmt.record_id) as usage_count
+             FROM manual_tags mt
+             LEFT JOIN record_manual_tags rmt ON mt.id = rmt.tag_id
+             GROUP BY mt.color",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let counts: HashMap<String, i64> = stmt
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+        })
+        .map_err(|e| format!("Failed to query color counts: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    Ok(counts)
+}
+
+/// 为新标签自动分配颜色（TAG-002: 使用次数最少的颜色优先）
+pub fn allocate_color_for_new_tag() -> Result<String, String> {
+    let counts = get_color_usage_counts()?;
+
+    // 找出使用次数最少的颜色
+    let mut min_count = i64::MAX;
+    let mut selected_color = PRESET_TAG_COLORS[0].to_string();
+
+    for color in PRESET_TAG_COLORS {
+        let count = counts.get(color).copied().unwrap_or(0);
+        if count < min_count {
+            min_count = count;
+            selected_color = (*color).to_string();
+        }
+    }
+
+    Ok(selected_color)
+}
+
 // ─── Tag-Record Association Operations ──────────────────────────────────────────
 
 /// 为记录添加标签
