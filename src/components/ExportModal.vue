@@ -51,6 +51,37 @@
           </div>
         </div>
 
+        <!-- Custom Template (only for markdown) -->
+        <div v-if="exportFormat === 'markdown'" class="space-y-3">
+          <div class="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="useCustomTemplate"
+              v-model="useCustomTemplate"
+              @change="useCustomTemplate && loadDefaultTemplate()"
+              class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary"
+            />
+            <label for="useCustomTemplate" class="text-sm text-gray-400">
+              {{ t('exportModal.useCustomTemplate') }}
+            </label>
+          </div>
+          <div v-if="useCustomTemplate" class="space-y-2">
+            <p class="text-xs text-gray-500" v-html="templatePlaceholdersText"></p>
+            <textarea
+              v-model="customTemplate"
+              rows="6"
+              class="w-full bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-primary focus:outline-none resize-none"
+              :placeholder="defaultTemplate"
+            ></textarea>
+            <button
+              @click="resetToDefault"
+              class="text-xs text-primary hover:underline"
+            >
+              {{ t('exportModal.resetToDefault') }}
+            </button>
+          </div>
+        </div>
+
         <!-- Export Result -->
         <div v-if="exportResult" class="bg-darker rounded-lg p-4 space-y-2 border border-gray-600">
           <div class="flex items-center gap-2 text-green-400 text-sm">
@@ -96,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { systemActions } from '../features/system/actions'
@@ -122,10 +153,35 @@ const isExporting = ref(false)
 const exportResult = ref<ExportResult | null>(null)
 const exportError = ref('')
 
+// Custom template state
+const useCustomTemplate = ref(false)
+const customTemplate = ref('')
+const defaultTemplate = ref('')
+const isLoadingTemplate = ref(false)
+
+// Fetch default template when user enables custom template
+async function loadDefaultTemplate() {
+  if (defaultTemplate.value || isLoadingTemplate.value) return
+  isLoadingTemplate.value = true
+  try {
+    defaultTemplate.value = await invoke<string>('get_default_export_template')
+  } catch (err) {
+    // Fallback to built-in default template
+    defaultTemplate.value = '## {{date}}\n\n### 时间线\n\n{{records}}'
+    console.error('Failed to get default export template, using built-in default:', err)
+  } finally {
+    isLoadingTemplate.value = false
+  }
+}
+
 const dateError = computed(() => {
   if (!startDate.value || !endDate.value) return t('exportModal.selectDateRange')
   if (startDate.value > endDate.value) return t('exportModal.startDateAfterEnd')
   return ''
+})
+
+const templatePlaceholdersText = computed(() => {
+  return t('exportModal.templatePlaceholders') + ': {{date}}, {{time}}, {{content}}, {{source_type}}, {{source_icon}}'
 })
 
 function formatDate(date: Date) {
@@ -141,6 +197,10 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function resetToDefault() {
+  customTemplate.value = defaultTemplate.value
+}
+
 async function doExport() {
   if (dateError.value) return
 
@@ -149,12 +209,19 @@ async function doExport() {
   exportError.value = ''
 
   try {
+    const request: Record<string, unknown> = {
+      start_date: startDate.value,
+      end_date: endDate.value,
+      format: exportFormat.value,
+    }
+
+    // Add custom template if enabled and format is markdown
+    if (exportFormat.value === 'markdown' && useCustomTemplate.value && customTemplate.value) {
+      request.custom_template = customTemplate.value
+    }
+
     const result = await invoke<ExportResult>('export_records', {
-      request: {
-        start_date: startDate.value,
-        end_date: endDate.value,
-        format: exportFormat.value,
-      }
+      request,
     })
     exportResult.value = result
   } catch (e) {

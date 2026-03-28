@@ -79,7 +79,9 @@ pub use crate::commands::report_commands::{
 };
 
 // Export commands
-pub use crate::export::{export_records, open_export_dir};
+pub use crate::export::{
+    export_records, get_default_export_template, get_default_record_entry_template, open_export_dir,
+};
 
 // Backup commands
 pub use crate::backup::{

@@ -10,6 +10,8 @@ pub struct ExportRequest {
     pub start_date: String, // YYYY-MM-DD (local timezone)
     pub end_date: String,   // YYYY-MM-DD (local timezone)
     pub format: String,     // "json" | "markdown"
+    #[serde(default)]
+    pub custom_template: Option<String>, // Optional custom template for markdown format
 }
 
 /// Export result
@@ -62,11 +64,92 @@ pub fn export_to_json(
     serde_json::to_string_pretty(&output).map_err(|e| format!("Failed to serialize JSON: {}", e))
 }
 
+/// Default markdown export template
+const DEFAULT_EXPORT_TEMPLATE: &str = r#"## {{date}}
+
+### 时间线
+
+{{records}}"#;
+
+/// Record entry template within the default template
+const DEFAULT_RECORD_ENTRY: &str = "- **{{time}}** {{source_icon}}\n{{content_indented}}";
+
+/// Returns the default export template
+pub fn get_default_export_template() -> String {
+    DEFAULT_EXPORT_TEMPLATE.to_string()
+}
+
+/// Returns the default record entry template
+pub fn get_default_record_entry_template() -> String {
+    DEFAULT_RECORD_ENTRY.to_string()
+}
+
+/// Render a single record using a template string
+/// Template placeholders:
+/// - {{date}} - Date (YYYY-MM-DD)
+/// - {{time}} - Time (HH:MM)
+/// - {{content}} - Record content
+/// - {{content_indented}} - Record content, each line indented with 2 spaces
+/// - {{source_type}} - Source type ("auto" or "manual")
+/// - {{source_icon}} - Source icon ("🖥️ 自动感知" or "⚡ 闪念")
+/// - {{tags}} - Tags (if any, formatted as comma-separated)
+/// - {{screenshot_path}} - Screenshot path (if any)
+fn render_record_with_template(record: &Record, template: &str) -> String {
+    let date = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
+        .map(|dt| {
+            dt.with_timezone(&chrono::Local)
+                .format("%Y-%m-%d")
+                .to_string()
+        })
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    let time = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
+        .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    let source_icon = if record.source_type == "auto" {
+        "🖥️ 自动感知"
+    } else {
+        "⚡ 闪念"
+    };
+
+    let content_indented: String = record
+        .content
+        .lines()
+        .map(|line| format!("  {}", line))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let tags = record.tags.as_deref().unwrap_or("");
+
+    let screenshot_path = record.screenshot_path.as_deref().unwrap_or("");
+
+    template
+        .replace("{{date}}", &date)
+        .replace("{{time}}", &time)
+        .replace("{{content}}", &record.content)
+        .replace("{{content_indented}}", &content_indented)
+        .replace("{{source_type}}", &record.source_type)
+        .replace("{{source_icon}}", source_icon)
+        .replace("{{tags}}", tags)
+        .replace("{{screenshot_path}}", screenshot_path)
+}
+
 /// Export records as Markdown string
 pub fn export_to_markdown(
     records: &[Record],
     start_date: &str,
     end_date: &str,
+) -> Result<String, String> {
+    export_to_markdown_with_template(records, start_date, end_date, None)
+}
+
+/// Export records as Markdown string with optional custom template
+pub fn export_to_markdown_with_template(
+    records: &[Record],
+    start_date: &str,
+    end_date: &str,
+    custom_template: Option<&str>,
 ) -> Result<String, String> {
     let exported_at = chrono::Local::now().format("%Y-%m-%d %H:%M").to_string();
     let mut md = String::new();
@@ -95,26 +178,75 @@ pub fn export_to_markdown(
         grouped.entry(date_key).or_default().push(record);
     }
 
-    // Output in reverse chronological order (most recent date first)
-    for (date, day_records) in grouped.iter().rev() {
-        md.push_str(&format!("\n---\n\n## {}\n\n### 时间线\n\n", date));
-        for record in day_records {
-            let time = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
-                .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
-                .unwrap_or_else(|_| "unknown".to_string());
-
-            let source_icon = if record.source_type == "auto" {
-                "🖥️ 自动感知"
-            } else {
-                "⚡ 闪念"
-            };
-
-            md.push_str(&format!("- **{}** {}\n", time, source_icon));
-            // Indent content lines
-            for line in record.content.lines() {
-                md.push_str(&format!("  {}\n", line));
-            }
+    // If custom template is provided, use it; otherwise use default
+    if let Some(template) = custom_template {
+        // Custom template mode: render each record using the template
+        for (date, day_records) in grouped.iter().rev() {
+            // Create a date header entry
+            let date_entry = render_record_with_template(
+                &Record {
+                    id: 0,
+                    timestamp: format!("{}T00:00:00+00:00", date),
+                    source_type: "auto".to_string(),
+                    content: day_records
+                        .iter()
+                        .map(|r| {
+                            format!(
+                                "- **{}** {}\n{}",
+                                chrono::DateTime::parse_from_rfc3339(&r.timestamp)
+                                    .map(|dt| dt
+                                        .with_timezone(&chrono::Local)
+                                        .format("%H:%M")
+                                        .to_string())
+                                    .unwrap_or_else(|_| "unknown".to_string()),
+                                if r.source_type == "auto" {
+                                    "🖥️"
+                                } else {
+                                    "⚡"
+                                },
+                                r.content
+                                    .lines()
+                                    .map(|l| format!("  {}", l))
+                                    .collect::<Vec<_>>()
+                                    .join("\n")
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n"),
+                    screenshot_path: None,
+                    monitor_info: None,
+                    tags: None,
+                    user_notes: None,
+                    session_id: None,
+                    analysis_status: None,
+                },
+                template,
+            );
+            md.push_str(&date_entry);
             md.push('\n');
+        }
+    } else {
+        // Default mode: use the original format
+        for (date, day_records) in grouped.iter().rev() {
+            md.push_str(&format!("\n---\n\n## {}\n\n### 时间线\n\n", date));
+            for record in day_records {
+                let time = chrono::DateTime::parse_from_rfc3339(&record.timestamp)
+                    .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
+                    .unwrap_or_else(|_| "unknown".to_string());
+
+                let source_icon = if record.source_type == "auto" {
+                    "🖥️ 自动感知"
+                } else {
+                    "⚡ 闪念"
+                };
+
+                md.push_str(&format!("- **{}** {}\n", time, source_icon));
+                // Indent content lines
+                for line in record.content.lines() {
+                    md.push_str(&format!("  {}\n", line));
+                }
+                md.push('\n');
+            }
         }
     }
 
@@ -169,7 +301,12 @@ pub async fn export_records(request: ExportRequest) -> Result<ExportResult, Stri
 
     let content = match request.format.as_str() {
         "json" => export_to_json(&records, &request.start_date, &request.end_date)?,
-        "markdown" => export_to_markdown(&records, &request.start_date, &request.end_date)?,
+        "markdown" => export_to_markdown_with_template(
+            &records,
+            &request.start_date,
+            &request.end_date,
+            request.custom_template.as_deref(),
+        )?,
         _ => return Err(format!("Unsupported export format: {}", request.format)),
     };
 

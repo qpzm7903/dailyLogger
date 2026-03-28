@@ -115,6 +115,8 @@ pub struct Settings {
     pub auto_backup_interval: Option<String>, // "daily" | "weekly" | "monthly"
     pub auto_backup_retention: Option<i32>,   // 保留数量，3-20
     pub last_auto_backup_at: Option<String>,  // RFC3339 时间戳
+    // FEAT-008: 自定义导出模板 (v3.8.0)
+    pub custom_export_template: Option<String>, // 用户自定义导出模板
 }
 
 /// AI-006: Custom API Header for various API providers (OpenRouter, Azure, Claude, etc.)

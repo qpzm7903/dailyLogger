@@ -318,7 +318,10 @@
     "close": "关闭",
     "exporting": "导出中...",
     "export": "导出",
-    "exportFailed": "导出失败"
+    "exportFailed": "导出失败",
+    "useCustomTemplate": "使用自定义模板",
+    "templatePlaceholders": "可用占位符",
+    "resetToDefault": "重置为默认模板"
   },
   "reportComparison": {
     "title": "对比分析报告",

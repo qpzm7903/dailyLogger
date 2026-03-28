@@ -93,6 +93,9 @@ export interface Settings {
   auto_backup_retention?: number
   last_auto_backup_at?: string
 
+  // Export template (FEAT-008: v3.8.0)
+  custom_export_template?: string
+
   // User preferences (PERF-002, PERF-005)
   onboarding_completed?: boolean
   language?: string

@@ -318,7 +318,10 @@
     "close": "Close",
     "exporting": "Exporting...",
     "export": "Export",
-    "exportFailed": "Export failed"
+    "exportFailed": "Export failed",
+    "useCustomTemplate": "Use custom template",
+    "templatePlaceholders": "Available placeholders",
+    "resetToDefault": "Reset to default"
   },
   "reportComparison": {
     "title": "Comparison Report",

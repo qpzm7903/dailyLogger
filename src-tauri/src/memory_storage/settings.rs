@@ -31,7 +31,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 test_model_name, onboarding_completed, language,
                 preferred_language, supported_languages,
                 auto_backup_enabled, auto_backup_interval, auto_backup_retention,
-                last_auto_backup_at
+                last_auto_backup_at, custom_export_template
          FROM settings WHERE id = 1",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -133,6 +133,8 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 auto_backup_interval: row.get("auto_backup_interval")?,
                 auto_backup_retention: row.get("auto_backup_retention")?,
                 last_auto_backup_at: row.get("last_auto_backup_at")?,
+                // FEAT-008: Custom export template
+                custom_export_template: row.get("custom_export_template")?,
             })
         })
         .map_err(|e| format!("Failed to get settings: {}", e))?;

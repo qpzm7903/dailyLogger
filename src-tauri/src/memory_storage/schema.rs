@@ -348,6 +348,12 @@ pub fn init_database() -> Result<(), String> {
         [],
     );
 
+    // FEAT-008: 自定义导出模板 (v3.8.0)
+    let _ = conn.execute(
+        "ALTER TABLE settings ADD COLUMN custom_export_template TEXT",
+        [],
+    );
+
     // SESSION-001: sessions 表 - 工作时段管理
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sessions (
@@ -764,7 +770,8 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             auto_backup_interval TEXT DEFAULT 'daily',
             auto_backup_retention INTEGER DEFAULT 5,
             last_auto_backup_at TEXT,
-            auto_detect_vault_by_window INTEGER DEFAULT 0
+            auto_detect_vault_by_window INTEGER DEFAULT 0,
+            custom_export_template TEXT
         )",
         [],
     )

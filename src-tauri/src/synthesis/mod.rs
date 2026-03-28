@@ -1151,6 +1151,8 @@ mod tests {
             auto_backup_interval: None,
             auto_backup_retention: None,
             last_auto_backup_at: None,
+            // FEAT-008: Custom export template
+            custom_export_template: None,
         }
     }
 
@@ -2395,6 +2397,8 @@ mod benchmarks {
             auto_backup_interval: None,
             auto_backup_retention: None,
             last_auto_backup_at: None,
+            // FEAT-008: Custom export template
+            custom_export_template: None,
         }
     }
 
