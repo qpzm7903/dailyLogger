@@ -135,9 +135,10 @@ function getTranslatedErrorMessage(errorType: ErrorTypeValue): string {
     quota: 'API 调用次数已达上限',
     validation: '输入内容格式不正确',
     database: '数据库操作失败',
-    fileIO: '文件读写失败',
+    file_io: '文件读写失败',
     screenshot: '截图捕获失败',
     timeout: '请求超时，请稍后重试',
+    internal: '内部错误，请稍后重试',
     unknown: '操作失败，请稍后重试'
   }
   return fallbackMessages[errorType] || fallbackMessages.unknown
@@ -157,9 +158,10 @@ function getTranslatedSuggestion(errorType: ErrorTypeValue): string {
     quota: '检查账户余额或升级套餐',
     validation: '检查输入内容格式',
     database: '尝试重启应用',
-    fileIO: '检查文件路径和权限',
+    file_io: '检查文件路径和权限',
     screenshot: '检查截图权限设置',
     timeout: '检查网络状况后重试',
+    internal: '重启应用或联系支持',
     unknown: '重试或联系支持'
   }
   return fallbackSuggestions[errorType] || fallbackSuggestions.unknown

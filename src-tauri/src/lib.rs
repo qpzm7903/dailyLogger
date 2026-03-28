@@ -5,6 +5,7 @@ pub mod backup;
 pub mod commands;
 pub mod crypto;
 pub mod dingtalk;
+pub mod errors;
 pub mod export;
 #[cfg(feature = "screenshot")]
 pub mod hardware;
