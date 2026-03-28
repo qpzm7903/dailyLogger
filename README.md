@@ -233,7 +233,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.9.0
+**最新版本**: v3.10.0
+- 数据库版本迁移机制：建立 schema_version 和 schema_migrations 表追踪
+- 实现幂等迁移执行器，支持结构化版本回滚
+- 添加 5 个迁移相关测试，验证版本追踪和幂等性
+
+**v3.9.0（多 Vault 自动选择）**:
 - 多 Vault 自动选择：基于窗口标题自动选择输出 Vault
 - OutputSettings 添加"根据窗口标题自动选择 Vault"开关
 - 每个 Vault 支持配置窗口标题匹配模式（多个用逗号分隔）
