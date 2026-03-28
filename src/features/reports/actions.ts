@@ -14,7 +14,7 @@ export interface ReanalyzeResult {
 }
 
 export interface ReportActions {
-  generateDailySummary(): Promise<string>
+  generateDailySummary(vaultName?: string): Promise<string>
   generateWeeklyReport(): Promise<string>
   generateMonthlyReport(): Promise<string>
   generateMultilingualDailySummary(targetLang: string): Promise<string>
@@ -22,8 +22,8 @@ export interface ReportActions {
 }
 
 export const reportActions: ReportActions = {
-  async generateDailySummary(): Promise<string> {
-    return invoke<string>(REPORT_COMMANDS.GENERATE_DAILY_SUMMARY)
+  async generateDailySummary(vaultName?: string): Promise<string> {
+    return invoke<string>(REPORT_COMMANDS.GENERATE_DAILY_SUMMARY, { vaultName })
   },
 
   async generateWeeklyReport(): Promise<string> {

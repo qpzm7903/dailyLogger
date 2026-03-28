@@ -250,9 +250,9 @@ const handleTagSelected = (tag: Tag | null) => {
   open('historyViewer')
 }
 
-const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
+const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly', vaultName?: string) => {
   if (type === 'daily') {
-    generateSummary()
+    generateSummary(vaultName)
   } else if (type === 'weekly') {
     generateWeeklyReport()
   } else if (type === 'monthly') {
@@ -291,7 +291,7 @@ const handleLanguageChange = async (language: string) => {
   }
 }
 
-const generateSummary = async () => {
+const generateSummary = async (vaultName?: string) => {
   if (isGenerating.value) return
   if (!isOnline.value) {
     showError(t('offlineBanner.offline'))
@@ -299,12 +299,12 @@ const generateSummary = async () => {
   }
   isGenerating.value = true
   try {
-    const result = await reportActions.generateDailySummary()
+    const result = await reportActions.generateDailySummary(vaultName)
     summaryPath.value = result
     showSuccess(t('report.dailySuccess'))
   } catch (err) {
     console.error('Failed to generate summary:', err)
-    showError(String(err), generateSummary)
+    showError(String(err), () => generateSummary(vaultName))
   } finally {
     isGenerating.value = false
   }

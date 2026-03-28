@@ -85,7 +85,7 @@ describe('ReportDropdown', () => {
       const mainBtn = wrapper.findAll('button')[0]
       await mainBtn.trigger('click')
       expect(wrapper.emitted('generate')).toBeTruthy()
-      expect(wrapper.emitted('generate')![0]).toEqual(['daily'])
+      expect(wrapper.emitted('generate')![0]).toEqual(['daily', undefined])
     })
 
     it('emits generate event with correct type from dropdown', async () => {
@@ -95,7 +95,7 @@ describe('ReportDropdown', () => {
       const menuItems = wrapper.findAll('.absolute > button')
       // First three are report options: daily, weekly, monthly
       await menuItems[1].trigger('click') // weekly
-      expect(wrapper.emitted('generate')![0]).toEqual(['weekly'])
+      expect(wrapper.emitted('generate')![0]).toEqual(['weekly', undefined])
     })
 
     it('emits generateMultilingual and languageChange when language selected from submenu', async () => {

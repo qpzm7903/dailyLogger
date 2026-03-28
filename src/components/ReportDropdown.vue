@@ -1,10 +1,25 @@
 <template>
   <div class="relative inline-flex" ref="dropdownRef">
+    <!-- Vault selector (shown when multiple vaults exist) -->
+    <select
+      v-if="vaults && vaults.length > 1"
+      v-model="selectedVault"
+      class="bg-primary hover:bg-blue-600 border-r border-blue-400 px-2 py-1.5 rounded-l-lg text-sm font-medium transition-colors cursor-pointer"
+      :disabled="isGenerating"
+      @click.stop
+    >
+      <option value="">{{ defaultVaultName }}</option>
+      <option v-for="vault in vaults" :key="vault.name" :value="vault.name">
+        {{ vault.name }}
+      </option>
+    </select>
+
     <!-- Main button (triggers daily report) -->
     <button
       @click="handleMainClick"
       :disabled="isGenerating"
-      class="bg-primary hover:bg-blue-600 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 rounded-l-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+      class="bg-primary hover:bg-blue-600 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5"
+      :class="vaults && vaults.length > 1 ? '' : 'rounded-l-lg'"
     >
       <span v-if="isGeneratingDaily" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
       {{ isGeneratingDaily ? '生成中...' : '生成日报' }}
@@ -120,6 +135,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onClickOutside } from '@vueuse/core'
+import type { ObsidianVault } from '../types/tauri'
 
 export interface AdditionalOption {
   id: string
@@ -135,14 +151,17 @@ interface Props {
   isGeneratingMonthly?: boolean
   additionalOptions?: AdditionalOption[]
   preferredLanguage?: string
+  vaults?: ObsidianVault[]
+  selectedVault?: string
 }
 
 interface Emits {
-  (e: 'generate', type: 'daily' | 'weekly' | 'monthly'): void
+  (e: 'generate', type: 'daily' | 'weekly' | 'monthly', vaultName?: string): void
   (e: 'generateMultilingual', language: string): void
   (e: 'openModal', modalId: string): void
   (e: 'customAction', actionId: string): void
   (e: 'languageChange', language: string): void
+  (e: 'vaultChange', vaultName: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -151,6 +170,8 @@ const props = withDefaults(defineProps<Props>(), {
   isGeneratingMonthly: false,
   additionalOptions: () => [],
   preferredLanguage: 'zh-CN',
+  vaults: () => [],
+  selectedVault: '',
 })
 
 const emit = defineEmits<Emits>()
@@ -159,6 +180,13 @@ const isOpen = ref(false)
 const isLanguageSubmenuOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const selectedLanguage = ref(props.preferredLanguage || 'zh-CN')
+const selectedVault = ref(props.selectedVault || '')
+
+// Default vault name for the selector
+const defaultVaultName = computed(() => {
+  const defaultVault = props.vaults?.find(v => v.is_default)
+  return defaultVault?.name || '默认 Vault'
+})
 
 // Language options
 const languageOptions = [
@@ -228,7 +256,7 @@ const selectLanguageAndGenerate = (langCode: string) => {
 // Handle main button click (daily report)
 const handleMainClick = () => {
   if (!isGenerating.value) {
-    emit('generate', 'daily')
+    emit('generate', 'daily', selectedVault.value || undefined)
     isOpen.value = false
   }
 }
@@ -236,7 +264,7 @@ const handleMainClick = () => {
 // Select option from dropdown
 const selectOption = (type: 'daily' | 'weekly' | 'monthly') => {
   if (!isGenerating.value) {
-    emit('generate', type)
+    emit('generate', type, selectedVault.value || undefined)
     isOpen.value = false
   }
 }

@@ -371,7 +371,7 @@ const emit = defineEmits<{
   triggerCapture: []
   toggleAutoCapture: []
   openQuickNote: []
-  generateReport: [type: 'daily' | 'weekly' | 'monthly']
+  generateReport: [type: 'daily' | 'weekly' | 'monthly', vaultName?: string]
   generateMultilingualReport: [language: string]
   viewScreenshot: [record: LogRecord]
   customAction: [actionId: string]
@@ -550,8 +550,8 @@ const openScreenshot = (record: LogRecord) => {
   emit('viewScreenshot', record)
 }
 
-const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly') => {
-  emit('generateReport', type)
+const handleReportGenerate = (type: 'daily' | 'weekly' | 'monthly', vaultName?: string) => {
+  emit('generateReport', type, vaultName)
 }
 
 const handleGenerateMultilingualReport = (language: string) => {
