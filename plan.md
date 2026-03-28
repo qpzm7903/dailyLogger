@@ -129,15 +129,15 @@
 
 | ID | 任务 | 优先级 | 状态 |
 |----|------|--------|------|
-| VAULT-001 Task 2 | Rust 后端 - generate_daily_summary 支持 vault 参数 | P0 | ⏳ 待实现 |
-| VAULT-001 Task 3 | Rust 后端 - 基于窗口标题的自动 Vault 选择 | P0 | ⏳ 待实现 |
-| VAULT-001 Task 4 | 前端 - ReportDropdown 添加 Vault 选择器 | P1 | ⏳ 待实现 |
 | VAULT-001 Task 5 | 前端 - OutputSettings 添加项目检测 UI | P1 | ⏳ 待实现 |
 | VAULT-001 Task 6 | 单元测试覆盖 | P1 | ⏳ 待实现 |
 
 **已完成**:
 
 - ✅ VAULT-001 Task 1: ObsidianVault 数据结构扩展（window_patterns 字段）
+- ✅ VAULT-001 Task 2: Rust 后端 - generate_daily_summary 支持 vault 参数
+- ✅ VAULT-001 Task 3: Rust 后端 - 基于窗口标题的自动 Vault 选择
+- ✅ VAULT-001 Task 4: 前端 - ReportDropdown 添加 Vault 选择器
 
 ---
 

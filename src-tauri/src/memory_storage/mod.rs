@@ -1088,3 +1088,145 @@ mod tests_statistics {
         assert_eq!(record_count, 1);
     }
 }
+
+// VAULT-001: Tests for multi-vault auto-selection
+#[cfg(test)]
+mod tests_vault_001 {
+    use super::*;
+
+    fn create_test_vaults() -> Settings {
+        Settings {
+            obsidian_vaults: Some(serde_json::to_string(&vec![
+                ObsidianVault {
+                    name: "Work Vault".to_string(),
+                    path: "/path/to/work".to_string(),
+                    is_default: true,
+                    window_patterns: Some(vec!["VS Code".to_string(), "Firefox".to_string()]),
+                },
+                ObsidianVault {
+                    name: "Personal Vault".to_string(),
+                    path: "/path/to/personal".to_string(),
+                    is_default: false,
+                    window_patterns: Some(vec!["Chrome".to_string()]),
+                },
+                ObsidianVault {
+                    name: "No Pattern Vault".to_string(),
+                    path: "/path/to/none".to_string(),
+                    is_default: false,
+                    window_patterns: None,
+                },
+            ]).unwrap()),
+            auto_detect_vault_by_window: None,
+            ..Default::default()
+        }
+    }
+
+    // Tests for get_vault_by_name
+    #[test]
+    fn test_get_vault_by_name_exists() {
+        let settings = create_test_vaults();
+        let vault = settings.get_vault_by_name("Work Vault");
+        assert!(vault.is_some());
+        let vault = vault.unwrap();
+        assert_eq!(vault.name, "Work Vault");
+        assert_eq!(vault.path, "/path/to/work");
+        assert!(vault.is_default);
+    }
+
+    #[test]
+    fn test_get_vault_by_name_not_found() {
+        let settings = create_test_vaults();
+        let vault = settings.get_vault_by_name("Non Existent Vault");
+        assert!(vault.is_none());
+    }
+
+    #[test]
+    fn test_get_vault_by_name_empty() {
+        let settings = create_test_vaults();
+        let vault = settings.get_vault_by_name("");
+        assert!(vault.is_none());
+    }
+
+    // Tests for get_vault_by_window_title
+    #[test]
+    fn test_get_vault_by_window_title_exact_match() {
+        let settings = create_test_vaults();
+        let vault = settings.get_vault_by_window_title("VS Code - main.rs");
+        assert!(vault.is_some());
+        assert_eq!(vault.unwrap().name, "Work Vault");
+    }
+
+    #[test]
+    fn test_get_vault_by_window_title_partial_match() {
+        let settings = create_test_vaults();
+        // "firefox development" contains "Firefox" pattern
+        let vault = settings.get_vault_by_window_title("Firefox Development - Browser");
+        assert!(vault.is_some());
+        assert_eq!(vault.unwrap().name, "Work Vault");
+    }
+
+    #[test]
+    fn test_get_vault_by_window_title_no_match() {
+        let settings = create_test_vaults();
+        let vault = settings.get_vault_by_window_title("Some Random App");
+        assert!(vault.is_none());
+    }
+
+    #[test]
+    fn test_get_vault_by_window_title_empty_patterns_vault() {
+        let settings = create_test_vaults();
+        // "No Pattern Vault" has no patterns, should not match
+        let vault = settings.get_vault_by_window_title("VS Code");
+        // Should match "Work Vault" since "VS Code" has patterns
+        assert!(vault.is_some());
+        assert_eq!(vault.unwrap().name, "Work Vault");
+    }
+
+    #[test]
+    fn test_get_vault_by_window_title_case_insensitive() {
+        let settings = create_test_vaults();
+        let vault = settings.get_vault_by_window_title("vs code editor");
+        assert!(vault.is_some());
+        assert_eq!(vault.unwrap().name, "Work Vault");
+    }
+
+    #[test]
+    fn test_get_vault_by_window_title_multiple_matches() {
+        let settings = create_test_vaults();
+        // Both "VS Code" and "Firefox" are in Work Vault patterns
+        let vault = settings.get_vault_by_window_title("VS Code - Firefox");
+        // Should return the first match (Work Vault)
+        assert!(vault.is_some());
+        assert_eq!(vault.unwrap().name, "Work Vault");
+    }
+
+    // Tests for get_effective_vault
+    #[test]
+    fn test_get_effective_vault_explicit_name() {
+        let settings = create_test_vaults();
+        let result = settings.get_effective_vault(Some("Personal Vault"), false);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "/path/to/personal");
+    }
+
+    #[test]
+    fn test_get_effective_vault_explicit_name_not_found() {
+        let settings = create_test_vaults();
+        let result = settings.get_effective_vault(Some("Non Existent"), false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
+    }
+
+    #[test]
+    fn test_get_effective_vault_empty_vaults_falls_back_to_default() {
+        let settings = Settings {
+            obsidian_vaults: None,
+            obsidian_path: Some("/fallback/path".to_string()),
+            auto_detect_vault_by_window: None,
+            ..Default::default()
+        };
+        let result = settings.get_effective_vault(None, false);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "/fallback/path");
+    }
+}

@@ -332,6 +332,7 @@ const settings = ref({
   tag_categories: '',
   is_ollama: false,
   obsidian_vaults: '[]',
+  auto_detect_vault_by_window: false,
   logseq_graphs: '[]',
   notion_api_key: null as string | null,
   notion_database_id: null as string | null,
@@ -393,7 +394,8 @@ const outputSettings = computed(() => ({
   notion_api_key: settings.value.notion_api_key as string | null,
   notion_database_id: settings.value.notion_database_id as string | null,
   slack_webhook_url: settings.value.slack_webhook_url as string | null,
-  dingtalk_webhook_url: settings.value.dingtalk_webhook_url as string | null
+  dingtalk_webhook_url: settings.value.dingtalk_webhook_url as string | null,
+  auto_detect_vault_by_window: settings.value.auto_detect_vault_by_window ?? false
 }))
 
 // Auxiliary state
@@ -447,6 +449,7 @@ function updateOutputSettings(newSettings: typeof outputSettings.value) {
   settings.value.notion_database_id = newSettings.notion_database_id
   settings.value.slack_webhook_url = newSettings.slack_webhook_url
   settings.value.dingtalk_webhook_url = newSettings.dingtalk_webhook_url
+  settings.value.auto_detect_vault_by_window = newSettings.auto_detect_vault_by_window
 }
 
 // Save state

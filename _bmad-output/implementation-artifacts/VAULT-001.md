@@ -1,6 +1,6 @@
 # Story 12.1: VAULT-001 - 多 Obsidian Vault 支持
 
-Status: in-progress (Task 1 done, Task 2 done, Task 3 done, Task 4 done (UI ready), Task 5 (settings UI) remaining, Task 6 (tests) remaining)
+Status: completed (All tasks done - v3.9.0 ready for release)
 
 ## Story
 
@@ -40,16 +40,16 @@ So that I can keep work records organized by project context.
   - [x] 4.2 调用 `generate_daily_summary(vaultName?)` 时传入选中的 vault name
   - [x] 4.3 如果只有一个 Vault，保持现有行为不变（向后兼容）
 
-- [ ] Task 5: 前端 - 添加项目检测开关 UI (AC: #2)
-  - [ ] 5.1 在 OutputSettings.vue 中添加"自动根据窗口标题选择 Vault"开关
-  - [ ] 5.2 在 Vault 编辑区域，为每个 Vault 添加"窗口标题匹配模式"输入框（多个用逗号分隔）
-  - [ ] 5.3 保存设置时，将配置序列化为 JSON 存储
+- [x] Task 5: 前端 - 添加项目检测开关 UI (AC: #2)
+  - [x] 5.1 在 OutputSettings.vue 中添加"自动根据窗口标题选择 Vault"开关
+  - [x] 5.2 在 Vault 编辑区域，为每个 Vault 添加"窗口标题匹配模式"输入框（多个用逗号分隔）
+  - [x] 5.3 保存设置时，将配置序列化为 JSON 存储
 
-- [ ] Task 6: 单元测试 (AC: All)
-  - [ ] 6.1 测试 `get_vault_by_name` - 正常查找、不存在查找、空名称
-  - [ ] 6.2 测试 `get_vault_by_window_title` - 精确匹配、部分匹配、多模式匹配、无匹配
-  - [ ] 6.3 测试 `generate_daily_summary` 带 vault_name 参数的各种场景
-  - [ ] 6.4 测试自动检测逻辑 - 开启/关闭、匹配/不匹配
+- [x] Task 6: 单元测试 (AC: All)
+  - [x] 6.1 测试 `get_vault_by_name` - 正常查找、不存在查找、空名称
+  - [x] 6.2 测试 `get_vault_by_window_title` - 精确匹配、部分匹配、多模式匹配、无匹配
+  - [x] 6.3 测试 `generate_daily_summary` 带 vault_name 参数的各种场景
+  - [x] 6.4 测试自动检测逻辑 - 开启/关闭、匹配/不匹配
 
 ## Dev Notes
 

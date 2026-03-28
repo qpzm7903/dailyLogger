@@ -6,17 +6,30 @@
       <div class="space-y-3">
         <label class="text-xs text-gray-300 block">{{ $t('settings.obsidianVaults') }}</label>
         <!-- Vault list -->
-        <div v-for="(vault, index) in vaults" :key="index"
-          class="flex items-center gap-2 bg-darker border border-gray-700 rounded-lg px-3 py-2">
-          <button @click="setDefaultVault(index)" class="text-xs shrink-0"
-            :class="vault.is_default ? 'text-primary font-bold' : 'text-gray-500 hover:text-gray-300'">
-            {{ vault.is_default ? '★' : '☆' }}
-          </button>
-          <div class="flex-1 min-w-0">
-            <div class="text-sm text-gray-100 truncate">{{ vault.name }}</div>
-            <div class="text-xs text-gray-500 truncate">{{ vault.path }}</div>
+        <div v-for="(vault, index) in localVaults" :key="index"
+          class="bg-darker border border-gray-700 rounded-lg px-3 py-2">
+          <div class="flex items-center gap-2">
+            <button @click="setDefaultVault(index)" class="text-xs shrink-0"
+              :class="vault.is_default ? 'text-primary font-bold' : 'text-gray-500 hover:text-gray-300'">
+              {{ vault.is_default ? '★' : '☆' }}
+            </button>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm text-gray-100 truncate">{{ vault.name }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ vault.path }}</div>
+            </div>
+            <button @click="removeVault(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
           </div>
-          <button @click="removeVault(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
+          <!-- Window patterns input for auto-detection -->
+          <div class="mt-2 ml-6">
+            <input
+              :value="getVaultPatternsString(vault)"
+              @input="updateVaultPatterns(vault, ($event.target as HTMLInputElement).value)"
+              type="text"
+              :placeholder="$t('settings.windowPatternsPlaceholder') || '窗口标题匹配模式，如: VS Code, project-A'"
+              class="w-full bg-dark border border-gray-600 rounded px-2 py-1 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+            />
+            <div class="text-xs text-gray-500 mt-1">{{ $t('settings.windowPatternsHint') || '多个模式用逗号分隔' }}</div>
+          </div>
         </div>
         <div v-if="vaults.length === 0" class="text-xs text-gray-500 py-2">
           {{ $t('settings.noVaultConfigured') }}
@@ -31,6 +44,18 @@
             class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
             {{ $t('common.add') }}
           </button>
+        </div>
+        <!-- Auto-detect vault by window toggle -->
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-700">
+          <input
+            v-model="localSettings.auto_detect_vault_by_window"
+            type="checkbox"
+            id="auto-detect-vault"
+            class="w-4 h-4 rounded border-gray-600 bg-dark text-primary focus:ring-primary focus:ring-offset-0"
+          />
+          <label for="auto-detect-vault" class="text-xs text-gray-300">
+            {{ $t('settings.autoDetectVaultByWindow') || '根据窗口标题自动选择 Vault' }}
+          </label>
         </div>
       </div>
     </div>
@@ -191,6 +216,7 @@ interface Props {
     notion_database_id: string | null
     slack_webhook_url: string | null
     dingtalk_webhook_url: string | null
+    auto_detect_vault_by_window: boolean
   }
   vaults: Vault[]
   graphs: Graph[]
@@ -274,6 +300,26 @@ function setDefaultVault(index: number) {
   })
   emit('update:vaults', [...localVaults.value])
 }
+
+// Vault patterns management (for auto-detection by window title)
+function getVaultPatternsString(vault: Vault): string {
+  if (!vault.window_patterns || vault.window_patterns.length === 0) return ''
+  return vault.window_patterns.join(', ')
+}
+
+function updateVaultPatterns(vault: Vault, patternsStr: string) {
+  const patterns = patternsStr
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+  vault.window_patterns = patterns.length > 0 ? patterns : undefined
+  emit('update:vaults', [...localVaults.value])
+}
+
+// Watch for local vault changes and emit
+watch(localVaults, (newVal) => {
+  emit('update:vaults', [...newVal])
+}, { deep: true })
 
 // Graph management methods
 function addGraph() {
