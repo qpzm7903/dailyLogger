@@ -90,9 +90,9 @@ TD5: 游标分页前端集成 - PERF-004 API 准备就绪但前端未使用 (Med
 
 **Stories:**
 
-- [ ] VAULT-001: 多 Obsidian Vault 支持
-- [ ] TAG-001: 统一标签系统
-- [ ] EXPORT-001: 数据导出功能 (JSON/Markdown)
+- [x] VAULT-001: 多 Obsidian Vault 支持
+- [x] TAG-001: 统一标签系统
+- [x] EXPORT-001: 数据导出功能 (JSON/Markdown)
 
 ---
 
@@ -104,9 +104,9 @@ TD5: 游标分页前端集成 - PERF-004 API 准备就绪但前端未使用 (Med
 
 **Stories:**
 
-- [ ] DEBT-001: 测试数据库 schema 统一
-- [ ] DEBT-002: 数据库版本迁移机制
-- [ ] DEBT-003: 组件颜色迁移到 CSS 变量
+- [x] DEBT-001: 测试数据库 schema 统一
+- [x] DEBT-002: 数据库版本迁移机制
+- [x] DEBT-003: 组件颜色迁移到 CSS 变量
 
 ---
 

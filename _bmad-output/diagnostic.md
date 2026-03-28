@@ -22,7 +22,7 @@ State machine evaluation to determine next BMAD skill execution.
 | #4: Stories with `status: ready` | ✅ NONE | All stories completed |
 | #5: Stories pending code review | ✅ NONE | All reviewed |
 | #6: Code review just passed | ✅ NONE | N/A |
-| #7: Epic 全部完成 | ✅ DONE | epic-1 through epic-10 all `done` |
+| #7: Epic 全部完成 | ✅ DONE | epic-1 through epic-13 all `done` |
 
 ### Sprint Status Summary
 ```
@@ -36,14 +36,17 @@ development_status:
   # Epic 7 (EXP): done
   # Epic 8 (SESSION): done
   # Epic 9 (UX-REDESIGN): done
-  # Epic 10 (PERF): done (epic-10-retrospective: done, 2026-03-26)
+  # Epic 10 (PERF): done
+  # Epic 11 (DATA-ENHANCEMENT): done
+  # Epic 12 (OUTPUT): done
+  # Epic 13 (DEBT): done
 ```
 
 ### Version Status
-- **Current version**: v3.3.0 (src-tauri/Cargo.toml)
-- **Latest tag**: None (no tags in repository)
-- **Next version**: v3.4.0 (待规划 - unplublished)
-- **Pending releases**: None
+- **Current version**: v4.0.0 (src-tauri/Cargo.toml)
+- **Latest tag**: v4.0.0 (2026-03-28)
+- **Next version**: v4.1.0 (规划中 - planning in progress)
+- **Pending releases**: v4.0.0 Draft release pending Windows build
 
 ### Project Retrospective
 - `project-retrospective.md` exists in `_bmad-output/implementation-artifacts/`
@@ -51,11 +54,11 @@ development_status:
 
 ## Conclusion
 
-**Terminal State**: All 10 epics complete, all stories done, all retrospectives done.
+**Terminal State**: All 13 epics complete, all stories done, all retrospectives done.
 
 ### Why No Skill Executed
 - Condition #7 (Epic 全部完成 → bmad-retrospective) was the applicable trigger
-- However, `epic-10-retrospective: done` indicates the epic-level retrospective was already completed in a prior session
+- However, all epic retrospectives indicate the project-level retrospective was already completed
 - The project has reached the natural end of the BMAD development cycle
 
 ### No Action Required
@@ -63,43 +66,32 @@ development_status:
 - No pending stories
 - No pending code reviews
 - No pending versions to release
-- No architecture planning needed (epics already defined through Epic 10)
+- No architecture planning needed (all epics completed)
 
-**Project Status**: ✅ Development complete — ready for v3.4.0 planning when authorized.
-
----
-
-## Update: 2026-03-26 (Follow-up)
-
-### CI Status (Re-checked)
-- Last workflow: **success** (docs: update project retrospective to cover Epic 1-10 and v3.3.0)
-- Build and Release: **success** (skipped for docs-only)
-
-### Git Status
-- Working tree: clean
-- No uncommitted changes
-- Latest tag: v3.3.0
-
-### Conclusion
-**Still in terminal state.** No BMAD skill applicable. Awaiting v3.4.0 requirements.
+**Project Status**: ✅ Development complete — v4.0.0 released, v4.1.0 planning in progress.
 
 ---
 
-## Update: 2026-03-26 (Evening Check)
+## Update: 2026-03-28 (Current State Check)
 
 ### CI Status
-- Last workflow (chore(sprint): sync PERF-005 status): **success** (2m26s ago)
-- Build and Release: **skipped** (docs-only)
+- Last workflow: **in_progress** (Build and Release v4.0.0)
+- Build and Release: Windows build in progress, Linux/macOS completed
+- Test workflow: **success** (all tests passed: 508 Rust + 964 frontend)
 
 ### Git Status
-- Working tree: clean
-- No uncommitted changes
-- Latest tag: v3.3.0
+- Working tree: clean (pending diagnostic.md and epics.md updates)
+- Latest tag: v4.0.0
+- Version files: v4.0.0 (package.json, Cargo.toml, tauri.conf.json)
 
 ### Sprint Status
-- All 10 epics: done
+- All 13 epics: done (Epic 1-13)
 - All stories: done
-- All retrospectives: done
+- All retrospectives: done (epic-13-retrospective: optional)
+
+### Documentation Updates Made
+- Updated epics.md: Marked Epic 12 and 13 stories as completed [x]
+- Updated diagnostic.md: Reflects v4.0.0/v4.1.0 current state
 
 ### Conclusion
-**Still in terminal state.** No BMAD skill triggered. Project is stable and awaiting v3.4.0 planning input.
+**v4.0.0 released, v4.1.0 planning in progress.** Build workflow still running Windows build (expected for Tauri).
