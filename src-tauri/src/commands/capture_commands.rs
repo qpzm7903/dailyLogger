@@ -14,7 +14,7 @@ use crate::services::capture_service::{
     get_auto_capture_status_service, get_default_analysis_prompt_service,
     get_quality_filter_stats_service, get_work_time_status_service, reanalyze_record_service,
     reanalyze_records_by_date_service, reanalyze_today_records_service,
-    reset_quality_filter_counter_service, retry_screenshot_analysis_service,
+    reset_quality_filter_counter_service,
     start_auto_capture_service, stop_auto_capture_service, take_screenshot_service,
     trigger_capture_service, CaptureSettings, QualityFilterStats, ReanalyzeResult, ScreenAnalysis,
 };
@@ -207,7 +207,6 @@ pub async fn reset_quality_filter_counter() -> Result<(), String> {
 // Internal helpers needed by start_auto_capture command
 // ═══════════════════════════════════════════════════════════════════════════════
 
-use crate::silent_tracker::{record_capture, set_threshold};
 use crate::work_time::WorkTimeSettings;
 
 fn load_capture_settings_internal() -> CaptureSettings {

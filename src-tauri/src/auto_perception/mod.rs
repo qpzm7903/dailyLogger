@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use tauri::{command, Emitter};
 
 use crate::memory_storage;
 use crate::monitor::get_monitor_list;
@@ -11,7 +10,7 @@ use crate::silent_tracker::{
     calculate_optimal_silent_minutes, current_threshold, has_sufficient_data, record_capture,
     set_threshold, CaptureReason,
 };
-use crate::work_time::{is_in_work_time, record_work_time_capture, WorkTimeSettings};
+use crate::work_time::{is_in_work_time, WorkTimeSettings};
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -1183,6 +1182,8 @@ mod tests {
     use super::*;
     use base64::Engine;
     use serial_test::serial;
+    use crate::commands::{get_auto_capture_status, get_default_analysis_prompt, get_work_time_status};
+    use crate::services::is_auto_capture_running;
 
     fn make_minimal_png_base64() -> String {
         // 1×1 transparent PNG (RGBA)
