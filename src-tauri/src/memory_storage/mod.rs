@@ -1096,26 +1096,29 @@ mod tests_vault_001 {
 
     fn create_test_vaults() -> Settings {
         Settings {
-            obsidian_vaults: Some(serde_json::to_string(&vec![
-                ObsidianVault {
-                    name: "Work Vault".to_string(),
-                    path: "/path/to/work".to_string(),
-                    is_default: true,
-                    window_patterns: Some(vec!["VS Code".to_string(), "Firefox".to_string()]),
-                },
-                ObsidianVault {
-                    name: "Personal Vault".to_string(),
-                    path: "/path/to/personal".to_string(),
-                    is_default: false,
-                    window_patterns: Some(vec!["Chrome".to_string()]),
-                },
-                ObsidianVault {
-                    name: "No Pattern Vault".to_string(),
-                    path: "/path/to/none".to_string(),
-                    is_default: false,
-                    window_patterns: None,
-                },
-            ]).unwrap()),
+            obsidian_vaults: Some(
+                serde_json::to_string(&vec![
+                    ObsidianVault {
+                        name: "Work Vault".to_string(),
+                        path: "/path/to/work".to_string(),
+                        is_default: true,
+                        window_patterns: Some(vec!["VS Code".to_string(), "Firefox".to_string()]),
+                    },
+                    ObsidianVault {
+                        name: "Personal Vault".to_string(),
+                        path: "/path/to/personal".to_string(),
+                        is_default: false,
+                        window_patterns: Some(vec!["Chrome".to_string()]),
+                    },
+                    ObsidianVault {
+                        name: "No Pattern Vault".to_string(),
+                        path: "/path/to/none".to_string(),
+                        is_default: false,
+                        window_patterns: None,
+                    },
+                ])
+                .unwrap(),
+            ),
             auto_detect_vault_by_window: None,
             ..Default::default()
         }
