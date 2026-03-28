@@ -401,6 +401,15 @@ export function getMockInjectionScript(overrides: MockOverrides = {}): string {
               return 'ok';
             },
             generate_daily_summary: () => ({ content: 'Summary', output_path: '/tmp/summary.md' }),
+            get_today_stats: () => ({
+              total_count: 0,
+              auto_count: 0,
+              manual_count: 0,
+              first_record_time: null,
+              latest_record_time: null,
+              busiest_hour: null,
+              busiest_hour_count: 0,
+            }),
             list_backups: () => mockState.backups,
             create_backup: () => {
               const backup = { path: '/backups/backup.json', filename: 'backup.json' };
@@ -411,11 +420,21 @@ export function getMockInjectionScript(overrides: MockOverrides = {}): string {
             get_timeline_for_date: () => [],
             list_discovered_plugins: () => [],
             get_model_info: () => ({ analysis_model: 'gpt-4o', report_model: 'gpt-4o' }),
+            get_all_tags: () => [],
+            get_tag_colors: () => ({}),
+            log_frontend_error: () => 'ok',
+            reanalyze_record: () => 'ok',
+            get_monitors: () => [{ id: 1, name: 'Primary', width: 1920, height: 1080, is_primary: true }],
+            get_default_analysis_prompt: () => 'Default analysis prompt',
+            get_default_summary_prompt: () => 'Default summary prompt',
             get_tags_for_record: () => [],
             get_tags_for_records: () => ({}),
             get_records_by_manual_tags: () => [],
             get_default_tag_categories: () => [],
-            get_all_tags: () => [],
+            list_discovered_plugins: () => [],
+            get_model_info: () => ({ analysis_model: 'gpt-4o', report_model: 'gpt-4o' }),
+            'plugin:event|listen': () => (() => { return () => {}; })(),
+            'plugin:global-shortcut|register': () => 'ok',
           };
 
           if (mockOverrides[cmd]) {
