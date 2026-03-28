@@ -9,15 +9,17 @@
 
 ## 当前 Milestone：v4.1.0 规划中
 
-**目标**: 待定 - 候选方向：
-- 前端组件测试覆盖率提升（ScreenshotModal 测试已补充）
-- 其他用户体验优化
+**目标**: 前端组件测试覆盖率提升
+
+已完成测试覆盖的组件：
+- ErrorBoundary、Siderbar、Header、TodaySummaryWidget、SessionDetailView、OnboardingModal
+- ScreenshotModal、SessionListModal、NetworkStatusIndicator、SkeletonLoader、ErrorToast、OfflineQueueModal
 
 **版本策略**:
 
 | 版本 | 类型 | 目标 |
 |------|------|------|
-| v4.1.0 | MINOR | 待定 |
+| v4.1.0 | MINOR | 前端组件测试覆盖率提升 |
 
 ---
 
