@@ -1,6 +1,6 @@
 # Story 12.1: VAULT-001 - 多 Obsidian Vault 支持
 
-Status: in-progress (Task 1 done, Task 2 (backend vault param) done, Task 3 (auto-detect) done, Tasks 4-5 (UI) remaining, Task 6 (tests) remaining)
+Status: in-progress (Task 1 done, Task 2 done, Task 3 done, Task 4 done (UI ready), Task 5 (settings UI) remaining, Task 6 (tests) remaining)
 
 ## Story
 
@@ -35,10 +35,10 @@ So that I can keep work records organized by project context.
   - [x] 3.3 遍历 `obsidian_vaults`，查找 `window_patterns` 中有匹配项的 Vault
   - [x] 3.4 如果找到匹配，使用该 Vault；否则回退到默认 Vault
 
-- [ ] Task 4: 前端 - 添加 Vault 选择器 UI (AC: #1, #3)
-  - [ ] 4.1 在 ReportDropdown.vue 中，当有多个 Vault 时，显示 Vault 选择下拉框
-  - [ ] 4.2 调用 `generate_daily_summary(vaultName?)` 时传入选中的 vault name
-  - [ ] 4.3 如果只有一个 Vault，保持现有行为不变（向后兼容）
+- [x] Task 4: 前端 - 添加 Vault 选择器 UI (AC: #1, #3)
+  - [x] 4.1 在 ReportDropdown.vue 中，当有多个 Vault 时，显示 Vault 选择下拉框
+  - [x] 4.2 调用 `generate_daily_summary(vaultName?)` 时传入选中的 vault name
+  - [x] 4.3 如果只有一个 Vault，保持现有行为不变（向后兼容）
 
 - [ ] Task 5: 前端 - 添加项目检测开关 UI (AC: #2)
   - [ ] 5.1 在 OutputSettings.vue 中添加"自动根据窗口标题选择 Vault"开关
