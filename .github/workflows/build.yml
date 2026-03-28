@@ -43,7 +43,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - uses: dtolnay/rust-toolchain@stable
@@ -188,7 +188,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - uses: dtolnay/rust-toolchain@stable
@@ -226,7 +226,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - uses: dtolnay/rust-toolchain@stable
@@ -268,7 +268,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - uses: dtolnay/rust-toolchain@stable
