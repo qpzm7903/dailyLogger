@@ -1,25 +1,30 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-28
-> 当前版本: v4.0.0（已发布，2026-03-28）
-> 上一版本: v3.10.0（已完成）
-> 当前 Milestone: v4.1.0 规划中
+> 当前版本: v4.1.0（已发布，2026-03-28）
+> 上一版本: v4.0.0（已完成）
+> 当前 Milestone: v4.2.0 规划中
 
 ---
 
-## 当前 Milestone：v4.1.0 规划中
+## 当前 Milestone：v4.2.0 规划中
 
-**目标**: 前端组件测试覆盖率提升
+**目标**: 待定
 
 已完成测试覆盖的组件：
 - ErrorBoundary、Siderbar、Header、TodaySummaryWidget、SessionDetailView、OnboardingModal
 - ScreenshotModal、SessionListModal、NetworkStatusIndicator、SkeletonLoader、ErrorToast、OfflineQueueModal
+- BackupModal、ExportModal、OfflineBanner、ScreenshotGallery、TimelineWidget、TagInput
+- TagFilter、TagBadge、AISettings、CaptureSettings、OutputSettings、BasicSettings
+- ReportDropdown、ReportHistoryViewer、ReportComparisonModal、ReanalyzeByDateModal
+- DailySummaryViewer、QuickNoteModal、HistoryViewer、SearchPanel、QuickNoteWindow
+- LogViewer、Toast、SettingsModal、StatisticsPanel、TagCloud、TimelineVisualization
 
 **版本策略**:
 
 | 版本 | 类型 | 目标 |
 |------|------|------|
-| v4.1.0 | MINOR | 前端组件测试覆盖率提升 |
+| v4.2.0 | MINOR | 待定 |
 
 ---
 
@@ -27,11 +32,17 @@
 
 | 版本 | 方向 | 说明 |
 |------|------|------|
-| v4.1.0 | MINOR | 待定 |
+| v4.2.0 | MINOR | 待定 |
 
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v4.1.0 — 前端组件测试覆盖率提升 ✅
+- 完成 35 个 Vue 组件的测试覆盖，测试文件从 0 增至 40+
+- 测试数量从约 800 增至 1165，覆盖所有主要 UI 组件
+- 62 个测试文件全部通过 (1165 tests)
+- 覆盖：ErrorBoundary、Sidebar、Header、TodaySummaryWidget、SessionDetailView 等
 
 ### v4.0.0 — 组件颜色 CSS 变量化 ✅
 - 完成 DEBT-003：21 个 Vue 组件迁移到 CSS 变量
@@ -84,7 +95,3 @@
 ### v3.2.0 — AI 代理配置 ✅
 - AI API 请求支持 HTTP 代理和认证
 - 补充测试连接模型和前端折叠配置面板
-
-### v3.1.1 — CI 修复 ✅
-- 修复 Build and Release workflow 中 release 发布链路异常
-- 保证版本发布流程恢复可用

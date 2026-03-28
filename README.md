@@ -233,7 +233,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.0.0
+**最新版本**: v4.1.0
+- 前端组件测试覆盖率提升：完成 35+ 个 Vue 组件的测试覆盖
+- 新增 40+ 测试文件，测试数量从约 800 增至 1165
+- 62 个测试文件全部通过 (1165 tests)
+- 覆盖所有主要 UI 组件：ErrorBoundary、Sidebar、Header、TodaySummaryWidget、SessionDetailView 等
+
+**v4.0.0**:
 - 组件颜色 CSS 变量化：完成浅色主题系统
 - 迁移 21 个 Vue 组件到 CSS 变量
 - 新增 CSS 变量：`--color-border`, `--color-border-subtle`, `--color-text-muted`
