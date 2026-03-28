@@ -147,7 +147,7 @@ describe('ReportComparisonModal', () => {
       await inputs[1].setValue('2026-03-07')
 
       // 7 days (Mar 1-7 inclusive)
-      const dayCountText = wrapper.findAll('p.text-xs.text-gray-500')[0]
+      const dayCountText = wrapper.findAll('p.text-xs')[0]
       expect(dayCountText.text()).toBe('7 days')
     })
 
@@ -162,7 +162,7 @@ describe('ReportComparisonModal', () => {
       expect(wrapper.vm.dayCountB).toBe(7)
 
       // Find the day count text elements
-      const allSmallText = wrapper.findAll('p.text-xs.text-gray-500')
+      const allSmallText = wrapper.findAll('p.text-xs')
       const dayCountElements = allSmallText.filter(p => p.text().includes('days'))
 
       // Since only period B dates are set, there should be one day count
@@ -172,7 +172,7 @@ describe('ReportComparisonModal', () => {
 
     it('does not show day count when dates not set', () => {
       wrapper = mountComponent()
-      const dayCountTexts = wrapper.findAll('p.text-xs.text-gray-500')
+      const dayCountTexts = wrapper.findAll('p.text-xs')
       // Only the day count elements, not error messages
       const dayCounts = dayCountTexts.filter(p => p.text().includes('days'))
       expect(dayCounts.length).toBe(0)
@@ -185,7 +185,7 @@ describe('ReportComparisonModal', () => {
       await inputs[1].setValue('2026-03-01') // End before start
 
       // Should show 0 days (or no display)
-      const dayCountTexts = wrapper.findAll('p.text-xs.text-gray-500')
+      const dayCountTexts = wrapper.findAll('p.text-xs')
       const dayCounts = dayCountTexts.filter(p => p.text().includes('days'))
       expect(dayCounts.length).toBe(0)
     })
@@ -583,7 +583,7 @@ describe('ReportComparisonModal', () => {
       await inputs[3].setValue('2026-03-02')
 
       // Should show 1 day
-      const dayCountTexts = wrapper.findAll('p.text-xs.text-gray-500')
+      const dayCountTexts = wrapper.findAll('p.text-xs')
       expect(dayCountTexts[0].text()).toBe('1 days')
       expect(dayCountTexts[1].text()).toBe('1 days')
     })

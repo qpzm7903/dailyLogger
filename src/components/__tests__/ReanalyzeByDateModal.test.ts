@@ -66,8 +66,8 @@ describe('ReanalyzeByDateModal', () => {
         }
       })
 
-      const closeButton = wrapper.find('button.text-gray-400')
-      expect(closeButton.exists()).toBe(true)
+      const closeButton = wrapper.findAll('button').find(b => b.text() === '✕')
+      expect(closeButton?.exists()).toBe(true)
     })
 
     it('renders start analysis button', () => {
@@ -392,8 +392,8 @@ describe('ReanalyzeByDateModal', () => {
 
       await nextTick()
 
-      const closeButton = wrapper.find('button.text-gray-400')
-      await closeButton.trigger('click')
+      const closeButton = wrapper.findAll('button').find(b => b.text() === '✕')
+      await closeButton?.trigger('click')
 
       expect(wrapper.emitted('close')).toBeTruthy()
     })

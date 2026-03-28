@@ -183,7 +183,7 @@ describe('ReportHistoryViewer', () => {
       await flushPromises()
       await nextTick()
 
-      const fileItems = wrapper.findAll('.bg-darker')
+      const fileItems = wrapper.findAll('[class*="bg-[var(--color-surface-0)]"]')
       await fileItems[0].trigger('click')
 
       // Selected file should have primary border
@@ -202,7 +202,7 @@ describe('ReportHistoryViewer', () => {
       await flushPromises()
       await nextTick()
 
-      const fileItems = wrapper.findAll('.bg-darker')
+      const fileItems = wrapper.findAll('[class*="bg-[var(--color-surface-0)]"]')
 
       // Click first file
       await fileItems[0].trigger('click')
@@ -250,7 +250,7 @@ describe('ReportHistoryViewer', () => {
       await nextTick()
 
       // Select first file
-      const fileItems = wrapper.findAll('.bg-darker')
+      const fileItems = wrapper.findAll('[class*="bg-[var(--color-surface-0)]"]')
       await fileItems[0].trigger('click')
 
       // Click View Selected button
@@ -290,7 +290,7 @@ describe('ReportHistoryViewer', () => {
       await nextTick()
 
       // Select first file
-      const fileItems = wrapper.findAll('.bg-darker')
+      const fileItems = wrapper.findAll('[class*="bg-[var(--color-surface-0)]"]')
       await fileItems[0].trigger('click')
       await nextTick()
 
@@ -312,7 +312,7 @@ describe('ReportHistoryViewer', () => {
       await flushPromises()
       await nextTick()
 
-      const closeBtn = wrapper.find('button.text-gray-400')
+      const closeBtn = wrapper.find('button[class*="text-[var(--color-text-secondary)]"]')
       await closeBtn.trigger('click')
 
       expect(wrapper.emitted('close')).toBeTruthy()
@@ -349,7 +349,7 @@ describe('ReportHistoryViewer', () => {
       await nextTick()
 
       // Find the close button in footer by its class
-      const footerCloseBtn = wrapper.find('.px-6.py-4 button.bg-gray-700')
+      const footerCloseBtn = wrapper.find('[class*="bg-[var(--color-action-secondary)]"]')
       await footerCloseBtn.trigger('click')
 
       expect(wrapper.emitted('close')).toBeTruthy()
@@ -381,7 +381,7 @@ describe('ReportHistoryViewer', () => {
         }
       })
 
-      const modal = wrapper.find('.bg-dark')
+      const modal = wrapper.find('[class*="bg-[var(--color-surface-1)]"]')
       expect(modal.classes()).toContain('max-w-3xl')
     })
   })

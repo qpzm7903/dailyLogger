@@ -1,21 +1,21 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('customReport.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Body -->
       <div class="p-6 space-y-5">
         <!-- Preset Buttons -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">{{ t('customReport.presets') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('customReport.presets') }}</label>
           <div class="flex gap-3">
             <button
               @click="applyPreset('biweekly')"
-              :class="activePreset === 'biweekly' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
+              :class="activePreset === 'biweekly' ? 'border-primary bg-primary/10 text-[var(--color-text-primary)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)]'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
               <div class="font-medium">{{ t('customReport.biweekly') }}</div>
@@ -23,7 +23,7 @@
             </button>
             <button
               @click="applyPreset('quarterly')"
-              :class="activePreset === 'quarterly' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
+              :class="activePreset === 'quarterly' ? 'border-primary bg-primary/10 text-[var(--color-text-primary)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)]'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
               <div class="font-medium">{{ t('customReport.quarterly') }}</div>
@@ -31,7 +31,7 @@
             </button>
             <button
               @click="applyPreset('custom')"
-              :class="activePreset === 'custom' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
+              :class="activePreset === 'custom' ? 'border-primary bg-primary/10 text-[var(--color-text-primary)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)]'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
               <div class="font-medium">{{ t('customReport.custom') }}</div>
@@ -42,42 +42,42 @@
 
         <!-- Date Range -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">{{ t('customReport.dateRange') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('customReport.dateRange') }}</label>
           <div class="flex items-center gap-3">
             <input
               type="date"
               v-model="startDate"
               @change="activePreset = 'custom'"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">{{ t('customReport.to') }}</span>
+            <span class="text-[var(--color-text-muted)]">{{ t('customReport.to') }}</span>
             <input
               type="date"
               v-model="endDate"
               @change="activePreset = 'custom'"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
           </div>
-          <p v-if="dayCount > 0" class="text-xs text-gray-500">{{ t('customReport.daysSelected', { count: dayCount }) }}</p>
+          <p v-if="dayCount > 0" class="text-xs text-[var(--color-text-muted)]">{{ t('customReport.daysSelected', { count: dayCount }) }}</p>
           <p v-if="dateError" class="text-red-400 text-xs">{{ dateError }}</p>
         </div>
 
         <!-- Report Name -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">{{ t('customReport.reportName') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('customReport.reportName') }}</label>
           <input
             v-model="reportName"
             :placeholder="t('customReport.reportNamePlaceholder')"
-            class="w-full bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
         </div>
 
         <!-- Result -->
-        <div v-if="resultPath" class="bg-darker rounded-lg p-4 space-y-2 border border-green-700/50">
+        <div v-if="resultPath" class="bg-[var(--color-surface-0)] rounded-lg p-4 space-y-2 border border-green-700/50">
           <div class="flex items-center gap-2 text-green-400 text-sm">
             <span>{{ t('customReport.reportSuccess') }}</span>
           </div>
-          <p class="text-xs text-gray-400 break-all">{{ resultPath }}</p>
+          <p class="text-xs text-[var(--color-text-secondary)] break-all">{{ resultPath }}</p>
         </div>
 
         <!-- Error -->
@@ -87,10 +87,10 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+      <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
         <button
           @click="$emit('close')"
-          class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+          class="px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
         >
           {{ t('customReport.close') }}
         </button>

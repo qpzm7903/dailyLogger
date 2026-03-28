@@ -1,10 +1,10 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[480px] max-h-[80vh] overflow-hidden border border-gray-700">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[480px] max-h-[80vh] overflow-hidden border border-[var(--color-border)]">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('reanalyze.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Content -->
@@ -16,17 +16,17 @@
             v-model="selectedDate"
             type="date"
             :max="todayDate"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-100 focus:border-primary focus:outline-none"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-sm text-gray-100 focus:border-primary focus:outline-none"
           />
-          <p class="text-xs text-gray-500 mt-2">{{ t('reanalyze.dateHint') }}</p>
+          <p class="text-xs text-[var(--color-text-muted)] mt-2">{{ t('reanalyze.dateHint') }}</p>
         </div>
 
         <!-- Preview Info -->
-        <div v-if="selectedDate" class="bg-darker rounded-lg p-4 mb-4">
+        <div v-if="selectedDate" class="bg-[var(--color-surface-0)] rounded-lg p-4 mb-4">
           <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('reanalyze.preview') }}</h3>
-          <div class="text-xs text-gray-400 space-y-1">
+          <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
             <p>{{ t('reanalyze.selectedDate') }}: {{ selectedDate }}</p>
-            <p v-if="isLoadingCount" class="text-gray-500">{{ t('reanalyze.loadingCount') }}</p>
+            <p v-if="isLoadingCount" class="text-[var(--color-text-muted)]">{{ t('reanalyze.loadingCount') }}</p>
             <p v-else-if="recordCount !== null">
               {{ t('reanalyze.recordCount', { count: recordCount }) }}
             </p>
@@ -34,7 +34,7 @@
         </div>
 
         <!-- Result Display -->
-        <div v-if="result" class="bg-darker rounded-lg p-4 mb-4">
+        <div v-if="result" class="bg-[var(--color-surface-0)] rounded-lg p-4 mb-4">
           <h4 class="text-sm font-medium mb-2" :class="result.failed > 0 ? 'text-yellow-400' : 'text-green-400'">
             {{ t('reanalyze.complete') }}
           </h4>
@@ -44,10 +44,10 @@
             <p v-if="result.failed > 0" class="text-red-400">{{ t('reanalyze.failedCount') }}: {{ result.failed }}</p>
           </div>
           <div v-if="result.errors && result.errors.length > 0" class="mt-3">
-            <p class="text-xs text-gray-400 mb-1">{{ t('reanalyze.errors') }}:</p>
+            <p class="text-xs text-[var(--color-text-secondary)] mb-1">{{ t('reanalyze.errors') }}:</p>
             <ul class="text-xs text-red-400 space-y-1 max-h-24 overflow-y-auto">
               <li v-for="(error, idx) in result.errors.slice(0, 5)" :key="idx">{{ error }}</li>
-              <li v-if="result.errors.length > 5" class="text-gray-500">
+              <li v-if="result.errors.length > 5" class="text-[var(--color-text-muted)]">
                 {{ t('reanalyze.moreErrors', { count: result.errors.length - 5 }) }}
               </li>
             </ul>
@@ -64,7 +64,7 @@
           <button
             @click="$emit('close')"
             :disabled="isReanalyzing"
-            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm transition-colors"
+            class="px-4 py-2 bg-[var(--color-action-secondary)] hover:bg-[var(--color-action-neutral)] disabled:opacity-50 rounded-lg text-sm transition-colors"
           >
             {{ t('common.close') }}
           </button>

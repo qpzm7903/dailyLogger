@@ -1,65 +1,65 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('reportComparison.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Body -->
       <div class="p-6 space-y-5">
         <!-- Period A -->
         <div class="space-y-2">
-          <label class="text-sm text-gray-400 block">{{ t('reportComparison.periodA') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('reportComparison.periodA') }}</label>
           <div class="flex items-center gap-3">
             <input
               type="date"
               v-model="startDateA"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">{{ t('reportComparison.to') }}</span>
+            <span class="text-[var(--color-text-muted)]">{{ t('reportComparison.to') }}</span>
             <input
               type="date"
               v-model="endDateA"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
           </div>
-          <p v-if="dayCountA > 0" class="text-xs text-gray-500">{{ t('reportComparison.days', { count: dayCountA }) }}</p>
+          <p v-if="dayCountA > 0" class="text-xs text-[var(--color-text-muted)]">{{ t('reportComparison.days', { count: dayCountA }) }}</p>
         </div>
 
         <!-- Period B -->
         <div class="space-y-2">
-          <label class="text-sm text-gray-400 block">{{ t('reportComparison.periodB') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('reportComparison.periodB') }}</label>
           <div class="flex items-center gap-3">
             <input
               type="date"
               v-model="startDateB"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">{{ t('reportComparison.to') }}</span>
+            <span class="text-[var(--color-text-muted)]">{{ t('reportComparison.to') }}</span>
             <input
               type="date"
               v-model="endDateB"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
           </div>
-          <p v-if="dayCountB > 0" class="text-xs text-gray-500">{{ t('reportComparison.days', { count: dayCountB }) }}</p>
+          <p v-if="dayCountB > 0" class="text-xs text-[var(--color-text-muted)]">{{ t('reportComparison.days', { count: dayCountB }) }}</p>
         </div>
 
         <!-- Preset buttons -->
         <div class="space-y-2">
-          <label class="text-sm text-gray-400 block">{{ t('reportComparison.presets') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('reportComparison.presets') }}</label>
           <div class="flex gap-3">
             <button
               @click="applyPreset('week')"
-              class="flex-1 border border-gray-600 text-gray-400 hover:border-gray-500 rounded-lg px-3 py-2 text-sm transition-colors text-center"
+              class="flex-1 border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)] rounded-lg px-3 py-2 text-sm transition-colors text-center"
             >
               <div class="font-medium">{{ t('reportComparison.thisWeekVsLastWeek') }}</div>
             </button>
             <button
               @click="applyPreset('month')"
-              class="flex-1 border border-gray-600 text-gray-400 hover:border-gray-500 rounded-lg px-3 py-2 text-sm transition-colors text-center"
+              class="flex-1 border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)] rounded-lg px-3 py-2 text-sm transition-colors text-center"
             >
               <div class="font-medium">{{ t('reportComparison.thisMonthVsLastMonth') }}</div>
             </button>
@@ -69,11 +69,11 @@
         <p v-if="dateError" class="text-red-400 text-xs">{{ dateError }}</p>
 
         <!-- Result -->
-        <div v-if="resultPath" class="bg-darker rounded-lg p-4 space-y-2 border border-green-700/50">
+        <div v-if="resultPath" class="bg-[var(--color-surface-0)] rounded-lg p-4 space-y-2 border border-green-700/50">
           <div class="flex items-center gap-2 text-green-400 text-sm">
             <span>{{ t('reportComparison.reportSuccess') }}</span>
           </div>
-          <p class="text-xs text-gray-400 break-all">{{ resultPath }}</p>
+          <p class="text-xs text-[var(--color-text-secondary)] break-all">{{ resultPath }}</p>
         </div>
 
         <!-- Error -->
@@ -83,10 +83,10 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+      <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
         <button
           @click="$emit('close')"
-          class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+          class="px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
         >
           {{ t('reportComparison.close') }}
         </button>
