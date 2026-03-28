@@ -131,11 +131,11 @@ jobs:
         id: create
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGES: ${{ steps.changelog.outputs.changes }}
         run: |
           VERSION="${{ github.ref_name }}"
-          CHANGES="${{ steps.changelog.outputs.changes }}"
 
-          RELEASE_BODY=$(cat <<BODY
+          RELEASE_BODY=$(cat <<'BODY'
           ## What's Changed
 
           $CHANGES
@@ -145,27 +145,29 @@ jobs:
           ## Installation
 
           ### Windows
-          **Installer** (recommended): Download \`*-setup.exe\` and run it. The installer will automatically set up WebView2 if needed.
+          **Installer** (recommended): Download `*-setup.exe` and run it. The installer will automatically set up WebView2 if needed.
           > Windows SmartScreen may show a warning for unsigned apps. Click **"More info"** → **"Run anyway"** to proceed.
 
-          **Portable** (no install): Download \`*-portable.exe\` and run directly. Requires Windows 10/11 with WebView2 runtime pre-installed.
+          **Portable** (no install): Download `*-portable.exe` and run directly. Requires Windows 10/11 with WebView2 runtime pre-installed.
 
           ### macOS
-          Download the \`.dmg\`, open it, and drag DailyLogger to Applications.
+          Download the `.dmg`, open it, and drag DailyLogger to Applications.
           > macOS Gatekeeper may block unsigned apps. Right-click the app → **"Open"** → **"Open"** to bypass. Alternatively, run in Terminal:
-          > \`\`\`
+          > ```
           > xattr -cr /Applications/DailyLogger.app
-          > \`\`\`
+          > ```
 
           ### Linux
-          Download the \`.tar.gz\`, extract it, and run the binary:
-          \`\`\`bash
+          Download the `.tar.gz`, extract it, and run the binary:
+          ```bash
           tar xzf DailyLogger-*.tar.gz
           chmod +x DailyLogger
           ./DailyLogger
-          \`\`\`
+          ```
           BODY
           )
+          # Expand only $CHANGES variable using envsubst
+          RELEASE_BODY="${RELEASE_BODY//\$CHANGES/$CHANGES}"
           RELEASE_ID=$(gh api repos/${{ github.repository }}/releases \
             -f tag_name="${{ github.ref_name }}" \
             -f name="DailyLogger ${{ github.ref_name }}" \
