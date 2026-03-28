@@ -3,8 +3,8 @@ use std::path::PathBuf;
 
 use crate::crypto;
 
-use super::DB_CONNECTION;
 use super::migration::{self, CURRENT_SCHEMA_VERSION};
+use super::DB_CONNECTION;
 
 fn get_db_path() -> PathBuf {
     crate::get_app_data_dir().join("data").join("local.db")

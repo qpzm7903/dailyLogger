@@ -312,10 +312,7 @@ pub fn run_migrations(conn: &Connection) -> Result<(), String> {
     let migrations = get_migrations();
 
     if current_version >= CURRENT_SCHEMA_VERSION {
-        tracing::info!(
-            "Database schema is up to date (v{})",
-            current_version
-        );
+        tracing::info!("Database schema is up to date (v{})", current_version);
         return Ok(());
     }
 
@@ -382,9 +379,11 @@ mod tests {
         init_schema_version_table(&conn).unwrap();
 
         let version: i32 = conn
-            .query_row("SELECT version FROM schema_version WHERE id = 1", [], |row| {
-                row.get(0)
-            })
+            .query_row(
+                "SELECT version FROM schema_version WHERE id = 1",
+                [],
+                |row| row.get(0),
+            )
             .unwrap();
 
         assert_eq!(version, 0);

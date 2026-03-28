@@ -1,8 +1,8 @@
+pub mod migration;
 mod records;
 mod schema;
 mod settings;
 pub mod tags;
-pub mod migration;
 
 use once_cell::sync::Lazy;
 use rusqlite::Connection;
