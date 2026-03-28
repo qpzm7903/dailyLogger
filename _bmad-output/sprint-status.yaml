@@ -168,9 +168,9 @@ development_status:
 
   # Epic 12: 多维度输出与标签管理 (OUTPUT)
   epic-12: in-progress
-  VAULT-001: ready-for-dev
-  TAG-001: backlog
-  EXPORT-001: backlog
+  VAULT-001: in-progress  # Task 1 done (frontend types), Tasks 2-6 remaining
+  TAG-001: done  # Completed in v3.7.1
+  EXPORT-001: done  # Completed in v3.8.0
   epic-12-retrospective: optional
 
   # Epic 13: 技术债务清偿 (DEBT)

@@ -37,9 +37,12 @@ pub fn get_default_summary_prompt() -> String {
 ///
 /// This is a thin command wrapper that delegates to the report service.
 /// The service handles session analysis, AI summarization, and result storage.
+///
+/// # Arguments
+/// * `vault_name` - Optional vault name to use. If None, uses default vault or auto-detection.
 #[tauri::command]
-pub async fn generate_daily_summary() -> Result<String, String> {
-    generate_daily_summary_service().await
+pub async fn generate_daily_summary(vault_name: Option<String>) -> Result<String, String> {
+    generate_daily_summary_service(vault_name).await
 }
 
 /// Generate multilingual daily summary - DATA-007

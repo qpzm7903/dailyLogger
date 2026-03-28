@@ -1,6 +1,6 @@
 # Story 12.1: VAULT-001 - 多 Obsidian Vault 支持
 
-Status: in-progress (Task 1.1-1.4 frontend types done, Tasks 2-3 next for backend vault selection)
+Status: in-progress (Task 1 done, Task 2 (backend vault param) done, Task 3 (auto-detect) done, Tasks 4-5 (UI) remaining, Task 6 (tests) remaining)
 
 ## Story
 
@@ -23,17 +23,17 @@ So that I can keep work records organized by project context.
   - [x] 1.3 更新 Rust 端 `ObsidianVault` struct 和序列化逻辑
   - [x] 1.4 更新前端 `ObsidianVault` TypeScript 接口和 OutputSettings.vue
 
-- [ ] Task 2: Rust 后端 - 修改 generate_daily_summary 支持 vault 参数 (AC: #1, #3)
-  - [ ] 2.1 修改 `generate_daily_summary` 命令签名，添加可选参数 `vault_name: Option<String>`
-  - [ ] 2.2 如果指定了 `vault_name`，使用对应 Vault 的 path；否则使用默认逻辑
-  - [ ] 2.3 添加 `get_vault_by_name(&self, name: &str)` 和 `get_vault_by_window_title(&self, title: &str)` 辅助方法
-  - [ ] 2.4 在 main.rs 的 `generate_handler![]` 中注册更新后的命令
+- [x] Task 2: Rust 后端 - 修改 generate_daily_summary 支持 vault 参数 (AC: #1, #3)
+  - [x] 2.1 修改 `generate_daily_summary` 命令签名，添加可选参数 `vault_name: Option<String>`
+  - [x] 2.2 如果指定了 `vault_name`，使用对应 Vault 的 path；否则使用默认逻辑
+  - [x] 2.3 添加 `get_vault_by_name(&self, name: &str)` 和 `get_vault_by_window_title(&self, title: &str)` 辅助方法
+  - [x] 2.4 在 main.rs 的 `generate_handler![]` 中注册更新后的命令
 
-- [ ] Task 3: Rust 后端 - 实现基于窗口标题的自动 Vault 选择 (AC: #2)
-  - [ ] 3.1 在 `generate_daily_summary` 中，如果 `auto_detect_vault_by_window` 为 true 且未指定 vault_name
-  - [ ] 3.2 调用 `window_info::get_active_window()` 获取当前窗口标题
-  - [ ] 3.3 遍历 `obsidian_vaults`，查找 `window_patterns` 中有匹配项的 Vault
-  - [ ] 3.4 如果找到匹配，使用该 Vault；否则回退到默认 Vault
+- [x] Task 3: Rust 后端 - 实现基于窗口标题的自动 Vault 选择 (AC: #2)
+  - [x] 3.1 在 `generate_daily_summary` 中，如果 `auto_detect_vault_by_window` 为 true 且未指定 vault_name
+  - [x] 3.2 调用 `window_info::get_active_window()` 获取当前窗口标题
+  - [x] 3.3 遍历 `obsidian_vaults`，查找 `window_patterns` 中有匹配项的 Vault
+  - [x] 3.4 如果找到匹配，使用该 Vault；否则回退到默认 Vault
 
 - [ ] Task 4: 前端 - 添加 Vault 选择器 UI (AC: #1, #3)
   - [ ] 4.1 在 ReportDropdown.vue 中，当有多个 Vault 时，显示 Vault 选择下拉框

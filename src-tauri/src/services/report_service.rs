@@ -22,7 +22,10 @@ pub use crate::synthesis::{
 };
 
 /// Generate daily summary - report generation service
-pub async fn generate_daily_summary_service() -> Result<String, String> {
+///
+/// # Arguments
+/// * `vault_name` - Optional vault name to use. If None, uses default vault or auto-detection.
+pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Result<String, String> {
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
             &crate::offline_queue::OfflineTaskType::DailySummary,
@@ -34,7 +37,8 @@ pub async fn generate_daily_summary_service() -> Result<String, String> {
 
     let settings = crate::memory_storage::get_settings_sync()
         .map_err(|e| format!("Failed to get settings: {}", e))?;
-    let obsidian_path = settings.get_obsidian_output_path()?;
+    let auto_detect = settings.auto_detect_vault_by_window.unwrap_or(false);
+    let obsidian_path = settings.get_effective_vault(vault_name.as_deref(), auto_detect)?;
     let api_config = crate::synthesis::load_api_config(&settings)
         .map_err(|e| format!("Failed to load API config: {}", e))?;
 
