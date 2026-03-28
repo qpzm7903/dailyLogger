@@ -507,5 +507,21 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
 
+    // DEBT-001: Ensure test isolation by clearing data tables after schema creation.
+    // This prevents leftover data from previous tests affecting current test results.
+    // Tables are recreated above, so this only clears data, not schema.
+    let _ = conn.execute("DELETE FROM records", []);
+    let _ = conn.execute("DELETE FROM sessions", []);
+    let _ = conn.execute("DELETE FROM manual_tags", []);
+    let _ = conn.execute("DELETE FROM record_manual_tags", []);
+    let _ = conn.execute("DELETE FROM offline_queue", []);
+    let _ = conn.execute("DELETE FROM silent_pattern_stats", []);
+    let _ = conn.execute("DELETE FROM work_time_activity", []);
+    let _ = conn.execute("DELETE FROM schema_migrations", []);
+    let _ = conn.execute("DELETE FROM schema_version", []);
+    // Reset settings to default (keep row with id=1)
+    let _ = conn.execute("DELETE FROM settings WHERE id != 1", []);
+    let _ = conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", []);
+
     Ok(())
 }

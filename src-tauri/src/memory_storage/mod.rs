@@ -705,6 +705,7 @@ pub async fn get_statistics(
 #[cfg(test)]
 mod tests_statistics {
     use super::*;
+    use serial_test::serial;
 
     #[test]
     fn test_get_last_day_of_month() {
@@ -748,19 +749,10 @@ mod tests_statistics {
     // Note: These tests require the #[tokio::test] macro since get_statistics is async
 
     #[test]
+    #[serial]
     fn test_get_statistics_empty_database() {
-        use crate::memory_storage::schema::init_test_database;
-        use rusqlite::Connection;
-
-        // Create in-memory database for testing
-        let conn = Connection::open_in_memory().unwrap();
-        init_test_database(&conn).unwrap();
-
-        // Set up global DB connection
-        {
-            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
-            *db = Some(conn);
-        }
+        // Use unified test database setup
+        crate::memory_storage::setup_test_db_with_schema();
 
         // Get today's range
         let (start, end) = get_today_range();
@@ -806,20 +798,12 @@ mod tests_statistics {
     }
 
     #[test]
+    #[serial]
     fn test_get_statistics_with_data() {
-        use crate::memory_storage::schema::init_test_database;
         use rusqlite::params;
-        use rusqlite::Connection;
 
-        // Create in-memory database for testing
-        let conn = Connection::open_in_memory().unwrap();
-        init_test_database(&conn).unwrap();
-
-        // Set up global DB connection
-        {
-            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
-            *db = Some(conn);
-        }
+        // Use unified test database setup
+        crate::memory_storage::setup_test_db_with_schema();
 
         // Use fixed date strings to avoid timezone-dependent failures on Windows CI
         // The test date 2026-03-27 is arbitrary but stable across all timezones
@@ -882,20 +866,12 @@ mod tests_statistics {
     }
 
     #[test]
+    #[serial]
     fn test_get_statistics_with_sessions() {
-        use crate::memory_storage::schema::init_test_database;
         use rusqlite::params;
-        use rusqlite::Connection;
 
-        // Create in-memory database for testing
-        let conn = Connection::open_in_memory().unwrap();
-        init_test_database(&conn).unwrap();
-
-        // Set up global DB connection
-        {
-            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
-            *db = Some(conn);
-        }
+        // Use unified test database setup
+        crate::memory_storage::setup_test_db_with_schema();
 
         // Get today's range first to ensure consistent date
         let (start, end) = get_today_range();
@@ -937,20 +913,12 @@ mod tests_statistics {
     }
 
     #[test]
+    #[serial]
     fn test_get_statistics_analysis_success_rate() {
-        use crate::memory_storage::schema::init_test_database;
         use rusqlite::params;
-        use rusqlite::Connection;
 
-        // Create in-memory database for testing
-        let conn = Connection::open_in_memory().unwrap();
-        init_test_database(&conn).unwrap();
-
-        // Set up global DB connection
-        {
-            let mut db = crate::memory_storage::DB_CONNECTION.lock().unwrap();
-            *db = Some(conn);
-        }
+        // Use unified test database setup
+        crate::memory_storage::setup_test_db_with_schema();
 
         // Get today's range first to ensure we use the same date
         let (start, end) = get_today_range();
