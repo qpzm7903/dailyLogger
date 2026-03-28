@@ -233,7 +233,7 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.7.0
+**最新版本**: v3.7.1
 - 标签管理增强：标签颜色后端化，支持配置和自动分配
 - 后端 `get_tag_colors()` / `set_tag_color()` 命令
 - 三级回退逻辑：缓存 → 默认颜色表 → 哈希分配
