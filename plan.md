@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
-> 最后更新: 2026-03-27
-> 当前版本: v3.5.0（架构收口二期）
+> 最后更新: 2026-03-28
+> 当前版本: v3.5.1（启动崩溃补丁）
 > 下一版本: v3.6.0（架构收口三期）
 > 当前 Milestone: 架构收口与可维护性重构（v3.4.0 ~ v3.6.0）
 
@@ -53,6 +53,28 @@
 - `src-tauri/src/commands/` 包含所有 `#[tauri::command]` 入口函数
 - `src-tauri/src/services/` 包含各领域业务逻辑
 - 新增功能时，修改范围可控制在单一 service 内
+
+### v3.5.1（启动崩溃补丁）🚧 进行中
+
+**目标**: 修复 v3.5.0 Windows 启动崩溃问题。
+
+**版本类型**: PATCH（缺陷修复）
+
+**问题**:
+- `auto_backup_scheduler::start_scheduler()` 在 `init_app()` 中调用 `tokio::spawn()`
+- 但此时 Tokio runtime 尚未初始化（runtime 在 Tauri builder.run() 时才创建）
+- 导致 "there is no reactor running" 错误
+
+**修复方案**:
+- 将 `start_scheduler()` 和 `check_and_run_startup_backup()` 移至 Tauri setup 阶段
+- setup 回调执行时 Tokio runtime 已经就绪
+
+**版本文件更新**:
+- [x] `package.json`
+- [x] `src-tauri/Cargo.toml`
+- [x] `src-tauri/tauri.conf.json`
+- [x] `plan.md`
+- [x] `README.md`（无版本变更，无需更新）
 
 ### 未来 Milestone 概要
 
