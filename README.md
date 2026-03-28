@@ -233,14 +233,17 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.2.0
-- AI 代理配置支持：为 AI API 请求添加代理配置，支持企业防火墙场景和代理认证（PERF-001）
-- 新增 proxy_enabled、proxy_host、proxy_port、proxy_username、proxy_password 字段
-- 新增 test_model_name 字段，测试连接时优先使用
-- 前端 BasicSettings 添加可折叠代理配置面板
+**最新版本**: v3.6.0
+- 架构收口三期：统一 Settings/Record 契约、AppError 结构化错误模型、infrastructure/state.rs 文档规范
+- ARCH-010 架构约束文档：明确命令层 vs service 层边界规则
 
-**v3.1.1（CI 修复）**:
-- CI 修复：修复 Build and Release workflow 中 publish-release job 缺少 checkout 步骤导致 v3.1.0 release publish 失败的问题
+**v3.5.0（架构收口二期）**:
+- 抽取 Settings/Session/Report/Capture 四个领域 service 边界
+- 命令层重构为薄 IPC 适配器，业务逻辑下沉到 services
+- 补齐回归基线：486 Rust 测试 + 964 前端测试全部通过
+
+**v3.5.1（CI 修复）**:
+- 修复 v3.5.0 Windows 启动崩溃问题（move scheduler start to Tauri setup phase）
 
 **v3.0.0（工作时段感知分析 + GitHub 移除）**:
 - 工作时段感知分析：捕获与分析解耦、时段批量上下文分析、用户编辑功能
