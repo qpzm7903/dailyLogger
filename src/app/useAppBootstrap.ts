@@ -24,6 +24,7 @@ import { initTheme } from '../theme'
 import { initToastI18n } from '../stores/toast'
 import { loadLanguageFromBackend } from '../i18n'
 import { showError, showSuccess } from '../stores/toast'
+import { fetchTagColors } from '../composables/useTagColors'
 import type { LogRecord, Settings, Tag } from '../types/tauri'
 import type { ModalId } from '../composables/useModal'
 
@@ -254,10 +255,11 @@ export function useAppBootstrap(options: BootstrapOptions): UseAppBootstrapRetur
       }
     }
 
-    // Load settings, language, and records
+    // Load settings, language, records, and tag colors
     await loadSettings()
     await loadLanguageFromBackend()
     await loadTodayRecords()
+    await fetchTagColors()
     await checkOnboarding()
   }
 

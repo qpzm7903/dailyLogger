@@ -3,9 +3,12 @@
  *
  * This module provides consistent tag color styling across the application.
  * It replaces the hardcoded tagColors in App.vue with a centralized color system.
+ * Tag colors for manual tags are fetched from the backend and cached.
+ * AI-generated tags use the DEFAULT_CATEGORY_COLOR_MAP for backwards compatibility.
  */
 
 import { PRESET_TAG_COLORS } from './tags'
+import { getTagColorFromCache } from '../composables/useTagColors'
 
 /**
  * Tailwind CSS classes for each preset color (static variant - no hover)
@@ -66,6 +69,7 @@ const DEFAULT_CATEGORY_COLOR_MAP: Record<string, string> = {
 
 /**
  * Get color name for a tag name
+ * - First checks the backend cache for manual tag colors
  * - If the tag is in DEFAULT_TAG_CATEGORIES, returns its assigned color
  * - Otherwise, generates a consistent color based on the tag name hash
  *
@@ -73,12 +77,18 @@ const DEFAULT_CATEGORY_COLOR_MAP: Record<string, string> = {
  * @returns The color name (e.g., "blue", "purple")
  */
 export function getTagColorName(tagName: string): string {
-  // Check if it's a default category with assigned color
+  // Check if it's a manual tag with backend-assigned color
+  const cachedColor = getTagColorFromCache(tagName)
+  if (cachedColor) {
+    return cachedColor
+  }
+
+  // Check if it's a default category with assigned color (AI-generated tags)
   if (DEFAULT_CATEGORY_COLOR_MAP[tagName]) {
     return DEFAULT_CATEGORY_COLOR_MAP[tagName]
   }
 
-  // Generate consistent color based on tag name hash
+  // Generate consistent color based on tag name hash (fallback for unknown tags)
   const colors = PRESET_TAG_COLORS
   let hash = 0
   for (let i = 0; i < tagName.length; i++) {

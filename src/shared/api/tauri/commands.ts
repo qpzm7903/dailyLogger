@@ -26,6 +26,8 @@ export const TAG_COMMANDS = {
   ADD_TAG_TO_RECORD: 'add_tag_to_record',
   REMOVE_TAG_FROM_RECORD: 'remove_tag_from_record',
   DELETE_MANUAL_TAG: 'delete_manual_tag',
+  GET_TAG_COLORS: 'get_tag_colors',
+  SET_TAG_COLOR: 'set_tag_color',
 } as const
 
 // Session commands
