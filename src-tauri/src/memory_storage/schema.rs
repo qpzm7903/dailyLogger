@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use crate::crypto;
 
 use super::DB_CONNECTION;
+use super::migration::{self, CURRENT_SCHEMA_VERSION};
 
 fn get_db_path() -> PathBuf {
     crate::get_app_data_dir().join("data").join("local.db")
@@ -44,6 +45,15 @@ pub fn init_database() -> Result<(), String> {
     })?;
     crate::write_diagnostic_file("init_database: Database connection opened");
     tracing::info!("init_database: Database connection opened");
+
+    // Initialize schema version tracking
+    migration::init_schema_version_table(&conn)?;
+    let current_version = migration::get_current_version(&conn)?;
+    tracing::info!(
+        "init_database: Current schema version: {}, target: {}",
+        current_version,
+        CURRENT_SCHEMA_VERSION
+    );
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS records (
@@ -549,6 +559,37 @@ pub fn init_database() -> Result<(), String> {
     migrate_plain_api_key_with_conn(&conn)?;
     crate::write_diagnostic_file("init_database: API key migration complete");
     tracing::info!("init_database: API key migration complete");
+
+    // Update schema version to track migrations applied by legacy ALTER TABLE statements
+    // This ensures new migration system knows current state
+    if current_version < CURRENT_SCHEMA_VERSION {
+        let applied_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+
+        conn.execute(
+            "UPDATE schema_version SET version = ?1, updated_at = ?2 WHERE id = 1",
+            params![CURRENT_SCHEMA_VERSION, applied_at],
+        )
+        .map_err(|e| format!("Failed to update schema version: {}", e))?;
+
+        // Record that we've applied all legacy migrations
+        conn.execute(
+            "INSERT OR IGNORE INTO schema_migrations (version, description, applied_at) VALUES (?1, ?2, ?3)",
+            params![
+                CURRENT_SCHEMA_VERSION,
+                "Legacy migrations applied via schema.rs init_database",
+                applied_at
+            ],
+        )
+        .ok(); // Ignore if already exists
+
+        tracing::info!(
+            "init_database: Updated schema version to {} (legacy migrations)",
+            CURRENT_SCHEMA_VERSION
+        );
+    }
 
     crate::write_diagnostic_file("init_database: Acquiring DB connection lock");
     let mut db = DB_CONNECTION.lock().map_err(|e| {

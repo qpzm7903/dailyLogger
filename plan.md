@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-28
-> 当前版本: v3.9.0（已完成）
+> 当前版本: v3.10.0（已完成）
 > 下一版本: v4.0.0（规划中）
 > 当前 Milestone: v4.0.0 规划中
 
@@ -150,6 +150,30 @@
 - ✅ VAULT-001 Task 2: Rust 后端 - generate_daily_summary 支持 vault 参数
 - ✅ VAULT-001 Task 3: Rust 后端 - 基于窗口标题的自动 Vault 选择
 - ✅ VAULT-001 Task 4: 前端 - ReportDropdown 添加 Vault 选择器
+
+---
+
+### v3.10.0（技术债务清偿 - DEBT-002）✅ 完成
+
+**目标**: 建立带版本追踪的数据库迁移机制，确保 schema 变更在不同升级场景下可靠应用。
+
+**版本类型**: PATCH（技术债务修复）
+
+**完成内容**:
+
+| ID | 任务 | 优先级 | 状态 |
+|----|------|--------|------|
+| DEBT-002 | 数据库版本迁移机制 | P1 | ✅ 已完成 |
+
+**DEBT-002 修复内容**:
+- 新增 `src-tauri/src/memory_storage/migration.rs` 模块
+- 创建 `schema_version` 表追踪当前数据库版本
+- 创建 `schema_migrations` 表记录迁移历史
+- 实现 `Migration` 结构体支持结构化迁移
+- 实现幂等迁移执行器：`run_migrations()`
+- 提供版本查询函数：`get_current_version()`、`get_migration_history()`
+- 添加 5 个迁移相关测试，验证版本追踪和幂等性
+- 508 Rust 测试 + 964 前端测试全部通过
 
 ---
 

@@ -176,6 +176,6 @@ development_status:
   # Epic 13: 技术债务清偿 (DEBT)
   epic-13: in-progress
   DEBT-001: done  # Unified test db schema - refactoring complete 2026-03-28
-  DEBT-002: backlog
+  DEBT-002: done  # Database version migration mechanism - 2026-03-28
   DEBT-003: backlog
   epic-13-retrospective: optional
