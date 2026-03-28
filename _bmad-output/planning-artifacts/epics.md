@@ -82,7 +82,7 @@ TD5: 游标分页前端集成 - PERF-004 API 准备就绪但前端未使用 (Med
 
 ## Epic List
 
-### Epic 12: 多维度输出与标签管理 (OUTPUT)
+### Epic 12: 多维度输出与标签管理 (OUTPUT) ✅ 完成 (v3.7.1-v3.9.0)
 
 **Goal:** 扩展输出能力，支持多 Vault、标签分类和数据导出，让用户更好地组织和复用工作记录
 
@@ -90,13 +90,13 @@ TD5: 游标分页前端集成 - PERF-004 API 准备就绪但前端未使用 (Med
 
 **Stories:**
 
-- [x] VAULT-001: 多 Obsidian Vault 支持
-- [x] TAG-001: 统一标签系统
-- [x] EXPORT-001: 数据导出功能 (JSON/Markdown)
+- [x] VAULT-001: 多 Obsidian Vault 支持 ✅ (v3.9.0)
+- [x] TAG-001: 统一标签系统 ✅ (v3.7.1)
+- [x] EXPORT-001: 数据导出功能 (JSON/Markdown) ✅ (v3.8.0)
 
 ---
 
-### Epic 13: 技术债务清偿 (DEBT)
+### Epic 13: 技术债务清偿 (DEBT) ✅ 完成 (v4.0.0)
 
 **Goal:** 清偿关键技术债务，提升代码质量、测试覆盖和长期可维护性
 
@@ -104,126 +104,16 @@ TD5: 游标分页前端集成 - PERF-004 API 准备就绪但前端未使用 (Med
 
 **Stories:**
 
-- [x] DEBT-001: 测试数据库 schema 统一
-- [x] DEBT-002: 数据库版本迁移机制
-- [x] DEBT-003: 组件颜色迁移到 CSS 变量
+- [x] DEBT-001: 测试数据库 schema 统一 ✅ (v4.0.0)
+- [x] DEBT-002: 数据库版本迁移机制 ✅ (v4.0.0)
+- [x] DEBT-003: 组件颜色迁移到 CSS 变量 ✅ (v4.0.0)
 
 ---
 
-## Epic 12: 多维度输出与标签管理 (OUTPUT)
+## v4.1.0 规划中 (待启动)
 
-**Goal:** 扩展输出能力，支持多 Vault、标签分类和数据导出，让用户更好地组织和复用工作记录
+**候选方向:**
+- 前端组件测试覆盖率提升
+- FEAT-001 截图重新分析功能
+- 其他用户体验优化
 
-### Story 12.1: VAULT-001 - 多 Obsidian Vault 支持
-
-As a software developer who works on multiple projects,
-I want to output daily reports to different Obsidian Vaults based on the project I'm working on,
-So that I can keep work records organized by project context.
-
-**Acceptance Criteria:**
-
-**Given** 用户配置了多个 Obsidian Vault 路径，When 生成日报，Then 可以选择目标 Vault
-
-**Given** 用户在设置中启用了项目检测（如通过窗口标题），When 自动生成日报，Then 自动输出到对应项目的 Vault
-
-**Given** 用户手动选择 Vault，When 点击生成日报，Then 输出到用户指定的 Vault
-
-**Given** 单个 Vault 配置，When 使用应用，Then 行为与之前一致（向后兼容）
-
----
-
-### Story 12.2: TAG-001 - 统一标签系统
-
-As a knowledge worker,
-I want to add tags to my records,
-So that I can categorize and quickly find related work entries across different days.
-
-**Acceptance Criteria:**
-
-**Given** 用户查看单条记录，When 点击添加标签，Then 可以输入或选择标签
-
-**Given** 用户添加标签，When 保存，Then 标签持久化到数据库
-
-**Given** 用户在截图查看页面，When 添加/编辑标签，Then 标签与该截图记录关联
-
-**Given** 用户在时段摘要页面，When 添加/编辑标签，Then 标签与该时段关联
-
-**Given** 标签系统存在，When 用户开始输入，Then 显示已有标签的自动补全建议
-
-**Given** AI-004 和 DATA-003 的标签数据结构不一致，When 实现 TAG-001，Then 统一使用单一标签存储方案
-
----
-
-### Story 12.3: EXPORT-001 - 数据导出功能
-
-As a user who wants to backup my data,
-I want to export my records in JSON and Markdown formats,
-So that I can create backups or migrate data to other systems.
-
-**Acceptance Criteria:**
-
-**Given** 用户在设置中打开导出功能，When 点击导出，Then 可以选择日期范围
-
-**Given** 用户选择日期范围，When 点击导出 JSON，Then 生成包含所有记录（含截图路径）的 JSON 文件
-
-**Given** 用户选择日期范围，When 点击导出 Markdown，Then 生成包含所有记录的可读 Markdown 文件
-
-**Given** 导出大文件时，When 导出进行中，Then 显示进度条
-
-**Given** 导出过程中，When 发生错误，Then 显示具体错误信息并允许重试
-
----
-
-## Epic 13: 技术债务清偿 (DEBT)
-
-**Goal:** 清偿关键技术债务，提升代码质量、测试覆盖和长期可维护性
-
-### Story 13.1: DEBT-001 - 测试数据库 schema 统一
-
-As a developer,
-I want a unified test database initialization mechanism,
-So that all tests use a consistent schema and we avoid schema drift.
-
-**Acceptance Criteria:**
-
-**Given** 测试运行，When 测试需要数据库，Then 使用 `setup_test_db_with_schema()` 初始化一致 schema
-
-**Given** schema 变更，When 新测试运行，Then `setup_test_db_with_schema()` 自动应用最新 schema
-
-**Given** 已有测试，When 重构为使用新机制，Then 所有 27+ 受影响测试更新完成
-
----
-
-### Story 13.2: DEBT-002 - 数据库版本迁移机制
-
-As a developer,
-I want a database migration mechanism with version tracking,
-So that schema changes are applied reliably across upgrades.
-
-**Acceptance Criteria:**
-
-**Given** 应用启动，When 数据库版本低于当前版本，Then 自动执行迁移脚本
-
-**Given** 迁移执行，When 迁移成功，Then 更新 schema_version 表
-
-**Given** 迁移执行，When 迁移失败，Then 回滚并显示错误日志
-
-**Given** settings 表有 15+ 字段，When 执行迁移，Then 使用幂等模式避免重复添加字段
-
----
-
-### Story 13.3: DEBT-003 - 组件颜色迁移到 CSS 变量
-
-As a developer,
-I want all UI components to use CSS variables instead of hardcoded colors,
-So that the light/dark theme system works completely and consistently.
-
-**Acceptance Criteria:**
-
-**Given** 371 处硬编码颜色引用，When 重构，Then 所有引用迁移到 CSS 变量（`--color-*`）
-
-**Given** 浅色主题启用，When 用户切换主题，Then 所有组件颜色正确切换
-
-**Given** 深色主题启用，When 用户切换主题，Then 所有组件颜色正确切换
-
-**Given** 颜色迁移完成，When UI 验收，Then 无视觉回归
