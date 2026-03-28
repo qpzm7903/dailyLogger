@@ -14,9 +14,9 @@ use crate::services::capture_service::{
     get_auto_capture_status_service, get_default_analysis_prompt_service,
     get_quality_filter_stats_service, get_work_time_status_service, reanalyze_record_service,
     reanalyze_records_by_date_service, reanalyze_today_records_service,
-    reset_quality_filter_counter_service,
-    start_auto_capture_service, stop_auto_capture_service, take_screenshot_service,
-    trigger_capture_service, CaptureSettings, QualityFilterStats, ReanalyzeResult, ScreenAnalysis,
+    reset_quality_filter_counter_service, start_auto_capture_service, stop_auto_capture_service,
+    take_screenshot_service, trigger_capture_service, CaptureSettings, QualityFilterStats,
+    ReanalyzeResult, ScreenAnalysis,
 };
 use crate::work_time::WorkTimeStatus;
 use std::time::Duration;

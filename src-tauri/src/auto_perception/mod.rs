@@ -1180,10 +1180,12 @@ async fn capture_and_store() -> Result<(), String> {
 #[cfg(all(test, feature = "screenshot"))]
 mod tests {
     use super::*;
+    use crate::commands::{
+        get_auto_capture_status, get_default_analysis_prompt, get_work_time_status,
+    };
+    use crate::services::is_auto_capture_running;
     use base64::Engine;
     use serial_test::serial;
-    use crate::commands::{get_auto_capture_status, get_default_analysis_prompt, get_work_time_status};
-    use crate::services::is_auto_capture_running;
 
     fn make_minimal_png_base64() -> String {
         // 1×1 transparent PNG (RGBA)
