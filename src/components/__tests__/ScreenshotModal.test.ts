@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ScreenshotModal from '../ScreenshotModal.vue'
 
@@ -8,16 +8,40 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()
 }))
 
+// Mock toast
+vi.mock('../../stores/toast', () => ({
+  showToast: vi.fn()
+}))
+
+// Mock captureActions
+vi.mock('../../features/capture/actions', () => ({
+  captureActions: {
+    getScreenshot: vi.fn(),
+    reanalyzeRecord: vi.fn()
+  }
+}))
+
+// Mock recordsActions
+vi.mock('../../features/records/actions', () => ({
+  recordsActions: {
+    updateRecordUserNotes: vi.fn()
+  }
+}))
+
 import { invoke } from '@tauri-apps/api/core'
+import { showToast } from '../../stores/toast'
+import { captureActions } from '../../features/capture/actions'
+import { recordsActions } from '../../features/records/actions'
 
 describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     invoke.mockResolvedValue('data:image/png;base64,mockBase64Data')
+    captureActions.getScreenshot.mockResolvedValue('data:image/png;base64,mockBase64Data')
   })
 
-  describe('AC1 - Window info in record details', () => {
-    it('displays window title in details section when active_window exists', async () => {
+  describe('Window info in record details', () => {
+    it('displays window title when active_window exists', async () => {
       const record = {
         id: 1,
         timestamp: '2026-03-15T10:00:00Z',
@@ -44,12 +68,11 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
       await nextTick()
 
-      // Check that window title is displayed in details
       const html = wrapper.html()
       expect(html).toContain('main.rs - DailyLogger - VS Code')
     })
 
-    it('displays process name (app name) in details section', async () => {
+    it('displays process name when active_window exists', async () => {
       const record = {
         id: 1,
         timestamp: '2026-03-15T10:00:00Z',
@@ -76,12 +99,11 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
       await nextTick()
 
-      // Check that process name is displayed
       const html = wrapper.html()
       expect(html).toContain('idea64')
     })
 
-    it('shows window info section label', async () => {
+    it('shows window info section label when window info exists', async () => {
       const record = {
         id: 1,
         timestamp: '2026-03-15T10:00:00Z',
@@ -108,7 +130,6 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
       await nextTick()
 
-      // Check for window info section label
       const html = wrapper.html()
       expect(html).toContain('Window')
     })
@@ -123,7 +144,6 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
           current_focus: 'Working on code',
           active_software: 'VS Code',
           context_keywords: ['code']
-          // No active_window field
         })
       }
 
@@ -137,7 +157,6 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
       await nextTick()
 
-      // Window info section should not exist
       const windowInfoSection = wrapper.find('.window-info-section')
       expect(windowInfoSection.exists()).toBe(false)
     })
@@ -169,11 +188,10 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
       await nextTick()
 
-      // Should not crash and window info section should be hidden
       expect(wrapper.html()).toContain('Screenshot Details')
     })
 
-    it('displays window info with icon', async () => {
+    it('displays window icon based on process name', async () => {
       const record = {
         id: 1,
         timestamp: '2026-03-15T10:00:00Z',
@@ -201,13 +219,12 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
 
       const html = wrapper.html()
-      // Should have an icon element (emoji or otherwise) with window info
       expect(html).toContain('Google - Chrome')
       expect(html).toContain('chrome')
     })
   })
 
-  describe('parseContent with window info', () => {
+  describe('parseContent', () => {
     it('parses content JSON correctly with active_window', async () => {
       const record = {
         id: 1,
@@ -236,7 +253,6 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
 
       const html = wrapper.html()
-      // Should show the parsed content
       expect(html).toContain('Writing documentation')
       expect(html).toContain('Typora')
       expect(html).toContain('README.md - Typora')
@@ -261,8 +277,346 @@ describe('ScreenshotModal - Window Info Display (SMART-001 Task 6)', () => {
       await nextTick()
       await nextTick()
 
-      // Should show raw content when JSON parsing fails
       expect(wrapper.html()).toContain('This is not valid JSON')
     })
+  })
+})
+
+describe('ScreenshotModal - FEAT-001 Reanalyze', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    captureActions.getScreenshot.mockResolvedValue('data:image/png;base64,mockBase64Data')
+  })
+
+  const mockRecord = {
+    id: 1,
+    timestamp: '2026-03-28T10:00:00Z',
+    source_type: 'auto' as const,
+    content: JSON.stringify({
+      current_focus: 'Working on Rust code',
+      active_software: 'VSCode',
+      context_keywords: ['rust', 'testing']
+    }),
+    screenshot_path: '/path/to/screenshot.png',
+    user_notes: null
+  }
+
+  it('shows reanalyze button', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const reanalyzeButton = buttons.find(b => b.text().includes('Reanalyze'))
+    expect(reanalyzeButton).toBeTruthy()
+  })
+
+  it('calls reanalyzeRecord when button clicked', async () => {
+    captureActions.reanalyzeRecord.mockResolvedValue({
+      current_focus: 'Reanalyzed focus',
+      active_software: 'NewSoftware',
+      context_keywords: ['new', 'keywords']
+    })
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const reanalyzeButton = buttons.find(b => b.text().includes('Reanalyze'))
+    await reanalyzeButton.trigger('click')
+    await flushPromises()
+
+    expect(captureActions.reanalyzeRecord).toHaveBeenCalledWith(1)
+  })
+
+  it('shows success toast after successful reanalyze', async () => {
+    captureActions.reanalyzeRecord.mockResolvedValue({
+      current_focus: 'Reanalyzed focus',
+      active_software: 'NewSoftware',
+      context_keywords: ['new', 'keywords']
+    })
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const reanalyzeButton = buttons.find(b => b.text().includes('Reanalyze'))
+    await reanalyzeButton.trigger('click')
+    await flushPromises()
+
+    expect(showToast).toHaveBeenCalledWith('Reanalysis complete', { type: 'success' })
+  })
+
+  it('emits updated event after successful reanalyze', async () => {
+    const newAnalysis = {
+      current_focus: 'Reanalyzed focus',
+      active_software: 'NewSoftware',
+      context_keywords: ['new', 'keywords']
+    }
+    captureActions.reanalyzeRecord.mockResolvedValue(newAnalysis)
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const reanalyzeButton = buttons.find(b => b.text().includes('Reanalyze'))
+    await reanalyzeButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('updated')).toBeTruthy()
+    const updatedEvent = wrapper.emitted('updated')[0][0]
+    expect(updatedEvent.content).toBe(JSON.stringify(newAnalysis))
+  })
+
+  it('shows error toast when reanalyze fails', async () => {
+    captureActions.reanalyzeRecord.mockRejectedValue(new Error('API Error'))
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const reanalyzeButton = buttons.find(b => b.text().includes('Reanalyze'))
+    await reanalyzeButton.trigger('click')
+    await flushPromises()
+
+    expect(showToast).toHaveBeenCalled()
+    const toastCall = showToast.mock.calls[0]
+    expect(toastCall[1].type).toBe('error')
+  })
+
+  it('disables reanalyze button while reanalyzing', async () => {
+    captureActions.reanalyzeRecord.mockReturnValue(new Promise(() => {}))
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const reanalyzeButton = buttons.find(b => b.text().includes('Reanalyze'))
+    await reanalyzeButton.trigger('click')
+    await nextTick()
+
+    const disabledButton = wrapper.find('button:disabled')
+    expect(disabledButton.exists()).toBe(true)
+  })
+})
+
+describe('ScreenshotModal - FEAT-005 User Notes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    captureActions.getScreenshot.mockResolvedValue('data:image/png;base64,mockBase64Data')
+  })
+
+  const mockRecord = {
+    id: 1,
+    timestamp: '2026-03-28T10:00:00Z',
+    source_type: 'auto' as const,
+    content: JSON.stringify({
+      current_focus: 'Working on Rust code',
+      active_software: 'VSCode',
+      context_keywords: ['rust', 'testing']
+    }),
+    screenshot_path: '/path/to/screenshot.png',
+    user_notes: null
+  }
+
+  it('displays user notes textarea', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const textarea = wrapper.find('textarea')
+    expect(textarea.exists()).toBe(true)
+  })
+
+  it('saves user notes successfully', async () => {
+    recordsActions.updateRecordUserNotes.mockResolvedValue(undefined)
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const textarea = wrapper.find('textarea')
+    await textarea.setValue('New note content')
+    await wrapper.vm.$nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const saveButton = buttons.find(b => b.text().includes('Save'))
+    expect(saveButton).toBeTruthy()
+    await saveButton.trigger('click')
+    await flushPromises()
+
+    expect(recordsActions.updateRecordUserNotes).toHaveBeenCalledWith(1, 'New note content')
+    expect(showToast).toHaveBeenCalledWith('Notes saved', { type: 'success' })
+  })
+
+  it('emits updated event after saving notes', async () => {
+    recordsActions.updateRecordUserNotes.mockResolvedValue(undefined)
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const textarea = wrapper.find('textarea')
+    await textarea.setValue('New note content')
+    await wrapper.vm.$nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const saveButton = buttons.find(b => b.text().includes('Save'))
+    await saveButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('updated')).toBeTruthy()
+  })
+
+  it('shows error toast when saving notes fails', async () => {
+    recordsActions.updateRecordUserNotes.mockRejectedValue(new Error('Save failed'))
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const textarea = wrapper.find('textarea')
+    await textarea.setValue('New note content')
+    await wrapper.vm.$nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const saveButton = buttons.find(b => b.text().includes('Save'))
+    await saveButton.trigger('click')
+    await flushPromises()
+
+    expect(showToast).toHaveBeenCalled()
+    const toastCall = showToast.mock.calls[0]
+    expect(toastCall[1].type).toBe('error')
+  })
+})
+
+describe('ScreenshotModal - General', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    captureActions.getScreenshot.mockResolvedValue('data:image/png;base64,mockBase64Data')
+  })
+
+  const mockRecord = {
+    id: 1,
+    timestamp: '2026-03-28T10:00:00Z',
+    source_type: 'auto' as const,
+    content: JSON.stringify({
+      current_focus: 'Working on Rust code',
+      active_software: 'VSCode',
+      context_keywords: ['rust', 'testing'],
+      active_window: {
+        title: 'test.rs - VSCode',
+        process_name: 'Code'
+      }
+    }),
+    screenshot_path: '/path/to/screenshot.png',
+    user_notes: null
+  }
+
+  it('emits close event when close button clicked', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const buttons = wrapper.findAll('button')
+    const closeButton = buttons.find(b => b.text().includes('✕'))
+    await closeButton.trigger('click')
+
+    expect(wrapper.emitted('close')).toBeTruthy()
+  })
+
+  it('loads screenshot on mount', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    expect(captureActions.getScreenshot).toHaveBeenCalledWith('/path/to/screenshot.png')
+  })
+
+  it('displays parsed content from record', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    expect(wrapper.html()).toContain('Working on Rust code')
+    expect(wrapper.html()).toContain('VSCode')
+  })
+
+  it('displays window icon for VSCode', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    expect(wrapper.text()).toContain('💻')
+  })
+
+  it('closes modal when clicking outside', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const overlay = wrapper.find('.fixed.inset-0.bg-black\\/80')
+    await overlay.trigger('click.self')
+
+    expect(wrapper.emitted('close')).toBeTruthy()
+  })
+
+  it('formats timestamp correctly', async () => {
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: mockRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const formatted = wrapper.vm.formatTime('2026-03-28T10:00:00Z')
+    expect(formatted).toMatch(/2026/)
+    expect(formatted).toMatch(/28/)
+  })
+
+  it('handles non-JSON content gracefully', async () => {
+    const plainContentRecord = { ...mockRecord, content: 'Plain text content' }
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: plainContentRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const parsed = wrapper.vm.parseContent('Plain text content')
+    expect(parsed).toBe('Plain text content')
   })
 })
