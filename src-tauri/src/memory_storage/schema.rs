@@ -55,6 +55,81 @@ pub fn init_database() -> Result<(), String> {
         CURRENT_SCHEMA_VERSION
     );
 
+    // Check if migrations have already been recorded
+    let migrations_exist = {
+        let mut stmt = conn
+            .prepare("SELECT COUNT(*) FROM schema_migrations")
+            .map_err(|e| format!("Failed to prepare migration check: {}", e))?;
+        let count: i32 = stmt
+            .query_row([], |row| row.get(0))
+            .map_err(|e| format!("Failed to query migrations: {}", e))?;
+        count > 0
+    };
+
+    // For databases with version at CURRENT_SCHEMA_VERSION, ensure migrations are recorded
+    // This handles databases created by legacy code where version was bumped but migration wasn't recorded
+    if migrations_exist && current_version >= CURRENT_SCHEMA_VERSION {
+        tracing::info!(
+            "init_database: Migrations exist and version is current ({}), no action needed",
+            current_version
+        );
+    } else if migrations_exist && current_version < CURRENT_SCHEMA_VERSION {
+        // Migrations recorded but version behind - this shouldn't happen normally
+        // but we can recover by running migrations
+        tracing::info!(
+            "init_database: Migrations exist but version is behind, running migrations to fix"
+        );
+        migration::run_migrations(&conn)?;
+    } else {
+        // No migrations recorded - this is either a new database or a legacy database
+        // Check if this is a new database by looking for existing schema
+        let table_exists = {
+            let mut stmt = conn
+                .prepare("PRAGMA table_info(records)")
+                .map_err(|e| format!("Failed to prepare table check: {}", e))?;
+            let mut rows = stmt
+                .query([])
+                .map_err(|e| format!("Failed to query table info: {}", e))?;
+            // If we can iterate and get at least one column (id), table exists
+            rows.next()
+                .map_err(|e| format!("Query error: {}", e))?
+                .is_some()
+        };
+
+        if !table_exists {
+            // New database - run migrations to create schema
+            tracing::info!("init_database: New database detected, running migrations");
+            migration::run_migrations(&conn)?;
+        } else {
+            // Existing database with legacy schema - record migration without re-running
+            // (the schema was created by legacy ALTER TABLE statements)
+            tracing::info!(
+                "init_database: Legacy database detected (version={}, no migration record), recording migration",
+                current_version
+            );
+            let applied_at = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0);
+
+            conn.execute(
+                "UPDATE schema_version SET version = ?1, updated_at = ?2 WHERE id = 1",
+                params![CURRENT_SCHEMA_VERSION, applied_at],
+            )
+            .map_err(|e| format!("Failed to update schema version: {}", e))?;
+
+            conn.execute(
+                "INSERT OR IGNORE INTO schema_migrations (version, description, applied_at) VALUES (?1, ?2, ?3)",
+                params![
+                    CURRENT_SCHEMA_VERSION,
+                    "Legacy migrations applied via schema.rs init_database",
+                    applied_at
+                ],
+            )
+            .map_err(|e| format!("Failed to record migration: {}", e))?;
+        }
+    }
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
