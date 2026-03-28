@@ -233,9 +233,15 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.6.0
-- 架构收口三期：统一 Settings/Record 契约、AppError 结构化错误模型、infrastructure/state.rs 文档规范
-- ARCH-010 架构约束文档：明确命令层 vs service 层边界规则
+**最新版本**: v3.7.0
+- 标签管理增强：标签颜色后端化，支持配置和自动分配
+- 后端 `get_tag_colors()` / `set_tag_color()` 命令
+- 三级回退逻辑：缓存 → 默认颜色表 → 哈希分配
+
+**v3.6.0（架构收口三期）**:
+- 统一前后端契约：修复 Settings 和 LogRecord 类型定义
+- 建立结构化错误模型：AppError 枚举和统一错误处理
+- 收敛全局状态：建立 infrastructure/state.rs 文档规范
 
 **v3.5.0（架构收口二期）**:
 - 抽取 Settings/Session/Report/Capture 四个领域 service 边界
