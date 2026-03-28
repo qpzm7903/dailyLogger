@@ -157,7 +157,8 @@ impl NotionBlock {
         );
         content.insert(
             "language".to_string(),
-            serde_json::to_value(language.unwrap_or("plain text")).unwrap(),
+            serde_json::to_value(language.unwrap_or("plain text"))
+                .unwrap_or(serde_json::Value::Null),
         );
         Self {
             block_type: "code".to_string(),
