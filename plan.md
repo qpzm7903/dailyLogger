@@ -22,7 +22,7 @@
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
 | DEBT-006 | 数据库迁移系统完整集成：将 `run_migrations()` 集成到 `init_database()` 替代分散的 ALTER TABLE 语句 | 5pts | P0 | ✅ 已完成 |
-| DEBT-007 | 清理 schema.rs 中冗余的 ALTER TABLE 语句 | 2pts | P1 | 待开始（当前实现可工作，清理为可选优化） |
+| DEBT-007 | 清理 schema.rs 中冗余的 ALTER TABLE 语句 | 2pts | P1 | ✅ 已完成 |
 | DEBT-008 | 确保现有数据库可以正常迁移到新迁移系统 | 3pts | P1 | ✅ 已完成 |
 
 **DEBT-006 修复内容**:
@@ -35,6 +35,13 @@
 - schema.rs 中有大量独立 ALTER TABLE 语句
 - 这些应在迁移系统中以结构化方式管理
 - 清理后 schema.rs 应只保留表创建和初始化逻辑
+
+**DEBT-007 修复内容**:
+- 移除了 `init_database()` 中约 300 行冗余的 ALTER TABLE 和 CREATE TABLE 语句
+- 修复了遗留数据库（无迁移记录但表已存在）的处理逻辑：现调用 `run_migrations()` 而不是仅记录迁移
+- 所有 schema 变更现在统一由迁移系统 `migration.rs` 管理
+- 保留了 `init_test_database()` 中的完整 schema 设置（测试专用）
+- 508 Rust 测试 + 964 前端测试全部通过
 
 **DEBT-008 验证内容**:
 - 已有数据库应能正确迁移到新系统
