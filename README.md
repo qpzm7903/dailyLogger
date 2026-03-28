@@ -233,7 +233,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.8.0
+**最新版本**: v3.9.0
+- 多 Vault 自动选择：基于窗口标题自动选择输出 Vault
+- OutputSettings 添加"根据窗口标题自动选择 Vault"开关
+- 每个 Vault 支持配置窗口标题匹配模式（多个用逗号分隔）
+- Rust 后端 12 个 vault 相关测试全部通过
+
+**v3.8.0（多维度输出增强）**:
 - 多维度输出增强：自定义导出模板功能
 - 支持模板占位符：`{{date}}`, `{{time}}`, `{{content}}`, `{{source_type}}`, `{{source_icon}}`, `{{tags}}`
 - 新增 `get_default_export_template` / `get_default_record_entry_template` 后端命令
