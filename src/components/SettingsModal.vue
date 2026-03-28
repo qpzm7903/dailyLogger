@@ -405,6 +405,7 @@ const tagCategoriesText = ref('')
 const vaults = ref<Vault[]>([])
 const graphs = ref<Graph[]>([])
 const monitors = ref<Monitor[]>([])
+let closeTimer: ReturnType<typeof setTimeout> | null = null
 
 // Update handlers for sub-components
 function updateBasicSettings(newSettings: {
@@ -498,6 +499,10 @@ const hasUnsavedChanges = computed(() => {
 
 // Handlers
 function handleClose() {
+  if (closeTimer) {
+    clearTimeout(closeTimer)
+    closeTimer = null
+  }
   if (hasUnsavedChanges.value) {
     showCloseConfirm.value = true
   } else {
@@ -507,6 +512,10 @@ function handleClose() {
 
 function confirmClose() {
   showCloseConfirm.value = false
+  if (closeTimer) {
+    clearTimeout(closeTimer)
+    closeTimer = null
+  }
   emit('close')
 }
 
@@ -573,7 +582,7 @@ async function saveSettings() {
     await settingsActions.saveSettings(settingsToSave as unknown as Partial<Settings>)
     saveStatus.value = 'ok'
     showSuccess(t('settings.settingsSaved'))
-    setTimeout(() => emit('close'), 800)
+    closeTimer = setTimeout(() => emit('close'), 800)
   } catch (err) {
     console.error('Failed to save settings:', err)
     saveStatus.value = 'err'
@@ -690,5 +699,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   deactivateFocusTrap()
+  if (closeTimer) {
+    clearTimeout(closeTimer)
+    closeTimer = null
+  }
 })
 </script>

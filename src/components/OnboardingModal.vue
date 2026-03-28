@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { settingsActions } from '../features/settings/actions'
@@ -240,6 +240,7 @@ const obsidianPathError = ref('')
 const isTestingConnection = ref(false)
 const connectionTestResult = ref<ConnectionTestResult | null>(null)
 const connectionTested = ref(false)
+let completionTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(async () => {
   try {
@@ -349,7 +350,7 @@ async function completeOnboarding() {
 
     isCompleted.value = true
 
-    setTimeout(() => {
+    completionTimer = setTimeout(() => {
       emit('completed')
       emit('close')
     }, 1500)
@@ -359,8 +360,19 @@ async function completeOnboarding() {
 }
 
 function handleClose() {
+  if (completionTimer) {
+    clearTimeout(completionTimer)
+    completionTimer = null
+  }
   if (isCompleted.value) {
     emit('close')
   }
 }
+
+onBeforeUnmount(() => {
+  if (completionTimer) {
+    clearTimeout(completionTimer)
+    completionTimer = null
+  }
+})
 </script>
