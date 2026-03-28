@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-28
-> 当前版本: v3.5.1（启动崩溃补丁）
-> 下一版本: v3.6.0（架构收口三期）
+> 当前版本: v3.6.0（架构收口三期）
+> 下一版本: v3.7.0（多维度输出与标签管理）
 > 当前 Milestone: 架构收口与可维护性重构（v3.4.0 ~ v3.6.0）
 
 ---
@@ -65,42 +65,64 @@
 - setup 回调执行时 Tokio runtime 已经就绪，避免 "there is no reactor running" 错误
 - 提交: `dc3c07b` + `18cbc00`（Cargo.lock 同步）
 
-### v3.6.0（架构收口三期）进行中
+### v3.6.0（架构收口三期）✅ 完成
 
 **目标**: 统一契约、错误模型和全局状态边界。
 
 **版本类型**: MINOR（内部架构重构，保持行为兼容）
 
-**发现的问题**:
-- 前端 `Settings` 类型定义严重过时：缺少后端大量已有字段，定义了一些后端不存在的字段
-- 前端 `LogRecord` 缺少 `session_id` 和 `analysis_status` 字段
-- 前端 `Session.status` 使用字符串字面量，后端使用 `SessionStatus` 枚举（但 serde rename 保证序列化兼容）
+**修复内容**:
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
-| ARCH-006 | 统一 Settings 契约：更新前端类型定义，移除死字段，补充缺失字段 | 3pts | P0 | 进行中 |
-| ARCH-007 | 统一 Record/Session 契约：补齐缺失字段，确保类型对齐 | 2pts | P0 | 待开始 |
-| ARCH-008 | 建立结构化错误模型：后端返回 `AppError` 枚举，前端统一错误处理 | 3pts | P1 | 待开始 |
-| ARCH-009 | 收敛全局状态：建立 `AppState` 容器，减少 `Lazy<Mutex<...>>` 扩散 | 2pts | P1 | 待开始 |
-| ARCH-010 | 建立架构约束文档：明确命令层 vs service 层边界规则 | 1pt | P2 | 待开始 |
+| ARCH-006 | 统一 Settings 契约：更新前端类型定义，移除死字段，补充缺失字段 | 3pts | P0 | ✅ 已完成 |
+| ARCH-007 | 统一 Record/Session 契约：补齐缺失字段，确保类型对齐 | 2pts | P0 | ✅ 已完成 |
+| ARCH-008 | 建立结构化错误模型：后端返回 `AppError` 枚举，前端统一错误处理 | 3pts | P1 | ✅ 已完成 |
+| ARCH-009 | 收敛全局状态：建立 `AppState` 容器，减少 `Lazy<Mutex<...>>` 扩散 | 2pts | P1 | ✅ 已完成 |
+| ARCH-010 | 建立架构约束文档：明确命令层 vs service 层边界规则 | 1pt | P2 | ✅ 已完成 |
 
-**ARCH-006 进展记录**:
-- 🔄 前端 `Settings` 类型修复中
-- 移除死字段: `silence_detection_enabled`, `silence_threshold`, `window_filter_enabled`, `window_filter_mode`, `window_filter_list`, `multi_monitor_mode`, `custom_prompt`, `default_obsidian_vault`
-- 补充缺失字段: `summary_model_name`, `analysis_prompt`, `summary_prompt`, `window_whitelist`, `window_blacklist`, `use_whitelist_only`, `auto_adjust_silent`, `capture_mode`, `proxy_*`, `quality_filter_*`, `auto_backup_*` 等
+**ARCH-006/007 修复内容**:
+- 前端 `Settings` 类型移除死字段: `silence_detection_enabled`, `silence_threshold`, `window_filter_*`, `multi_monitor_mode`, `custom_prompt`, `default_obsidian_vault`
+- 前端 `Settings` 类型补充缺失字段: `summary_model_name`, `analysis_prompt`, `window_whitelist/blacklist`, `auto_adjust_silent`, `capture_mode`, `proxy_*`, `quality_filter_*`, `auto_backup_*` 等
+- 前端 `LogRecord` 补齐 `session_id` 和 `analysis_status` 字段
+- 前端 `ErrorType` 统一命名（snake_case）并添加 `internal` 类型
+
+**ARCH-008 修复内容**:
+- 新增 `src-tauri/src/errors.rs` 模块
+- 定义 `AppError` 结构体和 `ErrorCode` 枚举（10 种错误类型）
+- 实现 `From<String>`, `From<rusqlite::Error>`, `From<reqwest::Error>` 等转换
+- 前端 `createErrorInfo()` 支持解析结构化 `AppError`
+- 添加 5 个 error module 测试
+
+**ARCH-009 修复内容**:
+- 新增 `src-tauri/src/infrastructure/mod.rs`
+- 新增 `src-tauri/src/infrastructure/state.rs` 文档
+- 记录模块级状态 vs 应用级状态的区分原则
+- 建立新增全局状态的检查流程
+
+**ARCH-010 修复内容**:
+- 新增 `specs/ARCH-010-architecture-constraints.md`
+- 定义 5 层架构：前端组件 → feature actions → IPC → commands → services
+- 明确命令层、service 层、前端 IPC、全局状态、错误处理的硬性约束
+- 提供代码示例和检查清单
 
 ### 未来 Milestone 概要
 
 | 版本 | 方向 | 说明 |
 |------|------|------|
-| v3.5.0 | 架构收口二期 | 抽取 Settings/Session/Report/Capture service，按功能整理前端目录，降低模块耦合 |
-| v3.6.0 | 架构收口三期 | 统一前后端契约、错误模型和状态边界，减少重复字段和散落单例 |
+| v3.6.0 | 架构收口三期 | 统一前后端契约、错误模型和状态边界，减少重复字段和散落单例 ✅ |
 | v3.7.0 | 多维度输出与标签管理 | 在架构稳定后恢复 Vault、标签、导出等功能增强版本 |
 | v4.0.0 | 保留 | 仅当后续确实涉及不兼容的数据模型或分析管线变更时再考虑启用 |
 
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v3.6.0 — 架构收口三期 ✅
+- 统一前后端契约：修复 Settings 和 LogRecord 类型定义
+- 建立结构化错误模型：AppError 枚举和统一错误处理
+- 收敛全局状态：建立 infrastructure/state.rs 文档规范
+- 建立架构约束文档：specs/ARCH-010-architecture-constraints.md
 
 ### v3.5.0 — 架构收口二期 ✅
 - 抽取 Settings/Session/Report/Capture 四个领域 service 边界
