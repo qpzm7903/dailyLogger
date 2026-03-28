@@ -75,9 +75,11 @@ const save = () => {
   emit('save', content.value.trim())
 }
 
+let timeInterval: ReturnType<typeof setInterval> | null = null
+
 onMounted(() => {
   updateTime()
-  setInterval(updateTime, 1000)
+  timeInterval = setInterval(updateTime, 1000)
   nextTick(() => {
     inputRef.value?.focus()
   })
@@ -85,6 +87,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (timeInterval) clearInterval(timeInterval)
   deactivateFocusTrap()
 })
 </script>
