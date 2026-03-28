@@ -233,8 +233,14 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.7.1
-- 标签管理增强：标签颜色后端化，支持配置和自动分配
+**最新版本**: v3.8.0
+- 多维度输出增强：自定义导出模板功能
+- 支持模板占位符：`{{date}}`, `{{time}}`, `{{content}}`, `{{source_type}}`, `{{source_icon}}`, `{{tags}}`
+- 新增 `get_default_export_template` / `get_default_record_entry_template` 后端命令
+- ExportModal UI 支持自定义模板编辑器和预览
+
+**v3.7.1（标签管理增强）**:
+- 标签颜色后端化：后端存储标签颜色，前端从缓存获取
 - 后端 `get_tag_colors()` / `set_tag_color()` 命令
 - 三级回退逻辑：缓存 → 默认颜色表 → 哈希分配
 
