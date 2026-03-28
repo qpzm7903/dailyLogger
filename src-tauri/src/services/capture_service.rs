@@ -838,7 +838,8 @@ pub async fn reanalyze_today_records_service() -> Result<ReanalyzeResult, String
     let mut errors = Vec::new();
     for record in records_with_screenshots {
         let record_id = record.id;
-        let screenshot_path = record.screenshot_path.unwrap();
+        // Filter above guarantees screenshot_path is Some
+        let screenshot_path = record.screenshot_path.expect("filtered to have screenshot");
         let image_data = match std::fs::read(&screenshot_path) {
             Ok(data) => data,
             Err(e) => {
@@ -921,7 +922,8 @@ pub async fn reanalyze_records_by_date_service(date: String) -> Result<Reanalyze
     let mut errors = Vec::new();
     for record in records_with_screenshots {
         let record_id = record.id;
-        let screenshot_path = record.screenshot_path.unwrap();
+        // Filter above guarantees screenshot_path is Some
+        let screenshot_path = record.screenshot_path.expect("filtered to have screenshot");
         let image_data = match std::fs::read(&screenshot_path) {
             Ok(data) => data,
             Err(e) => {
