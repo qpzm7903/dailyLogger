@@ -128,16 +128,24 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
-| TAG-001 | 标签颜色后端可配置：移除前端硬编码颜色，后端存储标签颜色 | 3pts | P0 | 待开始 |
-| TAG-002 | 标签颜色自动分配优化：使用次数最少优先分配 | 2pts | P1 | 待开始 |
-| TAG-003 | 旧数据兼容：已有标签自动使用默认颜色 | 1pt | P1 | 待开始 |
+| TAG-001 | 标签颜色后端可配置：移除前端硬编码颜色，后端存储标签颜色 | 3pts | P0 | ✅ 已完成 |
+| TAG-002 | 标签颜色自动分配优化：使用次数最少优先分配 | 2pts | P1 | ✅ 已完成 |
+| TAG-003 | 旧数据兼容：已有标签自动使用默认颜色 | 1pt | P1 | ✅ 已完成 |
 
 **TAG-001 修复内容**:
-- 前端 `tagColors.ts` 中的 `DEFAULT_CATEGORY_COLOR_MAP` 移除
-- 后端 `tags.rs` 新增 `get_tag_colors()` / `set_tag_color()` 命令
-- 数据库 `manual_tags` 表颜色字段正式启用
-- 新标签创建时自动分配颜色（使用次数最少优先）
-- 前端 `getTagColorName()` 改为调用后端 API
+- ✅ 后端 `tags.rs` 新增 `get_tag_colors()` / `set_tag_color()` 命令
+- ✅ 数据库 `manual_tags` 表颜色字段正式启用
+- ✅ 前端 `useTagColors` composable 实现标签颜色缓存
+- ✅ 前端 `getTagColorName()` 优先从后端缓存获取颜色
+- ✅ Bootstrap 初始化时调用 `fetchTagColors()` 加载缓存
+- ℹ️ `DEFAULT_CATEGORY_COLOR_MAP` 保留用于 AI 生成的工作分类标签（与手动标签系统独立）
+
+**TAG-002 修复内容**:
+- ✅ 后端实现 `allocate_color_for_new_tag()` 函数，使用次数最少优先分配颜色
+- 注：UI 流程中用户手动选择颜色；若需要无界面自动分配，可调用此函数
+
+**TAG-003 修复内容**:
+- ✅ `getTagColorName()` 具备三级回退逻辑：缓存 → DEFAULT_CATEGORY_COLOR_MAP → 哈希分配
 
 ### 未来 Milestone 概要
 
