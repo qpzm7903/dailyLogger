@@ -36,6 +36,8 @@ export interface ToastOptions {
 // Global toast queue
 const toasts = ref<Toast[]>([])
 let toastId = 0
+// Track timeout handles for cleanup
+const timeoutHandles = new Map<number, ReturnType<typeof setTimeout>>()
 
 /**
  * Toast store composable
@@ -63,15 +65,23 @@ export function useToastStore(): {
 
     // Auto remove after duration (if duration > 0)
     if (newToast.duration > 0) {
-      setTimeout(() => {
+      const handle = setTimeout(() => {
+        timeoutHandles.delete(id)
         remove(id)
       }, newToast.duration)
+      timeoutHandles.set(id, handle)
     }
 
     return id
   }
 
   const remove = (id: number): void => {
+    // Clear the auto-dismiss timeout if it exists
+    const handle = timeoutHandles.get(id)
+    if (handle !== undefined) {
+      clearTimeout(handle)
+      timeoutHandles.delete(id)
+    }
     const index = toasts.value.findIndex(t => t.id === id)
     if (index !== -1) {
       toasts.value.splice(index, 1)
