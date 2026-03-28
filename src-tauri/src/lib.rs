@@ -9,6 +9,7 @@ pub mod errors;
 pub mod export;
 #[cfg(feature = "screenshot")]
 pub mod hardware;
+pub mod infrastructure;
 pub mod manual_entry;
 pub mod memory_storage;
 #[cfg(feature = "screenshot")]
