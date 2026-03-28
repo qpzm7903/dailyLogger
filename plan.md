@@ -65,6 +65,30 @@
 - setup 回调执行时 Tokio runtime 已经就绪，避免 "there is no reactor running" 错误
 - 提交: `dc3c07b` + `18cbc00`（Cargo.lock 同步）
 
+### v3.6.0（架构收口三期）进行中
+
+**目标**: 统一契约、错误模型和全局状态边界。
+
+**版本类型**: MINOR（内部架构重构，保持行为兼容）
+
+**发现的问题**:
+- 前端 `Settings` 类型定义严重过时：缺少后端大量已有字段，定义了一些后端不存在的字段
+- 前端 `LogRecord` 缺少 `session_id` 和 `analysis_status` 字段
+- 前端 `Session.status` 使用字符串字面量，后端使用 `SessionStatus` 枚举（但 serde rename 保证序列化兼容）
+
+| ID | 需求 | 故事点 | 优先级 | 状态 |
+|----|------|--------|--------|------|
+| ARCH-006 | 统一 Settings 契约：更新前端类型定义，移除死字段，补充缺失字段 | 3pts | P0 | 进行中 |
+| ARCH-007 | 统一 Record/Session 契约：补齐缺失字段，确保类型对齐 | 2pts | P0 | 待开始 |
+| ARCH-008 | 建立结构化错误模型：后端返回 `AppError` 枚举，前端统一错误处理 | 3pts | P1 | 待开始 |
+| ARCH-009 | 收敛全局状态：建立 `AppState` 容器，减少 `Lazy<Mutex<...>>` 扩散 | 2pts | P1 | 待开始 |
+| ARCH-010 | 建立架构约束文档：明确命令层 vs service 层边界规则 | 1pt | P2 | 待开始 |
+
+**ARCH-006 进展记录**:
+- 🔄 前端 `Settings` 类型修复中
+- 移除死字段: `silence_detection_enabled`, `silence_threshold`, `window_filter_enabled`, `window_filter_mode`, `window_filter_list`, `multi_monitor_mode`, `custom_prompt`, `default_obsidian_vault`
+- 补充缺失字段: `summary_model_name`, `analysis_prompt`, `summary_prompt`, `window_whitelist`, `window_blacklist`, `use_whitelist_only`, `auto_adjust_silent`, `capture_mode`, `proxy_*`, `quality_filter_*`, `auto_backup_*` 等
+
 ### 未来 Milestone 概要
 
 | 版本 | 方向 | 说明 |

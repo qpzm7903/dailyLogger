@@ -8,6 +8,7 @@
 // ============================================
 
 export interface Settings {
+  // Basic API settings
   api_base_url: string
   api_key: string
   model_name: string
@@ -16,21 +17,85 @@ export interface Settings {
   obsidian_path: string
   auto_capture_enabled: boolean
   last_summary_path: string | null
-  silence_detection_enabled?: boolean
-  silence_threshold?: number
-  window_filter_enabled?: boolean
-  window_filter_mode?: 'whitelist' | 'blacklist'
-  window_filter_list?: string[]
-  multi_monitor_mode?: 'primary' | 'all'
-  custom_prompt?: string
-  default_obsidian_vault?: string
-  obsidian_vaults?: ObsidianVault[]
+
+  // Model and prompts (AI-004, AI-005)
+  summary_model_name?: string
+  analysis_prompt?: string
+  summary_prompt?: string
+  is_ollama?: boolean
+  custom_headers?: string // JSON: CustomHeader[]
+
+  // Capture behavior (SMART-001, SMART-002, SMART-004)
+  change_threshold?: number
+  max_silent_minutes?: number
+  window_whitelist?: string // JSON: Vec<String>
+  window_blacklist?: string // JSON: Vec<String>
+  use_whitelist_only?: boolean
+  auto_adjust_silent?: boolean
+  silent_adjustment_paused_until?: string
+  capture_mode?: string // "primary" | "secondary" | "all"
+  selected_monitor_index?: number
+
+  // Work time detection (SMART-003)
+  auto_detect_work_time?: boolean
+  use_custom_work_time?: boolean
+  custom_work_time_start?: string // "HH:MM"
+  custom_work_time_end?: string // "HH:MM"
+  learned_work_time?: string // JSON: {"periods": [...]}
+
+  // Session management (SESSION-001)
+  session_gap_minutes?: number
+
+  // Tags (AI-004)
+  tag_categories?: string // JSON: Vec<String>
+
+  // Report generation (REPORT-001, REPORT-002, REPORT-003, REPORT-004)
+  weekly_report_prompt?: string
+  weekly_report_day?: number // 0=周一, 6=周日
+  last_weekly_report_path?: string
+  monthly_report_prompt?: string
+  last_monthly_report_path?: string
+  custom_report_prompt?: string
+  last_custom_report_path?: string
+  comparison_report_prompt?: string
+
+  // Obsidian integration (DATA-006, VAULT-001)
+  obsidian_vaults?: string // JSON: ObsidianVault[]
   auto_detect_vault_by_window?: boolean
-  // PERF-002: Onboarding completed flag
+
+  // Other integrations (INT-001, INT-002, INT-003, INT-004)
+  notion_api_key?: string
+  notion_database_id?: string
+  logseq_graphs?: string // JSON: LogseqGraph[]
+  github_token?: string
+  github_repositories?: string // JSON: Vec<String>
+  slack_webhook_url?: string
+  dingtalk_webhook_url?: string
+
+  // Feature flags
+  capture_only_mode?: boolean // FEAT-006
+  quality_filter_enabled?: boolean // EXP-002
+  quality_filter_threshold?: number
+  summary_title_format?: string
+  include_manual_records?: boolean
+
+  // Proxy (PERF-001)
+  proxy_enabled?: boolean
+  proxy_host?: string
+  proxy_port?: number
+  proxy_username?: string
+  proxy_password?: string
+  test_model_name?: string
+
+  // Backup (STAB-002)
+  auto_backup_enabled?: boolean
+  auto_backup_interval?: string // "daily" | "weekly" | "monthly"
+  auto_backup_retention?: number
+  last_auto_backup_at?: string
+
+  // User preferences (PERF-002, PERF-005)
   onboarding_completed?: boolean
-  // PERF-005: Language setting
   language?: string
-  // DATA-007: Multi-language settings
   preferred_language?: string
   supported_languages?: string
 }
@@ -59,6 +124,9 @@ export interface LogRecord {
   monitor_info?: string | null // JSON: MonitorInfo serialized
   tags?: string | null // JSON: Vec<String> serialized
   user_notes?: string | null // FEAT-005: User manual notes (#66)
+  // SESSION-001: Session association and analysis status
+  session_id?: number | null
+  analysis_status?: 'pending' | 'analyzed' | 'user_edited' | null
 }
 
 // Alias for backward compatibility - prefer LogRecord to avoid conflict with TS built-in Record
