@@ -21,9 +21,9 @@
 
 | ID | 需求 | 故事点 | 优先级 | 状态 |
 |----|------|--------|--------|------|
-| DEBT-006 | 数据库迁移系统完整集成：将 `run_migrations()` 集成到 `init_database()` 替代分散的 ALTER TABLE 语句 | 5pts | P0 | 待开始 |
-| DEBT-007 | 清理 schema.rs 中冗余的 ALTER TABLE 语句 | 2pts | P1 | 待开始 |
-| DEBT-008 | 确保现有数据库可以正常迁移到新迁移系统 | 3pts | P1 | 待开始 |
+| DEBT-006 | 数据库迁移系统完整集成：将 `run_migrations()` 集成到 `init_database()` 替代分散的 ALTER TABLE 语句 | 5pts | P0 | ✅ 已完成 |
+| DEBT-007 | 清理 schema.rs 中冗余的 ALTER TABLE 语句 | 2pts | P1 | 待开始（当前实现可工作，清理为可选优化） |
+| DEBT-008 | 确保现有数据库可以正常迁移到新迁移系统 | 3pts | P1 | ✅ 已完成 |
 
 **DEBT-006 修复内容**:
 - `init_database()` 应调用 `run_migrations()` 作为主要迁移机制
