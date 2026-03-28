@@ -27,7 +27,7 @@ fn get_key_path() -> PathBuf {
 /// Generate a new random 32-byte encryption key
 fn generate_key() -> [u8; 32] {
     let mut key = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut key);
+    rand::rng().fill_bytes(&mut key);
     key
 }
 
@@ -114,7 +114,7 @@ pub fn encrypt_api_key(plain: &str) -> Result<String, String> {
 
     // Generate random nonce
     let mut nonce_bytes = [0u8; NONCE_LEN];
-    rand::thread_rng().fill_bytes(&mut nonce_bytes);
+    rand::rng().fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
 
     // Encrypt
