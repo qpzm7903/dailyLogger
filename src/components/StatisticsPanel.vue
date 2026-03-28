@@ -1,19 +1,19 @@
 <template>
   <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
-    <div class="bg-dark rounded-2xl w-[800px] max-h-[85vh] overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[800px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('statistics.title') }}</h2>
-        <button @click="handleClose" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="handleClose" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Time Range Selector -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center gap-3">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center gap-3">
         <button
           v-for="range in timeRanges"
           :key="range.id"
           @click="selectRange(range.id)"
-          :class="selectedRange === range.id ? 'bg-primary text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600'"
+          :class="selectedRange === range.id ? 'bg-primary text-[var(--color-text-primary)]' : 'bg-[var(--color-surface-1)]/50 text-[var(--color-text-secondary)] hover:bg-[var(--color-action-neutral)]'"
           class="px-4 py-2 rounded-lg text-sm transition-colors"
         >
           {{ range.label }}
@@ -24,13 +24,13 @@
           <input
             type="date"
             v-model="customStart"
-            class="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:border-primary focus:outline-none"
+            class="bg-[var(--color-surface-1)]/50 border border-[var(--color-border-subtle)] rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
           <span class="text-gray-500">-</span>
           <input
             type="date"
             v-model="customEnd"
-            class="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:border-primary focus:outline-none"
+            class="bg-[var(--color-surface-1)]/50 border border-[var(--color-border-subtle)] rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
           <button
             @click="applyCustomRange"
@@ -52,36 +52,36 @@
         <!-- Statistics Cards -->
         <div v-else-if="statistics" class="space-y-6">
           <!-- Date Range Label -->
-          <div class="text-sm text-gray-400">
+          <div class="text-sm text-[var(--color-text-secondary)]">
             {{ statistics.date_range.label }}
           </div>
 
           <!-- Summary Cards -->
           <div class="grid grid-cols-4 gap-4">
-            <div class="bg-darker rounded-xl p-4 border border-gray-700">
-              <div class="text-3xl font-bold text-white">{{ statistics.screenshot_count }}</div>
-              <div class="text-sm text-gray-400 mt-1">{{ t('statistics.screenshots') }}</div>
+            <div class="bg-[var(--color-surface-0)] rounded-xl p-4 border border-[var(--color-border)]">
+              <div class="text-3xl font-bold text-[var(--color-text-primary)]">{{ statistics.screenshot_count }}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">{{ t('statistics.screenshots') }}</div>
             </div>
-            <div class="bg-darker rounded-xl p-4 border border-gray-700">
-              <div class="text-3xl font-bold text-white">{{ statistics.session_count }}</div>
-              <div class="text-sm text-gray-400 mt-1">{{ t('statistics.sessions') }}</div>
+            <div class="bg-[var(--color-surface-0)] rounded-xl p-4 border border-[var(--color-border)]">
+              <div class="text-3xl font-bold text-[var(--color-text-primary)]">{{ statistics.session_count }}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">{{ t('statistics.sessions') }}</div>
             </div>
-            <div class="bg-darker rounded-xl p-4 border border-gray-700">
-              <div class="text-3xl font-bold text-white">{{ statistics.record_count }}</div>
-              <div class="text-sm text-gray-400 mt-1">{{ t('statistics.records') }}</div>
+            <div class="bg-[var(--color-surface-0)] rounded-xl p-4 border border-[var(--color-border)]">
+              <div class="text-3xl font-bold text-[var(--color-text-primary)]">{{ statistics.record_count }}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">{{ t('statistics.records') }}</div>
             </div>
             <div class="bg-darker rounded-xl p-4 border border-gray-700">
               <div class="text-3xl font-bold" :class="statistics.analysis_success_rate >= 80 ? 'text-green-400' : statistics.analysis_success_rate >= 50 ? 'text-yellow-400' : 'text-red-400'">
                 {{ statistics.analysis_success_rate.toFixed(1) }}%
               </div>
-              <div class="text-sm text-gray-400 mt-1">{{ t('statistics.analysisRate') }}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">{{ t('statistics.analysisRate') }}</div>
             </div>
           </div>
 
           <!-- Daily Breakdown Chart -->
-          <div class="bg-darker rounded-xl p-4 border border-gray-700">
-            <h3 class="text-sm font-medium text-white mb-4">{{ t('statistics.dailyBreakdown') }}</h3>
-            <div v-if="statistics.daily_breakdown.length === 0" class="text-center py-8 text-gray-500">
+          <div class="bg-[var(--color-surface-0)] rounded-xl p-4 border border-[var(--color-border)]">
+            <h3 class="text-sm font-medium text-[var(--color-text-primary)] mb-4">{{ t('statistics.dailyBreakdown') }}</h3>
+            <div v-if="statistics.daily_breakdown.length === 0" class="text-center py-8 text-[var(--color-text-muted)]">
               {{ t('statistics.noData') }}
             </div>
             <div v-else class="space-y-2">
@@ -90,21 +90,21 @@
                 :key="day.date"
                 class="flex items-center gap-3"
               >
-                <div class="w-20 text-xs text-gray-400">{{ day.date }}</div>
+                <div class="w-20 text-xs text-[var(--color-text-secondary)]">{{ day.date }}</div>
                 <div class="flex-1 flex items-center gap-2">
                   <!-- Screenshot Bar -->
-                  <div class="flex-1 h-6 bg-gray-700/50 rounded overflow-hidden">
+                  <div class="flex-1 h-6 bg-[var(--color-surface-1)]/50 rounded overflow-hidden">
                     <div
                       :style="{ width: getBarWidth(day.screenshot_count, maxScreenshotCount) + '%' }"
                       class="h-full bg-blue-500/80 rounded"
                       :title="`${t('statistics.screenshots')}: ${day.screenshot_count}`"
                     ></div>
                   </div>
-                  <div class="w-12 text-xs text-gray-400 text-right">{{ day.screenshot_count }}</div>
+                  <div class="w-12 text-xs text-[var(--color-text-secondary)] text-right">{{ day.screenshot_count }}</div>
                 </div>
                 <div class="flex-1 flex items-center gap-2">
                   <!-- Session Bar -->
-                  <div class="flex-1 h-6 bg-gray-700/50 rounded overflow-hidden">
+                  <div class="flex-1 h-6 bg-[var(--color-surface-1)]/50 rounded overflow-hidden">
                     <div
                       :style="{ width: getBarWidth(day.session_count, maxSessionCount) + '%' }"
                       class="h-full bg-green-500/80 rounded"
@@ -115,7 +115,7 @@
                 </div>
                 <div class="flex-1 flex items-center gap-2">
                   <!-- Record Bar -->
-                  <div class="flex-1 h-6 bg-gray-700/50 rounded overflow-hidden">
+                  <div class="flex-1 h-6 bg-[var(--color-surface-1)]/50 rounded overflow-hidden">
                     <div
                       :style="{ width: getBarWidth(day.record_count, maxRecordCount) + '%' }"
                       class="h-full bg-purple-500/80 rounded"
@@ -126,18 +126,18 @@
                 </div>
               </div>
               <!-- Legend -->
-              <div class="flex items-center gap-6 mt-4 pt-3 border-t border-gray-700">
+              <div class="flex items-center gap-6 mt-4 pt-3 border-t border-[var(--color-border)]">
                 <div class="flex items-center gap-2">
                   <div class="w-3 h-3 bg-blue-500/80 rounded"></div>
-                  <span class="text-xs text-gray-400">{{ t('statistics.screenshots') }}</span>
+                  <span class="text-xs text-[var(--color-text-secondary)]">{{ t('statistics.screenshots') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <div class="w-3 h-3 bg-green-500/80 rounded"></div>
-                  <span class="text-xs text-gray-400">{{ t('statistics.sessions') }}</span>
+                  <span class="text-xs text-[var(--color-text-secondary)]">{{ t('statistics.sessions') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <div class="w-3 h-3 bg-purple-500/80 rounded"></div>
-                  <span class="text-xs text-gray-400">{{ t('statistics.records') }}</span>
+                  <span class="text-xs text-[var(--color-text-secondary)]">{{ t('statistics.records') }}</span>
                 </div>
               </div>
             </div>
@@ -151,11 +151,11 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-700 flex justify-between items-center">
+      <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-between items-center">
         <button
           @click="exportData"
           :disabled="!statistics || isExporting"
-          class="px-4 py-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded-lg text-sm transition-colors"
+          class="px-4 py-2 bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-neutral)] disabled:opacity-50 rounded-lg text-sm transition-colors"
         >
           {{ isExporting ? t('statistics.exporting') : t('statistics.export') }}
         </button>

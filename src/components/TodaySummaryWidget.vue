@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+    class="bg-[var(--color-surface-1)]/60 backdrop-blur-md rounded-2xl p-5 border border-[var(--color-border)]/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
   >
     <!-- Header with collapse toggle -->
     <div
@@ -9,9 +9,9 @@
     >
       <div class="flex items-center gap-2">
         <span class="text-2xl">📊</span>
-        <h2 class="font-medium text-white">{{ t('widget.todaySummary') }}</h2>
+        <h2 class="font-medium text-[var(--color-text-primary)]">{{ t('widget.todaySummary') }}</h2>
       </div>
-      <span class="text-gray-400 text-xs transition-transform duration-200" :class="isCollapsed ? '' : 'rotate-180'">
+      <span class="text-[var(--color-text-secondary)] text-xs transition-transform duration-200" :class="isCollapsed ? '' : 'rotate-180'">
         ▼
       </span>
     </div>
@@ -20,7 +20,7 @@
     <Transition name="slide">
       <div v-if="!isCollapsed" class="mt-4">
         <!-- Loading State -->
-        <div v-if="loading" class="text-center py-4 text-gray-500 text-sm">
+        <div v-if="loading" class="text-center py-4 text-[var(--color-text-muted)] text-sm">
           {{ t('widget.loading') }}
         </div>
 
@@ -30,7 +30,7 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else-if="stats && stats.total_count === 0" class="text-center py-4 text-gray-400 text-sm">
+        <div v-else-if="stats && stats.total_count === 0" class="text-center py-4 text-[var(--color-text-secondary)] text-sm">
           {{ t('widget.noRecordsYet') }}
         </div>
 
@@ -38,22 +38,22 @@
         <div v-else-if="stats" class="space-y-4">
           <!-- Record Counts -->
           <div class="grid grid-cols-3 gap-3 text-center">
-            <div class="bg-darker/50 rounded-xl p-3">
+            <div class="bg-[var(--color-surface-0)]/50 rounded-xl p-3">
               <div class="text-2xl font-bold text-primary">{{ stats.total_count }}</div>
-              <div class="text-xs text-gray-400">{{ t('widget.totalRecords') }}</div>
+              <div class="text-xs text-[var(--color-text-secondary)]">{{ t('widget.totalRecords') }}</div>
             </div>
-            <div class="bg-darker/50 rounded-xl p-3">
+            <div class="bg-[var(--color-surface-0)]/50 rounded-xl p-3">
               <div class="text-lg font-semibold text-blue-400">{{ stats.auto_count }}</div>
-              <div class="text-xs text-gray-400">{{ t('widget.autoCaptures') }}</div>
+              <div class="text-xs text-[var(--color-text-secondary)]">{{ t('widget.autoCaptures') }}</div>
             </div>
-            <div class="bg-darker/50 rounded-xl p-3">
+            <div class="bg-[var(--color-surface-0)]/50 rounded-xl p-3">
               <div class="text-lg font-semibold text-green-400">{{ stats.manual_count }}</div>
-              <div class="text-xs text-gray-400">{{ t('widget.manualNotes') }}</div>
+              <div class="text-xs text-[var(--color-text-secondary)]">{{ t('widget.manualNotes') }}</div>
             </div>
           </div>
 
           <!-- Time Range and Busiest Hour -->
-          <div v-if="stats.total_count > 0" class="text-xs text-gray-400 space-y-1.5 pt-2 border-t border-gray-700/50">
+          <div v-if="stats.total_count > 0" class="text-xs text-[var(--color-text-secondary)] space-y-1.5 pt-2 border-t border-[var(--color-border)]/50">
             <div v-if="stats.first_record_time && stats.latest_record_time" class="flex items-center gap-2">
               <span>⏱</span>
               <span>{{ formatTime(stats.first_record_time) }} – {{ formatTime(stats.latest_record_time) }}</span>

@@ -380,7 +380,7 @@ describe('SearchPanel', () => {
     it('emits close when close button clicked', async () => {
       const wrapper = mount(SearchPanel)
 
-      const closeBtn = wrapper.findAll('button').find((b) => b.text().includes('✕') && b.classes().includes('text-gray-400'))
+      const closeBtn = wrapper.findAll('button').find((b) => b.text().includes('✕'))
       await closeBtn?.trigger('click')
 
       expect(wrapper.emitted('close')).toBeTruthy()
@@ -400,7 +400,7 @@ describe('SearchPanel', () => {
       const wrapper = mount(SearchPanel)
 
       expect(wrapper.find('.fixed.inset-0.bg-black\\/80').exists()).toBe(true)
-      expect(wrapper.find('.bg-dark.rounded-2xl').exists()).toBe(true)
+      expect(wrapper.find('[class*="bg-[var(--color-surface-1)]"].rounded-2xl').exists()).toBe(true)
       expect(wrapper.find('.z-50').exists()).toBe(true)
     })
 

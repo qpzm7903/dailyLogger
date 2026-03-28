@@ -5,11 +5,11 @@
         <!-- Auto Capture Card (UX-4: Task 4 - compact layout) -->
         <div
           v-if="isDesktop"
-          class="bg-dark/60 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+          class="bg-[var(--color-surface-1)]/60 backdrop-blur-md rounded-2xl p-4 border border-[var(--color-border)]/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
         >
           <div class="flex items-center gap-2 mb-2">
             <span class="text-xl">🖥️</span>
-            <h2 class="font-medium text-white">{{ t('autoCapture.title') }}</h2>
+            <h2 class="font-medium text-[var(--color-text-primary)]">{{ t('autoCapture.title') }}</h2>
           </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -17,7 +17,7 @@
                 :class="autoCaptureEnabled ? 'bg-status-success animate-pulse' : 'bg-gray-500'"
                 class="w-2 h-2 rounded-full inline-block transition-colors duration-300"
               ></span>
-              <span class="text-xs text-gray-400">
+              <span class="text-xs text-[var(--color-text-secondary)]">
                 {{ autoCaptureEnabled ? t('autoCapture.running') : t('autoCapture.stopped') }}
               </span>
             </div>
@@ -50,14 +50,14 @@
 
         <!-- Quick Note Card (UX-4: Task 4 - compact layout) -->
         <div
-          class="bg-dark/60 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+          class="bg-[var(--color-surface-1)]/60 backdrop-blur-md rounded-2xl p-4 border border-[var(--color-border)]/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
         >
           <div class="flex items-center gap-2 mb-2">
             <span class="text-xl">⚡</span>
-            <h2 class="font-medium text-white">{{ t('quickNote.title') }}</h2>
+            <h2 class="font-medium text-[var(--color-text-primary)]">{{ t('quickNote.title') }}</h2>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-500">{{ t('quickNote.todayRecords', { count: quickNotesCount }) }}</span>
+            <span class="text-xs text-[var(--color-text-muted)]">{{ t('quickNote.todayRecords', { count: quickNotesCount }) }}</span>
             <button
               @click="$emit('openQuickNote')"
               :title="isDesktop ? t('quickNote.shortcut') : ''"
@@ -82,7 +82,7 @@
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
             <span class="text-2xl">📊</span>
-            <h2 class="font-medium text-white">今日工作流</h2>
+            <h2 class="font-medium text-[var(--color-text-primary)]">今日工作流</h2>
             <button
               v-if="screenshotCount > 0"
               @click="$emit('open', 'screenshotGallery')"
@@ -124,10 +124,10 @@
         </div>
 
         <!-- Tag Filter -->
-        <div v-if="tagEntries.length > 0" class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-gray-700/50">
+        <div v-if="tagEntries.length > 0" class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-[var(--color-border)]/50">
           <button
             @click="selectedTagFilter = ''"
-            :class="selectedTagFilter === '' ? 'bg-primary text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600'"
+            :class="selectedTagFilter === '' ? 'bg-primary text-[var(--color-text-primary)]' : 'bg-[var(--color-surface-1)]/50 text-[var(--color-text-secondary)] hover:bg-[var(--color-action-neutral)]'"
             class="px-2.5 py-1 rounded-full text-xs transition-colors"
           >
             全部 ({{ todayRecords.length }})
@@ -155,7 +155,7 @@
           <button
             v-if="tagFilterExpanded && tagEntries.length > TAG_VISIBLE_THRESHOLD"
             @click="tagFilterExpanded = false"
-            class="text-xs text-gray-400 hover:text-gray-300 cursor-pointer whitespace-nowrap"
+            class="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer whitespace-nowrap"
           >
             收起
           </button>
@@ -170,16 +170,16 @@
             :key="record.id"
             @click="record.source_type === 'auto' && record.screenshot_path && openScreenshot(record)"
             :class="record.source_type === 'auto' && record.screenshot_path
-              ? 'cursor-pointer hover:border-primary hover:bg-gray-800/40 group'
+              ? 'cursor-pointer hover:border-primary hover:bg-[var(--color-surface-0)]/40 group'
               : 'cursor-default'"
-            class="bg-darker/80 rounded-xl p-3 border border-gray-700/50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            class="bg-[var(--color-surface-0)]/80 rounded-xl p-3 border border-[var(--color-border)]/50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
           >
             <div class="flex items-center justify-between mb-1">
-              <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
+              <span class="text-xs text-[var(--color-text-muted)]">{{ formatTime(record.timestamp) }}</span>
               <div class="flex items-center gap-2">
                 <span
                   v-if="record.source_type === 'auto' && record.screenshot_path"
-                  class="text-xs text-gray-600 group-hover:text-primary transition-colors"
+                  class="text-xs text-[var(--color-border)] group-hover:text-primary transition-colors"
                 >点击查看截图</span>
                 <span :class="record.source_type === 'auto' ? 'text-blue-400' : 'text-green-400'" class="text-xs">
                   {{ record.source_type === 'auto' ? '🖥️ 自动' : '⚡ 手动' }}
@@ -189,7 +189,7 @@
             <!-- Window Info -->
             <div
               v-if="getWindowInfo(record)?.title || getWindowInfo(record)?.process_name"
-              class="window-info flex items-center gap-1.5 mb-1.5 text-xs text-gray-400"
+              class="window-info flex items-center gap-1.5 mb-1.5 text-xs text-[var(--color-text-secondary)]"
             >
               <span>{{ getWindowIcon(getWindowInfo(record)?.process_name) }}</span>
               <span class="truncate max-w-[200px]" :title="getWindowInfo(record)?.title">
@@ -197,10 +197,10 @@
               </span>
             </div>
             <!-- Content -->
-            <p v-if="record.source_type === 'auto'" class="text-sm text-gray-300 line-clamp-1 truncate">
+            <p v-if="record.source_type === 'auto'" class="text-sm text-[var(--color-text-secondary)] line-clamp-1 truncate">
               {{ extractSummary(record.content) || '分析完成' }}
             </p>
-            <p v-else class="text-sm text-gray-300 line-clamp-3">{{ record.content }}</p>
+            <p v-else class="text-sm text-[var(--color-text-secondary)] line-clamp-3">{{ record.content }}</p>
             <!-- Tags -->
             <div v-if="getRecordTags(record).length > 0" class="flex flex-wrap gap-1.5 mt-2">
               <span
@@ -247,21 +247,21 @@
         <div class="flex gap-1 mb-4 p-1 bg-surface-0/50 rounded-xl">
           <button
             @click="activeOutputTab = 'daily'"
-            :class="activeOutputTab === 'daily' ? 'bg-surface-2 text-white' : 'text-gray-400 hover:text-white'"
+            :class="activeOutputTab === 'daily' ? 'bg-surface-2 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'"
             class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200"
           >
             {{ t('outputTabs.daily') }}
           </button>
           <button
             @click="activeOutputTab = 'weekly'"
-            :class="activeOutputTab === 'weekly' ? 'bg-surface-2 text-white' : 'text-gray-400 hover:text-white'"
+            :class="activeOutputTab === 'weekly' ? 'bg-surface-2 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'"
             class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200"
           >
             {{ t('outputTabs.weekly') }}
           </button>
           <button
             @click="activeOutputTab = 'monthly'"
-            :class="activeOutputTab === 'monthly' ? 'bg-surface-2 text-white' : 'text-gray-400 hover:text-white'"
+            :class="activeOutputTab === 'monthly' ? 'bg-surface-2 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'"
             class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200"
           >
             {{ t('outputTabs.monthly') }}
@@ -272,10 +272,10 @@
         <div class="min-h-[80px]">
           <!-- Daily Report Tab -->
           <div v-if="activeOutputTab === 'daily'" class="space-y-2">
-            <div v-if="summaryPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+            <div v-if="summaryPath" class="bg-[var(--color-surface-0)]/80 rounded-xl p-3 border border-[var(--color-border)]/50">
               <p
                 @click="$emit('open', 'summaryViewer')"
-                class="text-sm text-gray-300 cursor-pointer hover:text-primary hover:underline"
+                class="text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-primary hover:underline"
               >{{ summaryPath }}</p>
             </div>
             <EmptyState v-else type="dailyReport">
@@ -285,10 +285,10 @@
 
           <!-- Weekly Report Tab -->
           <div v-if="activeOutputTab === 'weekly'" class="space-y-2">
-            <div v-if="weeklyReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+            <div v-if="weeklyReportPath" class="bg-[var(--color-surface-0)]/80 rounded-xl p-3 border border-[var(--color-border)]/50">
               <p
                 @click="$emit('open', 'weeklyReportViewer')"
-                class="text-sm text-gray-300 cursor-pointer hover:text-green-400 hover:underline"
+                class="text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-green-400 hover:underline"
               >{{ weeklyReportPath }}</p>
             </div>
             <EmptyState v-else type="dailyReport">
@@ -298,10 +298,10 @@
 
           <!-- Monthly Report Tab -->
           <div v-if="activeOutputTab === 'monthly'" class="space-y-2">
-            <div v-if="monthlyReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
+            <div v-if="monthlyReportPath" class="bg-[var(--color-surface-0)]/80 rounded-xl p-3 border border-[var(--color-border)]/50">
               <p
                 @click="$emit('open', 'monthlyReportViewer')"
-                class="text-sm text-gray-300 cursor-pointer hover:text-purple-400 hover:underline"
+                class="text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-purple-400 hover:underline"
               >{{ monthlyReportPath }}</p>
             </div>
             <EmptyState v-else type="dailyReport">
@@ -311,19 +311,19 @@
         </div>
 
         <!-- Additional Reports (Custom & Comparison) -->
-        <div v-if="customReportPath || comparisonReportPath" class="mt-4 pt-4 border-t border-gray-700/50 space-y-2">
-          <div v-if="customReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
-            <p class="text-xs text-gray-500 mb-1">{{ t('outputTabs.custom') }}</p>
+        <div v-if="customReportPath || comparisonReportPath" class="mt-4 pt-4 border-t border-[var(--color-border)]/50 space-y-2">
+          <div v-if="customReportPath" class="bg-[var(--color-surface-0)]/80 rounded-xl p-3 border border-[var(--color-border)]/50">
+            <p class="text-xs text-[var(--color-text-muted)] mb-1">{{ t('outputTabs.custom') }}</p>
             <p
               @click="$emit('open', 'customReportViewer')"
-              class="text-sm text-gray-300 cursor-pointer hover:text-orange-400 hover:underline"
+              class="text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-orange-400 hover:underline"
             >{{ customReportPath }}</p>
           </div>
-          <div v-if="comparisonReportPath" class="bg-darker/80 rounded-xl p-3 border border-gray-700/50">
-            <p class="text-xs text-gray-500 mb-1">{{ t('outputTabs.comparison') }}</p>
+          <div v-if="comparisonReportPath" class="bg-[var(--color-surface-0)]/80 rounded-xl p-3 border border-[var(--color-border)]/50">
+            <p class="text-xs text-[var(--color-text-muted)] mb-1">{{ t('outputTabs.comparison') }}</p>
             <p
               @click="$emit('open', 'comparisonReportViewer')"
-              class="text-sm text-gray-300 cursor-pointer hover:text-teal-400 hover:underline"
+              class="text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-teal-400 hover:underline"
             >{{ comparisonReportPath }}</p>
           </div>
         </div>

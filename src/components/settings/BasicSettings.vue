@@ -2,54 +2,54 @@
   <div class="space-y-6">
     <!-- API Configuration -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.apiConfig') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.apiConfig') }}</h3>
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-gray-300 block mb-1">Base URL</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">Base URL</label>
           <div class="flex items-center gap-2">
             <input
               v-model="localSettings.api_base_url"
               type="text"
               placeholder="https://api.openai.com/v1"
-              class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
             />
             <!-- Ollama status indicator -->
             <span v-if="isOllama" class="text-xs text-green-400 whitespace-nowrap">🦙 Ollama</span>
           </div>
-          <span class="text-xs text-gray-500 mt-1 block">
+          <span class="text-xs text-[var(--color-text-muted)] mt-1 block">
             {{ $t('settings.baseUrlOllamaHint') }}
           </span>
         </div>
         <div>
-          <label class="text-xs text-gray-300 block mb-1">
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">
             {{ $t('settings.apiKey') }}
-            <span v-if="isOllama" class="text-gray-500">{{ $t('settings.apiKeyOllamaHint') }}</span>
+            <span v-if="isOllama" class="text-[var(--color-text-muted)]">{{ $t('settings.apiKeyOllamaHint') }}</span>
           </label>
           <div class="relative">
             <input
               v-model="localSettings.api_key"
               :type="showApiKey ? 'text' : 'password'"
               placeholder="sk-..."
-              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 pr-16 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 pr-16 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
             />
             <button
               @click="showApiKey = !showApiKey"
               type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors text-xs px-2 py-1 rounded hover:bg-gray-700"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-xs px-2 py-1 rounded hover:bg-[var(--color-action-neutral)]"
               :title="showApiKey ? $t('common.hide') : $t('common.show')"
             >{{ showApiKey ? $t('common.hide') : $t('common.show') }}</button>
           </div>
         </div>
         <!-- PERF-001: Test Model Name -->
         <div>
-          <label class="text-xs text-gray-300 block mb-1">Test Model</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">Test Model</label>
           <input
             v-model="localSettings.test_model_name"
             type="text"
             placeholder="gpt-4o"
             class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
           />
-          <span class="text-xs text-gray-500 mt-1 block">
+          <span class="text-xs text-[var(--color-text-muted)] mt-1 block">
             {{ $t('settings.testModelHint') }}
           </span>
         </div>
@@ -60,7 +60,7 @@
             <button
               @click="testConnection"
               :disabled="isTestingConnection || !localSettings.api_base_url || !localSettings.model_name || (!isOllama && !localSettings.api_key)"
-              class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              class="px-3 py-1.5 text-sm bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-neutral)] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
               {{ isTestingConnection ? $t('settings.testing') : $t('settings.testConnection') }}
             </button>
@@ -83,7 +83,7 @@
         <!-- Ollama model list -->
         <div v-if="isOllama" class="mt-3">
           <div class="flex items-center justify-between mb-1">
-            <label class="text-xs text-gray-300">{{ $t('settings.selectModel') }}</label>
+            <label class="text-xs text-[var(--color-text-secondary)]">{{ $t('settings.selectModel') }}</label>
             <button
               @click="fetchOllamaModels"
               :disabled="isLoadingOllamaModels"
@@ -100,11 +100,11 @@
               v-model="pullModelName"
               type="text"
               :placeholder="$t('settings.pullModelPlaceholder')"
-              class="flex-1 bg-darker border border-gray-700 rounded px-2 py-1 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded px-2 py-1 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
             />
             <select
               v-model="pullModelQuantization"
-              class="bg-darker border border-gray-700 rounded px-2 py-1 text-xs text-gray-100 focus:border-primary focus:outline-none"
+              class="bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded px-2 py-1 text-xs text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
               :title="$t('settings.quantizationTooltip')"
             >
               <option value="">{{ $t('settings.defaultQuantization') }}</option>
@@ -131,26 +131,26 @@
               v-for="model in ollamaModels"
               :key="model.name"
               class="flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors"
-              :class="localSettings.model_name === model.name ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+              :class="localSettings.model_name === model.name ? 'bg-primary border-primary text-[var(--color-text-primary)]' : 'bg-[var(--color-surface-0)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
             >
               <button
                 @click="selectOllamaModel(model.name)"
                 type="button"
-                class="hover:text-white transition-colors"
+                class="hover:text-[var(--color-text-primary)] transition-colors"
               >
-                {{ model.name }}<span v-if="model.size" class="text-gray-400 ml-1">({{ model.size }})</span>
+                {{ model.name }}<span v-if="model.size" class="text-[var(--color-text-secondary)] ml-1">({{ model.size }})</span>
               </button>
               <button
                 @click="openCopyModelModal(model.name)"
                 type="button"
-                class="ml-1 text-gray-400 hover:text-blue-400 transition-colors"
+                class="ml-1 text-[var(--color-text-secondary)] hover:text-blue-400 transition-colors"
                 :title="$t('settings.copyModel')"
               >⧉</button>
               <button
                 @click="deleteModel(model.name)"
                 :disabled="isDeletingModel === model.name"
                 type="button"
-                class="ml-1 text-gray-400 hover:text-red-400 disabled:opacity-50 transition-colors"
+                class="ml-1 text-[var(--color-text-secondary)] hover:text-red-400 disabled:opacity-50 transition-colors"
                 :title="$t('settings.deleteModel')"
               >×</button>
             </div>
@@ -160,7 +160,7 @@
           <!-- Running models status -->
           <div class="mt-3 pt-3 border-t border-gray-700">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs text-gray-400">{{ $t('settings.runningModels') }}</span>
+              <span class="text-xs text-[var(--color-text-secondary)]">{{ $t('settings.runningModels') }}</span>
               <button
                 @click="fetchRunningModels"
                 :disabled="isLoadingRunningModels"
@@ -249,7 +249,7 @@
               :placeholder="$t('settings.headerValuePlaceholder')"
               class="flex-1 bg-transparent border-none text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
             />
-            <label class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+            <label class="flex items-center gap-1 text-xs text-[var(--color-text-secondary)] cursor-pointer">
               <input
                 v-model="header.sensitive"
                 type="checkbox"
@@ -260,7 +260,7 @@
             <button
               @click="removeHeader(index)"
               type="button"
-              class="text-gray-400 hover:text-red-400 transition-colors px-2"
+              class="text-[var(--color-text-secondary)] hover:text-red-400 transition-colors px-2"
             >×</button>
           </div>
         </div>
@@ -277,7 +277,7 @@
 
         <!-- Headers Preview -->
         <div v-if="customHeaders.length > 0" class="mt-3 p-3 bg-gray-800/50 rounded-lg">
-          <h4 class="text-xs font-medium text-gray-400 mb-2">{{ $t('settings.headerPreview') }}</h4>
+          <h4 class="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{{ $t('settings.headerPreview') }}</h4>
           <div class="text-xs text-gray-500 font-mono space-y-1">
             <div v-for="(header, index) in customHeaders" :key="index">
               {{ header.key }}: {{ header.sensitive ? '***' : header.value || '(empty)' }}
@@ -314,7 +314,7 @@
         <!-- Proxy Host and Port -->
         <div class="flex gap-2">
           <div class="flex-1">
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.proxyHost') }}</label>
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.proxyHost') }}</label>
             <input
               v-model="localSettings.proxy_host"
               type="text"
@@ -324,7 +324,7 @@
             />
           </div>
           <div class="w-24">
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.proxyPort') }}</label>
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.proxyPort') }}</label>
             <input
               v-model.number="localSettings.proxy_port"
               type="number"
@@ -339,7 +339,7 @@
 
         <!-- Proxy Username (Optional) -->
         <div>
-          <label class="text-xs text-gray-300 block mb-1">
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">
             {{ $t('settings.proxyUsername') }}
             <span class="text-gray-500">({{ $t('settings.optional') }})</span>
           </label>
@@ -354,7 +354,7 @@
 
         <!-- Proxy Password (Optional) -->
         <div>
-          <label class="text-xs text-gray-300 block mb-1">
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">
             {{ $t('settings.proxyPassword') }}
             <span class="text-gray-500">({{ $t('settings.optional') }})</span>
           </label>
@@ -452,7 +452,7 @@
 
         <!-- Auto Backup Interval (shown when enabled) -->
         <div v-if="localSettings.auto_backup_enabled">
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.autoBackupInterval') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.autoBackupInterval') }}</label>
           <select
             v-model="localSettings.auto_backup_interval"
             class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
@@ -465,7 +465,7 @@
 
         <!-- Auto Backup Retention (shown when enabled) -->
         <div v-if="localSettings.auto_backup_enabled">
-          <label class="text-xs text-gray-300 block mb-1">
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">
             {{ $t('settings.autoBackupRetention') }}
           </label>
           <input
@@ -475,13 +475,13 @@
             max="20"
             class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
           />
-          <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.autoBackupRetentionHint') }}</span>
+          <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.autoBackupRetentionHint') }}</span>
         </div>
 
         <!-- Last Auto Backup Status (shown when enabled) -->
         <div v-if="localSettings.auto_backup_enabled && localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-gray-700">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-400">{{ $t('settings.autoBackupLastTime') }}</span>
+            <span class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.autoBackupLastTime') }}</span>
             <span class="text-xs text-gray-300">{{ formatLastBackupTime(localSettings.last_auto_backup_at) }}</span>
           </div>
           <button
@@ -496,7 +496,7 @@
 
         <!-- No backup yet (shown when enabled but no last backup) -->
         <div v-if="localSettings.auto_backup_enabled && !localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-gray-700">
-          <span class="text-xs text-gray-400">{{ $t('settings.autoBackupNoBackupYet') }}</span>
+          <span class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.autoBackupNoBackupYet') }}</span>
           <button
             @click="triggerManualBackup"
             :disabled="isTriggeringBackup"
@@ -512,7 +512,7 @@
     <!-- Shortcuts -->
     <div v-if="isDesktop">
       <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
-      <div class="bg-darker rounded-lg px-3 py-2 text-sm text-gray-400 border border-gray-700">
+      <div class="bg-[var(--color-surface-0)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-secondary)] border border-[var(--color-border)]">
         {{ $t('settings.quickNoteShortcut') }}
       </div>
     </div>

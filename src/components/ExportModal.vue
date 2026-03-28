@@ -1,28 +1,28 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('exportModal.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Body -->
       <div class="p-6 space-y-5">
         <!-- Date Range -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">{{ t('exportModal.dateRange') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('exportModal.dateRange') }}</label>
           <div class="flex items-center gap-3">
             <input
               type="date"
               v-model="startDate"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">{{ t('exportModal.to') }}</span>
+            <span class="text-[var(--color-text-muted)]">{{ t('exportModal.to') }}</span>
             <input
               type="date"
               v-model="endDate"
-              class="flex-1 bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
           </div>
           <p v-if="dateError" class="text-red-400 text-xs">{{ dateError }}</p>
@@ -30,11 +30,11 @@
 
         <!-- Format Selection -->
         <div class="space-y-3">
-          <label class="text-sm text-gray-400 block">{{ t('exportModal.exportFormat') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block">{{ t('exportModal.exportFormat') }}</label>
           <div class="flex gap-3">
             <button
               @click="exportFormat = 'json'"
-              :class="exportFormat === 'json' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
+              :class="exportFormat === 'json' ? 'border-primary bg-primary/10 text-[var(--color-text-primary)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)]'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
               <div class="font-medium">{{ t('exportModal.jsonFormat') }}</div>
@@ -42,7 +42,7 @@
             </button>
             <button
               @click="exportFormat = 'markdown'"
-              :class="exportFormat === 'markdown' ? 'border-primary bg-primary/10 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500'"
+              :class="exportFormat === 'markdown' ? 'border-primary bg-primary/10 text-[var(--color-text-primary)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)]'"
               class="flex-1 border rounded-lg px-4 py-3 text-sm transition-colors text-center"
             >
               <div class="font-medium">{{ t('exportModal.markdownFormat') }}</div>
@@ -59,18 +59,18 @@
               id="useCustomTemplate"
               v-model="useCustomTemplate"
               @change="useCustomTemplate && loadDefaultTemplate()"
-              class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary"
+              class="w-4 h-4 rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-primary focus:ring-primary"
             />
-            <label for="useCustomTemplate" class="text-sm text-gray-400">
+            <label for="useCustomTemplate" class="text-sm text-[var(--color-text-secondary)]">
               {{ t('exportModal.useCustomTemplate') }}
             </label>
           </div>
           <div v-if="useCustomTemplate" class="space-y-2">
-            <p class="text-xs text-gray-500" v-html="templatePlaceholdersText"></p>
+            <p class="text-xs text-[var(--color-text-muted)]" v-html="templatePlaceholdersText"></p>
             <textarea
               v-model="customTemplate"
               rows="6"
-              class="w-full bg-darker border border-gray-600 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-primary focus:outline-none resize-none"
+              class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] font-mono focus:border-primary focus:outline-none resize-none"
               :placeholder="defaultTemplate"
             ></textarea>
             <button
@@ -83,11 +83,11 @@
         </div>
 
         <!-- Export Result -->
-        <div v-if="exportResult" class="bg-darker rounded-lg p-4 space-y-2 border border-gray-600">
+        <div v-if="exportResult" class="bg-[var(--color-surface-0)] rounded-lg p-4 space-y-2 border border-[var(--color-border-subtle)]">
           <div class="flex items-center gap-2 text-green-400 text-sm">
             <span>{{ t('exportModal.exportSuccess') }}</span>
           </div>
-          <div class="text-xs text-gray-400 space-y-1">
+          <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
             <p>{{ t('exportModal.recordCount', { count: exportResult.record_count }) }}</p>
             <p>{{ t('exportModal.fileSize', { size: formatFileSize(exportResult.file_size) }) }}</p>
             <p class="break-all">{{ t('exportModal.path', { path: exportResult.path }) }}</p>
@@ -107,10 +107,10 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+      <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
         <button
           @click="$emit('close')"
-          class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+          class="px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
         >
           {{ t('exportModal.close') }}
         </button>

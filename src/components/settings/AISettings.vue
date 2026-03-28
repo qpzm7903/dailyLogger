@@ -2,16 +2,16 @@
   <div class="space-y-6">
     <!-- Screenshot Analysis Settings -->
     <div v-if="isDesktop">
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.screenshotAnalysis') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.screenshotAnalysis') }}</h3>
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.analysisModel') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.analysisModel') }}</label>
           <div class="flex items-center gap-2">
             <input
               v-model="localSettings.model_name"
               type="text"
               placeholder="gpt-4o"
-              class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
             />
             <button
               @click="getModelInfo('analysis')"
@@ -21,18 +21,18 @@
               :title="$t('settings.contextWindow', { size: '' })"
             >ℹ️</button>
           </div>
-          <span v-if="analysisModelInfo?.context_window" class="text-xs text-gray-500 mt-1 block">
+          <span v-if="analysisModelInfo?.context_window" class="text-xs text-[var(--color-text-muted)] mt-1 block">
             {{ $t('settings.contextWindow', { size: analysisModelInfo.context_window / 1000 }) }}
           </span>
-          <span v-else class="text-xs text-gray-500 mt-1 block">{{ $t('settings.visionRequired') }}</span>
+          <span v-else class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.visionRequired') }}</span>
         </div>
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.analysisPrompt') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.analysisPrompt') }}</label>
           <textarea
             v-model="localSettings.analysis_prompt"
             rows="4"
             :placeholder="$t('settings.analysisPromptPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none resize-y"
           />
           <div class="flex gap-3 mt-2">
             <button
@@ -66,7 +66,7 @@
             :placeholder="$t('settings.reportTitlePlaceholder')"
             class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
           />
-          <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.reportTitleHint') }}</span>
+          <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.reportTitleHint') }}</span>
         </div>
         <div>
           <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportModel') }}</label>
@@ -75,7 +75,7 @@
               v-model="localSettings.summary_model_name"
               type="text"
               :placeholder="$t('settings.reportModelPlaceholder')"
-              class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
             />
             <button
               @click="getModelInfo('summary')"
@@ -88,7 +88,7 @@
           <span v-if="summaryModelInfo?.context_window" class="text-xs text-gray-500 mt-1 block">
             {{ $t('settings.contextWindow', { size: summaryModelInfo.context_window / 1000 }) }}
           </span>
-          <span v-else class="text-xs text-gray-500 mt-1 block">{{ $t('settings.textModelHint') }}</span>
+          <span v-else class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.textModelHint') }}</span>
         </div>
         <div>
           <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportPrompt') }}</label>
@@ -96,7 +96,7 @@
             v-model="localSettings.summary_prompt"
             rows="4"
             :placeholder="$t('settings.reportPromptPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none resize-y"
           />
           <div class="flex gap-3 mt-2">
             <button
@@ -141,9 +141,9 @@
             v-model="localSettings.include_manual_records"
             type="checkbox"
             id="include_manual_records"
-            class="w-4 h-4 rounded border-gray-600 bg-darker text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+            class="w-4 h-4 rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
           />
-          <label for="include_manual_records" class="text-xs text-gray-300 cursor-pointer">
+          <label for="include_manual_records" class="text-xs text-[var(--color-text-secondary)] cursor-pointer">
             {{ $t('settings.includeQuickNotes') }}
           </label>
           <span class="text-xs text-gray-500">{{ $t('settings.includeQuickNotesHint') }}</span>

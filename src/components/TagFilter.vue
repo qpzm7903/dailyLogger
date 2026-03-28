@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col gap-2">
     <div class="flex items-center gap-2">
-      <span class="text-sm text-gray-400">{{ t('tagFilter.title') }}</span>
+      <span class="text-sm text-[var(--color-text-secondary)]">{{ t('tagFilter.title') }}</span>
       <button
         v-if="selectedTags.length > 0"
         @click="clearAll"
-        class="text-xs text-gray-500 hover:text-white"
+        class="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
       >
         {{ t('tagFilter.clearAll') }}
       </button>
@@ -26,32 +26,32 @@
     <div class="relative">
       <button
         @click="showDropdown = !showDropdown"
-        class="w-full bg-darker border border-gray-600 rounded px-3 py-1.5 text-sm text-left text-gray-400 hover:border-gray-500 transition-colors"
+        class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded px-3 py-1.5 text-sm text-left text-[var(--color-text-secondary)] hover:border-[var(--color-border)] transition-colors"
       >
         {{ selectedTags.length > 0 ? t('tagFilter.addMoreTags') : t('tagFilter.selectTagToFilter') }}
       </button>
 
       <div
         v-if="showDropdown && availableTags.length > 0"
-        class="absolute top-full left-0 right-0 mt-1 bg-dark border border-gray-600 rounded-lg shadow-lg z-10 max-h-48 overflow-auto"
+        class="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-lg shadow-lg z-10 max-h-48 overflow-auto"
       >
         <button
           v-for="tag in availableTags"
           :key="tag.id"
           @click="addTag(tag)"
-          class="w-full text-left px-3 py-2 hover:bg-darker flex items-center justify-between"
+          class="w-full text-left px-3 py-2 hover:bg-[var(--color-surface-0)] flex items-center justify-between"
         >
           <div class="flex items-center gap-2">
             <span :class="getDotClass(tag.color)"></span>
             <span>{{ tag.name }}</span>
           </div>
-          <span class="text-xs text-gray-500">{{ t('tagFilter.times', { count: tag.usage_count || 0 }) }}</span>
+          <span class="text-xs text-[var(--color-text-muted)]">{{ t('tagFilter.times', { count: tag.usage_count || 0 }) }}</span>
         </button>
       </div>
     </div>
 
     <!-- Logic hint -->
-    <p v-if="selectedTags.length > 1" class="text-xs text-gray-500">
+    <p v-if="selectedTags.length > 1" class="text-xs text-[var(--color-text-muted)]">
       {{ t('tagFilter.andLogic') }}
     </p>
   </div>

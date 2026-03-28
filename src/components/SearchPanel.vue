@@ -4,15 +4,15 @@
     @click.self="$emit('close')"
     :ref="focusTrap.containerRef"
   >
-    <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('searchPanel.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Search Input -->
-      <div class="px-6 py-4 border-b border-gray-700">
+      <div class="px-6 py-4 border-b border-[var(--color-border)]">
         <div class="flex items-center gap-3">
           <div class="relative flex-1">
             <input
@@ -20,12 +20,12 @@
               v-model="searchQuery"
               @keyup.enter="search"
               :placeholder="t('searchPanel.placeholder')"
-              class="w-full bg-darker border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-primary focus:outline-none pr-10"
+              class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-4 py-2 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none pr-10"
             />
             <button
               v-if="searchQuery"
               @click="clearSearch"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             >
               ✕
             </button>
@@ -41,24 +41,24 @@
 
         <!-- Sort Toggle -->
         <div v-if="results.length > 0" class="flex items-center gap-4 mt-3">
-          <span class="text-sm text-gray-400">{{ t('searchPanel.sortBy') }}</span>
+          <span class="text-sm text-[var(--color-text-secondary)]">{{ t('searchPanel.sortBy') }}</span>
           <div class="flex items-center gap-2">
             <button
               @click="setOrderBy('rank')"
-              :class="orderBy === 'rank' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
+              :class="orderBy === 'rank' ? 'bg-primary text-white' : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'"
               class="px-3 py-1 rounded text-sm transition-colors"
             >
               {{ t('searchPanel.relevance') }}
             </button>
             <button
               @click="setOrderBy('time')"
-              :class="orderBy === 'time' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
+              :class="orderBy === 'time' ? 'bg-primary text-white' : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'"
               class="px-3 py-1 rounded text-sm transition-colors"
             >
               {{ t('searchPanel.time') }}
             </button>
           </div>
-          <span class="text-sm text-gray-400 ml-auto">
+          <span class="text-sm text-[var(--color-text-secondary)] ml-auto">
             {{ t('searchPanel.totalResults', { count: results.length }) }}
           </span>
         </div>
@@ -84,7 +84,7 @@
           <div
             v-for="virtualItem in virtualItems"
             :key="virtualItem.index"
-            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-darker/50 transition-colors border-b border-gray-700 cursor-pointer"
+            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-[var(--color-surface-0)]/50 transition-colors border-b border-[var(--color-border)] cursor-pointer"
             :style="{
               height: `${virtualItem.size}px`,
               transform: `translateY(${virtualItem.start}px)`,
@@ -102,12 +102,12 @@
                     >
                       {{ results[virtualItem.index].record.source_type === 'auto' ? t('searchPanel.auto') : t('searchPanel.manual') }}
                     </span>
-                    <span class="text-xs text-gray-500">{{ formatTime(results[virtualItem.index].record.timestamp) }}</span>
-                    <span v-if="orderBy === 'rank'" class="text-xs text-gray-600">
+                    <span class="text-xs text-[var(--color-text-muted)]">{{ formatTime(results[virtualItem.index].record.timestamp) }}</span>
+                    <span v-if="orderBy === 'rank'" class="text-xs text-[var(--color-text-muted)]">
                       {{ t('searchPanel.relevanceScore', { rank: results[virtualItem.index].rank.toFixed(2) }) }}
                     </span>
                   </div>
-                  <p class="text-sm text-gray-300" v-html="results[virtualItem.index].snippet"></p>
+                  <p class="text-sm text-[var(--color-text-secondary)]" v-html="results[virtualItem.index].snippet"></p>
                 </div>
               </div>
             </template>
@@ -115,11 +115,11 @@
         </div>
 
         <!-- Non-virtual scroll for small result sets -->
-        <div v-else class="flex flex-col divide-y divide-gray-700">
+        <div v-else class="flex flex-col divide-y divide-[var(--color-border)]">
           <div
             v-for="result in results"
             :key="result.record.id"
-            class="py-3 px-2 hover:bg-darker/50 transition-colors cursor-pointer"
+            class="py-3 px-2 hover:bg-[var(--color-surface-0)]/50 transition-colors cursor-pointer"
             @click="handleResultClick(result.record)"
           >
             <div class="flex items-start justify-between gap-2">
@@ -131,12 +131,12 @@
                   >
                     {{ result.record.source_type === 'auto' ? t('searchPanel.auto') : t('searchPanel.manual') }}
                   </span>
-                  <span class="text-xs text-gray-500">{{ formatTime(result.record.timestamp) }}</span>
-                  <span v-if="orderBy === 'rank'" class="text-xs text-gray-600">
+                  <span class="text-xs text-[var(--color-text-muted)]">{{ formatTime(result.record.timestamp) }}</span>
+                  <span v-if="orderBy === 'rank'" class="text-xs text-[var(--color-text-muted)]">
                     {{ t('searchPanel.relevanceScore', { rank: result.rank.toFixed(2) }) }}
                   </span>
                 </div>
-                <p class="text-sm text-gray-300" v-html="result.snippet"></p>
+                <p class="text-sm text-[var(--color-text-secondary)]" v-html="result.snippet"></p>
               </div>
             </div>
           </div>

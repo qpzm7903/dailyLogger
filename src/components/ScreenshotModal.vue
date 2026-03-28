@@ -1,9 +1,9 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden border border-gray-700">
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden border border-[var(--color-border)]">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('screenshotModal.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <div class="p-6 overflow-auto max-h-[70vh]">
@@ -13,42 +13,42 @@
           alt="Screenshot"
           class="w-full h-auto rounded-lg"
         />
-        <div v-else class="text-center py-8 text-gray-500">
+        <div v-else class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('screenshotModal.loading') }}
         </div>
 
         <!-- Window Info Section (SMART-001 Task 6) -->
         <div
           v-if="windowInfo && (windowInfo.title || windowInfo.process_name)"
-          class="mt-4 p-3 bg-darker rounded-lg border border-gray-700 window-info-section"
+          class="mt-4 p-3 bg-[var(--color-surface-0)] rounded-lg border border-[var(--color-border)] window-info-section"
         >
           <div class="flex items-center gap-2 mb-1">
             <span class="text-sm">{{ getWindowIcon(windowInfo.process_name) }}</span>
-            <span class="text-xs text-gray-400">{{ t('screenshotModal.window') }}</span>
+            <span class="text-xs text-[var(--color-text-secondary)]">{{ t('screenshotModal.window') }}</span>
           </div>
-          <p v-if="windowInfo.title" class="text-sm text-gray-300 truncate" :title="windowInfo.title">
+          <p v-if="windowInfo.title" class="text-sm text-[var(--color-text-secondary)] truncate" :title="windowInfo.title">
             {{ windowInfo.title }}
           </p>
-          <p v-if="windowInfo.process_name" class="text-xs text-gray-500 mt-1">
+          <p v-if="windowInfo.process_name" class="text-xs text-[var(--color-text-muted)] mt-1">
             {{ windowInfo.process_name }}
           </p>
         </div>
 
-        <div class="mt-4 p-4 bg-darker rounded-lg">
+        <div class="mt-4 p-4 bg-[var(--color-surface-0)] rounded-lg">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
-            <span class="text-xs" :class="record.content ? 'text-blue-400' : 'text-gray-500'">
+            <span class="text-xs text-[var(--color-text-muted)]">{{ formatTime(record.timestamp) }}</span>
+            <span class="text-xs text-[var(--color-text-muted)]" :class="{ 'text-blue-400': record.content }">
               {{ record.content ? '🖥️ ' + t('screenshotModal.analyzed') : '📸 ' + t('screenshotModal.screenshotOnly') }}
             </span>
           </div>
-          <p v-if="record.content" class="text-sm text-gray-300 whitespace-pre-wrap">{{ parseContent(record.content) }}</p>
-          <p v-else class="text-sm text-gray-500 italic">{{ t('screenshotModal.noAIAnalysis') }}</p>
+          <p v-if="record.content" class="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap">{{ parseContent(record.content) }}</p>
+          <p v-else class="text-sm text-[var(--color-text-muted)] italic">{{ t('screenshotModal.noAIAnalysis') }}</p>
         </div>
 
         <!-- FEAT-005: User Notes Section -->
-        <div class="mt-4 p-4 bg-darker rounded-lg border border-gray-700">
+        <div class="mt-4 p-4 bg-[var(--color-surface-0)] rounded-lg border border-[var(--color-border)]">
           <div class="flex items-center justify-between mb-2">
-            <label class="text-sm text-gray-400">{{ t('screenshotModal.userNotes') }}</label>
+            <label class="text-sm text-[var(--color-text-secondary)]">{{ t('screenshotModal.userNotes') }}</label>
             <button
               v-if="userNotes !== originalUserNotes"
               @click="saveUserNotes"
@@ -64,7 +64,7 @@
           <textarea
             v-model="userNotes"
             :placeholder="t('screenshotModal.userNotesPlaceholder')"
-            class="w-full bg-dark border border-gray-600 rounded-lg p-3 text-sm text-gray-300 resize-none focus:outline-none focus:border-blue-500"
+            class="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-lg p-3 text-sm text-[var(--color-text-secondary)] resize-none focus:outline-none focus:border-blue-500"
             rows="3"
           ></textarea>
         </div>

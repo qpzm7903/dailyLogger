@@ -259,7 +259,7 @@ describe('DailySummaryViewer', () => {
       expect(wrapper.find('.fixed.inset-0.bg-black\\/80').exists()).toBe(true)
 
       // Check modal container
-      expect(wrapper.find('.bg-dark.rounded-2xl').exists()).toBe(true)
+      expect(wrapper.find('[class*="bg-[var(--color-surface-1)]"].rounded-2xl').exists()).toBe(true)
     })
 
     it('has proper z-index for modal', async () => {

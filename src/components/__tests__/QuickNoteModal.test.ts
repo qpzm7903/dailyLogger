@@ -191,15 +191,15 @@ describe('QuickNoteModal', () => {
   it('applies correct styling classes', () => {
     const wrapper = mount(QuickNoteModal)
 
-    expect(wrapper.find('.bg-dark').exists()).toBe(true)
+    expect(wrapper.find('[class*="bg-[var(--color-surface-1)]"]').exists()).toBe(true)
     expect(wrapper.find('.rounded-2xl').exists()).toBe(true)
-    expect(wrapper.find('textarea').classes()).toContain('bg-darker')
+    expect(wrapper.find('textarea').classes()).toContain('bg-[var(--color-surface-0)]')
     expect(wrapper.find('textarea').classes()).toContain('resize-none')
   })
 
   it('has correct modal width', () => {
     const wrapper = mount(QuickNoteModal)
-    const modal = wrapper.find('.bg-dark.rounded-2xl')
+    const modal = wrapper.find('[class*="bg-[var(--color-surface-1)]"].rounded-2xl')
     expect(modal.classes()).toContain('w-[600px]')
   })
 

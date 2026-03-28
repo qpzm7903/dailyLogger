@@ -281,7 +281,7 @@ describe('TimelineVisualization', () => {
       await nextTick()
 
       // Find the first hour header and click it to collapse
-      const hourHeaders = wrapper.findAll('.cursor-pointer.hover\\:bg-gray-800\\/50')
+      const hourHeaders = wrapper.findAll('[class*="cursor-pointer"]')
       await hourHeaders[0].trigger('click')
       await nextTick()
 
@@ -482,8 +482,8 @@ describe('TimelineVisualization', () => {
       await flushPromises()
       await nextTick()
 
-      const closeBtn = wrapper.find('button.text-gray-400')
-      await closeBtn.trigger('click')
+      const closeBtn = wrapper.findAll('button').find(b => b.text() === '✕')
+      await closeBtn?.trigger('click')
 
       expect(wrapper.emitted('close')).toBeTruthy()
     })

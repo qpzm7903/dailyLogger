@@ -1,35 +1,35 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('historyViewer.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Filters -->
-      <div class="px-6 py-3 border-b border-gray-700 flex items-center gap-4 flex-wrap">
+      <div class="px-6 py-3 border-b border-[var(--color-border)] flex items-center gap-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-300">{{ t('historyViewer.startDate') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)]">{{ t('historyViewer.startDate') }}</label>
           <input
             type="date"
             v-model="startDate"
-            class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
+            class="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded px-2 py-1 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-300">{{ t('historyViewer.endDate') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)]">{{ t('historyViewer.endDate') }}</label>
           <input
             type="date"
             v-model="endDate"
-            class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
+            class="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded px-2 py-1 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-300">{{ t('historyViewer.source') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)]">{{ t('historyViewer.source') }}</label>
           <select
             v-model="sourceType"
-            class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
+            class="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded px-2 py-1 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           >
             <option :value="null">{{ t('historyViewer.all') }}</option>
             <option value="auto">{{ t('historyViewer.autoCapture') }}</option>
@@ -49,7 +49,7 @@
       </div>
 
       <!-- Tag Filter -->
-      <div class="px-6 py-3 border-b border-gray-700">
+      <div class="px-6 py-3 border-b border-[var(--color-border)]">
         <TagFilter
           ref="tagFilterRef"
           v-model="selectedTags"
@@ -58,10 +58,10 @@
 
       <!-- Record List -->
       <div class="flex-1 overflow-auto p-4" ref="scrollContainer" @scroll="handleScroll">
-        <div v-if="isLoading && records.length === 0" class="text-center py-8 text-gray-500">
+        <div v-if="isLoading && records.length === 0" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('historyViewer.loading') }}
         </div>
-        <div v-else-if="records.length === 0" class="text-center py-8 text-gray-500">
+        <div v-else-if="records.length === 0" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('historyViewer.noRecords') }}
         </div>
 
@@ -74,7 +74,7 @@
           <div
             v-for="virtualItem in virtualItems"
             :key="virtualItem.index"
-            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-darker/50 transition-colors group border-b border-gray-700"
+            class="absolute top-0 left-0 w-full py-3 px-2 hover:bg-[var(--color-surface-0)]/50 transition-colors group border-b border-[var(--color-border)]"
             :style="{
               height: `${virtualItem.size}px`,
               transform: `translateY(${virtualItem.start}px)`,
@@ -91,9 +91,9 @@
                     >
                       {{ records[virtualItem.index].source_type === 'auto' ? t('historyViewer.auto') : t('historyViewer.manual') }}
                     </span>
-                    <span class="text-xs text-gray-400">{{ formatTime(records[virtualItem.index].timestamp) }}</span>
+                    <span class="text-xs text-[var(--color-text-secondary)]">{{ formatTime(records[virtualItem.index].timestamp) }}</span>
                   </div>
-                  <p class="text-sm text-gray-300 line-clamp-3 whitespace-pre-wrap break-words">{{ truncateContent(records[virtualItem.index].content) }}</p>
+                  <p class="text-sm text-[var(--color-text-secondary)] line-clamp-3 whitespace-pre-wrap break-words">{{ truncateContent(records[virtualItem.index].content) }}</p>
                   <!-- Manual tags -->
                   <div v-if="getRecordTags(records[virtualItem.index].id).length > 0" class="flex flex-wrap gap-1 mt-2">
                     <TagBadge
@@ -115,11 +115,11 @@
         </div>
 
         <!-- Normal rendering for small datasets -->
-        <div v-else class="flex flex-col divide-y divide-gray-700">
+        <div v-else class="flex flex-col divide-y divide-[var(--color-border)]">
           <div
             v-for="record in records"
             :key="record.id"
-            class="py-3 px-2 hover:bg-darker/50 transition-colors group"
+            class="py-3 px-2 hover:bg-[var(--color-surface-0)]/50 transition-colors group"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="flex-1 min-w-0">
@@ -130,9 +130,9 @@
                   >
                     {{ record.source_type === 'auto' ? t('historyViewer.auto') : t('historyViewer.manual') }}
                   </span>
-                  <span class="text-xs text-gray-500">{{ formatTime(record.timestamp) }}</span>
+                  <span class="text-xs text-[var(--color-text-muted)]">{{ formatTime(record.timestamp) }}</span>
                 </div>
-                <p class="text-sm text-gray-300 truncate">{{ truncateContent(record.content) }}</p>
+                <p class="text-sm text-[var(--color-text-secondary)] truncate">{{ truncateContent(record.content) }}</p>
                 <!-- Manual tags -->
                 <div v-if="getRecordTags(record.id).length > 0" class="flex flex-wrap gap-1 mt-2">
                   <TagBadge
@@ -153,7 +153,7 @@
         </div>
 
         <!-- Loading indicator for pagination -->
-        <div v-if="isLoadingMore" class="text-center py-4 text-gray-500">
+        <div v-if="isLoadingMore" class="text-center py-4 text-[var(--color-text-muted)]">
           {{ t('historyViewer.loadingMore') }}
         </div>
       </div>
@@ -164,9 +164,9 @@
       v-if="recordToDelete"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
     >
-      <div class="bg-dark rounded-xl p-6 max-w-sm border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-sm border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ t('historyViewer.confirmDelete') }}</h3>
-        <p class="text-gray-400 mb-6">{{ t('historyViewer.confirmDeleteMessage') }}</p>
+        <p class="text-[var(--color-text-secondary)] mb-6">{{ t('historyViewer.confirmDeleteMessage') }}</p>
         <div class="flex justify-end gap-3">
           <button
             @click="recordToDelete = null"

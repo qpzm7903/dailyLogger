@@ -1,12 +1,12 @@
 <template>
   <div
-    class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+    class="bg-[var(--color-surface-1)]/60 backdrop-blur-md rounded-2xl p-5 border border-[var(--color-border)]/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
   >
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
         <span class="text-2xl">📈</span>
-        <h2 class="font-medium text-white">{{ t('timelineWidget.title') }}</h2>
+        <h2 class="font-medium text-[var(--color-text-primary)]">{{ t('timelineWidget.title') }}</h2>
       </div>
       <button
         @click="$emit('openFullTimeline')"
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-4 text-gray-500 text-sm">
+    <div v-if="loading" class="text-center py-4 text-[var(--color-text-muted)] text-sm">
       {{ t('timelineWidget.loading') }}
     </div>
 
@@ -52,7 +52,7 @@
       </div>
 
       <!-- Hour Labels -->
-      <div class="flex justify-between text-xs text-gray-500 px-1">
+      <div class="flex justify-between text-xs text-[var(--color-text-muted)] px-1">
         <span>0</span>
         <span>6</span>
         <span>12</span>
@@ -61,29 +61,29 @@
       </div>
 
       <!-- Stats Summary -->
-      <div class="flex items-center gap-4 pt-2 border-t border-gray-700/50">
+      <div class="flex items-center gap-4 pt-2 border-t border-[var(--color-border)]/50">
         <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-xs">{{ t('timelineWidget.workTime') }}:</span>
+          <span class="text-[var(--color-text-secondary)] text-xs">{{ t('timelineWidget.workTime') }}:</span>
           <span class="text-green-400 font-medium text-sm">
             {{ timelineData?.work_time_estimate?.toFixed(1) ?? '0.0' }}h
           </span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-xs">{{ t('timelineWidget.activePeriods') }}:</span>
-          <span class="text-white font-medium text-sm">
+          <span class="text-[var(--color-text-secondary)] text-xs">{{ t('timelineWidget.activePeriods') }}:</span>
+          <span class="text-[var(--color-text-primary)] font-medium text-sm">
             {{ timelineData?.active_hours ?? 0 }}
           </span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-xs">{{ t('timelineWidget.totalRecords') }}:</span>
-          <span class="text-white font-medium text-sm">
+          <span class="text-[var(--color-text-secondary)] text-xs">{{ t('timelineWidget.totalRecords') }}:</span>
+          <span class="text-[var(--color-text-primary)] font-medium text-sm">
             {{ timelineData?.total_events ?? 0 }}
           </span>
         </div>
       </div>
 
       <!-- Legend -->
-      <div class="flex items-center gap-4 text-xs text-gray-500">
+      <div class="flex items-center gap-4 text-xs text-[var(--color-text-muted)]">
         <div class="flex items-center gap-1">
           <span class="w-3 h-3 rounded-sm bg-blue-500"></span>
           <span>{{ t('timelineWidget.autoCapture') }}</span>
@@ -102,15 +102,15 @@
     <!-- Expanded Hour Details -->
     <div
       v-if="expandedHour !== null && getHourEvents(expandedHour).length > 0"
-      class="mt-4 pt-4 border-t border-gray-700/50"
+      class="mt-4 pt-4 border-t border-[var(--color-border)]/50"
     >
       <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-medium text-gray-300">
+        <h3 class="text-sm font-medium text-[var(--color-text-secondary)]">
           {{ formatHourLabel(expandedHour) }} ({{ getHourEvents(expandedHour).length }} {{ t('timelineWidget.events') }})
         </h3>
         <button
           @click="expandedHour = null"
-          class="text-gray-500 hover:text-white text-sm"
+          class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-sm"
         >
           ✕
         </button>
@@ -119,15 +119,15 @@
         <div
           v-for="event in getHourEvents(expandedHour)"
           :key="event.record.id"
-          class="bg-darker/50 rounded-lg p-2 text-sm"
+          class="bg-[var(--color-surface-0)]/50 rounded-lg p-2 text-sm"
         >
           <div class="flex items-center justify-between">
-            <span class="text-gray-400 text-xs">{{ event.time_str }}</span>
+            <span class="text-[var(--color-text-muted)] text-xs">{{ event.time_str }}</span>
             <span :class="event.event_type === 'auto' ? 'text-blue-400' : 'text-green-400'" class="text-xs">
               {{ event.event_type === 'auto' ? '🖥️' : '⚡' }}
             </span>
           </div>
-          <p class="text-gray-300 text-xs mt-1 truncate">{{ event.preview }}</p>
+          <p class="text-[var(--color-text-secondary)] text-xs mt-1 truncate">{{ event.preview }}</p>
         </div>
       </div>
     </div>

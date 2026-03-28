@@ -89,7 +89,7 @@ describe('Toast', () => {
       toastStore.add({ message: 'Error', type: 'error' })
       await nextTick()
       const toastEl = wrapper.find('.border')
-      expect(toastEl.classes()).toContain('border-red-700')
+      expect(toastEl.attributes('class')).toMatch(/border-red-700|border-\[var\(--color-error\)/)
       expect(toastEl.classes()).toContain('bg-red-900/20')
     })
 
@@ -98,7 +98,7 @@ describe('Toast', () => {
       toastStore.add({ message: 'Success', type: 'success' })
       await nextTick()
       const toastEl = wrapper.find('.border')
-      expect(toastEl.classes()).toContain('border-green-700')
+      expect(toastEl.attributes('class')).toMatch(/border-green-700|border-\[var\(--color-success\)/)
       expect(toastEl.classes()).toContain('bg-green-900/20')
     })
 
@@ -107,7 +107,7 @@ describe('Toast', () => {
       toastStore.add({ message: 'Warning', type: 'warning' })
       await nextTick()
       const toastEl = wrapper.find('.border')
-      expect(toastEl.classes()).toContain('border-yellow-700')
+      expect(toastEl.attributes('class')).toMatch(/border-yellow-700|border-\[var\(--color-warning\)/)
       expect(toastEl.classes()).toContain('bg-yellow-900/20')
     })
 
@@ -116,7 +116,7 @@ describe('Toast', () => {
       toastStore.add({ message: 'Info', type: 'info' })
       await nextTick()
       const toastEl = wrapper.find('.border')
-      expect(toastEl.classes()).toContain('border-gray-700')
+      expect(toastEl.attributes('class')).toMatch(/border-gray-700|border-\[var\(--color-border\)/)
     })
 
     it('defaults to info type when type is not specified', async () => {
@@ -124,7 +124,7 @@ describe('Toast', () => {
       toastStore.add({ message: 'Default' })
       await nextTick()
       const toastEl = wrapper.find('.border')
-      expect(toastEl.classes()).toContain('border-gray-700')
+      expect(toastEl.attributes('class')).toMatch(/border-gray-700|border-\[var\(--color-border\)/)
     })
   })
 

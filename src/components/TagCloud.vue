@@ -1,27 +1,27 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h3 class="text-lg font-semibold">{{ t('tagCloud.title') }}</h3>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Content -->
       <div class="p-6 flex-1 overflow-auto">
         <div class="flex items-center justify-between mb-4">
-          <span class="text-sm text-gray-400">{{ t('tagCloud.clickToFilter') }}</span>
+          <span class="text-sm text-[var(--color-text-secondary)]">{{ t('tagCloud.clickToFilter') }}</span>
           <button
             v-if="selectedTag"
             @click="selectedTag = null"
-            class="text-sm text-gray-400 hover:text-white"
+            class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           >
             {{ t('tagCloud.clearFilter') }}
           </button>
         </div>
 
         <!-- Tag cloud -->
-        <div v-if="isLoading" class="text-center py-8 text-gray-500">
+        <div v-if="isLoading" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('tagCloud.loading') }}
         </div>
         <div v-else-if="tags.length === 0" class="text-center py-8 text-gray-500">
@@ -64,7 +64,7 @@
             <button
               @click="confirmDelete"
               :disabled="isDeleting"
-              class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-400 transition-colors disabled:opacity-50"
+              class="px-4 py-2 bg-red-500 text-[var(--color-text-primary)] rounded hover:bg-red-400 transition-colors disabled:opacity-50"
             >
               {{ isDeleting ? t('tagCloud.deleting') : t('tagCloud.delete') }}
             </button>

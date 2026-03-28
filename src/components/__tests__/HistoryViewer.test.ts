@@ -76,7 +76,7 @@ describe('HistoryViewer', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    const closeButton = wrapper.find('button[class*="text-gray-400"]')
+    const closeButton = wrapper.findAll('button').find(b => b.text().includes('✕'))
     await closeButton.trigger('click')
 
     expect(wrapper.emitted('close')).toBeTruthy()

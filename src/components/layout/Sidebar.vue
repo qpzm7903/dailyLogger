@@ -1,7 +1,7 @@
 <template>
   <aside
     :class="[
-      'bg-dark/80 backdrop-blur-md border-r border-gray-700/50 flex flex-col items-center py-4 gap-2 transition-all duration-300',
+      'bg-[var(--color-surface-1)]/80 backdrop-blur-md border-r border-[var(--color-border)]/50 flex flex-col items-center py-4 gap-2 transition-all duration-300',
       isCollapsed ? 'w-16' : 'w-48'
     ]"
   >
@@ -13,7 +13,7 @@
     <!-- Version number (hidden when collapsed) -->
     <div
       v-if="!isCollapsed"
-      class="text-gray-500 text-xs mb-2"
+      class="text-[var(--color-text-muted)] text-xs mb-2"
     >
       v2.14.0
     </div>
@@ -26,8 +26,8 @@
         @click="item.action"
         :class="[
           'rounded-xl flex items-center justify-center transition-all duration-200',
-          'hover:bg-gray-700/50 hover:-translate-y-0.5 hover:shadow-lg',
-          isActive(item.modalId) ? 'bg-primary/20 text-white' : 'text-gray-400 hover:text-white',
+          'hover:bg-[var(--color-action-neutral)]/50 hover:-translate-y-0.5 hover:shadow-lg',
+          isActive(item.modalId) ? 'bg-primary/20 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
           isCollapsed ? 'w-10 h-10' : 'w-full px-3 h-10 gap-3'
         ]"
         :title="isCollapsed ? item.label : undefined"
@@ -43,8 +43,8 @@
         @click="emit('open', 'settings')"
         :class="[
           'rounded-xl flex items-center justify-center transition-all duration-200',
-          'hover:bg-gray-700/50 hover:-translate-y-0.5 hover:shadow-lg',
-          isActive('settings') ? 'bg-primary/20 text-white' : 'text-gray-400 hover:text-white',
+          'hover:bg-[var(--color-action-neutral)]/50 hover:-translate-y-0.5 hover:shadow-lg',
+          isActive('settings') ? 'bg-primary/20 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
           isCollapsed ? 'w-10 h-10' : 'w-full px-3 h-10 gap-3'
         ]"
         :title="isCollapsed ? '设置' : undefined"
@@ -56,7 +56,7 @@
       <!-- Collapse/Expand Toggle -->
       <button
         @click="isCollapsed = !isCollapsed"
-        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:bg-gray-700/50 hover:-translate-y-0.5 hover:shadow-lg text-gray-400 hover:text-white"
+        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-action-neutral)]/50 hover:-translate-y-0.5 hover:shadow-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
         :title="isCollapsed ? '展开侧边栏' : '折叠侧边栏'"
       >
         <component :is="isCollapsed ? ChevronRight : ChevronLeft" class="w-5 h-5" />

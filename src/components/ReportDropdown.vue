@@ -46,18 +46,18 @@
     <!-- Dropdown menu -->
     <div
       v-if="isOpen"
-      class="absolute top-full left-0 mt-1 bg-darker border border-gray-600 rounded-md shadow-lg z-20 min-w-[180px]"
+      class="absolute top-full left-0 mt-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-md shadow-lg z-20 min-w-[180px]"
     >
       <button
         v-for="option in reportOptions"
         :key="option.id"
         @click="selectOption(option.id)"
         :disabled="isGenerating"
-        class="w-full px-4 py-2 text-left text-sm hover:bg-dark transition-colors flex items-center justify-between disabled:opacity-50"
+        class="w-full px-4 py-2 text-left text-sm hover:bg-[var(--color-surface-1)] transition-colors flex items-center justify-between disabled:opacity-50"
       >
         <div>
-          <div class="text-white">{{ option.label }}</div>
-          <div v-if="option.shortcut" class="text-xs text-gray-400">{{ option.shortcut }}</div>
+          <div class="text-[var(--color-text-primary)]">{{ option.label }}</div>
+          <div v-if="option.shortcut" class="text-xs text-[var(--color-text-secondary)]">{{ option.shortcut }}</div>
         </div>
         <span
           v-if="isGeneratingType(option.id)"
@@ -66,17 +66,17 @@
       </button>
 
       <!-- Language selector submenu -->
-      <div class="border-t border-gray-600 my-1"></div>
+      <div class="border-t border-[var(--color-border)] my-1"></div>
       <div class="relative">
         <button
           @click="toggleLanguageSubmenu"
-          class="w-full px-4 py-2 text-left text-sm hover:bg-dark transition-colors flex items-center justify-between"
+          class="w-full px-4 py-2 text-left text-sm hover:bg-[var(--color-surface-1)] transition-colors flex items-center justify-between"
         >
           <div class="flex items-center gap-2">
             <span class="text-base">🌐</span>
             <div>
-              <div class="text-white">多语言日报</div>
-              <div class="text-xs text-gray-400">{{ selectedLanguageName }}</div>
+              <div class="text-[var(--color-text-primary)]">多语言日报</div>
+              <div class="text-xs text-[var(--color-text-secondary)]">{{ selectedLanguageName }}</div>
             </div>
           </div>
           <svg
@@ -93,17 +93,17 @@
         <!-- Language submenu -->
         <div
           v-if="isLanguageSubmenuOpen"
-          class="absolute left-full top-0 ml-1 bg-darker border border-gray-600 rounded-md shadow-lg z-30 min-w-[140px]"
+          class="absolute left-full top-0 ml-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-md shadow-lg z-30 min-w-[140px]"
         >
           <button
             v-for="lang in languageOptions"
             :key="lang.code"
             @click="selectLanguageAndGenerate(lang.code)"
             :disabled="isGeneratingDaily"
-            class="w-full px-4 py-2 text-left text-sm hover:bg-dark transition-colors flex items-center justify-between disabled:opacity-50"
-            :class="{ 'bg-dark': selectedLanguage === lang.code }"
+            class="w-full px-4 py-2 text-left text-sm hover:bg-[var(--color-surface-1)] transition-colors flex items-center justify-between disabled:opacity-50"
+            :class="{ 'bg-[var(--color-surface-1)]': selectedLanguage === lang.code }"
           >
-            <span class="text-white">{{ lang.name }}</span>
+            <span class="text-[var(--color-text-primary)]">{{ lang.name }}</span>
             <span v-if="selectedLanguage === lang.code" class="text-primary">✓</span>
           </button>
         </div>
@@ -111,19 +111,19 @@
 
       <!-- Additional options with divider -->
       <template v-if="additionalOptions && additionalOptions.length > 0">
-        <div class="border-t border-gray-600 my-1"></div>
+        <div class="border-t border-[var(--color-border)] my-1"></div>
         <button
           v-for="option in additionalOptions"
           :key="option.id"
           @click="selectAdditionalOption(option)"
           :disabled="isGenerating"
-          class="w-full px-4 py-2 text-left text-sm hover:bg-dark transition-colors flex items-center justify-between disabled:opacity-50"
+          class="w-full px-4 py-2 text-left text-sm hover:bg-[var(--color-surface-1)] transition-colors flex items-center justify-between disabled:opacity-50"
         >
           <div class="flex items-center gap-2">
             <span v-if="option.icon" class="text-base">{{ option.icon }}</span>
             <div>
-              <div class="text-white">{{ option.label }}</div>
-              <div v-if="option.shortcut" class="text-xs text-gray-400">{{ option.shortcut }}</div>
+              <div class="text-[var(--color-text-primary)]">{{ option.label }}</div>
+              <div v-if="option.shortcut" class="text-xs text-[var(--color-text-secondary)]">{{ option.shortcut }}</div>
             </div>
           </div>
         </button>

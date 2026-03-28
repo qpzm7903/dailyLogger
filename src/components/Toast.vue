@@ -6,11 +6,11 @@
           v-for="toast in toasts"
           :key="toast.id"
           :class="[
-            'bg-dark border rounded-lg px-4 py-3 shadow-lg',
+            'bg-[var(--color-surface-1)] border rounded-lg px-4 py-3 shadow-lg',
             toast.type === 'error' ? 'border-red-700 bg-red-900/20' : '',
             toast.type === 'success' ? 'border-green-700 bg-green-900/20' : '',
             toast.type === 'warning' ? 'border-yellow-700 bg-yellow-900/20' : '',
-            toast.type === 'info' ? 'border-gray-700' : ''
+            toast.type === 'info' ? 'border-[var(--color-border)]' : ''
           ]"
         >
           <div class="flex items-start gap-2">
@@ -22,10 +22,10 @@
 
             <div class="flex-1 min-w-0">
               <!-- Message -->
-              <p class="text-sm text-gray-200">{{ toast.message }}</p>
+              <p class="text-sm text-[var(--color-text-secondary)]">{{ toast.message }}</p>
 
               <!-- Suggestion -->
-              <p v-if="toast.suggestion" class="toast-suggestion text-xs text-gray-400 mt-1">
+              <p v-if="toast.suggestion" class="toast-suggestion text-xs text-[var(--color-text-secondary)] mt-1">
                 {{ t('toast.suggestion') }} {{ toast.suggestion }}
               </p>
             </div>
@@ -35,13 +35,13 @@
           <div v-if="toast.retryCallback" class="mt-2 flex gap-2 justify-end">
             <button
               @click="handleRetry(toast)"
-              class="btn-retry px-3 py-1 text-xs bg-primary hover:bg-blue-600 rounded text-white transition-colors"
+              class="btn-retry px-3 py-1 text-xs bg-primary hover:bg-blue-600 rounded text-[var(--color-text-primary)] transition-colors"
             >
               {{ t('toast.retry') }}
             </button>
             <button
               @click="remove(toast.id)"
-              class="btn-close px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded text-gray-200 transition-colors"
+              class="btn-close px-3 py-1 text-xs bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-neutral)] rounded text-[var(--color-text-secondary)] transition-colors"
             >
               {{ t('toast.close') }}
             </button>
@@ -51,7 +51,7 @@
           <button
             v-if="!toast.retryCallback"
             @click="remove(toast.id)"
-            class="btn-close absolute top-2 right-2 text-gray-500 hover:text-gray-300 text-xs"
+            class="btn-close absolute top-2 right-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-xs"
           >
             ✕
           </button>

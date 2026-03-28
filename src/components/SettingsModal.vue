@@ -1,20 +1,20 @@
 <template>
   <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
-    <div class="bg-dark rounded-2xl w-[700px] max-h-[85vh] overflow-hidden border border-gray-700 flex flex-col">
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[700px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
-        <button @click="handleClose" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="handleClose" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Tab Navigation -->
-      <div class="px-6 pt-4 border-b border-gray-700 flex gap-1">
+      <div class="px-6 pt-4 border-b border-[var(--color-border)] flex gap-1">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           @click="activeTab = tab.id"
           type="button"
           class="px-4 py-2 text-sm rounded-t-lg transition-colors -mb-px border-b-2"
-          :class="activeTab === tab.id ? 'text-primary border-primary bg-darker' : 'text-gray-400 border-transparent hover:text-gray-200'"
+          :class="activeTab === tab.id ? 'text-primary border-primary bg-[var(--color-surface-0)]' : 'text-[var(--color-text-secondary)] border-transparent hover:text-[var(--color-text-primary)]'"
         >
           {{ tab.label }}
         </button>
@@ -68,7 +68,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-700 flex justify-between items-center">
+      <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-between items-center">
         <div class="text-sm">
           <span v-if="saveStatus === 'ok'" class="text-green-400">{{ $t('settings.saved') }}</span>
           <span v-else-if="saveStatus === 'err'" class="text-red-400">{{ saveError }}</span>
@@ -76,14 +76,14 @@
         <div class="flex gap-3">
           <button
             @click="handleClose"
-            class="px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+            class="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-action-neutral)] hover:text-[var(--color-text-primary)] transition-colors"
           >
             {{ $t('settings.cancel') }}
           </button>
           <button
             @click="saveSettings"
             :disabled="isSaving"
-            class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-[var(--color-text-primary)] hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
             {{ isSaving ? $t('settings.saving') : $t('settings.save') }}
           </button>
@@ -96,13 +96,13 @@
       v-if="showCloseConfirm"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
     >
-      <div class="bg-dark rounded-xl p-6 max-w-sm border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-sm border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ $t('settings.unsavedChanges') }}</h3>
-        <p class="text-gray-400 mb-6">{{ $t('settings.unsavedChangesMessage') }}</p>
+        <p class="text-[var(--color-text-secondary)] mb-6">{{ $t('settings.unsavedChangesMessage') }}</p>
         <div class="flex justify-end gap-3">
           <button
             @click="showCloseConfirm = false"
-            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+            class="px-4 py-2 bg-[var(--color-action-neutral)] text-[var(--color-text-primary)] rounded hover:bg-[var(--color-action-neutral)] transition-colors"
           >
             {{ $t('common.cancel') }}
           </button>
@@ -118,11 +118,11 @@
 
     <!-- Default Prompt Modal -->
     <div v-if="showDefaultPromptModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-60">
-      <div class="bg-dark rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ $t('settings.defaultPrompt') }}</h3>
-        <pre class="text-sm text-gray-300 whitespace-pre-wrap bg-darker p-4 rounded-lg">{{ defaultPromptContent }}</pre>
+        <pre class="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap bg-[var(--color-surface-0)] p-4 rounded-lg">{{ defaultPromptContent }}</pre>
         <div class="mt-4 flex justify-end">
-          <button @click="showDefaultPromptModal = false" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
+          <button @click="showDefaultPromptModal = false" class="px-4 py-2 bg-[var(--color-action-neutral)] text-[var(--color-text-primary)] rounded hover:bg-[var(--color-action-neutral)] transition-colors">
             {{ $t('common.close') }}
           </button>
         </div>
@@ -131,11 +131,11 @@
 
     <!-- Default Summary Prompt Modal -->
     <div v-if="showDefaultSummaryPromptModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-60">
-      <div class="bg-dark rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ $t('settings.defaultReportPrompt') }}</h3>
-        <pre class="text-sm text-gray-300 whitespace-pre-wrap bg-darker p-4 rounded-lg">{{ defaultSummaryPromptContent }}</pre>
+        <pre class="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap bg-[var(--color-surface-0)] p-4 rounded-lg">{{ defaultSummaryPromptContent }}</pre>
         <div class="mt-4 flex justify-end">
-          <button @click="showDefaultSummaryPromptModal = false" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
+          <button @click="showDefaultSummaryPromptModal = false" class="px-4 py-2 bg-[var(--color-action-neutral)] text-[var(--color-text-primary)] rounded hover:bg-[var(--color-action-neutral)] transition-colors">
             {{ $t('common.close') }}
           </button>
         </div>
@@ -144,21 +144,21 @@
 
     <!-- Template Library Modal -->
     <div v-if="showTemplateLibraryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-60">
-      <div class="bg-dark rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ $t('common.templateLibrary') }}</h3>
         <div class="space-y-3">
           <div
             v-for="template in presetTemplates"
             :key="template.id"
-            class="bg-darker p-4 rounded-lg border border-gray-700 hover:border-primary cursor-pointer transition-colors"
+            class="bg-[var(--color-surface-0)] p-4 rounded-lg border border-[var(--color-border)] hover:border-primary cursor-pointer transition-colors"
             @click="applyTemplate(template)"
           >
-            <h4 class="text-sm font-medium text-gray-200">{{ template.name }}</h4>
-            <p class="text-xs text-gray-400 mt-1">{{ template.description }}</p>
+            <h4 class="text-sm font-medium text-[var(--color-text-secondary)]">{{ template.name }}</h4>
+            <p class="text-xs text-[var(--color-text-secondary)] mt-1">{{ template.description }}</p>
           </div>
         </div>
         <div class="mt-4 flex justify-end">
-          <button @click="showTemplateLibraryModal = false" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
+          <button @click="showTemplateLibraryModal = false" class="px-4 py-2 bg-[var(--color-action-neutral)] text-[var(--color-text-primary)] rounded hover:bg-[var(--color-action-neutral)] transition-colors">
             {{ $t('common.close') }}
           </button>
         </div>
@@ -167,15 +167,15 @@
 
     <!-- Default Tag Categories Modal -->
     <div v-if="showDefaultTagCategoriesModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-60">
-      <div class="bg-dark rounded-xl p-6 max-w-lg max-h-[80vh] overflow-auto border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-lg max-h-[80vh] overflow-auto border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ $t('settings.defaultTagCategories') }}</h3>
         <div class="space-y-2">
-          <div v-for="category in defaultTagCategoriesContent" :key="category" class="text-sm text-gray-300 bg-darker px-3 py-2 rounded">
+          <div v-for="category in defaultTagCategoriesContent" :key="category" class="text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface-0)] px-3 py-2 rounded">
             {{ category }}
           </div>
         </div>
         <div class="mt-4 flex justify-end">
-          <button @click="showDefaultTagCategoriesModal = false" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
+          <button @click="showDefaultTagCategoriesModal = false" class="px-4 py-2 bg-[var(--color-action-neutral)] text-[var(--color-text-primary)] rounded hover:bg-[var(--color-action-neutral)] transition-colors">
             {{ $t('common.close') }}
           </button>
         </div>
@@ -184,27 +184,27 @@
 
     <!-- Create Model Modal (Ollama) -->
     <div v-if="showCreateModelModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-60">
-      <div class="bg-dark rounded-xl p-6 max-w-md border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ $t('settings.createCustomModel') }}</h3>
         <div class="space-y-3">
           <div>
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.modelName') }}</label>
-            <input v-model="createModelParams.name" type="text" class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none" />
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.modelName') }}</label>
+            <input v-model="createModelParams.name" type="text" class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none" />
           </div>
           <div>
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.fromModel') }}</label>
-            <input v-model="createModelParams.from" type="text" class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none" />
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.fromModel') }}</label>
+            <input v-model="createModelParams.from" type="text" class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none" />
           </div>
           <div>
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.systemPrompt') }}</label>
-            <textarea v-model="createModelParams.system" rows="3" class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none resize-y"></textarea>
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.systemPrompt') }}</label>
+            <textarea v-model="createModelParams.system" rows="3" class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none resize-y"></textarea>
           </div>
         </div>
         <div class="mt-4 flex justify-end gap-3">
-          <button @click="showCreateModelModal = false" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
+          <button @click="showCreateModelModal = false" class="px-4 py-2 bg-[var(--color-action-neutral)] text-[var(--color-text-primary)] rounded hover:bg-[var(--color-action-neutral)] transition-colors">
             {{ $t('common.cancel') }}
           </button>
-          <button @click="createCustomModel" :disabled="isCreatingModel" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80 disabled:opacity-50 transition-colors">
+          <button @click="createCustomModel" :disabled="isCreatingModel" class="px-4 py-2 bg-primary text-[var(--color-text-primary)] rounded hover:bg-primary/80 disabled:opacity-50 transition-colors">
             {{ isCreatingModel ? $t('settings.creating') : $t('settings.create') }}
           </button>
         </div>
@@ -213,23 +213,23 @@
 
     <!-- Copy Model Modal -->
     <div v-if="showCopyModelModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-60">
-      <div class="bg-dark rounded-xl p-6 max-w-md border border-gray-700">
+      <div class="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md border border-[var(--color-border)]">
         <h3 class="text-lg font-semibold mb-4">{{ $t('settings.copyModel') }}</h3>
         <div class="space-y-3">
           <div>
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.sourceModel') }}</label>
-            <div class="bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400">{{ copyModelSource }}</div>
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.sourceModel') }}</label>
+            <div class="bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-secondary)]">{{ copyModelSource }}</div>
           </div>
           <div>
-            <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.newModelName') }}</label>
-            <input v-model="copyModelDestination" type="text" class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none" />
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.newModelName') }}</label>
+            <input v-model="copyModelDestination" type="text" class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none" />
           </div>
         </div>
         <div class="mt-4 flex justify-end gap-3">
-          <button @click="showCopyModelModal = false" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
+          <button @click="showCopyModelModal = false" class="px-4 py-2 bg-[var(--color-action-neutral)] text-[var(--color-text-primary)] rounded hover:bg-[var(--color-action-neutral)] transition-colors">
             {{ $t('common.cancel') }}
           </button>
-          <button @click="copyModel" :disabled="isCopyingModel" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80 disabled:opacity-50 transition-colors">
+          <button @click="copyModel" :disabled="isCopyingModel" class="px-4 py-2 bg-primary text-[var(--color-text-primary)] rounded hover:bg-primary/80 disabled:opacity-50 transition-colors">
             {{ isCopyingModel ? $t('settings.copying') : $t('settings.copy') }}
           </button>
         </div>

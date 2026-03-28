@@ -139,7 +139,7 @@ describe('StatisticsPanel', () => {
       const wrapper = mount(StatisticsPanel)
 
       expect(wrapper.find('.fixed.inset-0.bg-black\\/50').exists()).toBe(true)
-      expect(wrapper.find('.bg-dark.rounded-2xl').exists()).toBe(true)
+      expect(wrapper.find('[class*="bg-[var(--color-surface-1)]"].rounded-2xl').exists()).toBe(true)
       expect(wrapper.find('.z-50').exists()).toBe(true)
     })
   })

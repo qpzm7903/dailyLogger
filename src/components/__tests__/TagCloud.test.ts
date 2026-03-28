@@ -43,8 +43,8 @@ describe('TagCloud', () => {
     const wrapper = mount(TagCloud)
     await flushPromises()
 
-    const closeButton = wrapper.find('button[class*="text-gray-400"]')
-    await closeButton.trigger('click')
+    const closeButton = wrapper.findAll('button').find(b => b.text() === '✕')
+    await closeButton?.trigger('click')
 
     expect(wrapper.emitted('close')).toBeTruthy()
   })

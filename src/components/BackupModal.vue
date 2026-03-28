@@ -1,21 +1,21 @@
 <template>
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[600px] max-h-[80vh] overflow-hidden border border-gray-700 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[600px] max-h-[80vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('backup.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Tabs -->
-      <div class="flex border-b border-gray-700">
+      <div class="flex border-b border-[var(--color-border)]">
         <button
           @click="activeTab = 'backup'"
           :class="[
             'flex-1 px-4 py-3 text-sm font-medium transition-colors',
             activeTab === 'backup'
               ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-400 hover:text-white'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
           ]"
         >
           {{ t('backup.tabCreateBackup') }}
@@ -26,7 +26,7 @@
             'flex-1 px-4 py-3 text-sm font-medium transition-colors',
             activeTab === 'restore'
               ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-400 hover:text-white'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
           ]"
         >
           {{ t('backup.tabRestore') }}
@@ -37,7 +37,7 @@
             'flex-1 px-4 py-3 text-sm font-medium transition-colors',
             activeTab === 'history'
               ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-400 hover:text-white'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
           ]"
         >
           {{ t('backup.tabHistory') }}
@@ -48,9 +48,9 @@
       <div class="flex-1 overflow-y-auto p-6">
         <!-- Backup Tab -->
         <div v-if="activeTab === 'backup'" class="space-y-4">
-          <div class="bg-darker rounded-lg p-4">
+          <div class="bg-[var(--color-surface-0)] rounded-lg p-4">
             <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.backupInfo') }}</h3>
-            <ul class="text-xs text-gray-400 space-y-1">
+            <ul class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <li>{{ t('backup.backupIncludes') }}</li>
               <li>{{ t('backup.backupFormat') }}</li>
               <li>{{ t('backup.backupLocation') }}</li>
@@ -64,11 +64,11 @@
                 v-model="backupDir"
                 type="text"
                 :placeholder="t('backup.backupPathPlaceholder')"
-                class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
               />
               <button
                 @click="selectBackupDir"
-                class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
+                class="px-3 py-2 bg-[var(--color-action-secondary)] hover:bg-[var(--color-action-neutral)] rounded-lg text-sm transition-colors"
               >
                 {{ t('backup.select') }}
               </button>
@@ -97,9 +97,9 @@
 
         <!-- Restore Tab -->
         <div v-if="activeTab === 'restore'" class="space-y-4">
-          <div class="bg-darker rounded-lg p-4">
+          <div class="bg-[var(--color-surface-0)] rounded-lg p-4">
             <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.restoreInfo') }}</h3>
-            <ul class="text-xs text-gray-400 space-y-1">
+            <ul class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <li>{{ t('backup.restoreIncludes') }}</li>
               <li>{{ t('backup.restoreAutoBackup') }}</li>
               <li>{{ t('backup.restoreRollback') }}</li>
@@ -108,15 +108,15 @@
 
           <button
             @click="selectBackupFile"
-            class="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+            class="w-full py-3 bg-[var(--color-action-secondary)] hover:bg-[var(--color-action-neutral)] rounded-lg font-medium transition-colors"
           >
             {{ t('backup.selectBackupFile') }}
           </button>
 
           <!-- Selected Backup Info -->
-          <div v-if="selectedBackup" class="bg-darker rounded-lg p-4">
+          <div v-if="selectedBackup" class="bg-[var(--color-surface-0)] rounded-lg p-4">
             <h4 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.selectedBackup') }}</h4>
-            <div class="text-xs text-gray-400 space-y-1">
+            <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <p>{{ t('backup.createdAt') }} {{ formatDate(selectedBackup.created_at) }}</p>
               <p>{{ t('backup.size') }} {{ formatSize(selectedBackup.size_bytes) }}</p>
               <p>{{ t('backup.recordCount') }} {{ selectedBackup.record_count }}</p>
@@ -149,7 +149,7 @@
               </button>
               <button
                 @click="showConfirm = false"
-                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                class="px-4 py-2 bg-[var(--color-action-secondary)] hover:bg-[var(--color-action-neutral)] rounded-lg transition-colors"
               >
                 {{ t('common.cancel') }}
               </button>
@@ -169,11 +169,11 @@
 
         <!-- History Tab -->
         <div v-if="activeTab === 'history'" class="space-y-4">
-          <div v-if="isLoadingBackups" class="text-center py-8 text-gray-400">
+          <div v-if="isLoadingBackups" class="text-center py-8 text-[var(--color-text-secondary)]">
             {{ t('backup.loading') }}
           </div>
 
-          <div v-else-if="backups.length === 0" class="text-center py-8 text-gray-400">
+          <div v-else-if="backups.length === 0" class="text-center py-8 text-[var(--color-text-secondary)]">
             {{ t('backup.noBackups') }}
           </div>
 
@@ -181,13 +181,13 @@
             <div
               v-for="backup in backups"
               :key="backup.path"
-              class="bg-darker rounded-lg p-4 flex items-center justify-between"
+              class="bg-[var(--color-surface-0)] rounded-lg p-4 flex items-center justify-between"
             >
               <div class="flex-1">
                 <div class="text-sm font-medium text-gray-200">
                   {{ formatDate(backup.created_at) }}
                 </div>
-                <div class="text-xs text-gray-400 mt-1">
+                <div class="text-xs text-[var(--color-text-secondary)] mt-1">
                   {{ formatSize(backup.size_bytes) }} • {{ backup.record_count }} {{ t('backup.recordsWithCount', { count: backup.record_count }).split(' ')[1] }} • {{ backup.screenshot_count }} {{ t('backup.screenshotsWithCount', { count: backup.screenshot_count }).split(' ')[1] }}
                 </div>
               </div>
@@ -210,7 +210,7 @@
 
           <button
             @click="loadBackups"
-            class="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
+            class="w-full py-2 bg-[var(--color-action-secondary)] hover:bg-[var(--color-action-neutral)] rounded-lg text-sm transition-colors"
           >
             {{ t('backup.refresh') }}
           </button>

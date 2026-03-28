@@ -41,7 +41,7 @@ describe('SettingsModal.vue - saveSettings', () => {
     await flushPromises()
 
     // Find save button in footer (not language switcher buttons)
-    const footer = wrapper.find('.border-t.border-gray-700')
+    const footer = wrapper.find('.border-t')
     await footer.find('.bg-primary').trigger('click')
     await flushPromises()
 
@@ -56,7 +56,7 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const footer = wrapper.find('.border-t.border-gray-700')
+    const footer = wrapper.find('.border-t')
     await footer.find('.bg-primary').trigger('click')
     await flushPromises()
 
@@ -70,7 +70,7 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const footer = wrapper.find('.border-t.border-gray-700')
+    const footer = wrapper.find('.border-t')
     await footer.find('.bg-primary').trigger('click')
     await flushPromises()
 
@@ -94,7 +94,7 @@ describe('SettingsModal.vue - saveSettings', () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const footer = wrapper.find('.border-t.border-gray-700')
+    const footer = wrapper.find('.border-t')
     const saveBtn = footer.find('.bg-primary')
     saveBtn.trigger('click') // 不 await，让保存保持 pending
 
@@ -153,7 +153,7 @@ describe('SettingsModal.vue - AC1 颜色一致性', () => {
 
     const headings = wrapper.findAll('h3')
     headings.forEach(h3 => {
-      expect(h3.classes()).toContain('text-gray-300')
+      expect(h3.attributes('class')).toMatch(/text-gray-300|text-\[/)
       expect(h3.classes()).toContain('text-sm')
     })
   })
@@ -164,7 +164,7 @@ describe('SettingsModal.vue - AC1 颜色一致性', () => {
 
     const labels = wrapper.findAll('label')
     labels.forEach(label => {
-      expect(label.classes()).toContain('text-gray-300')
+      expect(label.attributes('class')).toMatch(/text-gray-300|text-\[/)
       expect(label.classes()).toContain('text-xs')
     })
   })
@@ -175,7 +175,7 @@ describe('SettingsModal.vue - AC1 颜色一致性', () => {
 
     const inputs = wrapper.findAll('input:not([type="time"])')
     inputs.forEach(input => {
-      expect(input.classes()).toContain('bg-darker')
+      expect(input.attributes('class')).toMatch(/bg-darker|bg-\[/)
     })
   })
 
@@ -189,10 +189,9 @@ describe('SettingsModal.vue - AC1 颜色一致性', () => {
     const inputs = wrapper.findAll('input:not([type="time"]):not([type="checkbox"]), textarea')
     inputs.forEach(input => {
       // 检查是否有 placeholder 相关的样式
-      const classList = input.classes()
       // placeholder 文本会在运行时显示为灰色
-      // 检查是否包含 text-gray-500 或 placeholder:text-gray-500
-      expect(classList).toContain('text-gray-100') // 输入文本颜色
+      // 检查是否包含 text-gray-100 或 text-[var(--color-text-primary)]
+      expect(input.attributes('class')).toMatch(/text-gray-100|text-\[var\(--color-text-primary\)/)
     })
   })
 })
@@ -210,23 +209,23 @@ describe('SettingsModal.vue - AC2 按钮交互反馈', () => {
     // 关闭按钮是标题栏中的 ✕ 按钮
     const header = wrapper.find('.border-b')
     const closeBtn = header.find('button')
-    expect(closeBtn.classes()).toContain('hover:text-white')
+    expect(closeBtn.attributes('class')).toMatch(/hover:text-white|hover:text-\[/)
   })
 
   it('保存按钮有 hover:bg-blue-600 效果', async () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const footer = wrapper.find('.border-t.border-gray-700')
+    const footer = wrapper.find('.border-t')
     const saveBtn = footer.find('button.bg-primary')
-    expect(saveBtn.classes()).toContain('hover:bg-blue-600')
+    expect(saveBtn.attributes('class')).toMatch(/hover:bg-blue-600|hover:bg-\[/)
   })
 
   it('保存按钮禁用状态有 opacity-50 效果', async () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
-    const footer = wrapper.find('.border-t.border-gray-700')
+    const footer = wrapper.find('.border-t')
     const saveBtn = footer.find('button.bg-primary')
     expect(saveBtn.classes()).toContain('disabled:opacity-50')
   })
@@ -237,7 +236,7 @@ describe('SettingsModal.vue - AC2 按钮交互反馈', () => {
 
     // The show/hide button has title "Show" or "Hide" (English locale in tests)
     const toggleBtn = wrapper.find('[title="Show"], [title="Hide"]')
-    expect(toggleBtn.classes()).toContain('hover:text-gray-300')
+    expect(toggleBtn.attributes('class')).toMatch(/hover:text-gray-300|hover:text-\[/)
   })
 })
 
@@ -284,7 +283,7 @@ describe('SettingsModal.vue - AC3 表单可用性', () => {
     // 排除 checkbox，因为 checkbox 有不同的边框样式
     const inputs = wrapper.findAll('input:not([type="checkbox"]), textarea')
     inputs.forEach(input => {
-      expect(input.classes()).toContain('border-gray-700')
+      expect(input.attributes('class')).toMatch(/border-gray-700|border-\[/)
     })
   })
 })

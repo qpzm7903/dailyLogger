@@ -20,25 +20,25 @@
           @keydown.enter.prevent="createOrSelectTag"
           @keydown.escape="showDropdown = false"
           :placeholder="placeholder || t('tagInput.placeholder')"
-          class="w-full bg-darker border border-gray-600 rounded px-3 py-1.5 text-sm text-white focus:border-primary focus:outline-none"
+          class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
         />
 
         <!-- Dropdown for existing tags -->
         <div
           v-if="showDropdown && filteredTags.length > 0"
-          class="absolute top-full left-0 right-0 mt-1 bg-dark border border-gray-600 rounded-lg shadow-lg z-10 max-h-48 overflow-auto"
+          class="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-lg shadow-lg z-10 max-h-48 overflow-auto"
         >
           <button
             v-for="tag in filteredTags"
             :key="tag.id"
             @click="selectTag(tag)"
-            class="w-full text-left px-3 py-2 hover:bg-darker flex items-center justify-between"
+            class="w-full text-left px-3 py-2 hover:bg-[var(--color-surface-0)] flex items-center justify-between"
           >
             <div class="flex items-center gap-2">
               <span :class="getDotClass(tag.color)"></span>
               <span>{{ tag.name }}</span>
             </div>
-            <span class="text-xs text-gray-500">{{ t('tagInput.times', { count: tag.usage_count || 0 }) }}</span>
+            <span class="text-xs text-[var(--color-text-muted)]">{{ t('tagInput.times', { count: tag.usage_count || 0 }) }}</span>
           </button>
         </div>
       </div>
@@ -61,7 +61,7 @@
       <button
         @click="createOrSelectTag"
         :disabled="!searchQuery.trim() || isCreating"
-        class="px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"
+        class="px-3 py-1.5 bg-primary text-[var(--color-text-primary)] rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"
       >
         {{ isCreating ? '...' : t('tagInput.add') }}
       </button>

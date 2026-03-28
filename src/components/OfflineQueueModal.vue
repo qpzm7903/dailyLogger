@@ -1,25 +1,25 @@
 <template>
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-dark rounded-2xl w-[90vw] max-w-xl overflow-hidden border border-gray-700 flex flex-col max-h-[80vh]">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] max-w-xl overflow-hidden border border-[var(--color-border)] flex flex-col max-h-[80vh]">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-white">{{ t('offlineQueue.title') }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white">✕</button>
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">{{ t('offlineQueue.title') }}</h2>
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
 
       <!-- Content -->
       <div class="flex-1 overflow-auto p-4">
-        <div v-if="isLoading" class="text-center py-8 text-gray-500">
+        <div v-if="isLoading" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('common.loading') }}
         </div>
-        <div v-else-if="tasks.length === 0" class="text-center py-8 text-gray-500">
+        <div v-else-if="tasks.length === 0" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('offlineQueue.noTasks') }}
         </div>
-        <div v-else class="flex flex-col divide-y divide-gray-700">
+        <div v-else class="flex flex-col divide-y divide-[var(--color-border)]">
           <div
             v-for="task in tasks"
             :key="task.id"
-            class="py-3 px-2 hover:bg-darker/50 transition-colors"
+            class="py-3 px-2 hover:bg-[var(--color-surface-0)]/50 transition-colors"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="flex-1 min-w-0">
@@ -30,11 +30,11 @@
                   >
                     {{ getTaskTypeLabel(task.task_type) }}
                   </span>
-                  <span class="text-xs text-gray-400">{{ formatTime(task.created_at) }}</span>
+                  <span class="text-xs text-[var(--color-text-secondary)]">{{ formatTime(task.created_at) }}</span>
                 </div>
-                <p class="text-sm text-gray-300">{{ getTaskDescription(task) }}</p>
+                <p class="text-sm text-[var(--color-text-secondary)]">{{ getTaskDescription(task) }}</p>
                 <p v-if="task.error_message" class="text-xs text-red-400 mt-1">{{ task.error_message }}</p>
-                <p class="text-xs text-gray-500 mt-1">
+                <p class="text-xs text-[var(--color-text-muted)] mt-1">
                   {{ t('offlineQueue.retryCount', { current: task.retry_count, max: task.max_retries }) }}
                 </p>
               </div>
@@ -44,8 +44,8 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-700 flex items-center justify-between">
-        <span class="text-sm text-gray-400">
+      <div class="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-between">
+        <span class="text-sm text-[var(--color-text-secondary)]">
           {{ t('offlineQueue.totalPending', { count: tasks.length }) }}
         </span>
         <button

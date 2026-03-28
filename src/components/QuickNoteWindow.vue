@@ -1,11 +1,11 @@
 <template>
-  <div class="h-screen bg-darker text-white flex flex-col">
-    <header class="bg-dark border-b border-gray-700 px-4 py-3 flex items-center justify-between">
+  <div class="h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] flex flex-col">
+    <header class="bg-[var(--color-surface-1)] border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <span class="text-lg">⚡</span>
         <h1 class="text-sm font-medium">{{ t('quickNoteWindow.title') }}</h1>
       </div>
-      <span v-if="isDesktop" class="text-xs text-gray-500">{{ t('quickNoteWindow.shortcutHint') }}</span>
+      <span v-if="isDesktop" class="text-xs text-[var(--color-text-muted)]">{{ t('quickNoteWindow.shortcutHint') }}</span>
     </header>
 
     <main class="flex-1 p-4">
@@ -15,17 +15,17 @@
         @keydown.enter.exact.prevent="save"
         @keydown.esc="closeWindow"
         :placeholder="t('quickNoteWindow.placeholder')"
-        class="w-full h-full bg-darker border border-gray-700 rounded-lg px-4 py-3 text-sm focus:border-primary focus:outline-none resize-none"
+        class="w-full h-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-sm focus:border-primary focus:outline-none resize-none"
         autofocus
       ></textarea>
     </main>
 
-    <footer class="bg-dark border-t border-gray-700 px-4 py-3 flex justify-between items-center">
-      <span class="text-xs text-gray-500">{{ currentTime }}</span>
+    <footer class="bg-[var(--color-surface-1)] border-t border-[var(--color-border)] px-4 py-3 flex justify-between items-center">
+      <span class="text-xs text-[var(--color-text-muted)]">{{ currentTime }}</span>
       <div class="flex gap-2">
         <button
           @click="closeWindow"
-          class="px-3 py-1.5 rounded-lg text-xs hover:bg-gray-700 transition-colors"
+          class="px-3 py-1.5 rounded-lg text-xs hover:bg-[var(--color-action-neutral)] transition-colors"
         >
           {{ t('quickNoteWindow.cancel') }}
         </button>

@@ -243,8 +243,8 @@ describe('QuickNoteWindow', () => {
   it('applies correct styling classes', () => {
     const wrapper = mount(QuickNoteWindow)
 
-    expect(wrapper.find('.bg-darker').exists()).toBe(true)
-    expect(wrapper.find('textarea').classes()).toContain('bg-darker')
+    expect(wrapper.find('[class*="bg-[var(--color-surface-0)]"]').exists()).toBe(true)
+    expect(wrapper.find('textarea').classes()).toContain('bg-[var(--color-surface-0)]')
     expect(wrapper.find('textarea').classes()).toContain('resize-none')
   })
 

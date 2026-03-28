@@ -1,12 +1,12 @@
 <template>
   <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div class="bg-dark border border-gray-700 rounded-xl w-full max-w-4xl h-3/4 flex flex-col">
+    <div class="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl w-full max-w-4xl h-3/4 flex flex-col">
       <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] shrink-0">
         <div class="flex items-center gap-3">
           <span class="text-xl">📋</span>
           <h2 class="font-medium">{{ t('logViewer.title') }}</h2>
-          <span class="text-xs text-gray-500 bg-darker px-2 py-0.5 rounded">{{ logPath }}</span>
+          <span class="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-0)] px-2 py-0.5 rounded">{{ logPath }}</span>
         </div>
         <div class="flex items-center gap-2">
           <!-- Level filter -->
@@ -24,7 +24,7 @@
           <button
             @click="loadLogs"
             :disabled="loading"
-            class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+            class="px-3 py-1.5 text-xs bg-[var(--color-surface-2)] hover:bg-[var(--color-action-neutral)] rounded-lg transition-colors disabled:opacity-50"
           >
             {{ loading ? t('logViewer.loading') : t('logViewer.refresh') }}
           </button>
@@ -32,18 +32,18 @@
             <input type="checkbox" v-model="autoRefresh" class="accent-primary" />
             {{ t('logViewer.autoRefresh') }}
           </label>
-          <button @click="$emit('close')" class="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
+          <button @click="$emit('close')" class="p-1.5 hover:bg-[var(--color-action-neutral)] rounded-lg transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ✕
           </button>
         </div>
       </div>
 
       <!-- Log content -->
-      <div ref="logContainer" class="flex-1 overflow-y-auto font-mono text-xs p-4 space-y-0.5 bg-darker rounded-b-xl">
-        <div v-if="loading && filteredLines.length === 0" class="text-center py-8 text-gray-500">
+      <div ref="logContainer" class="flex-1 overflow-y-auto font-mono text-xs p-4 space-y-0.5 bg-[var(--color-surface-0)] rounded-b-xl">
+        <div v-if="loading && filteredLines.length === 0" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('logViewer.loading') }}
         </div>
-        <div v-else-if="filteredLines.length === 0" class="text-center py-8 text-gray-500">
+        <div v-else-if="filteredLines.length === 0" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('logViewer.noLogs') }}
         </div>
         <div

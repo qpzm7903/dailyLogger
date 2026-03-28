@@ -2,22 +2,22 @@
   <div class="space-y-6">
     <!-- Obsidian Vaults -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.outputConfig') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.outputConfig') }}</h3>
       <div class="space-y-3">
-        <label class="text-xs text-gray-300 block">{{ $t('settings.obsidianVaults') }}</label>
+        <label class="text-xs text-[var(--color-text-secondary)] block">{{ $t('settings.obsidianVaults') }}</label>
         <!-- Vault list -->
         <div v-for="(vault, index) in localVaults" :key="index"
-          class="bg-darker border border-gray-700 rounded-lg px-3 py-2">
+          class="bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2">
           <div class="flex items-center gap-2">
             <button @click="setDefaultVault(index)" class="text-xs shrink-0"
-              :class="vault.is_default ? 'text-primary font-bold' : 'text-gray-500 hover:text-gray-300'">
+              :class="vault.is_default ? 'text-primary font-bold' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'">
               {{ vault.is_default ? '★' : '☆' }}
             </button>
             <div class="flex-1 min-w-0">
-              <div class="text-sm text-gray-100 truncate">{{ vault.name }}</div>
-              <div class="text-xs text-gray-500 truncate">{{ vault.path }}</div>
+              <div class="text-sm text-[var(--color-text-primary)] truncate">{{ vault.name }}</div>
+              <div class="text-xs text-[var(--color-text-muted)] truncate">{{ vault.path }}</div>
             </div>
-            <button @click="removeVault(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
+            <button @click="removeVault(index)" class="text-[var(--color-text-muted)] hover:text-red-400 text-xs shrink-0">✕</button>
           </div>
           <!-- Window patterns input for auto-detection -->
           <div class="mt-2 ml-6">
@@ -26,34 +26,34 @@
               @input="updateVaultPatterns(vault, ($event.target as HTMLInputElement).value)"
               type="text"
               :placeholder="$t('settings.windowPatternsPlaceholder') || '窗口标题匹配模式，如: VS Code, project-A'"
-              class="w-full bg-dark border border-gray-600 rounded px-2 py-1 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              class="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded px-2 py-1 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
             />
-            <div class="text-xs text-gray-500 mt-1">{{ $t('settings.windowPatternsHint') || '多个模式用逗号分隔' }}</div>
+            <div class="text-xs text-[var(--color-text-muted)] mt-1">{{ $t('settings.windowPatternsHint') || '多个模式用逗号分隔' }}</div>
           </div>
         </div>
-        <div v-if="vaults.length === 0" class="text-xs text-gray-500 py-2">
+        <div v-if="vaults.length === 0" class="text-xs text-[var(--color-text-muted)] py-2">
           {{ $t('settings.noVaultConfigured') }}
         </div>
         <!-- Add vault form -->
         <div class="flex gap-2">
           <input v-model="newVaultName" type="text" :placeholder="$t('common.name')"
-            class="w-1/3 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            class="w-1/3 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
           <input v-model="newVaultPath" type="text" :placeholder="$t('common.path')"
-            class="flex-1 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
           <button @click="addVault" :disabled="!newVaultName.trim() || !newVaultPath.trim()"
             class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
             {{ $t('common.add') }}
           </button>
         </div>
         <!-- Auto-detect vault by window toggle -->
-        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-700">
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-[var(--color-border)]">
           <input
             v-model="localSettings.auto_detect_vault_by_window"
             type="checkbox"
             id="auto-detect-vault"
-            class="w-4 h-4 rounded border-gray-600 bg-dark text-primary focus:ring-primary focus:ring-offset-0"
+            class="w-4 h-4 rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-primary focus:ring-primary focus:ring-offset-0"
           />
-          <label for="auto-detect-vault" class="text-xs text-gray-300">
+          <label for="auto-detect-vault" class="text-xs text-[var(--color-text-secondary)]">
             {{ $t('settings.autoDetectVaultByWindow') || '根据窗口标题自动选择 Vault' }}
           </label>
         </div>
@@ -62,29 +62,29 @@
 
     <!-- Logseq Graphs -->
     <div>
-      <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.logseqGraphs') }}</label>
+      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.logseqGraphs') }}</label>
       <!-- Graph list -->
       <div v-for="(graph, index) in graphs" :key="index"
-        class="flex items-center gap-2 bg-darker border border-gray-700 rounded-lg px-3 py-2 mb-2">
+        class="flex items-center gap-2 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 mb-2">
         <button @click="setDefaultGraph(index)" class="text-xs shrink-0"
-          :class="graph.is_default ? 'text-primary font-bold' : 'text-gray-500 hover:text-gray-300'">
+          :class="graph.is_default ? 'text-primary font-bold' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'">
           {{ graph.is_default ? '★' : '☆' }}
         </button>
         <div class="flex-1 min-w-0">
-          <div class="text-sm text-gray-100 truncate">{{ graph.name }}</div>
-          <div class="text-xs text-gray-500 truncate">{{ graph.path }}</div>
+          <div class="text-sm text-[var(--color-text-primary)] truncate">{{ graph.name }}</div>
+          <div class="text-xs text-[var(--color-text-muted)] truncate">{{ graph.path }}</div>
         </div>
-        <button @click="removeGraph(index)" class="text-gray-500 hover:text-red-400 text-xs shrink-0">✕</button>
+        <button @click="removeGraph(index)" class="text-[var(--color-text-muted)] hover:text-red-400 text-xs shrink-0">✕</button>
       </div>
-      <div v-if="graphs.length === 0" class="text-xs text-gray-500 py-2 mb-2">
+      <div v-if="graphs.length === 0" class="text-xs text-[var(--color-text-muted)] py-2 mb-2">
         {{ $t('settings.noGraphConfigured') }}
       </div>
       <!-- Add graph form -->
       <div class="flex gap-2">
         <input v-model="newGraphName" type="text" :placeholder="$t('common.name')"
-          class="w-1/3 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+          class="w-1/3 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
         <input v-model="newGraphPath" type="text" :placeholder="$t('common.path')"
-          class="flex-1 bg-darker border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+          class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
         <button @click="addGraph" :disabled="!newGraphName.trim() || !newGraphPath.trim()"
           class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
           {{ $t('common.add') }}
@@ -94,17 +94,17 @@
 
     <!-- Notion Integration -->
     <div>
-      <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.notionIntegration') }}</label>
+      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.notionIntegration') }}</label>
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.notionApiKey') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.notionApiKey') }}</label>
           <input v-model="localSettings.notion_api_key" type="password" :placeholder="$t('settings.notionApiKeyPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
         </div>
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.notionDatabaseId') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.notionDatabaseId') }}</label>
           <input v-model="localSettings.notion_database_id" type="text" :placeholder="$t('settings.notionDatabaseIdPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
         </div>
         <div class="flex gap-2">
           <button @click="testNotionConnection" :disabled="isTestingNotionConnection"
@@ -116,7 +116,7 @@
             {{ notionConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
           </span>
         </div>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-[var(--color-text-muted)]">
           {{ $t('settings.notionHint') }}
         </p>
       </div>
@@ -124,12 +124,12 @@
 
     <!-- Slack Notification -->
     <div>
-      <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.slackNotification') }}</label>
+      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.slackNotification') }}</label>
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.slackWebhookUrl') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.slackWebhookUrl') }}</label>
           <input v-model="localSettings.slack_webhook_url" type="password" :placeholder="$t('settings.slackWebhookPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
         </div>
         <div class="flex gap-2">
           <button @click="testSlackConnection" :disabled="isTestingSlackConnection"
@@ -141,7 +141,7 @@
             {{ slackConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
           </span>
         </div>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-[var(--color-text-muted)]">
           {{ $t('settings.slackHint') }}
         </p>
       </div>
@@ -149,12 +149,12 @@
 
     <!-- DingTalk Notification -->
     <div>
-      <label class="text-xs text-gray-300 block mb-2">{{ $t('settings.dingtalkNotification') }}</label>
+      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.dingtalkNotification') }}</label>
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.dingtalkWebhookUrl') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.dingtalkWebhookUrl') }}</label>
           <input v-model="localSettings.dingtalk_webhook_url" type="password" :placeholder="$t('settings.dingtalkWebhookPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none" />
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
         </div>
         <div class="flex gap-2">
           <button @click="testDingtalkConnection" :disabled="isTestingDingtalkConnection"
@@ -166,7 +166,7 @@
             {{ dingtalkConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
           </span>
         </div>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-[var(--color-text-muted)]">
           {{ $t('settings.dingtalkHint') }}
         </p>
       </div>
@@ -174,12 +174,12 @@
 
     <!-- Debug Tools -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.debugTools') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.debugTools') }}</h3>
       <div class="space-y-3">
         <button
           @click="exportLogs"
           :disabled="isExportingLogs"
-          class="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm text-gray-200 transition-colors flex items-center justify-center gap-2"
+          class="w-full px-4 py-2 bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-neutral)] disabled:opacity-50 rounded-lg text-sm text-[var(--color-text-secondary)] transition-colors flex items-center justify-center gap-2"
         >
           {{ isExportingLogs ? $t('settings.exporting') : '📤 ' + $t('settings.exportLogs') }}
         </button>

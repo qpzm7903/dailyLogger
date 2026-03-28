@@ -1,11 +1,11 @@
 <template>
   <header
     :class="!isOnline ? 'mt-9' : ''"
-    class="bg-dark/80 backdrop-blur-md border-b border-gray-700/50 px-6 py-3 flex items-center justify-between transition-[margin] duration-300"
+    class="bg-[var(--color-surface-1)]/80 backdrop-blur-md border-b border-[var(--color-border)]/50 px-6 py-3 flex items-center justify-between transition-[margin] duration-300"
   >
     <!-- Left: Title & Status -->
     <div class="flex items-center gap-4">
-      <h1 class="text-lg font-semibold text-white">DailyLogger</h1>
+      <h1 class="text-lg font-semibold text-[var(--color-text-primary)]">DailyLogger</h1>
 
       <!-- Auto Capture Status Indicator -->
       <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-surface-1/50 border border-gray-700/30">
@@ -13,7 +13,7 @@
           :class="autoCaptureEnabled ? 'bg-status-success animate-pulse' : 'bg-gray-500'"
           class="w-2 h-2 rounded-full inline-block transition-colors duration-300"
         ></span>
-        <span class="text-xs text-gray-300">
+        <span class="text-xs text-[var(--color-text-secondary)]">
           {{ autoCaptureEnabled ? t('header.running') : t('header.paused') }}
         </span>
       </div>
@@ -21,7 +21,7 @@
       <!-- Today's Record Count -->
       <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-1/50 border border-gray-700/30">
         <span class="text-sm">📝</span>
-        <span class="text-xs text-gray-300">
+        <span class="text-xs text-[var(--color-text-secondary)]">
           {{ todayRecordsCount }} {{ t('header.records') }}
         </span>
       </div>
@@ -40,7 +40,7 @@
       </button>
 
       <!-- Current Time -->
-      <span class="text-sm text-gray-300 font-mono">{{ currentTime }}</span>
+      <span class="text-sm text-[var(--color-text-secondary)] font-mono">{{ currentTime }}</span>
     </div>
   </header>
 </template>

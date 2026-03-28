@@ -1,31 +1,31 @@
 <template>
   <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div class="bg-dark rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-700">
+    <div class="bg-[var(--color-surface-1)] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-[var(--color-border)]">
       <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-700">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
         <div class="flex items-center gap-3">
           <span class="text-2xl">📈</span>
           <h2 class="font-medium text-lg">{{ t('timeline.title') }}</h2>
         </div>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-white text-xl">
+        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xl">
           ✕
         </button>
       </div>
 
       <!-- Date Selector -->
-      <div class="px-5 py-3 border-b border-gray-700 flex items-center gap-4">
+      <div class="px-5 py-3 border-b border-[var(--color-border)] flex items-center gap-4">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">{{ t('timeline.date') }}:</label>
+          <label class="text-sm text-[var(--color-text-secondary)]">{{ t('timeline.date') }}:</label>
           <input
             type="date"
             v-model="selectedDate"
-            class="bg-darker border border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
+            class="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
           />
         </div>
         <div class="flex gap-2">
           <button
             @click="goToPreviousDay"
-            class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            class="px-3 py-1.5 text-xs bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-neutral)] rounded-lg transition-colors"
           >
             ← {{ t('timeline.previousDay') }}
           </button>
@@ -37,7 +37,7 @@
           </button>
           <button
             @click="goToNextDay"
-            class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            class="px-3 py-1.5 text-xs bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-neutral)] rounded-lg transition-colors"
           >
             {{ t('timeline.nextDay') }} →
           </button>
@@ -45,18 +45,18 @@
       </div>
 
       <!-- Stats Summary -->
-      <div v-if="timelineData" class="px-5 py-3 bg-darker border-b border-gray-700">
+      <div v-if="timelineData" class="px-5 py-3 bg-[var(--color-surface-0)] border-b border-[var(--color-border)]">
         <div class="flex items-center gap-6 text-sm">
           <div class="flex items-center gap-2">
-            <span class="text-gray-400">{{ t('timeline.totalEvents') }}:</span>
-            <span class="text-white font-medium">{{ timelineData.total_events }}</span>
+            <span class="text-[var(--color-text-secondary)]">{{ t('timeline.totalEvents') }}:</span>
+            <span class="text-[var(--color-text-primary)] font-medium">{{ timelineData.total_events }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-gray-400">{{ t('timeline.activeHours') }}:</span>
-            <span class="text-white font-medium">{{ timelineData.active_hours }}</span>
+            <span class="text-[var(--color-text-secondary)]">{{ t('timeline.activeHours') }}:</span>
+            <span class="text-[var(--color-text-primary)] font-medium">{{ timelineData.active_hours }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-gray-400">{{ t('timeline.workTimeEstimate') }}:</span>
+            <span class="text-[var(--color-text-secondary)]">{{ t('timeline.workTimeEstimate') }}:</span>
             <span class="text-green-400 font-medium">{{ timelineData.work_time_estimate.toFixed(1) }}h</span>
           </div>
         </div>
@@ -64,13 +64,13 @@
 
       <!-- Timeline Content -->
       <div class="flex-1 overflow-y-auto p-5">
-        <div v-if="loading" class="text-center py-12 text-gray-500">
+        <div v-if="loading" class="text-center py-12 text-[var(--color-text-muted)]">
           {{ t('timeline.loading') }}
         </div>
         <div v-else-if="error" class="text-center py-12 text-red-400">
           {{ t('timeline.loadFailed', { error }) }}
         </div>
-        <div v-else-if="!timelineData || timelineData.hour_groups.length === 0" class="text-center py-12 text-gray-500">
+        <div v-else-if="!timelineData || timelineData.hour_groups.length === 0" class="text-center py-12 text-[var(--color-text-muted)]">
           {{ t('timeline.noEvents') }}
         </div>
         <div v-else class="space-y-3">
@@ -78,19 +78,19 @@
           <div
             v-for="group in timelineData.hour_groups"
             :key="group.hour"
-            class="bg-darker rounded-lg border border-gray-700 overflow-hidden"
+            class="bg-[var(--color-surface-0)] rounded-lg border border-[var(--color-border)] overflow-hidden"
           >
             <!-- Hour Header -->
             <div
               @click="toggleHour(group.hour)"
-              class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-800/50 transition-colors"
+              class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[var(--color-surface-1)]/50 transition-colors"
             >
               <div class="flex items-center gap-3">
                 <span class="text-lg">{{ getHourIcon(group.hour) }}</span>
                 <span class="text-sm font-medium">{{ group.label }}</span>
-                <span class="text-xs text-gray-500">({{ group.count }} {{ t('timeline.events') }})</span>
+                <span class="text-xs text-[var(--color-text-muted)]">({{ group.count }} {{ t('timeline.events') }})</span>
               </div>
-              <span class="text-gray-500 text-sm">
+              <span class="text-[var(--color-text-muted)] text-sm">
                 {{ expandedHours.has(group.hour) ? '▼' : '▶' }}
               </span>
             </div>
@@ -98,7 +98,7 @@
             <!-- Events List -->
             <div
               v-show="expandedHours.has(group.hour)"
-              class="border-t border-gray-700 divide-y divide-gray-700/50"
+              class="border-t border-[var(--color-border)] divide-y divide-[var(--color-border)]/50"
             >
               <div
                 v-for="event in group.events"
@@ -111,7 +111,7 @@
               >
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">{{ event.time_str }}</span>
+                    <span class="text-xs text-[var(--color-text-muted)]">{{ event.time_str }}</span>
                     <span
                       :class="event.event_type === 'auto' ? 'text-blue-400' : 'text-green-400'"
                       class="text-xs"
@@ -123,7 +123,7 @@
                     📷
                   </span>
                 </div>
-                <p class="text-sm text-gray-300">{{ event.preview }}</p>
+                <p class="text-sm text-[var(--color-text-secondary)]">{{ event.preview }}</p>
               </div>
             </div>
           </div>

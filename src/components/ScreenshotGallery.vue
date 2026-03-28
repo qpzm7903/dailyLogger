@@ -4,14 +4,14 @@
     @click.self="$emit('close')"
     :ref="focusTrap.containerRef"
   >
-    <div class="bg-dark rounded-2xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden border border-gray-700 flex flex-col">
-      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden border border-[var(--color-border)] flex flex-col">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">📷 {{ t('screenshotGallery.title') }}</h2>
         <div class="flex items-center gap-2">
           <!-- View toggle buttons -->
           <button
             @click="viewMode = 'grid'"
-            :class="viewMode === 'grid' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
+            :class="viewMode === 'grid' ? 'bg-primary text-white' : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'"
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
             :aria-label="t('screenshotGallery.gridView')"
           >
@@ -19,32 +19,32 @@
           </button>
           <button
             @click="viewMode = 'list'"
-            :class="viewMode === 'list' ? 'bg-primary text-white' : 'bg-darker text-gray-400 hover:text-white'"
+            :class="viewMode === 'list' ? 'bg-primary text-white' : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'"
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
             :aria-label="t('screenshotGallery.listView')"
           >
             {{ t('screenshotGallery.listView') }}
           </button>
-          <button @click="$emit('close')" class="text-gray-400 hover:text-white ml-2">✕</button>
+          <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] ml-2">✕</button>
         </div>
       </div>
 
       <!-- Date Filter Section -->
-      <div class="px-6 py-3 border-b border-gray-700 flex items-center gap-4 flex-wrap">
+      <div class="px-6 py-3 border-b border-[var(--color-border)] flex items-center gap-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">{{ t('screenshotGallery.startDate') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)]">{{ t('screenshotGallery.startDate') }}</label>
           <input
             type="date"
             v-model="startDate"
-            class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
+            class="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded px-2 py-1 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-400">{{ t('screenshotGallery.endDate') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)]">{{ t('screenshotGallery.endDate') }}</label>
           <input
             type="date"
             v-model="endDate"
-            class="bg-darker border border-gray-600 rounded px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
+            class="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded px-2 py-1 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
         </div>
         <button
@@ -55,11 +55,11 @@
         </button>
         <button
           @click="resetFilter"
-          class="px-4 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+          class="px-4 py-1 bg-[var(--color-surface-2)] text-white rounded text-sm hover:bg-[var(--color-action-neutral)] transition-colors"
         >
           {{ t('screenshotGallery.reset') }}
         </button>
-        <span v-if="screenshots.length > 0" class="text-sm text-gray-400 ml-auto">
+        <span v-if="screenshots.length > 0" class="text-sm text-[var(--color-text-secondary)] ml-auto">
           {{ t('screenshotGallery.total', { count: screenshots.length }) }}
         </span>
       </div>
@@ -87,7 +87,7 @@
             >
               <div
                 @click="openScreenshot(item.data)"
-                class="bg-darker rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-primary transition-colors"
+                class="bg-[var(--color-surface-0)] rounded-lg overflow-hidden border border-[var(--color-border)] cursor-pointer hover:border-primary transition-colors"
               >
                 <div class="aspect-video relative bg-gray-800 overflow-hidden">
                   <!-- Blur-up placeholder -->
@@ -105,16 +105,16 @@
                     @load="onThumbnailLoad(item.data)"
                     @error="onThumbnailError(item.data)"
                   />
-                  <div v-else-if="item.data.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500">
+                  <div v-else-if="item.data.thumbnailError" class="w-full h-full flex items-center justify-center text-[var(--color-text-muted)]">
                     {{ t('screenshotGallery.loadError') }}
                   </div>
-                  <div v-else class="w-full h-full flex items-center justify-center text-gray-500">
+                  <div v-else class="w-full h-full flex items-center justify-center text-[var(--color-text-muted)]">
                     {{ t('screenshotGallery.loading') }}
                   </div>
                 </div>
                 <div class="p-2">
-                  <p class="text-xs text-gray-500">{{ formatTimeShort(item.data.timestamp) }}</p>
-                  <p class="text-xs text-gray-400 truncate">{{ parseContent(item.data.content) }}</p>
+                  <p class="text-xs text-[var(--color-text-muted)]">{{ formatTimeShort(item.data.timestamp) }}</p>
+                  <p class="text-xs text-[var(--color-text-secondary)] truncate">{{ parseContent(item.data.content) }}</p>
                   <!-- Reanalyze button -->
                   <div class="mt-1 flex justify-end">
                     <button
@@ -143,7 +143,7 @@
             >
               <div
                 @click="openScreenshot(item.data)"
-                class="flex items-center py-3 px-4 bg-darker rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
+                class="flex items-center py-3 px-4 bg-[var(--color-surface-0)] rounded-lg cursor-pointer hover:bg-[var(--color-action-neutral)] transition-colors"
               >
                 <!-- Thumbnail with blur-up -->
                 <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4 relative">
@@ -166,11 +166,11 @@
                 </div>
                 <!-- Time -->
                 <div class="w-20 flex-shrink-0">
-                  <span class="text-sm text-gray-400">{{ formatTimeShort(item.data.timestamp) }}</span>
+                  <span class="text-sm text-[var(--color-text-secondary)]">{{ formatTimeShort(item.data.timestamp) }}</span>
                 </div>
                 <!-- AI Summary -->
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm text-gray-300 truncate">{{ parseContent(item.data.content) }}</p>
+                  <p class="text-sm text-[var(--color-text-secondary)] truncate">{{ parseContent(item.data.content) }}</p>
                 </div>
                 <!-- Actions -->
                 <div class="flex-shrink-0 flex items-center gap-2">
@@ -185,7 +185,7 @@
                   >
                     {{ reanalyzingIds.has(item.data.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
                   </button>
-                  <button class="text-xs text-gray-400 hover:text-primary transition-colors">
+                  <button class="text-xs text-[var(--color-text-secondary)] hover:text-primary transition-colors">
                     {{ t('screenshotGallery.view') }}
                   </button>
                 </div>
@@ -201,7 +201,7 @@
             <button
               v-else
               @click="loadMore"
-              class="px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+              class="px-6 py-2 bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-action-neutral)] transition-colors"
             >
               {{ t('screenshotGallery.loadMore', { count: remainingCount }) }}
             </button>
