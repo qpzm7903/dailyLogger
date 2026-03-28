@@ -43,10 +43,9 @@ development_status:
 ```
 
 ### Version Status
-- **Current version**: v4.0.0 (src-tauri/Cargo.toml)
-- **Latest tag**: v4.0.0 (2026-03-28)
-- **Next version**: v4.1.0 (规划中 - planning in progress)
-- **Pending releases**: v4.0.0 Draft release pending Windows build
+- **Current version**: v4.1.0 (src-tauri/Cargo.toml, package.json, tauri.conf.json)
+- **Latest tag**: v4.1.0 (2026-03-28)
+- **Next version**: v4.2.0 (规划中 - planning in progress)
 
 ### Project Retrospective
 - `project-retrospective.md` exists in `_bmad-output/implementation-artifacts/`
@@ -68,30 +67,30 @@ development_status:
 - No pending versions to release
 - No architecture planning needed (all epics completed)
 
-**Project Status**: ✅ Development complete — v4.0.0 released, v4.1.0 planning in progress.
+**Project Status**: ✅ Development complete — v4.1.0 released (2026-03-28), v4.2.0 planning in progress.
 
 ---
 
 ## Update: 2026-03-28 (Current State Check)
 
 ### CI Status
-- Last workflow: **in_progress** (Build and Release v4.0.0)
-- Build and Release: Windows build in progress, Linux/macOS completed
-- Test workflow: **success** (all tests passed: 508 Rust + 964 frontend)
+- Last workflow: **success** (chore: update package-lock.json version to v4.1.0)
+- Test workflow: **success** (all tests passed: 508 Rust + 1165 frontend)
+- Build and Release: **success** (v4.1.0 published)
 
 ### Git Status
-- Working tree: clean (pending diagnostic.md and epics.md updates)
-- Latest tag: v4.0.0
-- Version files: v4.0.0 (package.json, Cargo.toml, tauri.conf.json)
+- Working tree: clean
+- Latest tag: v4.1.0
+- Version files: v4.1.0 (package.json, Cargo.toml, tauri.conf.json)
 
 ### Sprint Status
 - All 13 epics: done (Epic 1-13)
 - All stories: done
-- All retrospectives: done (epic-13-retrospective: optional)
+- All retrospectives: done
 
 ### Documentation Updates Made
-- Updated epics.md: Marked Epic 12 and 13 stories as completed [x]
-- Updated diagnostic.md: Reflects v4.0.0/v4.1.0 current state
+- Updated epics.md: Marked v4.1.0 as completed, v4.2.0 as planning
+- Updated diagnostic.md: Reflects v4.1.0 released, v4.2.0 planning in progress
 
 ### Conclusion
-**v4.0.0 released, v4.1.0 planning in progress.** Build workflow still running Windows build (expected for Tauri).
+**v4.1.0 released (2026-03-28), v4.2.0 planning in progress.**
