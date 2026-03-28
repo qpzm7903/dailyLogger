@@ -174,8 +174,8 @@ development_status:
   epic-12-retrospective: done
 
   # Epic 13: 技术债务清偿 (DEBT)
-  epic-13: in-progress
+  epic-13: done  # All stories completed in v4.0.0
   DEBT-001: done  # Unified test db schema - refactoring complete 2026-03-28
   DEBT-002: done  # Database version migration mechanism - 2026-03-28
-  DEBT-003: backlog
+  DEBT-003: done  # Component colors to CSS variables - 2026-03-28
   epic-13-retrospective: optional
