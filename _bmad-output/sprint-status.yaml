@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-27 (epic-12 and epic-13 added)
+# last_updated: 2026-03-28 (VAULT-001 marked done - v3.9.0 complete)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -167,11 +167,11 @@ development_status:
   epic-11-retrospective: done  # Completed 2026-03-27
 
   # Epic 12: 多维度输出与标签管理 (OUTPUT)
-  epic-12: in-progress
-  VAULT-001: in-progress  # Task 1 done (frontend types), Tasks 2-6 remaining
+  epic-12: done  # All stories completed in v3.7.1-v3.9.0
+  VAULT-001: done  # Completed in v3.9.0
   TAG-001: done  # Completed in v3.7.1
   EXPORT-001: done  # Completed in v3.8.0
-  epic-12-retrospective: optional
+  epic-12-retrospective: done
 
   # Epic 13: 技术债务清偿 (DEBT)
   epic-13: backlog
