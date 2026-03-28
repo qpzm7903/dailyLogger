@@ -660,51 +660,11 @@ pub fn get_records_by_manual_tags(
 mod tests {
     use super::*;
     use crate::memory_storage::add_record;
-    use rusqlite::Connection;
     use serial_test::serial;
 
-    /// Initializes an in-memory database for tag testing
+    /// Initializes an in-memory database for tag testing using the unified schema helper.
     fn setup_test_db() {
-        let conn = Connection::open_in_memory().unwrap();
-        conn.execute(
-            "CREATE TABLE records (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
-                source_type TEXT NOT NULL,
-                content TEXT NOT NULL,
-                screenshot_path TEXT,
-                monitor_info TEXT,
-                tags TEXT,
-                user_notes TEXT,
-                session_id INTEGER,
-                analysis_status TEXT DEFAULT 'pending'
-            )",
-            [],
-        )
-        .unwrap();
-        conn.execute(
-            "CREATE TABLE manual_tags (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                color TEXT NOT NULL DEFAULT 'blue',
-                created_at TEXT NOT NULL
-            )",
-            [],
-        )
-        .unwrap();
-        conn.execute(
-            "CREATE TABLE record_manual_tags (
-                record_id INTEGER NOT NULL,
-                tag_id INTEGER NOT NULL,
-                PRIMARY KEY (record_id, tag_id),
-                FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
-                FOREIGN KEY (tag_id) REFERENCES manual_tags(id) ON DELETE CASCADE
-            )",
-            [],
-        )
-        .unwrap();
-        let mut db = DB_CONNECTION.lock().unwrap();
-        *db = Some(conn);
+        crate::memory_storage::setup_test_db_with_schema();
     }
 
     #[test]

@@ -651,6 +651,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             screenshot_path TEXT,
             monitor_info TEXT,
             tags TEXT,
+            user_notes TEXT,
             session_id INTEGER REFERENCES sessions(id),
             analysis_status TEXT DEFAULT 'pending'
         )",

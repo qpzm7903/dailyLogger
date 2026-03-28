@@ -20,6 +20,17 @@ pub use tags::*;
 #[cfg(test)]
 pub use schema::init_test_database;
 
+/// DEBT-001: Unified test database setup helper.
+/// Creates an in-memory database with the complete schema and sets it as the global DB_CONNECTION.
+/// This ensures all tests use a consistent schema and avoids schema drift.
+#[cfg(test)]
+pub fn setup_test_db_with_schema() {
+    let conn = Connection::open_in_memory().expect("Failed to create in-memory database");
+    init_test_database(&conn).expect("Failed to initialize test database schema");
+    let mut db = DB_CONNECTION.lock().expect("Failed to lock DB_CONNECTION");
+    *db = Some(conn);
+}
+
 pub static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
