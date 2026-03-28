@@ -233,7 +233,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v3.10.0
+**最新版本**: v4.0.0
+- 组件颜色 CSS 变量化：完成浅色主题系统
+- 迁移 21 个 Vue 组件到 CSS 变量
+- 新增 CSS 变量：`--color-border`, `--color-border-subtle`, `--color-text-muted`
+- 964 前端测试全部通过
+
+**v3.10.0**:
 - 数据库版本迁移机制：建立 schema_version 和 schema_migrations 表追踪
 - 实现幂等迁移执行器，支持结构化版本回滚
 - 添加 5 个迁移相关测试，验证版本追踪和幂等性
