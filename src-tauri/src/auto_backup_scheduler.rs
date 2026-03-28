@@ -261,6 +261,15 @@ pub fn start_scheduler() {
         return;
     }
 
+    // Check if Tokio runtime is available
+    let Some(_runtime) = tokio::runtime::Handle::try_current().ok() else {
+        tracing::warn!(
+            "No Tokio runtime found in current context. Auto backup scheduler will not start. \
+             This may indicate a Tauri runtime initialization issue on some platforms."
+        );
+        return;
+    };
+
     let handle = tokio::spawn(async {
         tracing::info!("Auto backup scheduler started");
         run_scheduler_loop().await;
