@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.4.1 ✅ (待发布)
+> 当前版本: v4.4.1 ✅ (已发布)
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅
 
 ---
@@ -131,11 +131,11 @@
 
 ---
 
-## v4.4.1 (待发布)
+## v4.4.1 ✅ 已发布
 
 **目标**: StatisticsPanel SVG viewBox 修复
 
-**状态**: 🔄 进行中
+**状态**: ✅ 已完成并发布
 
 **修复内容**：
 - 修复 SVG viewBox 使用 Mustache 模板语法导致图表无法正确缩放的问题
@@ -171,7 +171,7 @@
 
 ## 最近 10 个已完成版本摘要
 
-### v4.4.1 — StatisticsPanel SVG viewBox 修复 ✅ (待发布)
+### v4.4.1 — StatisticsPanel SVG viewBox 修复 ✅
 - 修复 SVG viewBox Mustache 模板语法问题
 - 改用 Vue 动态绑定确保图表正确缩放
 
