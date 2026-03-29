@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-29 (v4.1.1 released - Timeline timezone conversion error fix, 508 Rust + 1165 frontend tests passing)
+# last_updated: 2026-03-29 (v4.1.1 released - Timeline timezone conversion error fix + Tailwind v4 upgrade complete, 508 Rust + 1165 frontend tests passing)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -179,3 +179,10 @@ development_status:
   DEBT-002: done  # Database version migration mechanism - 2026-03-28
   DEBT-003: done  # Component colors to CSS variables - 2026-03-28
   epic-13-retrospective: optional
+
+  # Epic 14: 前端框架升级 (TAIL) — 完成
+  epic-14: done
+  TAIL-001: done  # Tailwind v4 依赖升级与配置迁移 - v4.1.1
+  TAIL-002: done  # 样式渲染验证与渐变类名更新 - v4.1.1
+  TAIL-003: done  # 构建验证与测试通过 - v4.1.1
+  epic-14-retrospective: optional
