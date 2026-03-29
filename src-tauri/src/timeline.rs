@@ -8,6 +8,7 @@ use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
+use crate::errors::AppResult;
 use crate::memory_storage::{Record, DB_CONNECTION};
 
 /// A single event on the timeline.
@@ -86,10 +87,10 @@ fn generate_preview(content: &str, max_len: usize) -> String {
 }
 
 /// Parse timestamp string to DateTime.
-fn parse_timestamp(timestamp: &str) -> Result<DateTime<Local>, String> {
+fn parse_timestamp(timestamp: &str) -> AppResult<DateTime<Local>> {
     DateTime::parse_from_rfc3339(timestamp)
         .map(|dt| dt.with_timezone(&Local))
-        .map_err(|e| format!("Failed to parse timestamp: {}", e))
+        .map_err(|e| e.into())
 }
 
 /// Convert records to timeline events.

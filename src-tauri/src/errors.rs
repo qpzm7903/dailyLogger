@@ -197,6 +197,12 @@ impl From<serde_json::Error> for AppError {
     }
 }
 
+impl From<chrono::ParseError> for AppError {
+    fn from(err: chrono::ParseError) -> Self {
+        Self::validation(format!("Chrono parse error: {}", err))
+    }
+}
+
 // Result type alias for convenience
 pub type AppResult<T> = Result<T, AppError>;
 
