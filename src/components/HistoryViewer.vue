@@ -233,9 +233,9 @@ const tagFilterRef = ref<InstanceType<typeof TagFilter> | null>(null)
 // UX-012: Virtual scroll - only enable for large datasets
 const shouldUseVirtualScroll = computed(() => records.value.length > VIRTUAL_SCROLL_CONFIG.threshold)
 
-// UX-012: Virtualizer instance
+// UX-012: Virtualizer instance - use getter for reactive count
 const virtualizer = useVirtualizer({
-  count: records.value.length,
+  get count() { return records.value.length },
   getScrollElement: () => scrollContainer.value,
   estimateSize: () => VIRTUAL_SCROLL_CONFIG.itemHeight,
   overscan: VIRTUAL_SCROLL_CONFIG.overscan,
