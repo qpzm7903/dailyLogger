@@ -178,7 +178,7 @@ const expandedHour = ref<number | null>(null);
 // Map hour groups for quick lookup
 const hourMap = computed(() => {
   const map = new Map<number, HourGroup>();
-  if (timelineData.value) {
+  if (timelineData.value && Array.isArray(timelineData.value.hour_groups)) {
     for (const group of timelineData.value.hour_groups) {
       map.set(group.hour, group);
     }
