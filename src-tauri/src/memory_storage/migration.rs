@@ -411,65 +411,28 @@ fn get_migrations() -> Vec<Migration> {
             CREATE INDEX IF NOT EXISTS idx_session_timestamp ON records(session_id, timestamp DESC);
             CREATE INDEX IF NOT EXISTS idx_timestamp_covering ON records(timestamp DESC, id, content, screenshot_path);
 
-            -- settings table extensions (field additions over time)
-            ALTER TABLE settings ADD COLUMN summary_model_name TEXT;
-            ALTER TABLE settings ADD COLUMN analysis_prompt TEXT;
-            ALTER TABLE settings ADD COLUMN summary_prompt TEXT;
-            ALTER TABLE settings ADD COLUMN change_threshold INTEGER DEFAULT 3;
-            ALTER TABLE settings ADD COLUMN max_silent_minutes INTEGER DEFAULT 30;
-            ALTER TABLE settings ADD COLUMN summary_title_format TEXT DEFAULT '工作日报 - {date}';
-            ALTER TABLE settings ADD COLUMN include_manual_records INTEGER DEFAULT 1;
-            ALTER TABLE settings ADD COLUMN window_whitelist TEXT DEFAULT '[]';
-            ALTER TABLE settings ADD COLUMN window_blacklist TEXT DEFAULT '[]';
-            ALTER TABLE settings ADD COLUMN use_whitelist_only INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN auto_adjust_silent INTEGER DEFAULT 1;
-            ALTER TABLE settings ADD COLUMN silent_adjustment_paused_until TEXT DEFAULT NULL;
-            ALTER TABLE settings ADD COLUMN auto_detect_work_time INTEGER DEFAULT 1;
-            ALTER TABLE settings ADD COLUMN use_custom_work_time INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN custom_work_time_start TEXT DEFAULT '09:00';
-            ALTER TABLE settings ADD COLUMN custom_work_time_end TEXT DEFAULT '18:00';
-            ALTER TABLE settings ADD COLUMN learned_work_time TEXT DEFAULT NULL;
-            ALTER TABLE settings ADD COLUMN capture_mode TEXT DEFAULT 'primary';
-            ALTER TABLE settings ADD COLUMN selected_monitor_index INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN tag_categories TEXT DEFAULT '[]';
-            ALTER TABLE settings ADD COLUMN is_ollama INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN weekly_report_prompt TEXT;
-            ALTER TABLE settings ADD COLUMN weekly_report_day INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN last_weekly_report_path TEXT;
-            ALTER TABLE settings ADD COLUMN monthly_report_prompt TEXT;
-            ALTER TABLE settings ADD COLUMN last_monthly_report_path TEXT;
-            ALTER TABLE settings ADD COLUMN custom_report_prompt TEXT;
-            ALTER TABLE settings ADD COLUMN last_custom_report_path TEXT;
-            ALTER TABLE settings ADD COLUMN obsidian_vaults TEXT DEFAULT '[]';
-            ALTER TABLE settings ADD COLUMN comparison_report_prompt TEXT;
-            ALTER TABLE settings ADD COLUMN logseq_graphs TEXT DEFAULT '[]';
-            ALTER TABLE settings ADD COLUMN notion_api_key TEXT;
-            ALTER TABLE settings ADD COLUMN notion_database_id TEXT;
-            ALTER TABLE settings ADD COLUMN github_token TEXT;
-            ALTER TABLE settings ADD COLUMN github_repositories TEXT DEFAULT '[]';
-            ALTER TABLE settings ADD COLUMN slack_webhook_url TEXT;
-            ALTER TABLE settings ADD COLUMN dingtalk_webhook_url TEXT;
-            ALTER TABLE settings ADD COLUMN capture_only_mode INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN custom_headers TEXT DEFAULT '[]';
-            ALTER TABLE settings ADD COLUMN quality_filter_enabled INTEGER DEFAULT 1;
-            ALTER TABLE settings ADD COLUMN quality_filter_threshold REAL DEFAULT 0.3;
-            ALTER TABLE settings ADD COLUMN session_gap_minutes INTEGER DEFAULT 30;
-            ALTER TABLE settings ADD COLUMN proxy_enabled INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN proxy_host TEXT;
-            ALTER TABLE settings ADD COLUMN proxy_port INTEGER DEFAULT 8080;
-            ALTER TABLE settings ADD COLUMN proxy_username TEXT;
-            ALTER TABLE settings ADD COLUMN proxy_password TEXT;
-            ALTER TABLE settings ADD COLUMN test_model_name TEXT;
-            ALTER TABLE settings ADD COLUMN onboarding_completed INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN language TEXT DEFAULT 'en';
-            ALTER TABLE settings ADD COLUMN preferred_language TEXT DEFAULT 'zh-CN';
-            ALTER TABLE settings ADD COLUMN supported_languages TEXT DEFAULT '["zh-CN","en","ja"]';
-            ALTER TABLE settings ADD COLUMN auto_backup_enabled INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN auto_backup_interval TEXT DEFAULT 'daily';
-            ALTER TABLE settings ADD COLUMN auto_backup_retention INTEGER DEFAULT 5;
-            ALTER TABLE settings ADD COLUMN last_auto_backup_at TEXT;
-            ALTER TABLE settings ADD COLUMN auto_detect_vault_by_window INTEGER DEFAULT 0;
-            ALTER TABLE settings ADD COLUMN custom_export_template TEXT;
+            -- settings table extensions - these columns are added idempotently by the
+            -- pre-batch add_column_if_not_exists() helper for legacy databases.
+            -- DO NOT add ALTER TABLE statements here for columns already handled in pre-batch,
+            -- otherwise legacy databases that partially applied migrations will fail with
+            -- "duplicate column name" errors.
+            --
+            -- Columns handled in pre-batch: summary_model_name, analysis_prompt, summary_prompt,
+            -- change_threshold, max_silent_minutes, summary_title_format, include_manual_records,
+            -- window_whitelist, window_blacklist, use_whitelist_only, auto_adjust_silent,
+            -- silent_adjustment_paused_until, auto_detect_work_time, use_custom_work_time,
+            -- custom_work_time_start, custom_work_time_end, learned_work_time, capture_mode,
+            -- selected_monitor_index, tag_categories, is_ollama, weekly_report_prompt,
+            -- weekly_report_day, last_weekly_report_path, monthly_report_prompt,
+            -- last_monthly_report_path, custom_report_prompt, last_custom_report_path,
+            -- obsidian_vaults, comparison_report_prompt, logseq_graphs, notion_api_key,
+            -- notion_database_id, github_token, github_repositories, slack_webhook_url,
+            -- dingtalk_webhook_url, capture_only_mode, custom_headers, quality_filter_enabled,
+            -- quality_filter_threshold, session_gap_minutes, proxy_enabled, proxy_host,
+            -- proxy_port, proxy_username, proxy_password, test_model_name, onboarding_completed,
+            -- language, preferred_language, supported_languages, auto_backup_enabled,
+            -- auto_backup_interval, auto_backup_retention, last_auto_backup_at,
+            -- auto_detect_vault_by_window, custom_export_template
 
             -- manual_tags table
             CREATE TABLE IF NOT EXISTS manual_tags (
