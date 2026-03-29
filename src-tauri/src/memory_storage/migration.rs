@@ -65,6 +65,244 @@ impl Migration {
                     }
                 }
                 // If table doesn't exist, CREATE TABLE IF NOT EXISTS in SQL will create it
+
+                // Helper to add a column if it doesn't exist (idempotent)
+                // Uses "ALTER TABLE ADD COLUMN" which fails with "duplicate column name" if column exists
+                let add_column_if_not_exists =
+                    |conn: &Connection, table: &str, col_def: &str| -> Result<(), String> {
+                        let sql = format!("ALTER TABLE {} ADD COLUMN {}", table, col_def);
+                        match conn.execute(&sql, []) {
+                            Ok(_) => tracing::debug!(
+                                "Added column {} to {}",
+                                col_def.split_whitespace().next().unwrap_or("?"),
+                                table
+                            ),
+                            Err(e) => {
+                                let e_str = e.to_string();
+                                if e_str.contains("duplicate column name") {
+                                    // Column already exists, that's fine
+                                } else {
+                                    return Err(e.to_string());
+                                }
+                            }
+                        }
+                        Ok(())
+                    };
+
+                // For legacy databases: add missing columns to records table
+                let records_table_exists: bool = conn
+                    .query_row(
+                        "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name='records'",
+                        [],
+                        |row| row.get(0),
+                    )
+                    .unwrap_or(false);
+
+                if records_table_exists {
+                    add_column_if_not_exists(conn, "records", "monitor_info TEXT")?;
+                    add_column_if_not_exists(conn, "records", "tags TEXT")?;
+                    add_column_if_not_exists(conn, "records", "user_notes TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "records",
+                        "session_id INTEGER REFERENCES sessions(id)",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "records",
+                        "analysis_status TEXT DEFAULT 'pending'",
+                    )?;
+                }
+
+                // For legacy databases: add missing columns to settings table
+                let settings_table_exists: bool = conn
+                    .query_row(
+                        "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name='settings'",
+                        [],
+                        |row| row.get(0),
+                    )
+                    .unwrap_or(false);
+
+                if settings_table_exists {
+                    add_column_if_not_exists(conn, "settings", "summary_model_name TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "analysis_prompt TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "summary_prompt TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "change_threshold INTEGER DEFAULT 3",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "max_silent_minutes INTEGER DEFAULT 30",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "summary_title_format TEXT DEFAULT '工作日报 - {date}'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "include_manual_records INTEGER DEFAULT 1",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "window_whitelist TEXT DEFAULT '[]'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "window_blacklist TEXT DEFAULT '[]'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "use_whitelist_only INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "auto_adjust_silent INTEGER DEFAULT 1",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "silent_adjustment_paused_until TEXT DEFAULT NULL",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "auto_detect_work_time INTEGER DEFAULT 1",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "use_custom_work_time INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "custom_work_time_start TEXT DEFAULT '09:00'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "custom_work_time_end TEXT DEFAULT '18:00'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "learned_work_time TEXT DEFAULT NULL",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "capture_mode TEXT DEFAULT 'primary'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "selected_monitor_index INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "tag_categories TEXT DEFAULT '[]'")?;
+                    add_column_if_not_exists(conn, "settings", "is_ollama INTEGER DEFAULT 0")?;
+                    add_column_if_not_exists(conn, "settings", "weekly_report_prompt TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "weekly_report_day INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "last_weekly_report_path TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "monthly_report_prompt TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "last_monthly_report_path TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "custom_report_prompt TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "last_custom_report_path TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "obsidian_vaults TEXT DEFAULT '[]'",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "comparison_report_prompt TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "logseq_graphs TEXT DEFAULT '[]'")?;
+                    add_column_if_not_exists(conn, "settings", "notion_api_key TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "notion_database_id TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "github_token TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "github_repositories TEXT DEFAULT '[]'",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "slack_webhook_url TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "dingtalk_webhook_url TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "capture_only_mode INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "custom_headers TEXT DEFAULT '[]'")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "quality_filter_enabled INTEGER DEFAULT 1",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "quality_filter_threshold REAL DEFAULT 0.3",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "session_gap_minutes INTEGER DEFAULT 30",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "proxy_enabled INTEGER DEFAULT 0")?;
+                    add_column_if_not_exists(conn, "settings", "proxy_host TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "proxy_port INTEGER DEFAULT 8080")?;
+                    add_column_if_not_exists(conn, "settings", "proxy_username TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "proxy_password TEXT")?;
+                    add_column_if_not_exists(conn, "settings", "test_model_name TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "onboarding_completed INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "language TEXT DEFAULT 'en'")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "preferred_language TEXT DEFAULT 'zh-CN'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "supported_languages TEXT DEFAULT '[\"zh-CN\",\"en\",\"ja\"]'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "auto_backup_enabled INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "auto_backup_interval TEXT DEFAULT 'daily'",
+                    )?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "auto_backup_retention INTEGER DEFAULT 5",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "last_auto_backup_at TEXT")?;
+                    add_column_if_not_exists(
+                        conn,
+                        "settings",
+                        "auto_detect_vault_by_window INTEGER DEFAULT 0",
+                    )?;
+                    add_column_if_not_exists(conn, "settings", "custom_export_template TEXT")?;
+                }
             }
 
             // Execute the migration SQL
