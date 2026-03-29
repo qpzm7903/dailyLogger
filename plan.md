@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.2.0（已发布，2026-03-29）
-> 上一版本: v4.1.1（已完成）
+> 当前版本: v4.2.1（已发布，2026-03-29）
+> 上一版本: v4.2.0（已完成）
 > 当前 Milestone: v4.3.0 (TBD)
 
 ---
@@ -79,6 +79,10 @@
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v4.2.1 — TimelineWidget 防御性修复 ✅
+- 修复 hour_groups 非数组时导致的 "hour_groups is not iterable" 错误
+- 添加 Array.isArray() 检查，防止数据异常时的崩溃
 
 ### v4.2.0 — HistoryViewer 虚拟滚动 ✅
 - 完成 UX-012：使用 @tanstack/vue-virtual 实现历史记录虚拟滚动

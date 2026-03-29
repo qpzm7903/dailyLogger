@@ -233,7 +233,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.2.0
+**最新版本**: v4.2.1
+- TimelineWidget 防御性修复：添加 Array.isArray() 检查，防止 hour_groups 非数组时出现迭代错误
+
+**v4.2.0**:
 - HistoryViewer 虚拟滚动：使用 @tanstack/vue-virtual 实现大数据量列表优化
 - 配置阈值 100 条，超过后启用虚拟化渲染
 - 修复虚拟化计数响应式问题，确保过滤后数据正确更新
