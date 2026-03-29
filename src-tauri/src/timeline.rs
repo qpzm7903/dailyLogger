@@ -167,21 +167,28 @@ pub fn get_timeline_data_for_date(date: &str) -> Result<TimelineData, String> {
     let target_date = chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
 
-    let start_time = target_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    // Helper function to safely convert NaiveDateTime to UTC RFC3339 string
+    fn naive_to_utc_rfc3339(dt: chrono::NaiveDateTime) -> Result<String, String> {
+        let local_dt = dt
+            .and_local_timezone(Local)
+            .single()
+            .ok_or_else(|| "Ambiguous or invalid local timezone".to_string())?;
+        Ok(local_dt.with_timezone(&chrono::Utc).to_rfc3339())
+    }
 
-    let end_time = target_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_local_timezone(Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let start_time = {
+        let dt = target_date
+            .and_hms_opt(0, 0, 0)
+            .ok_or_else(|| format!("Invalid start time for date: {}", date))?;
+        naive_to_utc_rfc3339(dt)?
+    };
+
+    let end_time = {
+        let dt = target_date
+            .and_hms_opt(23, 59, 59)
+            .ok_or_else(|| format!("Invalid end time for date: {}", date))?;
+        naive_to_utc_rfc3339(dt)?
+    };
 
     // Query records for the date
     let mut stmt = conn
