@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-29 (v4.2.0 released - HistoryViewer virtual scrolling complete, 508 Rust + 1165 frontend tests passing)
+# last_updated: 2026-03-29 (v4.2.1 released - TimelineWidget defensive fix, 508 Rust + 1180 frontend tests passing)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-29 (v4.2.0 released - UX-012 HistoryViewer virtual scrolling: @tanstack/vue-virtual implementation, reactive count fix, 508 Rust + 1165 frontend tests passing)
+last_updated: 2026-03-29 (v4.2.1 released - TimelineWidget defensive fix: Array.isArray() check, 508 Rust + 1180 frontend tests passing)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
