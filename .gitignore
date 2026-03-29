@@ -12,3 +12,6 @@ src-tauri/target/
 # E2E test outputs
 playwright-report/
 test-results/
+
+# Code coverage output
+coverage/
