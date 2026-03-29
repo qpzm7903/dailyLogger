@@ -71,10 +71,10 @@ const loadSummary = async () => {
 
 const openInObsidian = async () => {
   try {
-    // Extract directory from path
-    const pathParts = props.summaryPath.split('/')
-    pathParts.pop() // Remove filename
-    const dirPath = pathParts.join('/')
+    // Extract directory from path - handle both / and \ as separators
+    const normalizedPath = props.summaryPath.replace(/\\/g, '/')
+    const lastSlashIndex = normalizedPath.lastIndexOf('/')
+    const dirPath = lastSlashIndex > 0 ? normalizedPath.slice(0, lastSlashIndex) : normalizedPath
     await open(dirPath)
   } catch (err) {
     console.error('Failed to open in Finder:', err)

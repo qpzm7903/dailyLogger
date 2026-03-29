@@ -517,7 +517,7 @@ function formatDateRange(period: { start: string; end: string }): string {
 
 // Get line chart points
 function getLinePoints(type: 'screenshot' | 'record'): string {
-  if (!productivityTrend.value || productivityTrend.value.daily_trend.length === 0) {
+  if (!productivityTrend.value || productivityTrend.value.daily_trend.length <= 1) {
     return ''
   }
 
