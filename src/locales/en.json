@@ -847,6 +847,15 @@
     "noData": "No data",
     "export": "Export CSV",
     "exporting": "Exporting...",
-    "close": "Close"
+    "close": "Close",
+    "details": "Details",
+    "trendsAndComparison": "Trends & Comparison",
+    "thisWeekVsLastWeek": "This Week vs Last Week",
+    "thisMonthVsLastMonth": "This Month vs Last Month",
+    "vsLastPeriod": "vs Last Period",
+    "changePercent": "Change %",
+    "dailyTrend": "Daily Trend",
+    "avgDaily": "avg/day",
+    "peakHours": "Peak Hours"
   }
 }

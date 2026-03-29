@@ -461,6 +461,75 @@ pub struct Statistics {
     pub daily_breakdown: Vec<DailyStatistic>, // Daily breakdown
 }
 
+// ANALYTICS-001: Productivity Trend Types
+// ============================================
+
+/// Period comparison result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeriodComparison {
+    pub current_total: i64,
+    pub previous_total: i64,
+    pub change_percent: f64, // Percentage change, positive = increase
+    pub trend: String,       // "up", "down", or "stable"
+}
+
+/// Hourly distribution for peak hours analysis
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HourlyDistribution {
+    pub hour: u32,       // 0-23
+    pub count: i64,      // Number of records in this hour
+    pub percentage: f64, // Percentage of total
+}
+
+/// Daily trend data point
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DailyTrendPoint {
+    pub date: String, // YYYY-MM-DD
+    pub screenshot_count: i64,
+    pub record_count: i64,
+}
+
+/// Full productivity trend result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductivityTrend {
+    pub comparison_type: String, // "week" or "month"
+    pub current_period: DateRange,
+    pub previous_period: DateRange,
+    pub screenshot_comparison: PeriodComparison,
+    pub record_comparison: PeriodComparison,
+    pub daily_trend: Vec<DailyTrendPoint>, // Daily data for current period
+    pub peak_hours: Vec<HourlyDistribution>, // Top 5 busiest hours
+    pub average_daily_records: f64,        // Average records per day
+}
+
+/// Get the start and end of previous week (Monday to Sunday)
+fn get_previous_week_range() -> (String, String) {
+    let now = Local::now();
+    let weekday = now.weekday().num_days_from_monday() as i64;
+    // Current week's Monday
+    let current_week_monday = now - chrono::Duration::days(weekday);
+    // Previous week's Monday = current week's Monday - 7 days
+    let previous_week_monday = current_week_monday - chrono::Duration::days(7);
+    let previous_week_sunday = previous_week_monday + chrono::Duration::days(6);
+    let start = format!("{}T00:00:00", previous_week_monday.format("%Y-%m-%d"));
+    let end = format!("{}T23:59:59.999", previous_week_sunday.format("%Y-%m-%d"));
+    (start, end)
+}
+
+/// Get the start and end of previous month
+fn get_previous_month_range() -> (String, String) {
+    let now = Local::now();
+    let (year, month) = if now.month() == 1 {
+        (now.year() - 1, 12)
+    } else {
+        (now.year(), now.month() - 1)
+    };
+    let start = format!("{}-{:02}-01T00:00:00", year, month);
+    let last_day = get_last_day_of_month(year, month);
+    let end = format!("{}-{:02}-{}T23:59:59.999", year, month, last_day);
+    (start, end)
+}
+
 /// Get the start and end of today in local timezone
 fn get_today_range() -> (String, String) {
     let now = Local::now();
@@ -700,6 +769,212 @@ pub async fn get_statistics(
         analysis_success_rate,
         daily_breakdown,
     })
+}
+
+/// ANALYTICS-001: Get productivity trend data for week-over-week or month-over-month comparison
+///
+/// # Arguments
+/// * `comparison_type` - One of: "week" (this week vs last week), "month" (this month vs last month)
+#[command]
+pub async fn get_productivity_trend(comparison_type: String) -> Result<ProductivityTrend, String> {
+    let comparison_type_lower = comparison_type.to_lowercase();
+
+    // Determine current and previous period ranges
+    let (current_start, current_end, current_label, previous_start, previous_end, previous_label) =
+        match comparison_type_lower.as_str() {
+            "week" => {
+                let (current_s, current_e) = get_week_range();
+                let (previous_s, previous_e) = get_previous_week_range();
+                (
+                    current_s,
+                    current_e,
+                    "本周".to_string(),
+                    previous_s,
+                    previous_e,
+                    "上周".to_string(),
+                )
+            }
+            "month" => {
+                let (current_s, current_e) = get_month_range();
+                let (previous_s, previous_e) = get_previous_month_range();
+                (
+                    current_s,
+                    current_e,
+                    "本月".to_string(),
+                    previous_s,
+                    previous_e,
+                    "上月".to_string(),
+                )
+            }
+            _ => {
+                return Err(format!(
+                    "Invalid comparison_type: {}. Use: 'week' or 'month'",
+                    comparison_type
+                ))
+            }
+        };
+
+    let db = DB_CONNECTION
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let conn = db.as_ref().ok_or("Database not initialized")?;
+
+    // Get counts for current period
+    let current_screenshot_count = count_screenshots_in_range(conn, &current_start, &current_end)?;
+    let current_record_count = count_records_in_range(conn, &current_start, &current_end)?;
+
+    // Get counts for previous period
+    let previous_screenshot_count =
+        count_screenshots_in_range(conn, &previous_start, &previous_end)?;
+    let previous_record_count = count_records_in_range(conn, &previous_start, &previous_end)?;
+
+    // Calculate comparison metrics
+    let screenshot_comparison =
+        calculate_comparison(current_screenshot_count, previous_screenshot_count);
+    let record_comparison = calculate_comparison(current_record_count, previous_record_count);
+
+    // Get daily trend for current period
+    let daily_trend = get_daily_trend_for_period(conn, &current_start, &current_end)?;
+
+    // Get peak hours
+    let peak_hours = get_peak_hours(conn, &current_start, &current_end)?;
+
+    // Calculate average daily records
+    let days_count = daily_trend.len() as f64;
+    let average_daily_records = if days_count > 0.0 {
+        current_record_count as f64 / days_count
+    } else {
+        0.0
+    };
+
+    Ok(ProductivityTrend {
+        comparison_type: comparison_type_lower,
+        current_period: DateRange {
+            start: current_start,
+            end: current_end,
+            label: current_label,
+        },
+        previous_period: DateRange {
+            start: previous_start,
+            end: previous_end,
+            label: previous_label,
+        },
+        screenshot_comparison,
+        record_comparison,
+        daily_trend,
+        peak_hours,
+        average_daily_records,
+    })
+}
+
+/// Calculate comparison between current and previous period
+fn calculate_comparison(current: i64, previous: i64) -> PeriodComparison {
+    let change_percent = if previous == 0 {
+        if current == 0 {
+            0.0
+        } else {
+            100.0 // If previous was 0 and current is not 0, it's a 100% increase
+        }
+    } else {
+        ((current - previous) as f64 / previous as f64) * 100.0
+    };
+
+    let trend = if change_percent > 5.0 {
+        "up".to_string()
+    } else if change_percent < -5.0 {
+        "down".to_string()
+    } else {
+        "stable".to_string()
+    };
+
+    PeriodComparison {
+        current_total: current,
+        previous_total: previous,
+        change_percent,
+        trend,
+    }
+}
+
+/// Get daily trend data for a period
+fn get_daily_trend_for_period(
+    conn: &rusqlite::Connection,
+    start: &str,
+    end: &str,
+) -> Result<Vec<DailyTrendPoint>, String> {
+    let start_date = parse_date(&start[..10])?;
+    let end_date = parse_date(&end[..10])?;
+
+    let mut result = Vec::new();
+    let mut current_date = start_date;
+
+    while current_date <= end_date {
+        let date_str = current_date.format("%Y-%m-%d").to_string();
+        let day_start = format!("{}T00:00:00", date_str);
+        let day_end = format!("{}T23:59:59.999", date_str);
+
+        let screenshot_count = count_screenshots_in_range(conn, &day_start, &day_end).unwrap_or(0);
+        let record_count = count_records_in_range(conn, &day_start, &day_end).unwrap_or(0);
+
+        result.push(DailyTrendPoint {
+            date: date_str,
+            screenshot_count,
+            record_count,
+        });
+
+        current_date += chrono::Duration::days(1);
+    }
+
+    Ok(result)
+}
+
+/// Get peak hours (top 5 busiest hours)
+fn get_peak_hours(
+    conn: &rusqlite::Connection,
+    start: &str,
+    end: &str,
+) -> Result<Vec<HourlyDistribution>, String> {
+    // Query to get hour distribution
+    let mut stmt = conn
+        .prepare(
+            "SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(*) as count
+         FROM records
+         WHERE timestamp >= ? AND timestamp <= ?
+         GROUP BY hour
+         ORDER BY count DESC
+         LIMIT 5",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let rows = stmt
+        .query_map([start, end], |row| {
+            let hour: i64 = row.get(0)?;
+            let count: i64 = row.get(1)?;
+            Ok((hour, count))
+        })
+        .map_err(|e| format!("Failed to query: {}", e))?;
+
+    let mut distributions: Vec<HourlyDistribution> = Vec::new();
+    let mut total_count: i64 = 0;
+
+    for (hour, count) in rows.flatten() {
+        total_count += count;
+        distributions.push(HourlyDistribution {
+            hour: hour as u32,
+            count,
+            percentage: 0.0, // Will calculate after we have total
+        });
+    }
+
+    // Calculate percentages
+    for dist in &mut distributions {
+        dist.percentage = if total_count > 0 {
+            (dist.count as f64 / total_count as f64) * 100.0
+        } else {
+            0.0
+        };
+    }
+
+    Ok(distributions)
 }
 
 #[cfg(test)]

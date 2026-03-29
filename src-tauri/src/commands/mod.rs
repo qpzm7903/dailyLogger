@@ -42,6 +42,7 @@ pub use crate::memory_storage::{
     get_default_tag_categories,
     get_history_records,
     get_history_records_cursor,
+    get_productivity_trend,
     get_records_by_date_range,
     get_records_by_manual_tags,
     get_records_by_tag,

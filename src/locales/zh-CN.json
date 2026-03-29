@@ -843,6 +843,15 @@
     "noData": "暂无数据",
     "export": "导出CSV",
     "exporting": "导出中...",
-    "close": "关闭"
+    "close": "关闭",
+    "details": "明细",
+    "trendsAndComparison": "趋势对比",
+    "thisWeekVsLastWeek": "本周 vs 上周",
+    "thisMonthVsLastMonth": "本月 vs 上月",
+    "vsLastPeriod": "vs 上期",
+    "changePercent": "变化率",
+    "dailyTrend": "日趋势",
+    "avgDaily": "日均",
+    "peakHours": "高峰时段"
   }
 }

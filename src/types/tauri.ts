@@ -388,3 +388,41 @@ export interface GetStatisticsArgs {
   custom_start?: string  // YYYY-MM-DD, required when range_type is 'custom'
   custom_end?: string    // YYYY-MM-DD, required when range_type is 'custom'
 }
+
+// ============================================
+// Productivity Trend Types (ANALYTICS-001)
+// ============================================
+
+export interface PeriodComparison {
+  current_total: number
+  previous_total: number
+  change_percent: number  // Percentage change, positive = increase
+  trend: 'up' | 'down' | 'stable'
+}
+
+export interface HourlyDistribution {
+  hour: number       // 0-23
+  count: number      // Number of records in this hour
+  percentage: number // Percentage of total
+}
+
+export interface DailyTrendPoint {
+  date: string           // YYYY-MM-DD
+  screenshot_count: number
+  record_count: number
+}
+
+export interface ProductivityTrend {
+  comparison_type: 'week' | 'month'
+  current_period: DateRange
+  previous_period: DateRange
+  screenshot_comparison: PeriodComparison
+  record_comparison: PeriodComparison
+  daily_trend: DailyTrendPoint[]      // Daily data for current period
+  peak_hours: HourlyDistribution[]    // Top 5 busiest hours
+  average_daily_records: number       // Average records per day
+}
+
+export interface GetProductivityTrendArgs {
+  comparison_type: 'week' | 'month'
+}
