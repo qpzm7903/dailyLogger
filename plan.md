@@ -1,29 +1,33 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.1.1（已发布，2026-03-29）
-> 上一版本: v4.0.0（已完成）
-> 当前 Milestone: v4.2.0 (用户体验优化)
+> 当前版本: v4.2.0（已发布，2026-03-29）
+> 上一版本: v4.1.1（已完成）
+> 当前 Milestone: v4.3.0 (TBD)
 
 ---
 
-## 当前 Milestone：v4.2.0
+## 当前 Milestone：v4.3.0
+
+**目标**: 待定
+
+---
 
 **目标**: 用户体验优化与性能增强
 
 | Story | 名称 | 状态 |
 |-------|------|------|
-| UX-012 | HistoryViewer 虚拟滚动 | in-progress |
+| UX-012 | HistoryViewer 虚拟滚动 | ✅ done |
 
 ---
 
-## Epic 16: 用户体验优化 (UX-OPT)
+## Epic 16: 用户体验优化 (UX-OPT) ✅
 
 **目标**: 优化用户界面交互体验和性能
 
 | Story | 名称 | 状态 |
 |-------|------|------|
-| UX-012 | HistoryViewer 虚拟滚动 | in-progress |
+| UX-012 | HistoryViewer 虚拟滚动 | ✅ done (v4.2.0) |
 
 ---
 
@@ -75,6 +79,11 @@
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v4.2.0 — HistoryViewer 虚拟滚动 ✅
+- 完成 UX-012：使用 @tanstack/vue-virtual 实现历史记录虚拟滚动
+- 配置阈值 100 条，超过后启用虚拟化渲染
+- 修复虚拟化计数响应式问题，确保过滤后数据正确更新
 
 ### v4.1.1 — Timeline 时区转换错误处理修复 + Tailwind v4 升级 ✅
 - 修复 `get_timeline_data_for_date()` 中潜在的 panic 问题

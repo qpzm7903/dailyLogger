@@ -233,13 +233,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.1.1
-- Timeline 时区转换错误处理修复
-- 修复 `get_timeline_data_for_date()` 中潜在的 panic 问题
-- 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
-- Tailwind CSS v4 升级：迁移到 @tailwindcss/vite、@theme 块配置
+**最新版本**: v4.2.0
+- HistoryViewer 虚拟滚动：使用 @tanstack/vue-virtual 实现大数据量列表优化
+- 配置阈值 100 条，超过后启用虚拟化渲染
+- 修复虚拟化计数响应式问题，确保过滤后数据正确更新
 
-**v4.1.0**:
+**v4.1.1**:
 - 前端组件测试覆盖率提升：完成 35+ 个 Vue 组件的测试覆盖
 - 新增 40+ 测试文件，测试数量从约 800 增至 1165
 - 62 个测试文件全部通过 (1165 tests)
