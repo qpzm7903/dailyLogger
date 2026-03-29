@@ -318,7 +318,10 @@ fn should_capture(
     change_threshold: f64,
     max_silent_minutes: u64,
 ) -> Option<CaptureReason> {
-    let mut state = SCREEN_STATE.lock().unwrap();
+    let mut state = SCREEN_STATE.lock().unwrap_or_else(|poisoned| {
+        tracing::warn!("SCREEN_STATE mutex was poisoned, recreating state");
+        poisoned.into_inner()
+    });
     let silent_exceeded =
         state.last_capture_time.elapsed() >= Duration::from_secs(max_silent_minutes * 60);
     let changed = match &state.last_fingerprint {

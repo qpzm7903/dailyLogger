@@ -14,7 +14,7 @@
 | Story | 名称 | 状态 |
 |-------|------|------|
 | STAB-ERR-001 | 改进 SettingsModal 错误处理 | ✅ done |
-| STAB-ERR-002 | capture_service mutex 错误处理改进 | 待开始 |
+| STAB-ERR-002 | capture_service mutex 错误处理改进 | ✅ done |
 | STAB-ERR-003 | 统一 Rust 错误类型 | 待开始 |
 
 ---
@@ -24,7 +24,7 @@
 | Story | 名称 | 状态 |
 |-------|------|------|
 | STAB-ERR-001 | 改进 SettingsModal 错误处理 | ✅ done |
-| STAB-ERR-002 | capture_service mutex 错误处理改进 | 待开始 |
+| STAB-ERR-002 | capture_service mutex 错误处理改进 | ✅ done |
 | STAB-ERR-003 | 统一 Rust 错误类型 | 待开始 |
 
 ---
