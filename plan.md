@@ -1,9 +1,21 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.3.4（v4.3.5 检查完成无需变更）
-> 当前 Milestone: 无待处理 Milestone
+> 当前版本: v4.3.5
+> 当前 Milestone: v4.3.5 Windows 启动修复发布
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅
+
+---
+
+## v4.3.5 ✅ 准备发布
+
+**目标**: Windows 启动修复 (issue #84)
+
+**状态**: ✅ 代码已完成，版本文件已更新，待发布
+
+**修复内容**：
+- 使用 Tauri 异步运行时替代 tokio::spawn
+- 解决 Windows 便携版 "there is no reactor running" 启动崩溃问题
 
 ---
 
@@ -126,6 +138,14 @@
 
 ## 最近 10 个已完成版本摘要
 
+### v4.3.5 — Windows 启动修复 ✅
+- 使用 Tauri 异步运行时替代 tokio::spawn
+- 解决 Windows 便携版 "there is no reactor running" 启动崩溃问题（issue #84）
+
+### v4.3.4 — Migration 幂等性修复 ✅
+- 移除 batch SQL 中 settings 表的重复 `ALTER TABLE ADD COLUMN` 语句
+- 解决旧版本数据库迁移时出现的 "duplicate column name: summary_model_name" 错误（issue #83）
+
 ### v4.3.3 — 代码质量与文档同步 ✅
 - Rust clippy 无警告通过，代码格式检查通过
 - README 与代码功能同步（移除已删除的 GitHub integration 描述）
@@ -164,18 +184,6 @@
 - 替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
 - 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
 - 完成 Tailwind CSS v4 升级 (DEP-001)：迁移到 @tailwindcss/vite、@theme 块配置
-
-### v4.1.0 — 前端组件测试覆盖率提升 ✅
-- 完成 35 个 Vue 组件的测试覆盖，测试文件从 0 增至 40+
-- 测试数量从约 800 增至 1165，覆盖所有主要 UI 组件
-- 62 个测试文件全部通过 (1165 tests)
-- 覆盖：ErrorBoundary、Sidebar、Header、TodaySummaryWidget、SessionDetailView 等
-
-### v4.0.0 — 组件颜色 CSS 变量化 ✅
-- 完成 DEBT-003：21 个 Vue 组件迁移到 CSS 变量
-- 新增 CSS 变量：`--color-border`, `--color-border-subtle`, `--color-text-muted`
-- 所有组件支持浅色主题切换
-- 964 前端测试全部通过
 
 ---
 
