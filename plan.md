@@ -215,24 +215,11 @@
 - 使用 Tauri 文件对话框实现模板文件的保存和加载
 - 新增 i18n 国际化支持（en.json, zh-CN.json）
 
-### v4.2.2 — Migration 修复 ✅
-- 修复 legacy sessions 表缺少 date 列导致的启动失败问题
-- 在 Rust 代码中显式检查并添加缺失列，确保数据库迁移成功
-
-### v4.2.1 — TimelineWidget 防御性修复 ✅
-- 修复 hour_groups 非数组时导致的 "hour_groups is not iterable" 错误
-- 添加 Array.isArray() 检查，防止数据异常时的崩溃
-
-### v4.2.0 — HistoryViewer 虚拟滚动 ✅
-- 完成 UX-012：使用 @tanstack/vue-virtual 实现历史记录虚拟滚动
-- 配置阈值 100 条，超过后启用虚拟化渲染
-- 修复虚拟化计数响应式问题，确保过滤后数据正确更新
-
-### v4.1.1 — Timeline 时区转换错误处理修复 + Tailwind v4 升级 ✅
-- 修复 `get_timeline_data_for_date()` 中潜在的 panic 问题
-- 替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
-- 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
-- 完成 Tailwind CSS v4 升级 (DEP-001)：迁移到 @tailwindcss/vite、@theme 块配置
+### v4.2.x - v4.1.x — 维护版本集合 ✅
+- v4.2.2: 修复 legacy sessions 表缺少 date 列导致的启动失败问题
+- v4.2.1: TimelineWidget 防御性修复，添加 Array.isArray() 检查
+- v4.2.0: HistoryViewer 虚拟滚动 (UX-012)，@tanstack/vue-virtual 实现
+- v4.1.1: Timeline 时区转换错误处理修复 + Tailwind CSS v4 升级
 
 ---
 
