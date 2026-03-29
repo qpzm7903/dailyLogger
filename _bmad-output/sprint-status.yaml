@@ -206,4 +206,4 @@ development_status:
 
   # Epic 18: 数据分析增强 (ANALYTICS) — P2
   epic-18: in-progress
-  ANALYTICS-001: ready-for-dev  # 生产力趋势与周期对比分析
+  ANALYTICS-001: done  # 生产力趋势与周期对比分析 - week/month comparison, line chart, peak hours

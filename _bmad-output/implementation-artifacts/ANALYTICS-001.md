@@ -1,12 +1,22 @@
 # Story 18.1: 生产力趋势与周期对比分析
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story
 
 作为用户，我希望查看工作生产力的时间趋势和与上一周期的对比，以便了解我的工作效率变化模式。
+
+## Implementation Summary
+
+- Backend: Added `ProductivityTrend` struct with `PeriodComparison`, `HourlyDistribution`, `DailyTrendPoint`
+- Backend: Added `get_productivity_trend` command for week/month comparison
+- Frontend: Added "趋势对比" tab to StatisticsPanel with SVG line chart
+- Frontend: Added period selector (本周 vs 上周, 本月 vs 上月)
+- Frontend: Added peak hours display showing top 5 busiest hours
+- i18n: Added translation keys for en.json and zh-CN.json
+- Export: Extended CSV export to support productivity trend data
 
 ## Acceptance Criteria
 
