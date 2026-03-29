@@ -237,6 +237,7 @@ git config core.hooksPath .githooks
 - Timeline 时区转换错误处理修复
 - 修复 `get_timeline_data_for_date()` 中潜在的 panic 问题
 - 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
+- Tailwind CSS v4 升级：迁移到 @tailwindcss/vite、@theme 块配置
 
 **v4.1.0**:
 - 前端组件测试覆盖率提升：完成 35+ 个 Vue 组件的测试覆盖
