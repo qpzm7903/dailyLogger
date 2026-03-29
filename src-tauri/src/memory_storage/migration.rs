@@ -63,6 +63,107 @@ impl Migration {
                         )
                         .map_err(|e| format!("Failed to add date column to sessions: {}", e))?;
                     }
+
+                    // Also handle start_time column for very old legacy databases
+                    // that might have the sessions table but be missing start_time
+                    let start_time_exists: bool = conn
+                        .query_row(
+                            "SELECT COUNT(*) > 0 FROM PRAGMA table_info('sessions') WHERE name = 'start_time'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(false);
+
+                    if !start_time_exists {
+                        conn.execute(
+                            "ALTER TABLE sessions ADD COLUMN start_time TEXT NOT NULL DEFAULT ''",
+                            [],
+                        )
+                        .map_err(|e| {
+                            format!("Failed to add start_time column to sessions: {}", e)
+                        })?;
+                    }
+
+                    // Also handle end_time column for legacy databases
+                    let end_time_exists: bool = conn
+                        .query_row(
+                            "SELECT COUNT(*) > 0 FROM PRAGMA table_info('sessions') WHERE name = 'end_time'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(false);
+
+                    if !end_time_exists {
+                        conn.execute("ALTER TABLE sessions ADD COLUMN end_time TEXT", [])
+                            .map_err(|e| {
+                                format!("Failed to add end_time column to sessions: {}", e)
+                            })?;
+                    }
+
+                    // Also handle ai_summary column for legacy databases
+                    let ai_summary_exists: bool = conn
+                        .query_row(
+                            "SELECT COUNT(*) > 0 FROM PRAGMA table_info('sessions') WHERE name = 'ai_summary'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(false);
+
+                    if !ai_summary_exists {
+                        conn.execute("ALTER TABLE sessions ADD COLUMN ai_summary TEXT", [])
+                            .map_err(|e| {
+                                format!("Failed to add ai_summary column to sessions: {}", e)
+                            })?;
+                    }
+
+                    // Also handle user_summary column for legacy databases
+                    let user_summary_exists: bool = conn
+                        .query_row(
+                            "SELECT COUNT(*) > 0 FROM PRAGMA table_info('sessions') WHERE name = 'user_summary'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(false);
+
+                    if !user_summary_exists {
+                        conn.execute("ALTER TABLE sessions ADD COLUMN user_summary TEXT", [])
+                            .map_err(|e| {
+                                format!("Failed to add user_summary column to sessions: {}", e)
+                            })?;
+                    }
+
+                    // Also handle context_for_next column for legacy databases
+                    let context_for_next_exists: bool = conn
+                        .query_row(
+                            "SELECT COUNT(*) > 0 FROM PRAGMA table_info('sessions') WHERE name = 'context_for_next'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(false);
+
+                    if !context_for_next_exists {
+                        conn.execute("ALTER TABLE sessions ADD COLUMN context_for_next TEXT", [])
+                            .map_err(|e| {
+                                format!("Failed to add context_for_next column to sessions: {}", e)
+                            })?;
+                    }
+
+                    // Also handle status column for legacy databases
+                    let status_exists: bool = conn
+                        .query_row(
+                            "SELECT COUNT(*) > 0 FROM PRAGMA table_info('sessions') WHERE name = 'status'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(false);
+
+                    if !status_exists {
+                        conn.execute(
+                            "ALTER TABLE sessions ADD COLUMN status TEXT DEFAULT 'active'",
+                            [],
+                        )
+                        .map_err(|e| format!("Failed to add status column to sessions: {}", e))?;
+                    }
                 }
                 // If table doesn't exist, CREATE TABLE IF NOT EXISTS in SQL will create it
 
