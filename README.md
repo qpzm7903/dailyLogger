@@ -277,47 +277,11 @@ git config core.hooksPath .githooks
 - 建立结构化错误模型：AppError 枚举和统一错误处理
 - 收敛全局状态：建立 infrastructure/state.rs 文档规范
 
-**v3.5.0（架构收口二期）**:
-- 抽取 Settings/Session/Report/Capture 四个领域 service 边界
-- 命令层重构为薄 IPC 适配器，业务逻辑下沉到 services
-- 补齐回归基线：486 Rust 测试 + 964 前端测试全部通过
-
-**v3.5.1（CI 修复）**:
-- 修复 v3.5.0 Windows 启动崩溃问题（move scheduler start to Tauri setup phase）
-
-**v3.0.0（工作时段感知分析 + GitHub 移除）**:
-- 工作时段感知分析：捕获与分析解耦、时段批量上下文分析、用户编辑功能
-- 手动触发分析：支持批量时段选择和分析
-- 日报生成适配：按时段组织，用户摘要优先
-- GitHub 集成移除（CLEAN-001）
-
-**近期版本 (v2.10.0 ~ v2.15.0)**:
-- v2.15.0: UX-4 Dashboard 重组、Header 状态栏、记录列表分页
-- v2.14.0: UX-3 Sidebar 升级、UX-2 按钮规范化
-- v2.13.0: SESSION-004 手动触发分析功能
-- v2.12.0: Epic-8 SESSION-003 完成后版本发布
-- v2.11.0: (same as v2.10.0)
-- v2.10.0: 今日摘要 Widget：实时统计记录数、时间跨度、活跃时段
-- v2.9.0: 截图重新分析按钮
-- v2.8.0: 截图质量过滤
-- v2.6.0: Slack/钉钉通知集成
-- v2.5.0: GitHub 工时统计展示
-- v2.4.0: GitHub API 集成验证
-- v2.3.0: Logseq 导出支持
-- v2.2.0: Notion 导出完善
-- v2.1.0: 自定义 API Headers
-- v2.0.0: 架构瘦身，移除 fine_tuning/plugin 模块
-
-**早期版本 (v1.0.0 ~ v1.100.0)**:
-- v1.100.0: 仅截图模式、截图备注
-- v1.99.0: 按日期重新分析
-- v1.94.0: 批量重新分析
-- v1.85.0: 问题修复 (#59-62)
-- v1.58.0: UI 重构、Sidebar 架构
-- v1.46.0: Tailwind CSS v4
-- v1.45.0: SettingsModal 拆分
-- v1.30-1.32: TypeScript 迁移
-- v1.0-1.19: 核心功能实现
+**近期版本 (v3.0.0 ~ v3.5.0)**:
+- v3.5.0: 架构收口二期 - 抽取四个领域 service 边界
+- v3.0.0: 工作时段感知分析 + GitHub 移除
+- v2.10.0 ~ v2.15.0: Dashboard 重组、Sidebar 升级、手动触发分析等
+- v1.0.0 ~ v1.100.0: 核心功能、UI 重构、TypeScript 迁移等
 
 ## 贡献
 
