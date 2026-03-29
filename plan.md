@@ -3,6 +3,8 @@
 > 最后更新: 2026-03-29
 > 当前版本: v4.4.1 ✅ (已发布)
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+>
+> **维护记录**: 2026-03-29 改进了 setupTests.ts 中的 window mock，确保在 Node.js 22 ESM 环境下正确工作，CI Frontend Tests 现已通过。
 
 ---
 
