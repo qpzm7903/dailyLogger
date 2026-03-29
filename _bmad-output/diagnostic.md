@@ -43,8 +43,8 @@ development_status:
 ```
 
 ### Version Status
-- **Current version**: v4.1.0 (src-tauri/Cargo.toml, package.json, tauri.conf.json)
-- **Latest tag**: v4.1.0 (2026-03-28)
+- **Current version**: v4.1.1 (src-tauri/Cargo.toml, package.json, tauri.conf.json)
+- **Latest tag**: v4.1.1 (2026-03-29)
 - **Next version**: v4.2.0 (规划中 - planning in progress)
 
 ### Project Retrospective
@@ -67,21 +67,21 @@ development_status:
 - No pending versions to release
 - No architecture planning needed (all epics completed)
 
-**Project Status**: ✅ Development complete — v4.1.0 released (2026-03-28), v4.2.0 planning in progress.
+**Project Status**: ✅ Development complete — v4.1.1 released (2026-03-29), v4.2.0 planning in progress.
 
 ---
 
-## Update: 2026-03-28 (Current State Check)
+## Update: 2026-03-29 (Current State Check)
 
 ### CI Status
-- Last workflow: **success** (chore: update package-lock.json version to v4.1.0)
-- Test workflow: **success** (all tests passed: 508 Rust + 1165 frontend)
-- Build and Release: **success** (v4.1.0 published)
+- Last workflow: **success** (fix(timeline): replace unwrap with proper error handling for timezone conversion)
+- Test workflow: **success** (all tests passed: 508 Rust + 1165 frontend typecheck)
+- Build and Release: **success** (v4.1.1 published)
 
 ### Git Status
 - Working tree: clean
-- Latest tag: v4.1.0
-- Version files: v4.1.0 (package.json, Cargo.toml, tauri.conf.json)
+- Latest tag: v4.1.1
+- Version files: v4.1.1 (package.json, Cargo.toml, tauri.conf.json)
 
 ### Sprint Status
 - All 13 epics: done (Epic 1-13)
@@ -89,8 +89,7 @@ development_status:
 - All retrospectives: done
 
 ### Documentation Updates Made
-- Updated epics.md: Marked v4.1.0 as completed, v4.2.0 as planning
-- Updated diagnostic.md: Reflects v4.1.0 released, v4.2.0 planning in progress
+- Updated diagnostic.md: Reflects v4.1.1 released (2026-03-29), v4.2.0 planning in progress
 
 ### Conclusion
-**v4.1.0 released (2026-03-28), v4.2.0 planning in progress.**
+**v4.1.1 released (2026-03-29), v4.2.0 planning in progress.**
