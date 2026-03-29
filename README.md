@@ -223,12 +223,14 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.3.7
+**最新版本**: v4.4.0
+- 数据分析增强：新增生产力趋势分析，支持"本周 vs 上周"、"本月 vs 上月"对比视图 (ANALYTICS-001)
+- SVG 折线图展示日趋势数据
+- 高峰时段分布显示 top 5 busiest hours
+
+**v4.3.7**:
 - 启动速度优化：实现懒加载机制、缓冲诊断写入、延迟 Tray 和 Backup Scheduler 初始化 (PERF-007)
 - 数据库迁移修复：修复旧数据库 sessions 表缺失列问题 (issue #85)
-
-**v4.3.6** (已废弃 - 从未正式发布):
-- 该版本因启动速度优化未完成从未正式发布，已被 v4.3.7 替代
 
 **v4.3.5**:
 - Windows 启动修复：使用 Tauri 异步运行时替代 tokio::spawn，解决 Windows 便携版 "there is no reactor running" 启动崩溃问题 (issue #84)
