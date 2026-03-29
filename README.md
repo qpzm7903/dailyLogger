@@ -223,8 +223,8 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.3.5
-- Windows 启动修复：使用 Tauri 异步运行时替代 tokio::spawn，解决 Windows 便携版 "there is no reactor running" 崩溃问题 (issue #84)
+**最新版本**: v4.3.6
+- 启动速度优化：实现懒加载机制、缓冲诊断写入、延迟 Tray 和 Backup Scheduler 初始化 (PERF-007)
 
 **v4.3.4**:
 - Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句，解决 "duplicate column name: summary_model_name" 错误 (issue #83)
