@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-27 (epic-12 and epic-13 added)
+last_updated: 2026-03-28 (v4.1.0 released - 35 Vue components tested, 1165 tests, Epic 11 retrospective completed)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
