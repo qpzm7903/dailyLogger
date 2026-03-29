@@ -242,6 +242,8 @@ git config core.hooksPath .githooks
 **v4.2.0**:
 - Timeline 时区转换错误处理修复：替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
 - 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
+
+**v4.1.1**:
 - Tailwind CSS v4 升级：迁移到 @tailwindcss/vite、@theme 块配置
 
 **v4.1.0**:
