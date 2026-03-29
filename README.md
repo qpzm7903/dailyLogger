@@ -223,8 +223,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.3.6
+**最新版本**: v4.3.7
 - 启动速度优化：实现懒加载机制、缓冲诊断写入、延迟 Tray 和 Backup Scheduler 初始化 (PERF-007)
+- 数据库迁移修复：修复旧数据库 sessions 表缺失列问题 (issue #85)
+
+**v4.3.6** (已废弃 - 从未正式发布):
+- 该版本因启动速度优化未完成从未正式发布，已被 v4.3.7 替代
 
 **v4.3.4**:
 - Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句，解决 "duplicate column name: summary_model_name" 错误 (issue #83)
