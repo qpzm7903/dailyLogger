@@ -233,7 +233,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.3.0
+**最新版本**: v4.3.1
+- Migration 幂等性修复：扩展 sessions.date 修复到 records 和 settings 表的所有扩展列，优雅处理 "duplicate column name" 错误
+
+**v4.3.0**:
 - AI Settings 模板导入/导出：使用 Tauri 文件对话框实现模板文件的保存和加载
 
 **v4.2.2**:
