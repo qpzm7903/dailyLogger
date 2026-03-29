@@ -4,7 +4,9 @@
 > 当前版本: v4.4.1 ✅ (已发布)
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 >
-> **维护记录**: 2026-03-29 改进了 setupTests.ts 中的 window mock，确保在 Node.js 22 ESM 环境下正确工作，CI Frontend Tests 现已通过。
+> **维护记录**:
+> - 2026-03-29: 改进 setupTests.ts 中的 window mock，确保在 Node.js 22 ESM 环境下正确工作，CI Frontend Tests 现已通过。
+> - 2026-03-29: 验证 v4.4.1 发布状态 — Rust fmt/clippy/tests ✅，前端 typecheck ✅，1180 tests ✅，CI 全部 success。
 
 ---
 
