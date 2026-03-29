@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.4.0 ✅ (已发布)
+> 当前版本: v4.4.1 ✅ (待发布)
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅
 
 ---
@@ -131,6 +131,18 @@
 
 ---
 
+## v4.4.1 (待发布)
+
+**目标**: StatisticsPanel SVG viewBox 修复
+
+**状态**: 🔄 进行中
+
+**修复内容**：
+- 修复 SVG viewBox 使用 Mustache 模板语法导致图表无法正确缩放的问题
+- 改用 Vue 动态绑定：`:viewBox="'0 0 ' + chartWidth + ' ' + chartHeight"`
+
+---
+
 ## v4.4.0 ✅ 已发布
 
 **目标**: Epic 18 数据分析增强 (ANALYTICS-001)
@@ -158,6 +170,10 @@
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v4.4.1 — StatisticsPanel SVG viewBox 修复 ✅ (待发布)
+- 修复 SVG viewBox Mustache 模板语法问题
+- 改用 Vue 动态绑定确保图表正确缩放
 
 ### v4.4.0 — 数据分析增强 (Epic 18: ANALYTICS-001) ✅
 - 新增生产力趋势命令 `get_productivity_trend` 支持周/月对比

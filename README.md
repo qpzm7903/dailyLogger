@@ -223,7 +223,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.4.0
+**最新版本**: v4.4.1
+- StatisticsPanel SVG viewBox 修复：使用 Vue 动态绑定替代 Mustache 模板语法，确保图表正确缩放
+
+**v4.4.0**:
 - 数据分析增强：新增生产力趋势分析，支持"本周 vs 上周"、"本月 vs 上月"对比视图 (ANALYTICS-001)
 - SVG 折线图展示日趋势数据
 - 高峰时段分布显示 top 5 busiest hours
