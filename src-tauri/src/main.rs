@@ -113,7 +113,7 @@ fn main() {
             write_diagnostic_file("Auto backup scheduler started");
 
             // STAB-002: Check and run startup backup if needed (spawn async task)
-            tokio::spawn(async {
+            tauri::async_runtime::spawn(async {
                 daily_logger_lib::auto_backup_scheduler::check_and_run_startup_backup().await;
             });
 

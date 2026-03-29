@@ -13,8 +13,9 @@ use tokio::time::{interval, Duration};
 
 /// Global scheduler state
 static SCHEDULER_RUNNING: AtomicBool = AtomicBool::new(false);
-static SCHEDULER_HANDLE: std::sync::OnceLock<Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>> =
-    std::sync::OnceLock::new();
+static SCHEDULER_HANDLE: std::sync::OnceLock<
+    Arc<Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
+> = std::sync::OnceLock::new();
 
 /// Auto backup interval in hours
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -261,23 +262,15 @@ pub fn start_scheduler() {
         return;
     }
 
-    // Check if Tokio runtime is available
-    let Some(_runtime) = tokio::runtime::Handle::try_current().ok() else {
-        tracing::warn!(
-            "No Tokio runtime found in current context. Auto backup scheduler will not start. \
-             This may indicate a Tauri runtime initialization issue on some platforms."
-        );
-        return;
-    };
-
-    let handle = tokio::spawn(async {
+    // Spawn the scheduler using Tauri async runtime (available in Tauri context)
+    let handle = tauri::async_runtime::spawn(async {
         tracing::info!("Auto backup scheduler started");
         run_scheduler_loop().await;
     });
 
     let global_handle = SCHEDULER_HANDLE.get_or_init(|| Arc::new(Mutex::new(None)));
     let handle_guard = global_handle.clone();
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         let mut guard = handle_guard.lock().await;
         *guard = Some(handle);
     });
@@ -295,7 +288,7 @@ pub fn stop_scheduler() {
 
     if let Some(global_handle) = SCHEDULER_HANDLE.get() {
         let handle_guard = global_handle.clone();
-        tokio::spawn(async move {
+        tauri::async_runtime::spawn(async move {
             let mut guard = handle_guard.lock().await;
             if let Some(handle) = guard.take() {
                 handle.abort();
