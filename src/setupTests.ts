@@ -4,7 +4,6 @@ import en from './locales/en.json'
 import zhCN from './locales/zh-CN.json'
 
 // Mock window for jsdom environment (vue-i18n requires it)
-// Use Object.defineProperty to ensure window is properly set on globalThis
 // This handles cases where jsdom might not be fully initialized or window is missing
 const windowMock = {
   location: { href: '' },
@@ -42,26 +41,33 @@ const windowMock = {
   })
 }
 
-// Ensure window is available on globalThis
-if (typeof globalThis.window === 'undefined') {
-  Object.defineProperty(globalThis, 'window', {
-    value: windowMock,
-    writable: true,
-    configurable: true
-  })
-}
+// Ensure window is available on all global object references for Node.js ESM compatibility
+// Modules may access 'window' via 'globalThis', 'global', or direct 'window' reference
+const setupWindow = () => {
+  const windowRef = typeof window !== 'undefined' ? window : windowMock
 
-// Also ensure window is available on global for Node.js ESM compatibility
-// In Node.js 22+, ESM modules may access 'window' via 'global' rather than 'globalThis'
-if (typeof global !== 'undefined') {
-  if (typeof (global as any).window === 'undefined') {
-    Object.defineProperty(global, 'window', {
-      value: globalThis.window || windowMock,
-      writable: true,
-      configurable: true
-    })
+  // Set on globalThis
+  if (typeof globalThis !== 'undefined') {
+    ;(globalThis as any).window = windowRef
+    ;(globalThis as any).self = windowRef
+  }
+
+  // Set on global (Node.js ESM compatibility)
+  if (typeof global !== 'undefined') {
+    ;(global as any).window = windowRef
+    ;(global as any).self = windowRef
+  }
+
+  // Also try direct assignment for maximum compatibility
+  try {
+    // @ts-ignore
+    window = windowRef
+  } catch (e) {
+    // Ignore errors from read-only properties
   }
 }
+
+setupWindow()
 
 // Ensure window.performance is available
 if (typeof window !== 'undefined' && !window.performance) {
@@ -70,11 +76,7 @@ if (typeof window !== 'undefined' && !window.performance) {
 
 // Ensure window.matchMedia is available
 if (typeof window !== 'undefined' && !window.matchMedia) {
-  Object.defineProperty(window, 'matchMedia', {
-    value: windowMock.matchMedia,
-    writable: true,
-    configurable: true
-  })
+  window.matchMedia = windowMock.matchMedia as any
 }
 
 // Create i18n instance for tests
