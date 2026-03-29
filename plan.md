@@ -18,11 +18,11 @@
 
 ---
 
-## v4.3.4 ✅ 已完成
+## v4.3.4 ✅ 已发布
 
 **目标**: Migration 幂等性修复 (issue #83)
 
-**状态**: ✅ 已完成
+**状态**: ✅ 已完成并发布
 
 **修复内容**：
 - 移除 batch SQL 中 settings 表的重复 `ALTER TABLE ADD COLUMN` 语句
