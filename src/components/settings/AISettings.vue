@@ -190,6 +190,8 @@
 import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import { open } from '@tauri-apps/plugin-dialog'
+import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { showError, showSuccess } from '../../stores/toast'
 import { usePlatform } from '../../composables/usePlatform'
 import { type ModelInfo } from './shared/types'
@@ -322,11 +324,40 @@ function showTemplateLibrary() {
 }
 
 async function exportTemplate() {
-  // TODO: Implement with Tauri file dialog
+  try {
+    const filePath = await open({
+      defaultPath: 'analysis-prompt-template.txt',
+      filters: [{ name: 'Text', extensions: ['txt', 'md'] }],
+      directory: false,
+      title: t('settings.exportTemplate')
+    })
+    if (filePath) {
+      await writeTextFile(filePath, localSettings.value.analysis_prompt)
+      showSuccess(t('settings.templateExportSuccess'))
+    }
+  } catch (e) {
+    console.error('Failed to export template:', e)
+    showError(t('settings.templateExportFailed', { error: e }))
+  }
 }
 
 async function importTemplate() {
-  // TODO: Implement with Tauri file dialog
+  try {
+    const filePath = await open({
+      filters: [{ name: 'Text', extensions: ['txt', 'md'] }],
+      directory: false,
+      multiple: false,
+      title: t('settings.importTemplate')
+    })
+    if (filePath) {
+      const content = await readTextFile(filePath)
+      localSettings.value.analysis_prompt = content
+      showSuccess(t('settings.templateImportSuccess'))
+    }
+  } catch (e) {
+    console.error('Failed to import template:', e)
+    showError(t('settings.templateImportFailed', { error: e }))
+  }
 }
 
 function showDefaultTagCategories() {
