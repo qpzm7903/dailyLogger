@@ -242,6 +242,11 @@ git config core.hooksPath .githooks
 - 修复虚拟化计数响应式问题，确保过滤后数据正确更新
 
 **v4.1.1**:
+- Timeline 时区转换错误处理修复：替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
+- 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
+- Tailwind CSS v4 升级：迁移到 @tailwindcss/vite、@theme 块配置
+
+**v4.1.0**:
 - 前端组件测试覆盖率提升：完成 35+ 个 Vue 组件的测试覆盖
 - 新增 40+ 测试文件，测试数量从约 800 增至 1165
 - 62 个测试文件全部通过 (1165 tests)
