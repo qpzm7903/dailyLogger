@@ -254,7 +254,7 @@
                 {{ t('statistics.noData') }}
               </div>
               <div v-else class="h-48">
-                <svg class="w-full h-full" viewBox="0 0 {{ chartWidth }} {{ chartHeight }}" preserveAspectRatio="none">
+                <svg class="w-full h-full" :viewBox="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="none">
                   <!-- Grid lines -->
                   <line v-for="i in 4" :key="'grid-'+i"
                     :x1="padding" :y1="padding + (chartHeight - 2 * padding) * (i - 1) / 3"
