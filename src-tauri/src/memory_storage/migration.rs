@@ -353,18 +353,22 @@ fn get_migrations() -> Vec<Migration> {
         version: 1,
         description: "Initial schema - create all base tables and indexes",
         sql: r#"
-            -- records table (base schema)
+            -- records table (base schema + extensions for idempotent migration)
+            -- CREATE TABLE IF NOT EXISTS creates the table only if it doesn't exist.
+            -- For existing tables (legacy databases), columns are added by the pre-batch
+            -- add_column_if_not_exists helper, which is more idempotent than ALTER TABLE.
             CREATE TABLE IF NOT EXISTS records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT NOT NULL,
                 source_type TEXT NOT NULL,
                 content TEXT NOT NULL,
-                screenshot_path TEXT
+                screenshot_path TEXT,
+                monitor_info TEXT,
+                tags TEXT,
+                user_notes TEXT,
+                session_id INTEGER REFERENCES sessions(id),
+                analysis_status TEXT DEFAULT 'pending'
             );
-
-            -- Migrate: add screenshot_path column if not exists
-            -- (already handled by CREATE TABLE IF NOT EXISTS, but kept for explicit idempotency)
-            -- Note: In SQLite, CREATE TABLE IF NOT EXISTS doesn't add columns to existing tables
 
             -- settings table (base schema)
             CREATE TABLE IF NOT EXISTS settings (
@@ -396,12 +400,10 @@ fn get_migrations() -> Vec<Migration> {
 
             CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date);
 
-            -- records table extensions
-            ALTER TABLE records ADD COLUMN monitor_info TEXT;
-            ALTER TABLE records ADD COLUMN tags TEXT;
-            ALTER TABLE records ADD COLUMN user_notes TEXT;
-            ALTER TABLE records ADD COLUMN session_id INTEGER REFERENCES sessions(id);
-            ALTER TABLE records ADD COLUMN analysis_status TEXT DEFAULT 'pending';
+            -- Note: records table extended columns (monitor_info, tags, user_notes, session_id,
+            -- analysis_status) are now defined in CREATE TABLE IF NOT EXISTS for idempotency.
+            -- For existing tables, the pre-batch add_column_if_not_exists helper handles them.
+            -- The ALTER TABLE statements were removed to prevent duplicate column errors.
 
             CREATE INDEX IF NOT EXISTS idx_session_id ON records(session_id);
             CREATE INDEX IF NOT EXISTS idx_timestamp ON records(timestamp DESC);

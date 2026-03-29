@@ -1,10 +1,23 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.3.1
-> 上一版本: v4.3.0（已完成）
+> 当前版本: v4.3.2
+> 上一版本: v4.3.1（已完成）
 > 当前 Milestone: (无活动里程碑)
 > 项目状态: 508 Rust + 1180 前端测试全部通过
+
+---
+
+## 当前 Milestone：v4.3.2 🔄 进行中
+
+**目标**: 修复迁移系统 duplicate column 错误
+
+**状态**: 🔄 修复中
+
+**修复内容**：
+- 移除 batch SQL 中重复的 `ALTER TABLE records ADD COLUMN` 语句
+- 将扩展列定义移至 `CREATE TABLE IF NOT EXISTS records` 避免二次添加
+- 解决旧版本数据库迁移时出现的 "duplicate column name: monitor_info" 错误 (issue #82)
 
 ---
 
