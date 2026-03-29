@@ -230,6 +230,9 @@ git config core.hooksPath .githooks
 **v4.3.6** (已废弃 - 从未正式发布):
 - 该版本因启动速度优化未完成从未正式发布，已被 v4.3.7 替代
 
+**v4.3.5**:
+- Windows 启动修复：使用 Tauri 异步运行时替代 tokio::spawn，解决 Windows 便携版 "there is no reactor running" 启动崩溃问题 (issue #84)
+
 **v4.3.4**:
 - Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句，解决 "duplicate column name: summary_model_name" 错误 (issue #83)
 
@@ -266,8 +269,8 @@ git config core.hooksPath .githooks
 
 **v4.1.0**:
 - 前端组件测试覆盖率提升：完成 35+ 个 Vue 组件的测试覆盖
-- 新增 40+ 测试文件，测试数量从约 800 增至 1165
-- 62 个测试文件全部通过 (1165 tests)
+- 新增 40+ 测试文件，测试数量从约 800 增至 1180
+- 62 个测试文件全部通过 (1180 tests)
 - 覆盖所有主要 UI 组件：ErrorBoundary、Sidebar、Header、TodaySummaryWidget 等
 
 **v4.0.0**:
