@@ -31,21 +31,37 @@ Status: done
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: 后端 - 新增 ProductivityTrend 类型和 get_productivity_trend 命令 (AC: #5, #6)
-  - [ ] Subtask 1.1: 在 memory_storage/mod.rs 中定义 ProductivityTrend 数据结构
-  - [ ] Subtask 1.2: 实现 get_productivity_trend 异步命令函数
-  - [ ] Subtask 1.3: 在 commands/mod.rs 中注册新命令
-  - [ ] Subtask 1.4: 在 src/types/tauri.ts 中添加 ProductivityTrend TypeScript 类型
-- [ ] Task 2: 前端 - StatisticsPanel 新增趋势对比视图 (AC: #1, #2, #3, #4)
-  - [ ] Subtask 2.1: 在 StatisticsPanel.vue 中新增 Tab 切换（明细/趋势对比）
-  - [ ] Subtask 2.2: 实现 TrendComparisonView 子组件
-  - [ ] Subtask 2.3: 实现 PeriodComparisonCard 组件
-  - [ ] Subtask 2.4: 使用 CSS/SVG 实现简单折线图（复用现有 bar chart 样式模式）
-  - [ ] Subtask 2.5: 实现周期选择器（本周vs上周、本月vs上月）
-- [ ] Task 3: 国际化 - 新增翻译键 (AC: #7)
-  - [ ] Subtask 3.1: 在 zh-CN.json 和 en.json 中新增 statistics.trendsAndComparison 相关翻译
-- [ ] Task 4: 导出增强 (AC: #8)
-  - [ ] Subtask 4.1: 扩展 generateCsv 函数支持 productivity trend 数据
+- [x] Task 1: 后端 - 新增 ProductivityTrend 类型和 get_productivity_trend 命令 (AC: #5, #6)
+  - [x] Subtask 1.1: 在 memory_storage/mod.rs 中定义 ProductivityTrend 数据结构
+  - [x] Subtask 1.2: 实现 get_productivity_trend 异步命令函数
+  - [x] Subtask 1.3: 在 commands/mod.rs 中注册新命令
+  - [x] Subtask 1.4: 在 src/types/tauri.ts 中添加 ProductivityTrend TypeScript 类型
+- [x] Task 2: 前端 - StatisticsPanel 新增趋势对比视图 (AC: #1, #2, #3, #4)
+  - [x] Subtask 2.1: 在 StatisticsPanel.vue 中新增 Tab 切换（明细/趋势对比）
+  - [x] Subtask 2.2: 实现 TrendComparisonView 子组件
+  - [x] Subtask 2.3: 实现 PeriodComparisonCard 组件
+  - [x] Subtask 2.4: 使用 CSS/SVG 实现简单折线图（复用现有 bar chart 样式模式）
+  - [x] Subtask 2.5: 实现周期选择器（本周vs上周、本月vs上月）
+- [x] Task 3: 国际化 - 新增翻译键 (AC: #7)
+  - [x] Subtask 3.1: 在 zh-CN.json 和 en.json 中新增 statistics.trendsAndComparison 相关翻译
+- [x] Task 4: 导出增强 (AC: #8)
+  - [x] Subtask 4.1: 扩展 generateCsv 函数支持 productivity trend 数据
+
+## Senior Developer Review (AI)
+
+**审查日期**: 2026-03-29
+**审查结论**: ✅ 通过
+
+**验证结果**:
+- AC-1 ~ AC-8: 全部实现 ✓
+- Rust clippy: 通过 ✓
+- Rust tests: 508 passed ✓
+- TypeScript typecheck: 通过 ✓
+- Frontend tests: 1180 passed ✓
+- 错误处理完善 ✓
+- SQL 注入防护：参数化查询 ✓
+
+**问题**: Tasks 标记为 [ ] 但实际已实现（文档同步问题）
 
 ## Dev Notes
 

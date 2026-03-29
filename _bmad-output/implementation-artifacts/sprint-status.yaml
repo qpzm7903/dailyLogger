@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-29 (v4.1.1 released - Timeline timezone conversion error fix, 508 Rust + 1165 frontend tests passing)
+last_updated: 2026-03-29 (Epic 18 added: ANALYTICS-001 story completed)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -154,6 +154,10 @@ development_status:
   PERF-006: done
   PERF-006-retrospective: done
   PERF-retrospective: done
+
+  # Epic 18: 数据分析增强 (ANALYTICS) — Completed
+  epic-18: done
+  ANALYTICS-001: done
 
   # Epic 11: 数据增强与稳定性 (STAB) — Completed (2/2 Stories)
   epic-11: done
