@@ -8,16 +8,9 @@
 
 ---
 
-## 当前 Milestone：v4.3.2 🔄 进行中
+## 当前 Milestone：v4.3.3 🔄 规划中
 
-**目标**: 修复迁移系统 duplicate column 错误
-
-**状态**: 🔄 修复中
-
-**修复内容**：
-- 移除 batch SQL 中重复的 `ALTER TABLE records ADD COLUMN` 语句
-- 将扩展列定义移至 `CREATE TABLE IF NOT EXISTS records` 避免二次添加
-- 解决旧版本数据库迁移时出现的 "duplicate column name: monitor_info" 错误 (issue #82)
+**目标**: 待定
 
 ---
 
@@ -100,6 +93,11 @@
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v4.3.2 — Migration Duplicate Column 修复 ✅
+- 移除 batch SQL 中重复的 `ALTER TABLE records ADD COLUMN` 语句
+- 将扩展列定义移至 `CREATE TABLE IF NOT EXISTS records` 避免二次添加
+- 解决旧版本数据库迁移时出现的 "duplicate column name: monitor_info" 错误（issue #82）
 
 ### v4.3.1 — Migration 幂等性修复 ✅
 - 扩展 v4.2.2 的 sessions.date 修复到 records 和 settings 表的所有扩展列
