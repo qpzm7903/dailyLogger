@@ -4,23 +4,13 @@ import en from './locales/en.json'
 import zhCN from './locales/zh-CN.json'
 
 // Mock window for jsdom environment (vue-i18n requires it)
-if (typeof globalThis.window === 'undefined') {
-  Object.defineProperty(globalThis, 'window', {
-    value: {
-      location: { href: '' },
-      navigator: { language: 'en' },
-      document: { documentElement: { lang: 'en' } }
-    },
-    writable: true,
-    configurable: true
-  })
-}
-
-// Polyfill window.performance for @intlify/core-base in jsdom environment
-// Without this, intlify's message resolution crashes with "window is not defined"
-// because it accesses window.performance.now() during non-production builds
-if (typeof window !== 'undefined' && !window.performance) {
-  window.performance = {
+// Use Object.defineProperty to ensure window is properly set on globalThis
+// This handles cases where jsdom might not be fully initialized or window is missing
+const windowMock = {
+  location: { href: '' },
+  navigator: { language: 'en' },
+  document: { documentElement: { lang: 'en' } },
+  performance: {
     now: () => Date.now(),
     mark: () => {},
     measure: () => {},
@@ -31,23 +21,42 @@ if (typeof window !== 'undefined' && !window.performance) {
     setResourceTimingBufferSize: () => {},
     onresourcetimingbufferfull: null,
     timeOrigin: 0,
-    eventCounts: { getEntriesByType: () => [], getEntriesByName: () => [], size: 0, clear: () => {}, toArray: () => [] }
-  } as unknown as Performance
+    eventCounts: { getEntriesByType: () => [], getEntriesByName: () => [], size: 0, clear: () => {}, toArray: () => [] },
+    navigation: { type: 0, redirectCount: 0 } as PerformanceNavigation,
+    timing: { navigationStart: 0, unloadEventStart: 0, unloadEventEnd: 0, redirectStart: 0, redirectEnd: 0, fetchStart: 0, domainLookupStart: 0, domainLookupEnd: 0, connectStart: 0, connectEnd: 0, secureConnectionStart: 0, requestStart: 0, responseStart: 0, responseEnd: 0, domLoading: 0, domInteractive: 0, domContentLoadedEventStart: 0, domContentLoadedEventEnd: 0, domComplete: 0, loadEventStart: 0, loadEventEnd: 0 } as PerformanceTiming,
+    clearResourceTimings: () => {},
+    getEntries: () => []
+  } as unknown as Performance,
+  matchMedia: (query: string) => ({
+    matches: query === '(prefers-color-scheme: light)',
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => true
+  })
 }
 
-// Mock window.matchMedia for theme detection in jsdom environment
+// Ensure window is available on globalThis
+if (typeof globalThis.window === 'undefined') {
+  Object.defineProperty(globalThis, 'window', {
+    value: windowMock,
+    writable: true,
+    configurable: true
+  })
+}
+
+// Ensure window.performance is available
+if (typeof window !== 'undefined' && !window.performance) {
+  window.performance = windowMock.performance
+}
+
+// Ensure window.matchMedia is available
 if (typeof window !== 'undefined' && !window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
-    value: (query: string) => ({
-      matches: query === '(prefers-color-scheme: light)',
-      media: query,
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => true
-    }),
+    value: windowMock.matchMedia,
     writable: true,
     configurable: true
   })
