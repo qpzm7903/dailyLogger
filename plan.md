@@ -3,13 +3,19 @@
 > 最后更新: 2026-03-29
 > 当前版本: v4.1.1（已发布，2026-03-29）
 > 上一版本: v4.0.0（已完成）
-> 当前 Milestone: v4.2.0 规划中
+> 当前 Milestone: v4.2.0 (Tailwind CSS v4 升级)
 
 ---
 
-## 当前 Milestone：v4.2.0 规划中
+## 当前 Milestone：v4.2.0
 
-**目标**: 待定
+**目标**: Tailwind CSS v4 升级 (DEP-001)
+
+| Story | 名称 | 状态 |
+|-------|------|------|
+| TAIL-001 | Tailwind v4 依赖升级与配置迁移 | 规划中 |
+| TAIL-002 | 样式渲染验证与渐变类名更新 | 规划中 |
+| TAIL-003 | 构建验证与测试通过 | 规划中 |
 
 已完成测试覆盖的组件：
 - ErrorBoundary、Siderbar、Header、TodaySummaryWidget、SessionDetailView、OnboardingModal
@@ -24,7 +30,7 @@
 
 | 版本 | 类型 | 目标 |
 |------|------|------|
-| v4.2.0 | MINOR | 待定 |
+| v4.2.0 | MINOR | Tailwind CSS v4 升级 |
 
 ---
 
@@ -55,11 +61,13 @@
 
 ---
 
-## 未来 Milestone 概要
+## Epic 14: 前端框架升级 (TAIL) — v4.2.0
 
-| 版本 | 方向 | 说明 |
-|------|------|------|
-| v4.2.0 | MINOR | 待定 |
+| Story | 名称 | 状态 |
+|-------|------|------|
+| TAIL-001 | Tailwind v4 依赖升级与配置迁移 | 规划中 |
+| TAIL-002 | 样式渲染验证与渐变类名更新 | 规划中 |
+| TAIL-003 | 构建验证与测试通过 | 规划中 |
 
 ---
 
