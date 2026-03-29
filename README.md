@@ -240,10 +240,13 @@ git config core.hooksPath .githooks
 - TimelineWidget 防御性修复：添加 Array.isArray() 检查，防止 hour_groups 非数组时出现迭代错误
 
 **v4.2.0**:
-- Timeline 时区转换错误处理修复：替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
-- 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
+- HistoryViewer 虚拟滚动：使用 @tanstack/vue-virtual 实现历史记录虚拟滚动
+- 配置阈值 100 条，超过后启用虚拟化渲染
+- 修复虚拟化计数响应式问题，确保过滤后数据正确更新
 
 **v4.1.1**:
+- Timeline 时区转换错误处理修复：替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
+- 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
 - Tailwind CSS v4 升级：迁移到 @tailwindcss/vite、@theme 块配置
 
 **v4.1.0**:
