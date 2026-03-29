@@ -536,4 +536,142 @@ describe('HistoryViewer', () => {
 
     expect(wrapper.vm.records.length).toBe(0)
   })
+
+  // UX-012: Virtual Scrolling Tests
+  // Note: These tests verify the shouldUseVirtualScroll computed property and
+  // virtual scroll configuration. The actual virtualizer integration is tested
+  // through integration tests as it requires DOM rendering.
+
+  describe('UX-012: Virtual Scrolling', () => {
+    const VIRTUAL_SCROLL_THRESHOLD = 100
+    const VIRTUAL_SCROLL_ITEM_HEIGHT = 80
+    const VIRTUAL_SCROLL_OVERSCAN = 5
+
+    const generateLargeDataset = (count: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        timestamp: `2026-03-15T10:${String(i % 60).padStart(2, '0')}:00Z`,
+        source_type: i % 2 === 0 ? 'auto' : 'manual',
+        content: `Record content ${i + 1}`,
+        screenshot_path: null
+      }))
+
+    beforeEach(() => {
+      vi.clearAllMocks()
+      invoke.mockResolvedValue([])
+    })
+
+    it('does not use virtual scroll with empty dataset', async () => {
+      invoke.mockResolvedValue([])
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(false)
+    })
+
+    it('does not use virtual scroll with small dataset (< threshold)', async () => {
+      invoke.mockResolvedValue([mockRecords[0], mockRecords[1]])
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(false)
+      expect(wrapper.vm.records.length).toBe(2)
+    })
+
+    it('does not use virtual scroll when records exactly at threshold', async () => {
+      const datasetAtThreshold = generateLargeDataset(VIRTUAL_SCROLL_THRESHOLD)
+      invoke.mockResolvedValue(datasetAtThreshold)
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      // threshold is 100, condition is > threshold, so 100 records should NOT use virtual scroll
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(false)
+      expect(wrapper.vm.records.length).toBe(VIRTUAL_SCROLL_THRESHOLD)
+    })
+
+    it('uses virtual scroll when records exceed threshold by 1', async () => {
+      const datasetJustOverThreshold = generateLargeDataset(VIRTUAL_SCROLL_THRESHOLD + 1)
+      invoke.mockResolvedValue(datasetJustOverThreshold)
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(true)
+      expect(wrapper.vm.records.length).toBe(VIRTUAL_SCROLL_THRESHOLD + 1)
+    })
+
+    it('uses virtual scroll with large dataset (> threshold)', async () => {
+      const largeDataset = generateLargeDataset(VIRTUAL_SCROLL_THRESHOLD + 50)
+      invoke.mockResolvedValue(largeDataset)
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(true)
+      expect(wrapper.vm.records.length).toBe(VIRTUAL_SCROLL_THRESHOLD + 50)
+    })
+
+    it('virtual scroll config has correct values', async () => {
+      invoke.mockResolvedValue([])
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.vm.VIRTUAL_SCROLL_CONFIG.threshold).toBe(VIRTUAL_SCROLL_THRESHOLD)
+      expect(wrapper.vm.VIRTUAL_SCROLL_CONFIG.itemHeight).toBe(VIRTUAL_SCROLL_ITEM_HEIGHT)
+      expect(wrapper.vm.VIRTUAL_SCROLL_CONFIG.overscan).toBe(VIRTUAL_SCROLL_OVERSCAN)
+    })
+
+    it('disables virtual scroll when filtered results drop below threshold', async () => {
+      // Start with large dataset
+      const largeDataset = generateLargeDataset(VIRTUAL_SCROLL_THRESHOLD + 50)
+      invoke.mockResolvedValue(largeDataset)
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(true)
+
+      // Apply tag filter that returns small result
+      const tag = { id: 1, name: 'work', color: 'blue' }
+      invoke.mockResolvedValue([mockRecords[0]])
+      wrapper.vm.selectedTags = [tag]
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(false)
+    })
+
+    it('enables virtual scroll when tag filter returns large result', async () => {
+      // Start with empty
+      invoke.mockResolvedValue([])
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(false)
+
+      // Apply tag filter that returns large result
+      const largeTagDataset = generateLargeDataset(VIRTUAL_SCROLL_THRESHOLD + 50)
+      invoke.mockResolvedValue(largeTagDataset)
+      const tag = { id: 1, name: 'work', color: 'blue' }
+      wrapper.vm.selectedTags = [tag]
+      await flushPromises()
+
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(true)
+    })
+
+    it('handles pagination with virtual scroll disabled', async () => {
+      // First page returns pageSize records (below threshold)
+      const page1 = Array.from({ length: 50 }, (_, i) => ({
+        id: i + 1,
+        timestamp: '2026-03-15T10:00:00Z',
+        source_type: 'auto',
+        content: `Record ${i + 1}`,
+        screenshot_path: null
+      }))
+
+      invoke.mockResolvedValue(page1)
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      // 50 records is below threshold, no virtual scroll
+      expect(wrapper.vm.shouldUseVirtualScroll).toBe(false)
+      expect(wrapper.vm.records.length).toBe(50)
+    })
+  })
 })

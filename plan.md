@@ -3,19 +3,27 @@
 > 最后更新: 2026-03-29
 > 当前版本: v4.1.1（已发布，2026-03-29）
 > 上一版本: v4.0.0（已完成）
-> 当前 Milestone: v4.2.0 (待规划)
+> 当前 Milestone: v4.2.0 (用户体验优化)
 
 ---
 
 ## 当前 Milestone：v4.2.0
 
-**目标**: 提升应用稳定性与错误处理透明度
+**目标**: 用户体验优化与性能增强
 
 | Story | 名称 | 状态 |
 |-------|------|------|
-| STAB-ERR-001 | 改进 SettingsModal 错误处理 | ✅ done |
-| STAB-ERR-002 | capture_service mutex 错误处理改进 | ✅ done |
-| STAB-ERR-003 | 统一 Rust 错误类型 | ✅ done |
+| UX-012 | HistoryViewer 虚拟滚动 | in-progress |
+
+---
+
+## Epic 16: 用户体验优化 (UX-OPT)
+
+**目标**: 优化用户界面交互体验和性能
+
+| Story | 名称 | 状态 |
+|-------|------|------|
+| UX-012 | HistoryViewer 虚拟滚动 | in-progress |
 
 ---
 
