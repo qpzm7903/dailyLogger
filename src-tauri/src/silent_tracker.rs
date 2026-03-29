@@ -314,12 +314,15 @@ pub fn calculate_optimal_silent_minutes(tracker: &SilentPatternTracker) -> u64 {
 }
 
 /// Global silent pattern tracker instance.
+/// Uses lazy initialization - data is loaded from DB on first access, not at app startup.
+/// This improves startup time by deferring database query until data is actually needed.
 pub static SILENT_PATTERN_TRACKER: Lazy<Mutex<SilentPatternTracker>> =
     Lazy::new(|| Mutex::new(SilentPatternTracker::default()));
 
 /// Record a capture event in the global tracker.
 /// Also persists the capture to database for durability.
 pub fn record_capture(reason: CaptureReason) {
+    ensure_stats_loaded(); // Ensure data is loaded before recording
     if let Ok(mut tracker) = SILENT_PATTERN_TRACKER.lock() {
         tracker.record_capture(reason);
     }
@@ -329,6 +332,7 @@ pub fn record_capture(reason: CaptureReason) {
 
 /// Get aggregated statistics from the global tracker.
 pub fn get_recent_stats(duration: Duration) -> CaptureStats {
+    ensure_stats_loaded(); // Ensure data is loaded
     if let Ok(tracker) = SILENT_PATTERN_TRACKER.lock() {
         tracker.get_recent_stats(duration)
     } else {
@@ -338,6 +342,7 @@ pub fn get_recent_stats(duration: Duration) -> CaptureStats {
 
 /// Get the current threshold from the global tracker.
 pub fn current_threshold() -> u64 {
+    ensure_stats_loaded(); // Ensure data is loaded
     if let Ok(tracker) = SILENT_PATTERN_TRACKER.lock() {
         tracker.current_threshold()
     } else {
@@ -347,6 +352,7 @@ pub fn current_threshold() -> u64 {
 
 /// Set the threshold in the global tracker.
 pub fn set_threshold(threshold: u64) {
+    ensure_stats_loaded(); // Ensure data is loaded
     if let Ok(mut tracker) = SILENT_PATTERN_TRACKER.lock() {
         tracker.set_threshold(threshold);
     }
@@ -354,6 +360,7 @@ pub fn set_threshold(threshold: u64) {
 
 /// Get consecutive capture counts from the global tracker.
 pub fn consecutive_captures() -> (u32, u32) {
+    ensure_stats_loaded(); // Ensure data is loaded
     if let Ok(tracker) = SILENT_PATTERN_TRACKER.lock() {
         (
             tracker.consecutive_silent_captures(),
@@ -366,6 +373,7 @@ pub fn consecutive_captures() -> (u32, u32) {
 
 /// Check if enough data has been collected for adjustment.
 pub fn has_sufficient_data() -> bool {
+    ensure_stats_loaded(); // Ensure data is loaded
     if let Ok(tracker) = SILENT_PATTERN_TRACKER.lock() {
         tracker.has_sufficient_data()
     } else {
@@ -408,8 +416,8 @@ fn save_hourly_stats_to_db(
     Ok(())
 }
 
-/// Load all hourly stats from database into the tracker
-fn load_hourly_stats_from_db(tracker: &mut SilentPatternTracker) -> Result<(), String> {
+/// Load all hourly stats from database into the tracker (internal, caller holds lock)
+fn load_hourly_stats_from_db_internal(tracker: &mut SilentPatternTracker) -> Result<(), String> {
     use crate::memory_storage::DB_CONNECTION;
 
     let db = DB_CONNECTION
@@ -455,6 +463,31 @@ fn load_hourly_stats_from_db(tracker: &mut SilentPatternTracker) -> Result<(), S
     }
 
     Ok(())
+}
+
+/// Load all hourly stats from database into the tracker (public, acquires lock)
+fn load_hourly_stats_from_db(tracker: &mut SilentPatternTracker) -> Result<(), String> {
+    load_hourly_stats_from_db_internal(tracker)
+}
+
+/// Flag to track if stats have been loaded from DB
+static STATS_LOADED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Load stats from DB if not already loaded (called lazily on first access)
+fn ensure_stats_loaded() {
+    if STATS_LOADED.load(std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+    // Double-check after acquiring lock
+    if let Ok(mut tracker) = SILENT_PATTERN_TRACKER.lock() {
+        if !STATS_LOADED.load(std::sync::atomic::Ordering::SeqCst) {
+            if let Err(e) = load_hourly_stats_from_db_internal(&mut tracker) {
+                tracing::warn!("Failed to load silent pattern stats: {}", e);
+            } else {
+                STATS_LOADED.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
+    }
 }
 
 /// Persist the current tracker state to database

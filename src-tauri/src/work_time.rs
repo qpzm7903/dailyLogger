@@ -44,6 +44,7 @@ pub struct WorkTimePatternLearner {
 }
 
 /// Global instance of the work time pattern learner
+/// Uses lazy initialization - data is loaded from DB on first access, not at app startup.
 static WORK_TIME_LEARNER: Lazy<Mutex<WorkTimePatternLearner>> =
     Lazy::new(|| Mutex::new(WorkTimePatternLearner::default()));
 
@@ -213,6 +214,7 @@ impl WorkTimePatternLearner {
 /// Record a capture in the global work time learner
 /// Also persists the capture to database for durability.
 pub fn record_work_time_capture() {
+    ensure_work_time_loaded(); // Ensure data is loaded before recording
     if let Ok(mut learner) = WORK_TIME_LEARNER.lock() {
         learner.record_capture();
     }
@@ -222,6 +224,7 @@ pub fn record_work_time_capture() {
 
 /// Record a capture at a specific time (for testing)
 pub fn record_work_time_capture_at(datetime: DateTime<Local>) {
+    ensure_work_time_loaded(); // Ensure data is loaded
     if let Ok(mut learner) = WORK_TIME_LEARNER.lock() {
         learner.record_capture_at(datetime);
     }
@@ -229,6 +232,7 @@ pub fn record_work_time_capture_at(datetime: DateTime<Local>) {
 
 /// Get detected work periods from the global learner
 pub fn get_detected_work_periods() -> Vec<TimePeriod> {
+    ensure_work_time_loaded(); // Ensure data is loaded
     if let Ok(learner) = WORK_TIME_LEARNER.lock() {
         if learner.has_sufficient_data() {
             learner.get_work_periods(0.6)
@@ -242,6 +246,7 @@ pub fn get_detected_work_periods() -> Vec<TimePeriod> {
 
 /// Check if learning has enough data
 pub fn has_work_time_data() -> bool {
+    ensure_work_time_loaded(); // Ensure data is loaded
     if let Ok(learner) = WORK_TIME_LEARNER.lock() {
         learner.has_sufficient_data()
     } else {
@@ -251,6 +256,7 @@ pub fn has_work_time_data() -> bool {
 
 /// Get learning progress (0.0 to 1.0)
 pub fn get_work_time_learning_progress() -> f64 {
+    ensure_work_time_loaded(); // Ensure data is loaded
     if let Ok(learner) = WORK_TIME_LEARNER.lock() {
         learner.get_learning_progress()
     } else {
@@ -260,6 +266,7 @@ pub fn get_work_time_learning_progress() -> f64 {
 
 /// Get hourly summaries for debugging/display
 pub fn get_work_time_hourly_summaries() -> Vec<HourlyActivitySummary> {
+    ensure_work_time_loaded(); // Ensure data is loaded
     if let Ok(learner) = WORK_TIME_LEARNER.lock() {
         learner.get_hourly_summaries()
     } else {
@@ -303,8 +310,8 @@ fn save_hourly_activity_to_db(
     Ok(())
 }
 
-/// Load all hourly activities from database into the learner
-fn load_hourly_activities_from_db(learner: &mut WorkTimePatternLearner) -> Result<(), String> {
+/// Load all hourly activities from database into the learner (internal, caller holds lock)
+fn load_hourly_activities_from_db_internal(learner: &mut WorkTimePatternLearner) -> Result<(), String> {
     use crate::memory_storage::DB_CONNECTION;
 
     let db = DB_CONNECTION
@@ -349,6 +356,31 @@ fn load_hourly_activities_from_db(learner: &mut WorkTimePatternLearner) -> Resul
     }
 
     Ok(())
+}
+
+/// Load all hourly activities from database into the learner (public)
+fn load_hourly_activities_from_db(learner: &mut WorkTimePatternLearner) -> Result<(), String> {
+    load_hourly_activities_from_db_internal(learner)
+}
+
+/// Flag to track if activities have been loaded from DB
+static WORK_TIME_LOADED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Load activities from DB if not already loaded (called lazily on first access)
+fn ensure_work_time_loaded() {
+    if WORK_TIME_LOADED.load(std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+    // Double-check after acquiring lock
+    if let Ok(mut learner) = WORK_TIME_LEARNER.lock() {
+        if !WORK_TIME_LOADED.load(std::sync::atomic::Ordering::SeqCst) {
+            if let Err(e) = load_hourly_activities_from_db_internal(&mut learner) {
+                tracing::warn!("Failed to load work time activity: {}", e);
+            } else {
+                WORK_TIME_LOADED.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
+    }
 }
 
 /// Persist the current learner state to database

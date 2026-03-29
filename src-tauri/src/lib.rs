@@ -277,6 +277,9 @@ pub fn mask_api_key(key: &str) -> String {
 }
 
 pub fn init_app() -> tauri::Result<()> {
+    use std::time::Instant;
+    let overall_start = Instant::now();
+
     // Write diagnostic directly without helper function to ensure it works
     let _ = std::fs::OpenOptions::new()
         .create(true)
@@ -294,6 +297,7 @@ pub fn init_app() -> tauri::Result<()> {
             let _ = f.flush();
         });
 
+    let db_start = Instant::now();
     write_diagnostic_file("init_app: Starting database initialization");
     tracing::info!("init_app: Starting database initialization");
 
@@ -309,36 +313,29 @@ pub fn init_app() -> tauri::Result<()> {
         tauri::Error::Anyhow(anyhow::anyhow!("{}", e))
     })?;
 
-    write_diagnostic_file("init_app: Database initialized successfully");
+    write_diagnostic_file(&format!(
+        "init_app: Database initialized successfully in {:?}",
+        db_start.elapsed()
+    ));
     tracing::info!("init_app: Database initialized successfully");
 
-    // Load persisted learning data (DEBT-005)
-    write_diagnostic_file("init_app: Loading silent pattern stats");
-    if let Err(e) = silent_tracker::load_silent_pattern_stats() {
-        write_diagnostic_file(&format!(
-            "init_app: Failed to load silent pattern stats: {}",
-            e
-        ));
-        tracing::warn!("Failed to load silent pattern stats: {}", e);
-    }
-    write_diagnostic_file("init_app: Silent pattern stats loaded");
-    tracing::info!("init_app: Silent pattern stats loaded");
+    // PERF-007: Defer silent pattern stats loading - load lazily on first access
+    // This reduces startup time by not blocking on database query during init
+    // The stats will be loaded when first accessed via get_recent_stats() or similar
 
-    write_diagnostic_file("init_app: Loading work time activity");
-    if let Err(e) = work_time::load_work_time_activity() {
-        write_diagnostic_file(&format!(
-            "init_app: Failed to load work time activity: {}",
-            e
-        ));
-        tracing::warn!("Failed to load work time activity: {}", e);
-    }
-    write_diagnostic_file("init_app: Work time activity loaded");
-    tracing::info!("init_app: Work time activity loaded");
+    // PERF-007: Defer work time activity loading - load lazily on first access
+    // This reduces startup time by not blocking on database query during init
 
     // STAB-002: Scheduler will be started in Tauri setup phase after runtime is ready
 
-    write_diagnostic_file("init_app: All initialization complete");
-    tracing::info!("DailyLogger initialized successfully");
+    write_diagnostic_file(&format!(
+        "init_app: All initialization complete in {:?}",
+        overall_start.elapsed()
+    ));
+    tracing::info!(
+        "DailyLogger initialized successfully in {:?}",
+        overall_start.elapsed()
+    );
     Ok(())
 }
 
