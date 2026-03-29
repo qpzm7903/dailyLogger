@@ -15,21 +15,6 @@
 |-------|------|------|
 | TBD | 待定 | 待规划 |
 
-已完成测试覆盖的组件：
-- ErrorBoundary、Siderbar、Header、TodaySummaryWidget、SessionDetailView、OnboardingModal
-- ScreenshotModal、SessionListModal、NetworkStatusIndicator、SkeletonLoader、ErrorToast、OfflineQueueModal
-- BackupModal、ExportModal、OfflineBanner、ScreenshotGallery、TimelineWidget、TagInput
-- TagFilter、TagBadge、AISettings、CaptureSettings、OutputSettings、BasicSettings
-- ReportDropdown、ReportHistoryViewer、ReportComparisonModal、ReanalyzeByDateModal
-- DailySummaryViewer、QuickNoteModal、HistoryViewer、SearchPanel、QuickNoteWindow
-- LogViewer、Toast、SettingsModal、StatisticsPanel、TagCloud、TimelineVisualization
-
-**版本策略**:
-
-| 版本 | 类型 | 目标 |
-|------|------|------|
-| v4.2.0 | MINOR | 待规划 |
-
 ---
 
 ## Epic 11: 数据增强与稳定性 (STAB) ✅
