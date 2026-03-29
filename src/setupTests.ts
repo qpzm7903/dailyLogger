@@ -10,6 +10,9 @@ const windowMock = {
   location: { href: '' },
   navigator: { language: 'en' },
   document: { documentElement: { lang: 'en' } },
+  alert: () => {},
+  confirm: () => true,
+  prompt: () => null,
   performance: {
     now: () => Date.now(),
     mark: () => {},
@@ -46,6 +49,18 @@ if (typeof globalThis.window === 'undefined') {
     writable: true,
     configurable: true
   })
+}
+
+// Also ensure window is available on global for Node.js ESM compatibility
+// In Node.js 22+, ESM modules may access 'window' via 'global' rather than 'globalThis'
+if (typeof global !== 'undefined') {
+  if (typeof (global as any).window === 'undefined') {
+    Object.defineProperty(global, 'window', {
+      value: globalThis.window || windowMock,
+      writable: true,
+      configurable: true
+    })
+  }
 }
 
 // Ensure window.performance is available
