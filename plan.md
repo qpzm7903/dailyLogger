@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.4.1 ✅ (已发布)
+> 当前版本: v4.4.2 ✅ (已发布)
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 >
 > **维护记录**:
@@ -134,6 +134,18 @@
 
 ---
 
+## v4.4.2 ✅ 已发布
+
+**目标**: 跨平台路径与除零修复
+
+**状态**: ✅ 已完成并发布
+
+**修复内容**：
+- StatisticsPanel: 修复单数据点时除零问题 (`length === 0` → `length <= 1`)
+- DailySummaryViewer: 修复跨平台路径分隔符处理 (使用 `lastIndexOf` 替代 `split/join`)
+
+---
+
 ## v4.4.1 ✅ 已发布
 
 **目标**: StatisticsPanel SVG viewBox 修复
@@ -173,6 +185,10 @@
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v4.4.2 — 跨平台路径与除零修复 ✅
+- StatisticsPanel: 修复单数据点时除零问题 (length check === 0 → <= 1)
+- DailySummaryViewer: 修复跨平台路径分隔符处理 (支持 Windows `\` 和 Unix `/`)
 
 ### v4.4.1 — StatisticsPanel SVG viewBox 修复 ✅
 - 修复 SVG viewBox Mustache 模板语法问题

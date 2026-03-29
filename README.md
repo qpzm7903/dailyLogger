@@ -223,7 +223,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.4.1
+**最新版本**: v4.4.2
+- 跨平台路径与除零修复：StatisticsPanel 修复单数据点时除零问题，DailySummaryViewer 修复跨平台路径分隔符处理
+
+**v4.4.1**:
 - StatisticsPanel SVG viewBox 修复：使用 Vue 动态绑定替代 Mustache 模板语法，确保图表正确缩放
 
 **v4.4.0**:
