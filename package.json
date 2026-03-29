@@ -1,6 +1,6 @@
 {
   "name": "daily-logger",
-  "version": "4.2.2",
+  "version": "4.3.0",
   "description": "AI Workflow Memory & Summary Agent - MVP",
   "type": "module",
   "scripts": {

@@ -233,7 +233,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.2.2
+**最新版本**: v4.3.0
+- AI Settings 模板导入/导出：使用 Tauri 文件对话框实现模板文件的保存和加载
+
+**v4.2.2**:
 - Migration 修复：处理 legacy sessions 表缺少 date 列的情况，确保数据库迁移成功
 
 **v4.2.1**:
