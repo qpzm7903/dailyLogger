@@ -33,6 +33,40 @@ impl Migration {
             .map_err(|e| format!("Failed to begin migration transaction: {}", e))?;
 
         let result = (|| {
+            // For v1 migration: handle legacy sessions table that may be missing the date column
+            // (if sessions table existed before the date column was added)
+            if self.version == 1 {
+                // Check if sessions table exists and has date column
+                let table_exists: bool = conn
+                    .query_row(
+                        "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name='sessions'",
+                        [],
+                        |row| row.get(0),
+                    )
+                    .unwrap_or(false);
+
+                if table_exists {
+                    // Table exists - check if date column is missing
+                    let column_exists: bool = conn
+                        .query_row(
+                            "SELECT COUNT(*) > 0 FROM PRAGMA table_info('sessions') WHERE name = 'date'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(false);
+
+                    if !column_exists {
+                        // sessions table exists but is missing date column - add it
+                        conn.execute(
+                            "ALTER TABLE sessions ADD COLUMN date TEXT NOT NULL DEFAULT ''",
+                            [],
+                        )
+                        .map_err(|e| format!("Failed to add date column to sessions: {}", e))?;
+                    }
+                }
+                // If table doesn't exist, CREATE TABLE IF NOT EXISTS in SQL will create it
+            }
+
             // Execute the migration SQL
             conn.execute_batch(self.sql)
                 .map_err(|e| format!("Failed to execute migration v{}: {}", self.version, e))?;

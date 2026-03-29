@@ -233,15 +233,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.2.1
+**最新版本**: v4.2.2
+- Migration 修复：处理 legacy sessions 表缺少 date 列的情况，确保数据库迁移成功
+
+**v4.2.1**:
 - TimelineWidget 防御性修复：添加 Array.isArray() 检查，防止 hour_groups 非数组时出现迭代错误
 
 **v4.2.0**:
-- HistoryViewer 虚拟滚动：使用 @tanstack/vue-virtual 实现大数据量列表优化
-- 配置阈值 100 条，超过后启用虚拟化渲染
-- 修复虚拟化计数响应式问题，确保过滤后数据正确更新
-
-**v4.1.1**:
 - Timeline 时区转换错误处理修复：替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
 - 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
 - Tailwind CSS v4 升级：迁移到 @tailwindcss/vite、@theme 块配置
