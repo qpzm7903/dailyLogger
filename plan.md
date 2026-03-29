@@ -9,11 +9,23 @@
 
 ## 当前 Milestone：v4.2.0
 
-**目标**: 待规划
+**目标**: 提升应用稳定性与错误处理透明度
 
 | Story | 名称 | 状态 |
 |-------|------|------|
-| TBD | 待定 | 待规划 |
+| STAB-ERR-001 | 改进 SettingsModal 错误处理 | ✅ done |
+| STAB-ERR-002 | capture_service mutex 错误处理改进 | 待开始 |
+| STAB-ERR-003 | 统一 Rust 错误类型 | 待开始 |
+
+---
+
+## Epic 15: 稳定性与错误处理 (STAB-ERR) 🔄
+
+| Story | 名称 | 状态 |
+|-------|------|------|
+| STAB-ERR-001 | 改进 SettingsModal 错误处理 | ✅ done |
+| STAB-ERR-002 | capture_service mutex 错误处理改进 | 待开始 |
+| STAB-ERR-003 | 统一 Rust 错误类型 | 待开始 |
 
 ---
 

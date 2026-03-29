@@ -535,18 +535,26 @@ async function loadSettings() {
     try { tagCategoriesText.value = JSON.parse(settings.value.tag_categories || '[]').join('\n') } catch { tagCategoriesText.value = '' }
 
     // Load monitors
-    try { monitors.value = await invoke<Monitor[]>('get_monitors') } catch { /* ignore */ }
+    try {
+      monitors.value = await invoke<Monitor[]>('get_monitors')
+    } catch (e) {
+      console.error('[SettingsModal] Failed to load monitors:', e)
+    }
 
     // Load default prompts if custom prompts are empty (Issue #56)
     if (!settings.value.analysis_prompt || settings.value.analysis_prompt.trim() === '') {
       try {
         settings.value.analysis_prompt = await settingsActions.getDefaultAnalysisPrompt()
-      } catch { /* ignore */ }
+      } catch (e) {
+        console.error('[SettingsModal] Failed to load default analysis prompt:', e)
+      }
     }
     if (!settings.value.summary_prompt || settings.value.summary_prompt.trim() === '') {
       try {
         settings.value.summary_prompt = await settingsActions.getDefaultSummaryPrompt()
-      } catch { /* ignore */ }
+      } catch (e) {
+        console.error('[SettingsModal] Failed to load default summary prompt:', e)
+      }
     }
 
     // Save initial snapshot
