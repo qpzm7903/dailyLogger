@@ -322,13 +322,11 @@ function showTemplateLibrary() {
 }
 
 async function exportTemplate() {
-  // This would be implemented with Tauri file dialog
-  console.log('Export template')
+  // TODO: Implement with Tauri file dialog
 }
 
 async function importTemplate() {
-  // This would be implemented with Tauri file dialog
-  console.log('Import template')
+  // TODO: Implement with Tauri file dialog
 }
 
 function showDefaultTagCategories() {
