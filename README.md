@@ -236,86 +236,31 @@ git config core.hooksPath .githooks
 - 数据库迁移修复：修复旧数据库 sessions 表缺失列问题 (issue #85)
 
 **v4.3.5**:
-- Windows 启动修复：使用 Tauri 异步运行时替代 tokio::spawn，解决 Windows 便携版 "there is no reactor running" 启动崩溃问题 (issue #84)
+- Windows 启动修复：使用 Tauri 异步运行时替代 tokio::spawn，解决 Windows 便携版启动崩溃问题 (issue #84)
 
 **v4.3.4**:
-- Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句，解决 "duplicate column name: summary_model_name" 错误 (issue #83)
+- Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句 (issue #83)
 
 **v4.3.3**:
-- 代码质量与文档同步：移除已删除的 GitHub integration 描述
-- Rust clippy 无警告通过，代码格式检查通过
+- 代码质量与文档同步：Rust clippy 无警告通过，代码格式检查通过
 
 **v4.3.2**:
-- Migration 幂等性修复：移除 batch SQL 中重复的 `ALTER TABLE` 语句，修复 "duplicate column name: monitor_info" 错误 (issue #82)
-- 将 records 表扩展列移至 `CREATE TABLE IF NOT EXISTS` 避免二次添加
+- Migration 幂等性修复：移除 batch SQL 中重复的 `ALTER TABLE` 语句 (issue #82)
 
 **v4.3.1**:
-- Migration 幂等性修复：扩展 sessions.date 修复到 records 和 settings 表的所有扩展列，优雅处理 "duplicate column name" 错误
+- Migration 幂等性修复：扩展 sessions.date 修复到 records 和 settings 表的所有扩展列
 
 **v4.3.0**:
 - AI Settings 模板导入/导出：使用 Tauri 文件对话框实现模板文件的保存和加载
 - 新增 i18n 国际化支持（en.json, zh-CN.json）
 
 **v4.2.2**:
-- Migration 修复：处理 legacy sessions 表缺少 date 列的情况，确保数据库迁移成功
+- Migration 修复：处理 legacy sessions 表缺少 date 列的情况
 
-**v4.2.1**:
-- TimelineWidget 防御性修复：添加 Array.isArray() 检查，防止 hour_groups 非数组时出现迭代错误
-
-**v4.2.0**:
-- HistoryViewer 虚拟滚动：使用 @tanstack/vue-virtual 实现历史记录虚拟滚动
-- 配置阈值 100 条，超过后启用虚拟化渲染
-- 修复虚拟化计数响应式问题，确保过滤后数据正确更新
-
-**v4.1.1**:
-- Timeline 时区转换错误处理修复：替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
-- 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
-- Tailwind CSS v4 升级：迁移到 @tailwindcss/vite、@theme 块配置
-
-**v4.1.0**:
-- 前端组件测试覆盖率提升：完成 35+ 个 Vue 组件的测试覆盖
-- 新增 40+ 测试文件，测试数量从约 800 增至 1180
-- 62 个测试文件全部通过 (1180 tests)
-- 覆盖所有主要 UI 组件：ErrorBoundary、Sidebar、Header、TodaySummaryWidget 等
-
-**v4.0.0**:
-- 组件颜色 CSS 变量化：完成浅色主题系统
-- 迁移 21 个 Vue 组件到 CSS 变量
-- 新增 CSS 变量：`--color-border`, `--color-border-subtle`, `--color-text-muted`
-- 964 前端测试全部通过
-
-**v3.10.0**:
-- 数据库版本迁移机制：建立 schema_version 和 schema_migrations 表追踪
-- 实现幂等迁移执行器，支持结构化版本回滚
-- 添加 5 个迁移相关测试，验证版本追踪和幂等性
-
-**v3.9.0（多 Vault 自动选择）**:
-- 多 Vault 自动选择：基于窗口标题自动选择输出 Vault
-- OutputSettings 添加"根据窗口标题自动选择 Vault"开关
-- 每个 Vault 支持配置窗口标题匹配模式（多个用逗号分隔）
-- Rust 后端 12 个 vault 相关测试全部通过
-
-**v3.8.0（多维度输出增强）**:
-- 多维度输出增强：自定义导出模板功能
-- 支持模板占位符：`{{date}}`, `{{time}}`, `{{content}}`, `{{source_type}}`, `{{source_icon}}`, `{{tags}}`
-- 新增 `get_default_export_template` / `get_default_record_entry_template` 后端命令
-- ExportModal UI 支持自定义模板编辑器和预览
-
-**v3.7.1（标签管理增强）**:
-- 标签颜色后端化：后端存储标签颜色，前端从缓存获取
-- 后端 `get_tag_colors()` / `set_tag_color()` 命令
-- 三级回退逻辑：缓存 → 默认颜色表 → 哈希分配
-
-**v3.6.0（架构收口三期）**:
-- 统一前后端契约：修复 Settings 和 LogRecord 类型定义
-- 建立结构化错误模型：AppError 枚举和统一错误处理
-- 收敛全局状态：建立 infrastructure/state.rs 文档规范
-
-**近期版本 (v3.0.0 ~ v3.5.0)**:
-- v3.5.0: 架构收口二期 - 抽取四个领域 service 边界
-- v3.0.0: 工作时段感知分析 + GitHub 移除
-- v2.10.0 ~ v2.15.0: Dashboard 重组、Sidebar 升级、手动触发分析等
-- v1.0.0 ~ v1.100.0: 核心功能、UI 重构、TypeScript 迁移等
+**更早版本**:
+- v4.2.1 ~ v4.0.0: HistoryViewer 虚拟滚动、Tailwind CSS v4 升级、数据库版本迁移机制等
+- v3.x: 多 Vault 自动选择、自定义导出模板、标签颜色后端化等
+- 详见 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志
 
 ## 贡献
 
