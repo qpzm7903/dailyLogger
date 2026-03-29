@@ -1,9 +1,21 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-29
-> 当前版本: v4.3.3
+> 当前版本: v4.3.4
 > 当前 Milestone: (无活动里程碑)
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅
+
+---
+
+## 当前 Milestone：v4.3.4 ✅ 已完成
+
+**目标**: Migration 幂等性修复 (issue #83)
+
+**状态**: ✅ 已完成
+
+**修复内容**：
+- 移除 batch SQL 中 settings 表的重复 `ALTER TABLE ADD COLUMN` 语句
+- 解决旧版本数据库迁移时出现的 "duplicate column name: summary_model_name" 错误
 
 ---
 

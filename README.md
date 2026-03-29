@@ -223,10 +223,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.3.3
-- 代码质量与文档同步：clippy warnings 清理完成，README 与代码功能同步，错误处理与日志链路审查
+**最新版本**: v4.3.4
+- Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句，解决 "duplicate column name: summary_model_name" 错误 (issue #83)
 
-**v4.3.2**:
+**v4.3.3**:
 - Migration 幂等性修复：移除 batch SQL 中重复的 `ALTER TABLE` 语句，修复 "duplicate column name: monitor_info" 错误 (issue #82)
 - Migration 幂等性修复：扩展 sessions.date 修复到 records 和 settings 表的所有扩展列，优雅处理 "duplicate column name" 错误
 
