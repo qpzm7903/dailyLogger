@@ -1,6 +1,6 @@
 # Story 17.1: 启动速度优化
 
-Status: in_progress
+Status: completed
 
 ## 实现摘要 (2026-03-29)
 
@@ -8,9 +8,12 @@ Status: in_progress
 1. 从 `init_app()` 中移除了同步的 `silent_tracker::load_silent_pattern_stats()` 和 `work_time::load_work_time_activity()` 调用
 2. 实现了懒加载机制 - 统计数据在工作线程首次访问时才从数据库加载
 3. 添加了启动计时 - `init_app()` 现在输出各阶段耗时
+4. 实现了缓冲诊断写入 - 使用内存缓冲区批量写入减少 I/O 开销
+5. 延迟 Tray 和 Backup Scheduler 初始化到窗口显示后
 
 **修改文件**:
-- `src-tauri/src/lib.rs` - 移除同步加载，添加启动计时
+- `src-tauri/src/lib.rs` - 移除同步加载，添加启动计时，添加缓冲诊断写入
+- `src-tauri/src/main.rs` - 延迟 Tray 和 Backup Scheduler 到异步执行
 - `src-tauri/src/silent_tracker.rs` - 添加懒加载机制 (`ensure_stats_loaded()`)
 - `src-tauri/src/work_time.rs` - 添加懒加载机制 (`ensure_work_time_loaded()`)
 
@@ -100,13 +103,13 @@ so that I can begin being productive immediately without waiting.
   - [x] Subtask 2.2: 将 `work_time::load_work_time_activity()` 改为懒加载
   - [x] Subtask 2.3: 确保异步初始化完成前调用返回默认值
 
-- [ ] Task 3: 优化启动日志写入 (AC: #1)
-  - [ ] Subtask 3.1: 批量写入诊断信息，减少 I/O 次数
-  - [ ] Subtask 3.2: 使用缓冲写入而非每次立即刷新
+- [x] Task 3: 优化启动日志写入 (AC: #1)
+  - [x] Subtask 3.1: 批量写入诊断信息，减少 I/O 次数
+  - [x] Subtask 3.2: 使用缓冲写入而非每次立即刷新
 
-- [ ] Task 4: 延迟非关键组件初始化 (AC: #2)
-  - [ ] Subtask 4.1: Tray setup 延迟到窗口显示后
-  - [ ] Subtask 4.2: Auto backup scheduler 延迟启动
+- [x] Task 4: 延迟非关键组件初始化 (AC: #2)
+  - [x] Subtask 4.1: Tray setup 延迟到窗口显示后
+  - [x] Subtask 4.2: Auto backup scheduler 延迟启动
 
 - [x] Task 5: 验证优化效果 (AC: #1, #3)
   - [x] Subtask 5.1: 对比优化前后的启动时间 (通过诊断文件验证计时输出)
@@ -183,6 +186,8 @@ fn init_app() -> tauri::Result<()> {
 - 2026-03-29: docs: create PERF-007 story for startup speed optimization
 - 2026-03-29: perf(PERF-007): defer silent_tracker and work_time loading to lazy initialization - improves startup time
 - 2026-03-29: perf(PERF-007): add startup timing instrumentation in init_app()
+- 2026-03-29: perf(PERF-007): add buffered diagnostic file writer to reduce I/O overhead
+- 2026-03-29: perf(PERF-007): defer tray and backup scheduler initialization to after window shows
 
 ## Dev Agent Record
 
@@ -193,4 +198,20 @@ claude-opus-4-6
 ### Debug Log References
 
 ### Completion Notes List
+
+### Completion Summary (2026-03-29)
+
+**PERF-007: Startup Speed Optimization - COMPLETED**
+
+All acceptance criteria met:
+1. ✅ Task 1: 分析当前启动时间分布 - Added timing instrumentation
+2. ✅ Task 2: 异步化非关键初始化 - Lazy loading for silent_tracker and work_time
+3. ✅ Task 3: 优化启动日志写入 - Buffered diagnostic writer reduces I/O
+4. ✅ Task 4: 延迟非关键组件初始化 - Tray and backup scheduler deferred
+5. ✅ Task 5: 验证优化效果 - Tests pass
+
+**优化效果**:
+- 移除了 `init_app()` 中同步的数据库查询 (`silent_tracker::load_silent_pattern_stats`, `work_time::load_work_time_activity`)
+- 使用缓冲写入减少启动时多次文件 I/O 操作
+- Tray 和 Backup Scheduler 延迟到窗口显示后执行，减少主线程阻塞
 

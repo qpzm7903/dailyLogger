@@ -96,26 +96,38 @@ fn main() {
             daily_logger_lib::network_status::start_network_monitor(app.handle().clone());
             write_diagnostic_file("Network monitor started");
 
-            // Setup tray icon on desktop platforms
+            // PERF-007: Defer tray icon setup to after window is shown
+            // Setup runs synchronously before window display, so we spawn async
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
             {
-                if let Err(e) = setup_tray(app.handle()) {
-                    tracing::error!("Failed to setup tray: {}", e);
-                    write_diagnostic_file(&format!("Failed to setup tray: {}", e));
-                } else {
-                    write_diagnostic_file("Tray icon created successfully");
-                }
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    // Small delay to let window initialize first
+                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                    if let Err(e) = setup_tray(&app_handle) {
+                        tracing::error!("Failed to setup tray: {}", e);
+                        write_diagnostic_file(&format!("Failed to setup tray: {}", e));
+                    } else {
+                        write_diagnostic_file("Tray icon created successfully");
+                    }
+                });
+                write_diagnostic_file("Tray setup spawned (deferred)");
             }
 
-            // STAB-002: Initialize auto backup scheduler (after runtime is ready)
-            daily_logger_lib::auto_backup_scheduler::start_scheduler();
-            tracing::info!("Auto backup scheduler started");
-            write_diagnostic_file("Auto backup scheduler started");
+            // PERF-007: Defer auto backup scheduler to reduce startup blocking
+            // Scheduler runs in background, so defer to let window show faster
+            let _scheduler_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                // Small delay to let window initialize first
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                daily_logger_lib::auto_backup_scheduler::start_scheduler();
+                tracing::info!("Auto backup scheduler started (deferred)");
+                write_diagnostic_file("Auto backup scheduler started (deferred)");
 
-            // STAB-002: Check and run startup backup if needed (spawn async task)
-            tauri::async_runtime::spawn(async {
+                // Check and run startup backup if needed
                 daily_logger_lib::auto_backup_scheduler::check_and_run_startup_backup().await;
             });
+            write_diagnostic_file("Auto backup scheduler spawned (deferred)");
 
             write_diagnostic_file("Tauri setup completed - window should be visible");
             Ok(())

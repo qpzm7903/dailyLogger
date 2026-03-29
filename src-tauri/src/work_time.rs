@@ -311,7 +311,9 @@ fn save_hourly_activity_to_db(
 }
 
 /// Load all hourly activities from database into the learner (internal, caller holds lock)
-fn load_hourly_activities_from_db_internal(learner: &mut WorkTimePatternLearner) -> Result<(), String> {
+fn load_hourly_activities_from_db_internal(
+    learner: &mut WorkTimePatternLearner,
+) -> Result<(), String> {
     use crate::memory_storage::DB_CONNECTION;
 
     let db = DB_CONNECTION

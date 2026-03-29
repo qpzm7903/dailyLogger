@@ -32,12 +32,118 @@ pub mod work_time;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Proxy, Url};
 use std::fs::OpenOptions;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::Duration;
 
 pub static APP_STATE: Lazy<Mutex<AppState>> = Lazy::new(|| Mutex::new(AppState::default()));
+
+/// PERF-007: Buffered diagnostic writer for startup optimization
+/// Instead of opening/closing/flushing the file on every write, we buffer writes
+/// and only flush periodically or on explicit request.
+static DIAGNOSTIC_BUFFER: Lazy<Mutex<DiagnosticBuffer>> =
+    Lazy::new(|| Mutex::new(DiagnosticBuffer::new()));
+
+/// Buffered writer that accumulates diagnostic messages and flushes periodically
+struct DiagnosticBuffer {
+    /// Buffered messages waiting to be written
+    messages: Vec<String>,
+    /// Flush threshold - flush after accumulating this many messages
+    flush_threshold: usize,
+    /// Last flush timestamp
+    last_flush: std::time::Instant,
+    /// Max time between flushes (1 second)
+    max_flush_interval: std::time::Duration,
+}
+
+impl DiagnosticBuffer {
+    fn new() -> Self {
+        Self {
+            messages: Vec::with_capacity(64),
+            flush_threshold: 10,
+            last_flush: std::time::Instant::now(),
+            max_flush_interval: std::time::Duration::from_millis(500),
+        }
+    }
+
+    /// Add a message to the buffer, flushing if threshold is reached
+    fn push(&mut self, message: String) {
+        self.messages.push(message);
+
+        // Flush if we've accumulated enough messages or enough time has passed
+        if self.messages.len() >= self.flush_threshold
+            || self.last_flush.elapsed() >= self.max_flush_interval
+        {
+            self.flush();
+        }
+    }
+
+    /// Flush all buffered messages to disk
+    fn flush(&mut self) {
+        if self.messages.is_empty() {
+            return;
+        }
+
+        let content = self.messages.join("");
+        self.messages.clear();
+        self.last_flush = std::time::Instant::now();
+
+        // Write to all locations
+        Self::write_to_locations(&content);
+    }
+
+    /// Write content to all diagnostic file locations
+    fn write_to_locations(content: &str) {
+        // Always try temp directory first as it's most reliable
+        let temp_path = std::env::temp_dir().join("dailylogger-startup.log");
+        if let Ok(file) = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&temp_path)
+        {
+            let mut writer = BufWriter::new(file);
+            let _ = writer.write_all(content.as_bytes());
+            let _ = writer.flush();
+        }
+
+        // Get executable path once to avoid repeated calls
+        let exe_path = std::env::current_exe().ok();
+        let exe_dir = exe_path.as_ref().and_then(|p| p.parent());
+
+        // Try multiple locations in order of preference
+        let locations: Vec<PathBuf> = vec![
+            // 1. Next to executable (portable mode)
+            exe_dir
+                .map(|d| d.join("dailylogger-startup.log"))
+                .unwrap_or_default(),
+            // 2. App data directory
+            get_app_data_dir().join("startup.log"),
+            // 3. User home directory as fallback
+            dirs::home_dir()
+                .map(|h| h.join("dailylogger-startup.log"))
+                .unwrap_or_default(),
+        ];
+
+        for location in &locations {
+            if location.as_os_str().is_empty() {
+                continue;
+            }
+            if let Ok(file) = OpenOptions::new().create(true).append(true).open(location) {
+                let mut writer = BufWriter::new(file);
+                let _ = writer.write_all(content.as_bytes());
+                let _ = writer.flush();
+            }
+        }
+    }
+}
+
+impl Drop for DiagnosticBuffer {
+    fn drop(&mut self) {
+        // Ensure all buffered messages are flushed on drop
+        self.flush();
+    }
+}
 
 /// Check if a URL refers to a local address that should bypass system proxy.
 ///
@@ -201,7 +307,8 @@ pub fn get_app_data_dir() -> PathBuf {
         .join("DailyLogger")
 }
 
-/// Write a diagnostic message to a startup log file for debugging Windows portable issues.
+/// PERF-007: Write a diagnostic message using buffered I/O for startup optimization.
+/// Messages are accumulated in memory and flushed periodically to reduce I/O overhead.
 /// Tries multiple locations in order of preference:
 /// 1. Next to executable (portable mode)
 /// 2. App data directory
@@ -212,46 +319,27 @@ pub fn write_diagnostic_file(message: &str) {
     let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f UTC");
     let diagnostic_message = format!("[{}] {}\n", timestamp, message);
 
-    // Always try temp directory first as it's most reliable
-    let temp_path = std::env::temp_dir().join("dailylogger-startup.log");
-    if let Ok(mut file) = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&temp_path)
-    {
-        let _ = file.write_all(diagnostic_message.as_bytes());
-        let _ = file.flush();
+    // Add to buffer - will auto-flush when threshold is reached
+    if let Ok(mut buffer) = DIAGNOSTIC_BUFFER.lock() {
+        buffer.push(diagnostic_message.clone());
+    } else {
+        // Fallback: direct write if lock fails
+        DiagnosticBuffer::write_to_locations(&format!(
+            "[{}] {}\n",
+            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f UTC"),
+            message
+        ));
     }
 
-    // Get executable path once to avoid repeated calls
-    let exe_path = std::env::current_exe().ok();
-    let exe_dir = exe_path.as_ref().and_then(|p| p.parent());
+    // Also print to stderr for real-time visibility (may be invisible on Windows GUI mode)
+    eprintln!("{}", diagnostic_message.trim());
+}
 
-    // Try multiple locations in order of preference
-    let locations: Vec<PathBuf> = vec![
-        // 1. Next to executable (portable mode)
-        exe_dir
-            .map(|d| d.join("dailylogger-startup.log"))
-            .unwrap_or_default(),
-        // 2. App data directory
-        get_app_data_dir().join("startup.log"),
-        // 3. User home directory as fallback
-        dirs::home_dir()
-            .map(|h| h.join("dailylogger-startup.log"))
-            .unwrap_or_default(),
-    ];
-
-    for location in &locations {
-        if location.as_os_str().is_empty() {
-            continue;
-        }
-        if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(location) {
-            let _ = file.write_all(diagnostic_message.as_bytes());
-            let _ = file.flush();
-        }
+/// Force flush all buffered diagnostic messages to disk
+pub fn flush_diagnostic_buffer() {
+    if let Ok(mut buffer) = DIAGNOSTIC_BUFFER.lock() {
+        buffer.flush();
     }
-    // Last resort: try to print to stderr (may be invisible on Windows GUI mode)
-    eprintln!("{}", diagnostic_message);
 }
 
 #[derive(Default)]
