@@ -1,5 +1,5 @@
 # generated: 2026-03-22
-# last_updated: 2026-03-29 (v4.1.1 released - Timeline timezone conversion error fix + Tailwind v4 upgrade complete, 508 Rust + 1165 frontend tests passing)
+# last_updated: 2026-03-29 (v4.2.0 released - HistoryViewer virtual scrolling complete, 508 Rust + 1165 frontend tests passing)
 # project: dailylogger
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-22
-last_updated: 2026-03-29 (v4.1.1 released - STAB-ERR epic complete: SettingsModal error handling, capture_service mutex recovery, chrono error handling + AppResult, Timeline timezone fix, Tailwind v4 upgrade, 508 Rust + 1165 frontend tests passing)
+last_updated: 2026-03-29 (v4.2.0 released - UX-012 HistoryViewer virtual scrolling: @tanstack/vue-virtual implementation, reactive count fix, 508 Rust + 1165 frontend tests passing)
 project: dailylogger
 project_key: NOKEY
 tracking_system: file-system
@@ -193,3 +193,8 @@ development_status:
   STAB-ERR-002: done  # capture_service mutex 错误处理 - poisoned mutex recovery
   STAB-ERR-003: done  # 统一 Rust 错误类型 - chrono::ParseError + AppResult in timeline
   epic-15-retrospective: optional
+
+  # Epic 16: 用户体验优化 (UX-OPT) — 完成
+  epic-16: done
+  UX-012: done  # HistoryViewer 虚拟滚动 - @tanstack/vue-virtual, reactive count fix
+  epic-16-retrospective: optional
