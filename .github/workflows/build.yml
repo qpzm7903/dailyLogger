@@ -97,17 +97,10 @@ jobs:
               next
             }
           }
-          /^v[0-9]+\.[0-9]+\.[0-9]+ 更更?新:/ {
-            if (found) exit
-            if ($0 ~ "v" ver) {
-              found=1
-              next
-            }
-          }
 
-          # Stop at next version or early versions marker
+          # Stop at next version header (**v4.4.0**:) or early versions marker
+          /^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/ { if (found) exit }
           /^\*\*早期版本/ { if (found) exit }
-          /^v[0-9]+\.[0-9]+\.[0-9]+ / { if (found && $0 !~ "v" ver) exit }
 
           found == 1 {
             if (buffer == "" && /^$/) next
