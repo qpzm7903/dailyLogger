@@ -3,19 +3,17 @@
 > 最后更新: 2026-03-29
 > 当前版本: v4.1.1（已发布，2026-03-29）
 > 上一版本: v4.0.0（已完成）
-> 当前 Milestone: v4.2.0 (Tailwind CSS v4 升级)
+> 当前 Milestone: v4.2.0 (待规划)
 
 ---
 
 ## 当前 Milestone：v4.2.0
 
-**目标**: Tailwind CSS v4 升级 (DEP-001)
+**目标**: 待规划
 
 | Story | 名称 | 状态 |
 |-------|------|------|
-| TAIL-001 | Tailwind v4 依赖升级与配置迁移 | 规划中 |
-| TAIL-002 | 样式渲染验证与渐变类名更新 | 规划中 |
-| TAIL-003 | 构建验证与测试通过 | 规划中 |
+| TBD | 待定 | 待规划 |
 
 已完成测试覆盖的组件：
 - ErrorBoundary、Siderbar、Header、TodaySummaryWidget、SessionDetailView、OnboardingModal
@@ -30,7 +28,7 @@
 
 | 版本 | 类型 | 目标 |
 |------|------|------|
-| v4.2.0 | MINOR | Tailwind CSS v4 升级 |
+| v4.2.0 | MINOR | 待规划 |
 
 ---
 
@@ -61,22 +59,23 @@
 
 ---
 
-## Epic 14: 前端框架升级 (TAIL) — v4.2.0
+## Epic 14: 前端框架升级 (TAIL) ✅
 
 | Story | 名称 | 状态 |
 |-------|------|------|
-| TAIL-001 | Tailwind v4 依赖升级与配置迁移 | 规划中 |
-| TAIL-002 | 样式渲染验证与渐变类名更新 | 规划中 |
-| TAIL-003 | 构建验证与测试通过 | 规划中 |
+| TAIL-001 | Tailwind v4 依赖升级与配置迁移 | ✅ done (v4.1.1) |
+| TAIL-002 | 样式渲染验证与渐变类名更新 | ✅ done (v4.1.1) |
+| TAIL-003 | 构建验证与测试通过 | ✅ done (v4.1.1) |
 
 ---
 
 ## 最近 10 个已完成版本摘要
 
-### v4.1.1 — Timeline 时区转换错误处理修复 ✅
+### v4.1.1 — Timeline 时区转换错误处理修复 + Tailwind v4 升级 ✅
 - 修复 `get_timeline_data_for_date()` 中潜在的 panic 问题
 - 替换 `unwrap()` 为 `ok_or_else()` 和 `single()` 正确错误处理
 - 解决时区转换边界情况（如夏令时切换）导致的崩溃问题
+- 完成 Tailwind CSS v4 升级 (DEP-001)：迁移到 @tailwindcss/vite、@theme 块配置
 
 ### v4.1.0 — 前端组件测试覆盖率提升 ✅
 - 完成 35 个 Vue 组件的测试覆盖，测试文件从 0 增至 40+
