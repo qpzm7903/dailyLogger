@@ -227,11 +227,19 @@ git config core.hooksPath .githooks
 - Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句，解决 "duplicate column name: summary_model_name" 错误 (issue #83)
 
 **v4.3.3**:
+- 代码质量与文档同步：移除已删除的 GitHub integration 描述
+- Rust clippy 无警告通过，代码格式检查通过
+
+**v4.3.2**:
 - Migration 幂等性修复：移除 batch SQL 中重复的 `ALTER TABLE` 语句，修复 "duplicate column name: monitor_info" 错误 (issue #82)
+- 将 records 表扩展列移至 `CREATE TABLE IF NOT EXISTS` 避免二次添加
+
+**v4.3.1**:
 - Migration 幂等性修复：扩展 sessions.date 修复到 records 和 settings 表的所有扩展列，优雅处理 "duplicate column name" 错误
 
 **v4.3.0**:
 - AI Settings 模板导入/导出：使用 Tauri 文件对话框实现模板文件的保存和加载
+- 新增 i18n 国际化支持（en.json, zh-CN.json）
 
 **v4.2.2**:
 - Migration 修复：处理 legacy sessions 表缺少 date 列的情况，确保数据库迁移成功
