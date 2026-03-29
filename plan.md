@@ -2,7 +2,6 @@
 
 > 最后更新: 2026-03-29
 > 当前版本: v4.3.5
-> 当前 Milestone: v4.3.5 Windows 启动修复发布
 > 项目状态: 508 Rust + 1180 前端测试全部通过 ✅
 
 ---
@@ -28,54 +27,6 @@
 **修复内容**：
 - 移除 batch SQL 中 settings 表的重复 `ALTER TABLE ADD COLUMN` 语句
 - 解决旧版本数据库迁移时出现的 "duplicate column name: summary_model_name" 错误
-
----
-
-## 当前 Milestone：v4.3.3 ✅ 已完成
-
-**目标**: 代码质量与文档同步
-
-**状态**: ✅ 已完成并发布 (v4.3.3)
-
-**完成内容**：
-- Rust clippy 无警告通过，代码格式检查通过
-- README 与代码功能同步（移除已删除的 GitHub integration 描述）
-- 错误处理与日志链路审查完成，未发现高风险问题
-- 508 Rust + 1180 前端测试全部通过
-
----
-
-## 当前 Milestone：v4.3.2 ✅ 已完成
-
-**目标**: Migration 幂等性修复
-
-**状态**: ✅ 已完成并发布 (v4.3.2)
-
-**修复内容**：
-- 移除 batch SQL 中重复的 `ALTER TABLE records ADD COLUMN` 语句
-- 将扩展列定义移至 `CREATE TABLE IF NOT EXISTS records` 避免二次添加
-- 解决旧版本数据库迁移时出现的 "duplicate column name: monitor_info" 错误（issue #82）
-
----
-
-## 当前 Milestone：v4.3.1 ✅ 已完成
-
-**目标**: 修复数据库迁移幂等性问题
-
-**状态**: ✅ 已完成并发布 (v4.3.1)
-
-**修复内容**：
-- 扩展 v4.2.2 的 sessions.date 修复到 records 和 settings 表的所有扩展列
-- 添加幂等的列添加辅助函数，优雅处理 "duplicate column name" 错误
-- 解决旧版本数据库升级时的迁移失败问题
-
----
-
-## 当前 Milestone：v4.3.0 ✅ 已完成
-
-**目标**: AI Settings 模板导入/导出功能
-
-**状态**: ✅ 已完成并发布 (v4.3.0)
 
 ---
 
