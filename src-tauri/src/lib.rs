@@ -289,20 +289,18 @@ pub fn create_http_client_with_proxy(
                 }
             }
         } else {
-            // Proxy disabled - use no_proxy for local URLs
+            // Proxy disabled or no config - use no_proxy for local URLs
             if is_local_url(target_url) {
                 builder = builder.no_proxy();
             }
         }
-    } else {
-        // No proxy config - use default behavior (local URLs bypass system proxy)
-        if is_local_url(target_url) {
-            tracing::info!(
-                "Creating HTTP client with proxy disabled for local URL: {}",
-                target_url
-            );
-            builder = builder.no_proxy();
-        }
+    } else if is_local_url(target_url) {
+        // No proxy config - local URLs bypass system proxy
+        tracing::info!(
+            "Creating HTTP client with proxy disabled for local URL: {}",
+            target_url
+        );
+        builder = builder.no_proxy();
     }
 
     builder
