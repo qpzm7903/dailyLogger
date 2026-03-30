@@ -1,6 +1,4 @@
 pub mod auto_backup_scheduler;
-#[cfg(feature = "screenshot")]
-pub mod auto_perception;
 pub mod backup;
 pub mod commands;
 pub mod crypto;

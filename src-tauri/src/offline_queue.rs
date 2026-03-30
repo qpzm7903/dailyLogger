@@ -377,7 +377,7 @@ async fn execute_queued_task(
                 let parsed: ScreenshotPayload = serde_json::from_str(payload)
                     .map_err(|e| format!("Failed to parse ScreenshotAnalysis payload: {}", e))?;
 
-                crate::auto_perception::retry_screenshot_analysis(
+                crate::services::retry_screenshot_analysis_service(
                     &parsed.screenshot_path,
                     parsed.record_id,
                 )
