@@ -8,16 +8,18 @@
 
 ## 当前进行中的工作
 
-### DEBT-004: 代码质量改善 (进行中)
+### DEBT-004: 代码质量改善 ✅
 - ✅ 提取共享 Vision API 模块 (`services/vision_api.rs`)，消除 3 处 ApiConfig/load_api_config 重复 (~250 行)
 - ✅ 提取共享时间工具函数 (`extract_date`, `calc_gap_minutes`) 到 `lib.rs`
 - ✅ session_service 类型改为从 session_manager re-export，消除重复定义
 - ✅ SearchPanel FTS5 snippet XSS 防护 (`sanitizeSnippet` 工具函数)
 - ✅ OnboardingModal 全面 i18n 国际化 (中/英双语)
 - ✅ 7 个核心 Modal 添加 ARIA dialog 角色和 Escape 键关闭
+- ✅ 提取 BaseModal 共享组件 (focus trap, ARIA, Escape, backdrop)
+- ✅ 12 个 Modal 迁移到 BaseModal (OnboardingModal 因特殊样式保留原实现)
 
 ### 未来优化方向 (已识别，待排期)
-- 模态框焦点管理 (useFocusTrap 扩展到更多模态)
+- OnboardingModal 迁移到 BaseModal (需支持 surface-0 背景)
 - Rust 错误类型统一 (AppError vs String)
 - Settings 过度 clone 优化 (Arc<Settings>)
 
