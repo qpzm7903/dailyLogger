@@ -136,8 +136,8 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 tracing::info!("Generate summary requested from tray");
                 let app_handle = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    use daily_logger_lib::synthesis::generate_daily_summary;
-                    match generate_daily_summary().await {
+                    use daily_logger_lib::services::report_service::generate_daily_summary_service;
+                    match generate_daily_summary_service(None).await {
                         Ok(path) => {
                             tracing::info!("Summary generated: {}", path);
                             let _ = app_handle.emit("summary-generated", path);

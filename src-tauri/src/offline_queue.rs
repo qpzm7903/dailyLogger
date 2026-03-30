@@ -406,12 +406,12 @@ async fn execute_queued_task(
             Ok(())
         }
         OfflineTaskType::DailySummary => {
-            crate::synthesis::generate_daily_summary().await.map(|_| ())
+            crate::services::report_service::generate_daily_summary_service(None).await.map(|_| ())
         }
         OfflineTaskType::WeeklyReport => {
-            crate::synthesis::generate_weekly_report().await.map(|_| ())
+            crate::services::report_service::generate_weekly_report_service().await.map(|_| ())
         }
-        OfflineTaskType::MonthlyReport => crate::synthesis::generate_monthly_report()
+        OfflineTaskType::MonthlyReport => crate::services::report_service::generate_monthly_report_service()
             .await
             .map(|_| ()),
     }
