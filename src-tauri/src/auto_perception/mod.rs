@@ -6,11 +6,8 @@ use std::time::{Duration, Instant};
 use crate::memory_storage;
 use crate::monitor::get_monitor_list;
 use crate::monitor_types::{CaptureMode, MonitorInfo};
-use crate::silent_tracker::{
-    calculate_optimal_silent_minutes, current_threshold, has_sufficient_data, record_capture,
-    set_threshold, CaptureReason,
-};
-use crate::work_time::{is_in_work_time, WorkTimeSettings};
+use crate::silent_tracker::{record_capture, CaptureReason};
+use crate::work_time::WorkTimeSettings;
 
 static AUTO_CAPTURE_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -987,7 +984,7 @@ mod tests {
     use crate::commands::{
         get_auto_capture_status, get_default_analysis_prompt, get_work_time_status,
     };
-    use crate::services::is_auto_capture_running;
+    use crate::services::{is_auto_capture_running, should_capture_by_work_time};
     use base64::Engine;
     use serial_test::serial;
 
