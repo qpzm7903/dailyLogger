@@ -1,6 +1,6 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden border border-[var(--color-border)]">
+  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')" @keydown.esc="$emit('close')">
+    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden border border-[var(--color-border)]">
       <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('screenshotModal.title') }}</h2>
         <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>

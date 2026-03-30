@@ -1,6 +1,6 @@
 <template>
-  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[600px] border border-[var(--color-border)] shadow-2xl">
+  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')" @keydown.esc="$emit('close')">
+    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl w-[600px] border border-[var(--color-border)] shadow-2xl">
       <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-xl">⚡</span>

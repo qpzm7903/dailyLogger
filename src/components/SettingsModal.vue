@@ -1,6 +1,6 @@
 <template>
-  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[700px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
+  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose" @keydown.esc="handleClose">
+    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl w-[700px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
       <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
         <button @click="handleClose" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>

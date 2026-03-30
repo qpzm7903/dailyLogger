@@ -1,6 +1,6 @@
 <template>
-  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50" @click.self="handleClose">
-    <div class="bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-xl w-full max-w-lg mx-4 shadow-2xl">
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50" @click.self="handleClose" @keydown.esc="handleClose">
+    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-xl w-full max-w-lg mx-4 shadow-2xl">
       <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
         <h2 class="text-lg font-medium text-[var(--color-text-primary)]">{{ isCompleted ? t('onboarding.titleCompleted') : t('onboarding.title') }}</h2>
