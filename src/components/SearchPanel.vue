@@ -107,7 +107,7 @@
                       {{ t('searchPanel.relevanceScore', { rank: results[virtualItem.index].rank.toFixed(2) }) }}
                     </span>
                   </div>
-                  <p class="text-sm text-[var(--color-text-secondary)]" v-html="results[virtualItem.index].snippet"></p>
+                  <p class="text-sm text-[var(--color-text-secondary)]" v-html="sanitizeSnippet(results[virtualItem.index].snippet)"></p>
                 </div>
               </div>
             </template>
@@ -136,7 +136,7 @@
                     {{ t('searchPanel.relevanceScore', { rank: result.rank.toFixed(2) }) }}
                   </span>
                 </div>
-                <p class="text-sm text-[var(--color-text-secondary)]" v-html="result.snippet"></p>
+                <p class="text-sm text-[var(--color-text-secondary)]" v-html="sanitizeSnippet(result.snippet)"></p>
               </div>
             </div>
           </div>
@@ -156,6 +156,7 @@ import EmptyState from './EmptyState.vue'
 import { useModal } from '../composables/useModal'
 import { showError } from '../stores/toast'
 import SkeletonLoader from './SkeletonLoader.vue'
+import { sanitizeSnippet } from '../utils/contentUtils'
 import type { Record } from '../types/tauri'
 
 interface SearchResult {

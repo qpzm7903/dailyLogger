@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractSummary } from '../utils/contentUtils'
+import { extractSummary, sanitizeSnippet } from '../utils/contentUtils'
 
 describe('extractSummary', () => {
   it('returns empty string for empty content', () => {
@@ -52,5 +52,41 @@ describe('extractSummary', () => {
     const content = JSON.stringify({ current_focus: text })
     const result = extractSummary(content, 5)
     expect(result).toBe('Hello…')
+  })
+})
+
+describe('sanitizeSnippet', () => {
+  it('returns empty string for empty input', () => {
+    expect(sanitizeSnippet('')).toBe('')
+  })
+
+  it('preserves <mark> tags from FTS5 highlighting', () => {
+    const input = 'Found <mark>hello</mark> in the text'
+    expect(sanitizeSnippet(input)).toBe('Found <mark>hello</mark> in the text')
+  })
+
+  it('escapes non-mark HTML tags to prevent XSS', () => {
+    const input = '<script>alert("xss")</script><mark>safe</mark>'
+    const result = sanitizeSnippet(input)
+    expect(result).toContain('<mark>safe</mark>')
+    expect(result).not.toContain('<script>')
+    expect(result).toContain('&lt;script&gt;')
+  })
+
+  it('handles plain text without any tags', () => {
+    const input = 'Just plain text'
+    expect(sanitizeSnippet(input)).toBe('Just plain text')
+  })
+
+  it('escapes img tags', () => {
+    const input = '<img src=x onerror=alert(1)><mark>text</mark>'
+    const result = sanitizeSnippet(input)
+    expect(result).toContain('<mark>text</mark>')
+    expect(result).not.toContain('<img')
+  })
+
+  it('handles multiple mark tags', () => {
+    const input = '<mark>hello</mark> and <mark>world</mark>'
+    expect(sanitizeSnippet(input)).toBe('<mark>hello</mark> and <mark>world</mark>')
   })
 })
