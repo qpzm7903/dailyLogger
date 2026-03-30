@@ -32,7 +32,7 @@
         <button
           @click="save"
           :disabled="!content.trim() || isSaving"
-          class="px-3 py-1.5 bg-primary rounded-lg text-xs font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-3 py-1.5 bg-primary rounded-lg text-xs font-medium hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {{ isSaving ? t('quickNoteWindow.saving') : t('quickNoteWindow.save') }}
         </button>

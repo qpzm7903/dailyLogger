@@ -93,7 +93,7 @@
         <button
           @click="generateComparison"
           :disabled="isGenerating || !!dateError || !startDateA || !endDateA || !startDateB || !endDateB"
-          class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+          class="bg-primary hover:bg-primary-hover disabled:opacity-50 px-5 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           {{ isGenerating ? t('reportComparison.generating') : t('reportComparison.generate') }}
         </button>

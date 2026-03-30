@@ -31,7 +31,7 @@
           </button>
           <button
             @click="goToToday"
-            class="px-3 py-1.5 text-xs bg-primary hover:bg-blue-600 rounded-lg transition-colors"
+            class="px-3 py-1.5 text-xs bg-primary hover:bg-primary-hover rounded-lg transition-colors"
           >
             {{ t('timeline.today') }}
           </button>

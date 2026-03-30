@@ -97,7 +97,7 @@
         <button
           @click="generateReport"
           :disabled="isGenerating || !!dateError || !startDate || !endDate"
-          class="bg-primary hover:bg-blue-600 disabled:opacity-50 px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+          class="bg-primary hover:bg-primary-hover disabled:opacity-50 px-5 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           {{ isGenerating ? t('customReport.generating') : t('customReport.generate') }}
         </button>

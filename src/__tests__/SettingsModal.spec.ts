@@ -212,13 +212,13 @@ describe('SettingsModal.vue - AC2 按钮交互反馈', () => {
     expect(closeBtn.attributes('class')).toMatch(/hover:text-white|hover:text-\[/)
   })
 
-  it('保存按钮有 hover:bg-blue-600 效果', async () => {
+  it('保存按钮有 hover 效果', async () => {
     const wrapper = mount(SettingsModal)
     await flushPromises()
 
     const footer = wrapper.find('.border-t')
     const saveBtn = footer.find('button.bg-primary')
-    expect(saveBtn.attributes('class')).toMatch(/hover:bg-blue-600|hover:bg-\[/)
+    expect(saveBtn.attributes('class')).toMatch(/hover:bg-primary-hover|hover:bg-\[/)
   })
 
   it('保存按钮禁用状态有 opacity-50 效果', async () => {

@@ -51,7 +51,7 @@
         <button
           @click="viewSelected"
           :disabled="!selectedFile"
-          class="px-4 py-2 bg-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-[var(--color-text-primary)] transition-colors"
+          class="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-[var(--color-text-primary)] transition-colors"
         >
           {{ t('reportHistory.viewSelected') }}
         </button>

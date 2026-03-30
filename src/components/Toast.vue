@@ -35,7 +35,7 @@
           <div v-if="toast.retryCallback" class="mt-2 flex gap-2 justify-end">
             <button
               @click="handleRetry(toast)"
-              class="btn-retry px-3 py-1 text-xs bg-primary hover:bg-blue-600 rounded text-[var(--color-text-primary)] transition-colors"
+              class="btn-retry px-3 py-1 text-xs bg-primary hover:bg-primary-hover rounded text-[var(--color-text-primary)] transition-colors"
             >
               {{ t('toast.retry') }}
             </button>

@@ -2,6 +2,7 @@
 
 @theme {
   --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
   --color-secondary: #64748b;
   --color-dark: #1e293b;
   --color-darker: #0f172a;
@@ -52,6 +53,7 @@
 
   /* Text colors */
   --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
   --color-secondary: #64748b;
   --color-text-primary: #0f172a;
   --color-text-secondary: #64748b;

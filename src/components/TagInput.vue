@@ -61,7 +61,7 @@
       <button
         @click="createOrSelectTag"
         :disabled="!searchQuery.trim() || isCreating"
-        class="px-3 py-1.5 bg-primary text-[var(--color-text-primary)] rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"
+        class="px-3 py-1.5 bg-primary text-[var(--color-text-primary)] rounded text-sm hover:bg-primary-hover transition-colors disabled:opacity-50"
       >
         {{ isCreating ? '...' : t('tagInput.add') }}
       </button>

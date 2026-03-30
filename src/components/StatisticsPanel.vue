@@ -346,7 +346,7 @@
         </button>
         <button
           @click="handleClose"
-          class="px-4 py-2 bg-primary hover:bg-blue-600 rounded-lg text-sm font-medium transition-colors"
+          class="px-4 py-2 bg-primary hover:bg-primary-hover rounded-lg text-sm font-medium transition-colors"
         >
           {{ t('statistics.close') }}
         </button>

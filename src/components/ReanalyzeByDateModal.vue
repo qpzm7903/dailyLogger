@@ -71,7 +71,7 @@
           <button
             @click="handleReanalyze"
             :disabled="!selectedDate || isReanalyzing"
-            class="px-4 py-2 bg-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
+            class="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
           >
             {{ isReanalyzing ? t('reanalyze.processing') : t('reanalyze.start') }}
           </button>

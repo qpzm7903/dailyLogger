@@ -4,7 +4,7 @@
     <select
       v-if="vaults && vaults.length > 1"
       v-model="selectedVault"
-      class="bg-primary hover:bg-blue-600 border-r border-blue-400 px-2 py-1.5 rounded-l-lg text-sm font-medium transition-colors cursor-pointer"
+      class="bg-primary hover:bg-primary-hover border-r border-blue-400 px-2 py-1.5 rounded-l-lg text-sm font-medium transition-colors cursor-pointer"
       :disabled="isGenerating"
       @click.stop
     >
@@ -18,7 +18,7 @@
     <button
       @click="handleMainClick"
       :disabled="isGenerating"
-      class="bg-primary hover:bg-blue-600 disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5"
+      class="bg-primary hover:bg-primary-hover disabled:opacity-75 disabled:cursor-not-allowed px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5"
       :class="vaults && vaults.length > 1 ? '' : 'rounded-l-lg'"
     >
       <span v-if="isGeneratingDaily" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -29,7 +29,7 @@
     <button
       @click="toggleDropdown"
       :disabled="isGenerating"
-      class="bg-primary hover:bg-blue-600 disabled:opacity-75 disabled:cursor-not-allowed border-l border-blue-400 px-2 py-1.5 rounded-r-lg text-sm font-medium transition-colors flex items-center"
+      class="bg-primary hover:bg-primary-hover disabled:opacity-75 disabled:cursor-not-allowed border-l border-blue-400 px-2 py-1.5 rounded-r-lg text-sm font-medium transition-colors flex items-center"
       :title="isOpen ? '收起菜单' : '展开菜单'"
     >
       <svg

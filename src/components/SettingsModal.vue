@@ -83,7 +83,7 @@
           <button
             @click="saveSettings"
             :disabled="isSaving"
-            class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-[var(--color-text-primary)] hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            class="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-[var(--color-text-primary)] hover:bg-primary-hover disabled:opacity-50 transition-colors"
           >
             {{ isSaving ? $t('settings.saving') : $t('settings.save') }}
           </button>

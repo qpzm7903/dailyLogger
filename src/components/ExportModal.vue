@@ -117,7 +117,7 @@
         <button
           @click="doExport"
           :disabled="isExporting || !!dateError"
-          class="px-5 py-2 bg-primary hover:bg-blue-600 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+          class="px-5 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
         >
           {{ isExporting ? t('exportModal.exporting') : t('exportModal.export') }}
         </button>
