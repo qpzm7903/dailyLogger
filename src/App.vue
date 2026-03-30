@@ -397,8 +397,8 @@ const handleSessionUpdated = (session: Session) => {
   selectedSession.value = null
 }
 
-const handleSessionAnalyzed = (session: Session) => {
-  loadTodayRecords()
+const handleSessionAnalyzed = (_session: Session) => {
+  loadTodayRecords().catch((err) => console.error('Failed to reload records after session analysis:', err))
 }
 
 const handleViewReportFile = (path: string) => {
