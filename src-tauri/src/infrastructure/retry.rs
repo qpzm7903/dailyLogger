@@ -85,10 +85,13 @@ mod tests {
         let delay1 = calculate_retry_delay(1, 1000, 10000);
         let delay2 = calculate_retry_delay(2, 1000, 10000);
         let delay3 = calculate_retry_delay(3, 1000, 10000);
-        // Each should be roughly double the previous (with jitter)
-        assert!(delay1 >= 500 && delay1 <= 1000);
-        assert!(delay2 >= 1000 && delay2 <= 2000);
-        assert!(delay3 >= 2000 && delay3 <= 4000);
+        // With ±25% jitter:
+        // attempt 1: capped=1000, jitter_range=250, range [875, 1125)
+        // attempt 2: capped=2000, jitter_range=500, range [1750, 2250)
+        // attempt 3: capped=4000, jitter_range=1000, range [3500, 5000)
+        assert!(delay1 >= 875 && delay1 < 1125, "delay1={delay1}");
+        assert!(delay2 >= 1750 && delay2 < 2250, "delay2={delay2}");
+        assert!(delay3 >= 3500 && delay3 < 5000, "delay3={delay3}");
     }
 
     #[test]
