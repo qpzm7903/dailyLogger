@@ -14,7 +14,7 @@ const MAX_RETRIES: u32 = 3;
 const INITIAL_RETRY_DELAY_MS: u64 = 1000; // 1 second
 const MAX_RETRY_DELAY_MS: u64 = 10000; // 10 seconds
 
-/// API configuration extracted from Settings for LLLM calls.
+/// API configuration extracted from Settings for LLM calls.
 #[derive(Debug, Clone)]
 pub struct ApiConfig {
     api_base_url: String,
@@ -27,7 +27,34 @@ pub struct ApiConfig {
     proxy_config: crate::ProxyConfig,
 }
 
+impl ApiConfig {
+    pub fn api_base_url(&self) -> &str {
+        &self.api_base_url
+    }
+
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
+
+    pub fn model_name(&self) -> &str {
+        &self.model_name
+    }
+
+    pub fn is_ollama(&self) -> bool {
+        self.is_ollama
+    }
+
+    pub fn custom_headers(&self) -> &[crate::memory_storage::CustomHeader] {
+        &self.custom_headers
+    }
+
+    pub fn proxy_config(&self) -> &crate::ProxyConfig {
+        &self.proxy_config
+    }
+}
+
 /// Extract API configuration from settings (shared by all report generators).
+/// Uses `summary_model_name` with fallback to `model_name`.
 pub fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
     let api_base_url = settings
         .api_base_url
@@ -40,6 +67,35 @@ pub fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
         .filter(|s| !s.is_empty())
         .or_else(|| settings.model_name.clone())
         .unwrap_or_else(|| "gpt-4o".to_string());
+
+    build_api_config(api_base_url, api_key, model_name, settings)
+}
+
+/// Load API configuration for Vision (screenshot analysis) calls.
+/// Uses `model_name` directly (vision-capable model), not `summary_model_name`.
+pub fn load_vision_api_config() -> Result<ApiConfig, String> {
+    let settings = crate::memory_storage::get_settings_sync()?;
+
+    let api_base_url = settings
+        .api_base_url
+        .clone()
+        .ok_or("API Base URL not configured")?;
+    let api_key = settings.api_key.clone().unwrap_or_default();
+    let model_name = settings
+        .model_name
+        .clone()
+        .unwrap_or_else(|| "gpt-4o".to_string());
+
+    build_api_config(api_base_url, api_key, model_name, &settings)
+}
+
+/// Common config builder shared by load_api_config and load_vision_api_config.
+fn build_api_config(
+    api_base_url: String,
+    api_key: String,
+    model_name: String,
+    settings: &Settings,
+) -> Result<ApiConfig, String> {
     let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
 
     if !is_ollama && api_key.is_empty() {

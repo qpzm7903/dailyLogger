@@ -7,132 +7,18 @@
 //! SESSION-002: Batch analysis of session screenshots via Vision API
 //! SESSION-003: User summary editing for sessions
 
-use crate::infrastructure::retry;
 use crate::memory_storage::{get_settings_sync, SessionScreenshot, DB_CONNECTION};
+use crate::services::vision_api;
 
 use chrono::{DateTime, Local, Utc};
 use rusqlite::{params, OptionalExtension};
-use serde::{Deserialize, Serialize};
-
-use std::time::SystemTime;
-
-// STAB-001: Retry configuration for Vision API calls
-const VISION_MAX_RETRIES: u32 = 3;
-const VISION_INITIAL_RETRY_DELAY_MS: u64 = 1000;
-const VISION_MAX_RETRY_DELAY_MS: u64 = 10000;
-
-/// Default prompt for session batch analysis
-const DEFAULT_SESSION_ANALYSIS_PROMPT: &str = r#"你是一个工作分析助手。用户在一段时间内连续工作了 N 分钟，期间截取了多张屏幕截图。
-
-请分析这些截图，理解用户在这段时间内的工作内容，返回以下 JSON 格式：
-
-{
-  "per_screenshot_analysis": [
-    {
-      "timestamp": "2026-03-22T10:05:00Z",
-      "current_focus": "正在编写 Rust 代码",
-      "active_software": "VS Code",
-      "context_keywords": ["Rust", "Tauri", "异步"],
-      "tags": ["开发"]
-    }
-  ],
-  "session_summary": "用户在这段时间主要进行 Rust 后端开发，实现了工作时段管理功能...",
-  "context_for_next": "正在开发 session_manager 模块，下一步需要实现 analyze_session 函数..."
-}
-
-注意：
-1. per_screenshot_analysis 数组长度必须与输入截图数量一致
-2. session_summary 应概括整个时段的工作内容
-3. context_for_next 用于帮助下一时段理解连续性工作
-4. tags 从以下列表选择 1-3 个最相关的: ["开发", "会议", "写作", "学习", "研究", "沟通", "规划", "文档", "测试", "设计"]
-
-上一时段上下文（如有）：
-{previous_context}
-
-返回纯 JSON，不要添加任何其他文字。"#;
 
 // ── Data Types ────────────────────────────────────────────────────────────────
 
-/// SESSION-002: Per-screenshot analysis result from AI
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ScreenshotAnalysis {
-    pub timestamp: String,
-    pub current_focus: String,
-    pub active_software: String,
-    pub context_keywords: Vec<String>,
-    pub tags: Vec<String>,
-}
-
-/// SESSION-002: Session batch analysis response from AI
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SessionAnalysisResponse {
-    pub per_screenshot_analysis: Vec<ScreenshotAnalysis>,
-    pub session_summary: String,
-    pub context_for_next: String,
-}
-
-/// 工作时段状态
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum SessionStatus {
-    #[default]
-    Active, // 正在进行中
-    Ended,    // 已结束
-    Analyzed, // 已分析
-}
-
-impl From<String> for SessionStatus {
-    fn from(s: String) -> Self {
-        match s.to_lowercase().as_str() {
-            "active" => SessionStatus::Active,
-            "ended" => SessionStatus::Ended,
-            "analyzed" => SessionStatus::Analyzed,
-            _ => SessionStatus::Active,
-        }
-    }
-}
-
-impl From<SessionStatus> for String {
-    fn from(status: SessionStatus) -> Self {
-        match status {
-            SessionStatus::Active => "active".to_string(),
-            SessionStatus::Ended => "ended".to_string(),
-            SessionStatus::Analyzed => "analyzed".to_string(),
-        }
-    }
-}
-
-/// 工作时段结构体
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Session {
-    pub id: i64,
-    pub date: String,                     // YYYY-MM-DD
-    pub start_time: String,               // RFC3339
-    pub end_time: Option<String>,         // RFC3339, None = ongoing
-    pub ai_summary: Option<String>,       // AI 生成的时段摘要
-    pub user_summary: Option<String>,     // 用户自写的时段摘要
-    pub context_for_next: Option<String>, // 传递给下一时段分析的上下文
-    pub status: SessionStatus,
-    #[serde(default)]
-    pub screenshot_count: Option<i64>, // 时段内的截图数量
-}
-
-impl Default for Session {
-    fn default() -> Self {
-        let now = Local::now();
-        Self {
-            id: 0,
-            date: now.format("%Y-%m-%d").to_string(),
-            start_time: now.to_rfc3339(),
-            end_time: None,
-            ai_summary: None,
-            user_summary: None,
-            context_for_next: None,
-            status: SessionStatus::Active,
-            screenshot_count: None,
-        }
-    }
-}
+// Re-export session types from session_manager (canonical definitions)
+pub use crate::session_manager::{
+    ScreenshotAnalysis, Session, SessionAnalysisResponse, SessionStatus,
+};
 
 // ── Session CRUD Operations ───────────────────────────────────────────────────
 
@@ -407,233 +293,6 @@ pub fn get_previous_session_context(session_id: i64) -> Result<Option<String>, S
 
 // ── SESSION-002: Batch Analysis ──────────────────────────────────────────────
 
-/// API configuration for session analysis
-struct ApiConfig {
-    api_base_url: String,
-    api_key: String,
-    model_name: String,
-    custom_headers: Vec<crate::memory_storage::CustomHeader>,
-    proxy_config: crate::ProxyConfig,
-}
-
-/// Load API configuration from settings
-fn load_api_config() -> Result<ApiConfig, String> {
-    let settings = get_settings_sync()?;
-
-    let proxy_config = crate::ProxyConfig::from_settings(&settings);
-    let api_base_url = settings.api_base_url.ok_or("API Base URL not configured")?;
-    let api_key = settings.api_key.clone().unwrap_or_default();
-    let model_name = settings
-        .model_name
-        .clone()
-        .unwrap_or_else(|| "gpt-4o".to_string());
-
-    // Parse custom headers
-    let custom_headers = if let Some(ref headers_json) = settings.custom_headers {
-        if !headers_json.is_empty() {
-            serde_json::from_str::<Vec<crate::memory_storage::CustomHeader>>(headers_json)
-                .unwrap_or_default()
-        } else {
-            Vec::new()
-        }
-    } else {
-        Vec::new()
-    };
-
-    Ok(ApiConfig {
-        api_base_url,
-        api_key,
-        model_name,
-        custom_headers,
-        proxy_config,
-    })
-}
-
-/// Read and encode screenshot as base64
-fn encode_screenshot(path: &str) -> Result<String, String> {
-    let bytes =
-        std::fs::read(path).map_err(|e| format!("Failed to read screenshot {}: {}", path, e))?;
-    Ok(base64::Engine::encode(
-        &base64::engine::general_purpose::STANDARD,
-        &bytes,
-    ))
-}
-
-/// Build multi-image request for Vision API
-fn build_multi_image_request(
-    screenshots: &[SessionScreenshot],
-    previous_context: Option<&str>,
-    config: &ApiConfig,
-) -> Result<serde_json::Value, String> {
-    let prompt = DEFAULT_SESSION_ANALYSIS_PROMPT
-        .replace("{previous_context}", previous_context.unwrap_or("无"));
-
-    let mut content: Vec<serde_json::Value> = vec![serde_json::json!({
-        "type": "text",
-        "text": prompt
-    })];
-
-    for screenshot in screenshots {
-        let base64_image = encode_screenshot(&screenshot.screenshot_path)?;
-        content.push(serde_json::json!({
-            "type": "image_url",
-            "image_url": {
-                "url": format!("data:image/png;base64,{}", base64_image)
-            }
-        }));
-    }
-
-    Ok(serde_json::json!({
-        "model": config.model_name,
-        "messages": [{
-            "role": "user",
-            "content": content
-        }],
-        "max_tokens": 4000
-    }))
-}
-
-/// Call Vision API for batch analysis
-async fn call_vision_api_batch(
-    request: &serde_json::Value,
-    config: &ApiConfig,
-) -> Result<SessionAnalysisResponse, String> {
-    use crate::create_http_client_with_proxy;
-
-    let endpoint = format!("{}/chat/completions", config.api_base_url);
-    let client = create_http_client_with_proxy(&endpoint, 180, Some(config.proxy_config.clone()))?;
-
-    let masked_key = crate::mask_api_key(&config.api_key);
-
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "session_analysis_request",
-            "endpoint": endpoint,
-            "model": config.model_name,
-            "api_key_masked": masked_key,
-        })
-    );
-
-    let start = SystemTime::now();
-    let mut request_builder = client
-        .post(&endpoint)
-        .header("Content-Type", "application/json")
-        .json(request);
-
-    // Check if custom headers contain auth
-    let has_custom_auth = config
-        .custom_headers
-        .iter()
-        .any(|h| h.key.to_lowercase() == "authorization" || h.key.to_lowercase() == "api-key");
-
-    if !config.api_key.is_empty() && !has_custom_auth {
-        request_builder =
-            request_builder.header("Authorization", format!("Bearer {}", config.api_key));
-    }
-
-    for header in &config.custom_headers {
-        request_builder = request_builder.header(&header.key, &header.value);
-    }
-
-    let response = request_builder.send().await.map_err(|e| {
-        tracing::error!("Session analysis API call failed: {}", e);
-        format!("API request failed: {}", e)
-    })?;
-
-    let elapsed_ms = start.elapsed().map(|d| d.as_millis() as u64).unwrap_or(0);
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        tracing::error!(
-            "{}",
-            serde_json::json!({
-                "event": "session_analysis_error",
-                "status": status.as_u16(),
-                "response_body": body,
-                "elapsed_ms": elapsed_ms,
-            })
-        );
-        return Err(format!("API error ({}): {}", status, body));
-    }
-
-    let response_json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    let content = response_json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("No content in response")?;
-
-    tracing::info!(
-        "{}",
-        serde_json::json!({
-            "event": "session_analysis_response",
-            "elapsed_ms": elapsed_ms,
-            "usage": response_json.get("usage"),
-        })
-    );
-
-    // Strip markdown code fences if present
-    let content = content.trim();
-    let content = if let Some(inner) = content
-        .strip_prefix("```json")
-        .or_else(|| content.strip_prefix("```"))
-    {
-        inner.trim_end_matches("```").trim()
-    } else {
-        content
-    };
-
-    let analysis: SessionAnalysisResponse = serde_json::from_str(content)
-        .map_err(|e| format!("Failed to parse analysis JSON: {}. Content: {}", e, content))?;
-
-    Ok(analysis)
-}
-
-// STAB-001: Retry helpers (logic in infrastructure::retry)
-
-/// SESSION-002: Wrapper for call_vision_api_batch with retry logic
-async fn call_vision_api_batch_with_retry(
-    request: &serde_json::Value,
-    config: &ApiConfig,
-) -> Result<SessionAnalysisResponse, String> {
-    let mut last_error = String::new();
-
-    for attempt in 1..=VISION_MAX_RETRIES {
-        match call_vision_api_batch(request, config).await {
-            Ok(result) => return Ok(result),
-            Err(e) => {
-                last_error = e.clone();
-                if attempt < VISION_MAX_RETRIES && retry::is_retryable_error(&e) {
-                    let delay = retry::calculate_retry_delay(
-                        attempt,
-                        VISION_INITIAL_RETRY_DELAY_MS,
-                        VISION_MAX_RETRY_DELAY_MS,
-                    );
-                    tracing::warn!(
-                        "Vision API call failed (attempt {}/{}), retrying in {}ms: {}",
-                        attempt,
-                        VISION_MAX_RETRIES,
-                        delay,
-                        e
-                    );
-                    tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-
-    Err(format!(
-        "Vision API call failed after {} attempts: {}",
-        VISION_MAX_RETRIES, last_error
-    ))
-}
-
 /// SESSION-002: Analyze a session's screenshots in batch
 ///
 /// Collects all pending screenshots in a session, sends them to the Vision API
@@ -658,14 +317,15 @@ pub async fn analyze_session_service(session_id: i64) -> Result<(), String> {
     // 2. Get previous session context
     let previous_context = get_previous_session_context(session_id)?;
 
-    // 3. Load API config
-    let config = load_api_config()?;
+    // 3. Load API config (uses vision-capable model)
+    let config = crate::synthesis::load_vision_api_config()?;
 
     // 4. Build multi-image request
-    let request = build_multi_image_request(&screenshots, previous_context.as_deref(), &config)?;
+    let request =
+        vision_api::build_multi_image_request(&screenshots, previous_context.as_deref(), &config)?;
 
     // 5. Call Vision API (with retry logic for transient errors)
-    let response = call_vision_api_batch_with_retry(&request, &config).await?;
+    let response = vision_api::call_vision_api_batch_with_retry(&request, &config).await?;
 
     // 6. Validate response
     if response.per_screenshot_analysis.len() != screenshots.len() {

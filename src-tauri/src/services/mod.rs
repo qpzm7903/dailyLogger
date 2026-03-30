@@ -14,6 +14,7 @@ pub mod model_service;
 pub mod report_service;
 pub mod session_service;
 pub mod settings_service;
+pub mod vision_api;
 
 // Re-export business logic from existing modules
 pub use crate::memory_storage::{
