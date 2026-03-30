@@ -408,10 +408,21 @@ watch(() => props.todayRecords, (newRecords, oldRecords) => {
 }, { deep: false })
 
 // Computed
+const recordTagsMap = computed<Map<number, string[]>>(() => {
+  const map = new Map<number, string[]>()
+  props.todayRecords.forEach(record => {
+    map.set(record.id, parseRecordTags(record))
+  })
+  return map
+})
+
+const getRecordTags = (record: LogRecord): string[] => {
+  return recordTagsMap.value.get(record.id) ?? []
+}
+
 const tagCounts = computed<Record<string, number>>(() => {
   const counts: Record<string, number> = {}
-  props.todayRecords.forEach(record => {
-    const tags = getRecordTags(record)
+  recordTagsMap.value.forEach(tags => {
     tags.forEach(tag => {
       counts[tag] = (counts[tag] || 0) + 1
     })
@@ -444,7 +455,7 @@ const filteredRecords = computed<LogRecord[]>(() => {
     return props.todayRecords
   }
   return props.todayRecords.filter(record => {
-    const tags = getRecordTags(record)
+    const tags = recordTagsMap.value.get(record.id) ?? []
     return tags.includes(selectedTagFilter.value)
   })
 })
@@ -510,7 +521,7 @@ const getTagColor = (tag: string): string => {
   return getTagColorClass(tag)
 }
 
-const getRecordTags = (record: LogRecord): string[] => {
+const parseRecordTags = (record: LogRecord): string[] => {
   if ((record as LogRecord & { tags?: string }).tags) {
     try {
       const tags = JSON.parse((record as LogRecord & { tags?: string }).tags as string)
