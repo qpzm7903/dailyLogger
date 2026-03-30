@@ -16,7 +16,11 @@ export function useThumbnailCache() {
   ): Promise<string> => {
     // Check cache first
     if (cache.value.has(path)) {
-      return cache.value.get(path)!
+      // Re-insert to move to end (LRU behavior: recently accessed items stay)
+      const value = cache.value.get(path)!
+      cache.value.delete(path)
+      cache.value.set(path, value)
+      return value
     }
 
     // Load thumbnail
