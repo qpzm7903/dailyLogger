@@ -21,6 +21,52 @@ pub use crate::synthesis::{
     translate_report, write_report_to_logseq, write_report_to_obsidian, ApiConfig,
 };
 
+/// Write a generated report to all configured destinations (Obsidian, Logseq,
+/// Notion, Slack/DingTalk), optionally persist the path in settings, and return
+/// the Obsidian file path.
+///
+/// `obsidian_path` - The Obsidian output path to write to.
+/// `update_settings` is called with a mutable reference to a cloned settings
+/// object and the file path string, allowing the caller to set the appropriate
+/// `last_*_path` field. Pass `None` to skip settings persistence (e.g. for
+/// comparison reports).
+#[allow(clippy::type_complexity)]
+fn write_report_to_all_destinations(
+    settings: &crate::memory_storage::Settings,
+    obsidian_path: &str,
+    filename: &str,
+    summary: &str,
+    report_label: &str,
+    update_settings: Option<&dyn Fn(&mut crate::memory_storage::Settings, &str)>,
+) -> Result<String, String> {
+    let path_str = write_report_to_obsidian(obsidian_path, filename, summary)?;
+
+    // INT-002: Also write to Logseq if configured
+    write_report_to_logseq(settings, filename, summary);
+
+    // INT-001: Also write to Notion if configured
+    if let Some(notion_url) =
+        crate::notion::write_report_to_notion_sync(settings, filename, summary)
+    {
+        tracing::info!("{} also written to Notion: {}", report_label, notion_url);
+    }
+
+    // INT-004: Send notifications to Slack/DingTalk if configured
+    let title = filename.trim_end_matches(".md");
+    send_report_notifications(settings, title, summary);
+
+    // Persist last-report-path in settings
+    if let Some(updater) = update_settings {
+        let mut updated_settings = settings.clone();
+        updater(&mut updated_settings, &path_str);
+        crate::memory_storage::save_settings_sync(&updated_settings)
+            .map_err(|e| format!("Failed to update settings: {}", e))?;
+    }
+
+    tracing::info!("{} generated: {}", report_label, path_str);
+    Ok(path_str)
+}
+
 /// Generate daily summary - report generation service
 ///
 /// # Arguments
@@ -82,30 +128,14 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Resul
             .await?;
 
             let filename = generate_summary_filename(&settings);
-            let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
-
-            // INT-002: Also write to Logseq if configured
-            write_report_to_logseq(&settings, &filename, &summary);
-
-            // INT-001: Also write to Notion if configured
-            if let Some(notion_url) =
-                crate::notion::write_report_to_notion_sync(&settings, &filename, &summary)
-            {
-                tracing::info!("Daily summary also written to Notion: {}", notion_url);
-            }
-
-            // INT-004: Send notifications to Slack/DingTalk if configured
-            let title = filename.trim_end_matches(".md");
-            send_report_notifications(&settings, title, &summary);
-
-            // Update last_summary_path
-            let mut updated_settings = settings.clone();
-            updated_settings.last_summary_path = Some(path_str.clone());
-            crate::memory_storage::save_settings_sync(&updated_settings)
-                .map_err(|e| format!("Failed to update settings: {}", e))?;
-
-            tracing::info!("Daily summary generated: {}", path_str);
-            return Ok(path_str);
+            return write_report_to_all_destinations(
+                &settings,
+                &obsidian_path,
+                &filename,
+                &summary,
+                "Daily summary",
+                Some(&|s, p| s.last_summary_path = Some(p.to_string())),
+            );
         }
     }
 
@@ -138,30 +168,14 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Resul
     .await?;
 
     let filename = generate_summary_filename(&settings);
-    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
-
-    // INT-002: Also write to Logseq if configured
-    write_report_to_logseq(&settings, &filename, &summary);
-
-    // INT-001: Also write to Notion if configured
-    if let Some(notion_url) =
-        crate::notion::write_report_to_notion_sync(&settings, &filename, &summary)
-    {
-        tracing::info!("Daily summary also written to Notion: {}", notion_url);
-    }
-
-    // INT-004: Send notifications to Slack/DingTalk if configured
-    let title = filename.trim_end_matches(".md");
-    send_report_notifications(&settings, title, &summary);
-
-    // Update last_summary_path
-    let mut updated_settings = settings.clone();
-    updated_settings.last_summary_path = Some(path_str.clone());
-    crate::memory_storage::save_settings_sync(&updated_settings)
-        .map_err(|e| format!("Failed to update settings: {}", e))?;
-
-    tracing::info!("Daily summary generated: {}", path_str);
-    Ok(path_str)
+    write_report_to_all_destinations(
+        &settings,
+        &obsidian_path,
+        &filename,
+        &summary,
+        "Daily summary",
+        Some(&|s, p| s.last_summary_path = Some(p.to_string())),
+    )
 }
 
 /// Generate multilingual daily summary - report generation service
@@ -244,29 +258,14 @@ pub async fn generate_weekly_report_service() -> Result<String, String> {
     .await?;
 
     let filename = generate_weekly_report_filename(week_start_day);
-    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
-
-    // INT-002: Also write to Logseq if configured
-    write_report_to_logseq(&settings, &filename, &summary);
-
-    // INT-001: Also write to Notion if configured
-    if let Some(notion_url) =
-        crate::notion::write_report_to_notion_sync(&settings, &filename, &summary)
-    {
-        tracing::info!("Weekly report also written to Notion: {}", notion_url);
-    }
-
-    // INT-004: Send notifications to Slack/DingTalk if configured
-    let title = filename.trim_end_matches(".md");
-    send_report_notifications(&settings, title, &summary);
-
-    let mut updated_settings = settings.clone();
-    updated_settings.last_weekly_report_path = Some(path_str.clone());
-    crate::memory_storage::save_settings_sync(&updated_settings)
-        .map_err(|e| format!("Failed to update settings: {}", e))?;
-
-    tracing::info!("Weekly report generated: {}", path_str);
-    Ok(path_str)
+    write_report_to_all_destinations(
+        &settings,
+        &obsidian_path,
+        &filename,
+        &summary,
+        "Weekly report",
+        Some(&|s, p| s.last_weekly_report_path = Some(p.to_string())),
+    )
 }
 
 /// Generate monthly report - REPORT-002 service
@@ -311,29 +310,14 @@ pub async fn generate_monthly_report_service() -> Result<String, String> {
     .await?;
 
     let filename = generate_monthly_report_filename();
-    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
-
-    // INT-002: Also write to Logseq if configured
-    write_report_to_logseq(&settings, &filename, &summary);
-
-    // INT-001: Also write to Notion if configured
-    if let Some(notion_url) =
-        crate::notion::write_report_to_notion_sync(&settings, &filename, &summary)
-    {
-        tracing::info!("Monthly report also written to Notion: {}", notion_url);
-    }
-
-    // INT-004: Send notifications to Slack/DingTalk if configured
-    let title = filename.trim_end_matches(".md");
-    send_report_notifications(&settings, title, &summary);
-
-    let mut updated_settings = settings.clone();
-    updated_settings.last_monthly_report_path = Some(path_str.clone());
-    crate::memory_storage::save_settings_sync(&updated_settings)
-        .map_err(|e| format!("Failed to update settings: {}", e))?;
-
-    tracing::info!("Monthly report generated: {}", path_str);
-    Ok(path_str)
+    write_report_to_all_destinations(
+        &settings,
+        &obsidian_path,
+        &filename,
+        &summary,
+        "Monthly report",
+        Some(&|s, p| s.last_monthly_report_path = Some(p.to_string())),
+    )
 }
 
 /// Generate custom period report - REPORT-003 service
@@ -393,29 +377,14 @@ pub async fn generate_custom_report_service(
 
     let report_name = report_name.unwrap_or_else(|| "自定义报告".to_string());
     let filename = generate_custom_report_filename(&report_name, &start_date, &end_date);
-    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
-
-    // INT-002: Also write to Logseq if configured
-    write_report_to_logseq(&settings, &filename, &summary);
-
-    // INT-001: Also write to Notion if configured
-    if let Some(notion_url) =
-        crate::notion::write_report_to_notion_sync(&settings, &filename, &summary)
-    {
-        tracing::info!("Custom report also written to Notion: {}", notion_url);
-    }
-
-    // INT-004: Send notifications to Slack/DingTalk if configured
-    let title = filename.trim_end_matches(".md");
-    send_report_notifications(&settings, title, &summary);
-
-    let mut updated_settings = settings.clone();
-    updated_settings.last_custom_report_path = Some(path_str.clone());
-    crate::memory_storage::save_settings_sync(&updated_settings)
-        .map_err(|e| format!("Failed to update settings: {}", e))?;
-
-    tracing::info!("Custom report generated: {}", path_str);
-    Ok(path_str)
+    write_report_to_all_destinations(
+        &settings,
+        &obsidian_path,
+        &filename,
+        &summary,
+        "Custom report",
+        Some(&|s, p| s.last_custom_report_path = Some(p.to_string())),
+    )
 }
 
 /// Generate comparison report between two time periods - REPORT-004 service
@@ -503,18 +472,12 @@ pub async fn compare_reports_service(
 
     let filename =
         generate_comparison_report_filename(&start_date_a, &end_date_a, &start_date_b, &end_date_b);
-    let path_str = write_report_to_obsidian(&obsidian_path, &filename, &summary)?;
-
-    // INT-002: Also write to Logseq if configured
-    write_report_to_logseq(&settings, &filename, &summary);
-
-    // INT-001: Also write to Notion if configured
-    if let Some(notion_url) =
-        crate::notion::write_report_to_notion_sync(&settings, &filename, &summary)
-    {
-        tracing::info!("Comparison report also written to Notion: {}", notion_url);
-    }
-
-    tracing::info!("Comparison report generated: {}", path_str);
-    Ok(path_str)
+    write_report_to_all_destinations(
+        &settings,
+        &obsidian_path,
+        &filename,
+        &summary,
+        "Comparison report",
+        None,
+    )
 }
