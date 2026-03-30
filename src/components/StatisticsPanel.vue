@@ -264,7 +264,7 @@
 
                   <!-- Screenshot line (blue) -->
                   <polyline
-                    :points="getLinePoints('screenshot')"
+                    :points="screenshotLinePoints"
                     fill="none"
                     stroke="#3b82f6"
                     stroke-width="2"
@@ -274,7 +274,7 @@
 
                   <!-- Record line (purple) -->
                   <polyline
-                    :points="getLinePoints('record')"
+                    :points="recordLinePoints"
                     fill="none"
                     stroke="#a855f7"
                     stroke-width="2"
@@ -284,7 +284,7 @@
 
                   <!-- X-axis labels -->
                   <text
-                    v-for="(point, index) in getXAxisLabels()"
+                    v-for="(point, index) in xAxisLabels"
                     :key="'xlabel-'+index"
                     :x="padding + (chartWidth - 2 * padding) * index / (productivityTrend.daily_trend.length - 1)"
                     :y="chartHeight - padding + 20"
@@ -515,8 +515,8 @@ function formatDateRange(period: { start: string; end: string }): string {
   return `${period.start.slice(5, 10)} ~ ${period.end.slice(5, 10)}`
 }
 
-// Get line chart points
-function getLinePoints(type: 'screenshot' | 'record'): string {
+// Get line chart points (computed for performance)
+const screenshotLinePoints = computed(() => {
   if (!productivityTrend.value || productivityTrend.value.daily_trend.length <= 1) {
     return ''
   }
@@ -530,15 +530,34 @@ function getLinePoints(type: 'screenshot' | 'record'): string {
   return points
     .map((point, index) => {
       const x = padding + (chartWidth - 2 * padding) * index / (points.length - 1)
-      const value = type === 'screenshot' ? point.screenshot_count : point.record_count
-      const y = chartHeight - padding - ((value / maxValue) * (chartHeight - 2 * padding))
+      const y = chartHeight - padding - ((point.screenshot_count / maxValue) * (chartHeight - 2 * padding))
       return `${x},${y}`
     })
     .join(' ')
-}
+})
 
-// Get X-axis labels (show every few days to avoid crowding)
-function getXAxisLabels(): string[] {
+const recordLinePoints = computed(() => {
+  if (!productivityTrend.value || productivityTrend.value.daily_trend.length <= 1) {
+    return ''
+  }
+
+  const points = productivityTrend.value.daily_trend
+  const maxValue = Math.max(
+    ...points.map(p => Math.max(p.screenshot_count, p.record_count)),
+    1
+  )
+
+  return points
+    .map((point, index) => {
+      const x = padding + (chartWidth - 2 * padding) * index / (points.length - 1)
+      const y = chartHeight - padding - ((point.record_count / maxValue) * (chartHeight - 2 * padding))
+      return `${x},${y}`
+    })
+    .join(' ')
+})
+
+// Get X-axis labels (computed, show every few days to avoid crowding)
+const xAxisLabels = computed(() => {
   if (!productivityTrend.value || productivityTrend.value.daily_trend.length === 0) {
     return []
   }
@@ -552,7 +571,7 @@ function getXAxisLabels(): string[] {
   }
 
   return labels
-}
+})
 
 // Export statistics or trend data
 async function exportData() {
