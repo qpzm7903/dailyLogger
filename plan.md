@@ -1,8 +1,22 @@
 # DailyLogger 项目规划
 
-> 最后更新: 2026-03-29
+> 最后更新: 2026-03-30
 > 当前版本: v4.4.2 ✅ (已发布)
-> 项目状态: 508 Rust + 1180 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+> 项目状态: 508 Rust + 1220 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+
+---
+
+## 当前进行中的工作
+
+### DEBT-003 完成: CSS 变量化 & 性能优化
+- ✅ 所有组件的硬编码 `gray-*` 颜色迁移到 CSS 变量
+- ✅ 新增 `--color-primary-hover` CSS 变量，15 个按钮 hover 状态迁移
+- ✅ Dashboard `getRecordTags` 改为 computed Map 缓存，避免重复 JSON.parse
+- ✅ StatisticsPanel 图表函数转为 computed 属性
+
+### 未来优化方向 (已识别，待排期)
+- [ ] 设置子组件双向 watch 循环优化 (AISettings, BasicSettings, CaptureSettings, OutputSettings)
+- [ ] OutputSettings/BasicSettings 中 v-for 使用 index 作为 key 的问题
 
 ---
 
