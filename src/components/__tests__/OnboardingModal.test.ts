@@ -86,7 +86,7 @@ describe('OnboardingModal', () => {
       await flushPromises()
       wrapper.vm.isCompleted = true
       await flushPromises()
-      expect(wrapper.text()).toContain('设置完成')
+      expect(wrapper.text()).toContain('Setup Complete')
     })
   })
 
@@ -161,7 +161,7 @@ describe('OnboardingModal', () => {
       await flushPromises()
 
       expect(wrapper.text()).toContain('Step 3')
-      expect(wrapper.text()).toContain('完成设置')
+      expect(wrapper.text()).toContain('Complete Setup')
     })
 
     it('can navigate back from step 2 to step 1', async () => {
@@ -220,7 +220,7 @@ describe('OnboardingModal', () => {
       const wrapper = mount(OnboardingModal)
       await flushPromises()
 
-      expect(wrapper.text()).toContain('测试连接')
+      expect(wrapper.text()).toContain('Test Connection')
     })
   })
 
@@ -238,7 +238,7 @@ describe('OnboardingModal', () => {
       const wrapper = mount(OnboardingModal)
       await flushPromises()
 
-      expect(wrapper.text()).toContain('跳过')
+      expect(wrapper.text()).toContain('Skip')
     })
   })
 

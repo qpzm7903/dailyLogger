@@ -3,7 +3,7 @@
     <div class="bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-xl w-full max-w-lg mx-4 shadow-2xl">
       <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-        <h2 class="text-lg font-medium text-[var(--color-text-primary)]">{{ isCompleted ? '🎉 欢迎使用 DailyLogger' : '欢迎使用 DailyLogger' }}</h2>
+        <h2 class="text-lg font-medium text-[var(--color-text-primary)]">{{ isCompleted ? t('onboarding.titleCompleted') : t('onboarding.title') }}</h2>
         <button
           v-if="isCompleted"
           @click="handleClose"
@@ -30,9 +30,9 @@
           </div>
         </div>
         <div class="flex justify-center gap-8 mt-2 text-xs text-[var(--color-text-secondary)]">
-          <span>API 配置</span>
-          <span>输出路径</span>
-          <span>完成</span>
+          <span>{{ t('onboarding.step1') }}</span>
+          <span>{{ t('onboarding.step2') }}</span>
+          <span>{{ t('onboarding.step3') }}</span>
         </div>
       </div>
 
@@ -40,10 +40,10 @@
       <div class="px-6 py-6">
         <!-- Step 1: API Configuration -->
         <div v-if="currentStep === 1 && !isCompleted">
-          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">Step 1: 配置 AI API</h3>
+          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">{{ t('onboarding.step1Title') }}</h3>
           <div class="space-y-4">
             <div>
-              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">API Base URL</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ t('onboarding.apiBaseUrl') }}</label>
               <input
                 v-model="apiBaseUrl"
                 type="text"
@@ -52,7 +52,7 @@
               />
             </div>
             <div>
-              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">API Key</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ t('onboarding.apiKey') }}</label>
               <input
                 v-model="apiKey"
                 type="password"
@@ -61,7 +61,7 @@
               />
             </div>
             <div>
-              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">Model Name</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ t('onboarding.modelName') }}</label>
               <input
                 v-model="modelName"
                 type="text"
@@ -75,7 +75,7 @@
                 :disabled="isTestingConnection || !apiBaseUrl || !modelName"
                 class="px-4 py-2 text-sm bg-[var(--color-surface-2)] hover:bg-[var(--color-action-neutral)] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
-                {{ isTestingConnection ? '测试中...' : '测试连接' }}
+                {{ isTestingConnection ? t('onboarding.testing') : t('onboarding.testConnection') }}
               </button>
               <span v-if="connectionTestResult" :class="connectionTestResult.success ? 'text-green-400' : 'text-red-400'" class="ml-3 text-xs">
                 {{ connectionTestResult.message }}
@@ -86,15 +86,15 @@
 
         <!-- Step 2: Obsidian Path -->
         <div v-if="currentStep === 2 && !isCompleted">
-          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">Step 2: 配置输出路径</h3>
+          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">{{ t('onboarding.step2Title') }}</h3>
           <div class="space-y-4">
             <div>
-              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">Obsidian Vault 路径</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ t('onboarding.obsidianPath') }}</label>
               <div class="flex gap-2">
                 <input
                   v-model="obsidianPath"
                   type="text"
-                  placeholder="选择文件夹路径..."
+                  :placeholder="t('onboarding.selectFolderPlaceholder')"
                   class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
                   readonly
                 />
@@ -102,46 +102,46 @@
                   @click="selectFolder"
                   class="px-4 py-2 text-sm bg-[var(--color-surface-2)] hover:bg-[var(--color-action-secondary)] rounded-lg transition-colors"
                 >
-                  选择文件夹
+                  {{ t('onboarding.selectFolder') }}
                 </button>
               </div>
-              <p class="text-xs text-[var(--color-text-muted)] mt-1">选择用于保存日报的 Obsidian Vault 文件夹</p>
+              <p class="text-xs text-[var(--color-text-muted)] mt-1">{{ t('onboarding.obsidianPathHint') }}</p>
             </div>
             <div v-if="obsidianPathError" class="text-xs text-red-400">
               {{ obsidianPathError }}
             </div>
             <div v-if="obsidianPath && !obsidianPathError" class="text-xs text-green-400">
-              ✓ 路径已选择
+              {{ t('onboarding.pathSelected') }}
             </div>
           </div>
         </div>
 
         <!-- Step 3: Completion -->
         <div v-if="currentStep === 3 && !isCompleted">
-          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">Step 3: 完成设置</h3>
+          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">{{ t('onboarding.step3Title') }}</h3>
           <div class="space-y-3">
             <div class="bg-[var(--color-surface-0)] rounded-lg p-4">
               <div class="text-sm text-[var(--color-text-secondary)] space-y-2">
                 <div v-if="apiBaseUrl" class="flex items-center gap-2">
                   <span class="text-green-400">✓</span>
-                  <span>API 已配置 ({{ apiBaseUrl }})</span>
+                  <span>{{ t('onboarding.apiConfigured', { url: apiBaseUrl }) }}</span>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span class="text-[var(--color-text-muted)]">○</span>
-                  <span class="text-[var(--color-text-muted)]">API 未配置（可稍后在设置中补充）</span>
+                  <span class="text-[var(--color-text-muted)]">{{ t('onboarding.apiNotConfigured') }}</span>
                 </div>
                 <div v-if="obsidianPath" class="flex items-center gap-2">
                   <span class="text-green-400">✓</span>
-                  <span>输出路径已设置</span>
+                  <span>{{ t('onboarding.outputPathConfigured') }}</span>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span class="text-[var(--color-text-muted)]">○</span>
-                  <span class="text-[var(--color-text-muted)]">输出路径未设置（可稍后在设置中补充）</span>
+                  <span class="text-[var(--color-text-muted)]">{{ t('onboarding.outputPathNotConfigured') }}</span>
                 </div>
               </div>
             </div>
             <p class="text-xs text-[var(--color-text-muted)]">
-              提示：这些配置稍后都可以在设置中进行修改
+              {{ t('onboarding.hint') }}
             </p>
           </div>
         </div>
@@ -149,8 +149,8 @@
         <!-- Completion Screen -->
         <div v-if="isCompleted" class="text-center py-4">
           <div class="text-5xl mb-4">🎉</div>
-          <h3 class="text-lg font-medium text-[var(--color-text-primary)] mb-2">设置完成！</h3>
-          <p class="text-sm text-[var(--color-text-secondary)]">欢迎使用 DailyLogger，开始记录您的工作日志吧</p>
+          <h3 class="text-lg font-medium text-[var(--color-text-primary)] mb-2">{{ t('onboarding.completedTitle') }}</h3>
+          <p class="text-sm text-[var(--color-text-secondary)]">{{ t('onboarding.completedMessage') }}</p>
         </div>
       </div>
 
@@ -161,7 +161,7 @@
           @click="previousStep"
           class="px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
         >
-          ← 上一步
+          {{ t('onboarding.previous') }}
         </button>
         <div v-else></div>
         <div class="flex gap-2">
@@ -170,7 +170,7 @@
             @click="skip"
             class="px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           >
-            跳过
+            {{ t('onboarding.skip') }}
           </button>
           <button
             v-if="!isCompleted && currentStep < 3"
@@ -178,14 +178,14 @@
             :disabled="currentStep === 1 && !connectionTested"
             class="px-4 py-2 text-sm bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
-            下一步 →
+            {{ t('onboarding.next') }}
           </button>
           <button
             v-if="!isCompleted && currentStep === 3"
             @click="completeOnboarding"
             class="px-4 py-2 text-sm bg-green-600 hover:bg-green-500 rounded-lg transition-colors"
           >
-            开始使用
+            {{ t('onboarding.start') }}
           </button>
         </div>
       </div>
@@ -197,7 +197,10 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { useI18n } from 'vue-i18n'
 import { settingsActions } from '../features/settings/actions'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -298,13 +301,13 @@ async function selectFolder() {
     const selected = await open({
       directory: true,
       multiple: false,
-      title: '选择 Obsidian Vault 路径',
+      title: t('onboarding.selectFolderDialogTitle'),
     })
     if (selected) {
       obsidianPath.value = selected as string
     }
   } catch (err) {
-    obsidianPathError.value = `选择文件夹失败: ${err}`
+    obsidianPathError.value = t('onboarding.selectFolderFailed', { error: String(err) })
   }
 }
 
