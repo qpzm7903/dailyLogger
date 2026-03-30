@@ -3,7 +3,7 @@
 //! 负责检测、创建和管理用户的工作时段（Session）。
 //! 时段是指连续工作的一个时间段，两次截图间隔超过阈值时自动创建新时段。
 
-use chrono::{DateTime, Local, Utc};
+use chrono::Local;
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
@@ -205,20 +205,12 @@ pub fn end_current_session() -> Result<(), String> {
 
 /// 从 RFC3339 时间戳中提取日期部分
 fn extract_date_from_timestamp(timestamp: &str) -> String {
-    timestamp.split('T').next().unwrap_or(timestamp).to_string()
+    crate::extract_date(timestamp)
 }
 
 /// 计算两个时间戳之间的分钟数差
 fn calc_gap_minutes(start: &str, end: &str) -> Result<i64, String> {
-    let start_time: DateTime<Utc> = start
-        .parse()
-        .map_err(|e: chrono::ParseError| format!("Invalid start timestamp: {}", e))?;
-    let end_time: DateTime<Utc> = end
-        .parse()
-        .map_err(|e: chrono::ParseError| format!("Invalid end timestamp: {}", e))?;
-
-    let duration = end_time.signed_duration_since(start_time);
-    Ok(duration.num_minutes())
+    crate::calc_gap_minutes(start, end)
 }
 
 /// 使用已有连接获取活跃时段

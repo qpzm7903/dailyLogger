@@ -316,6 +316,23 @@ pub fn get_app_data_dir() -> PathBuf {
         .join("DailyLogger")
 }
 
+/// Extract the date portion (YYYY-MM-DD) from an RFC3339 timestamp.
+pub fn extract_date(timestamp: &str) -> String {
+    timestamp.split('T').next().unwrap_or(timestamp).to_string()
+}
+
+/// Calculate the gap in minutes between two RFC3339 timestamps.
+pub fn calc_gap_minutes(start: &str, end: &str) -> Result<i64, String> {
+    use chrono::{DateTime, Utc};
+    let start_time: DateTime<Utc> = start
+        .parse()
+        .map_err(|e: chrono::ParseError| format!("Invalid start timestamp: {}", e))?;
+    let end_time: DateTime<Utc> = end
+        .parse()
+        .map_err(|e: chrono::ParseError| format!("Invalid end timestamp: {}", e))?;
+    Ok(end_time.signed_duration_since(start_time).num_minutes())
+}
+
 /// PERF-007: Write a diagnostic message using buffered I/O for startup optimization.
 /// Messages are accumulated in memory and flushed periodically to reduce I/O overhead.
 /// Tries multiple locations in order of preference:
