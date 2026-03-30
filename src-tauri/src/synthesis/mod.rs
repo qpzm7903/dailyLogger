@@ -1972,11 +1972,15 @@ pub fn get_quarter_range() -> (String, String) {
     let month = today.month();
     let quarter_start_month = (month - 1) / 3 * 3 + 1;
 
-    let start = chrono::NaiveDate::from_ymd_opt(today.year(), quarter_start_month, 1).unwrap();
+    let start = chrono::NaiveDate::from_ymd_opt(today.year(), quarter_start_month, 1)
+        .expect("quarter_start_month (1,4,7,10) always yields a valid date");
     let end = if quarter_start_month + 3 > 12 {
-        chrono::NaiveDate::from_ymd_opt(today.year() + 1, 1, 1).unwrap() - chrono::Duration::days(1)
+        chrono::NaiveDate::from_ymd_opt(today.year() + 1, 1, 1)
+            .expect("Jan 1 next year is always valid")
+            - chrono::Duration::days(1)
     } else {
-        chrono::NaiveDate::from_ymd_opt(today.year(), quarter_start_month + 3, 1).unwrap()
+        chrono::NaiveDate::from_ymd_opt(today.year(), quarter_start_month + 3, 1)
+            .expect("quarter_start_month+3 <= 12 yields a valid date")
             - chrono::Duration::days(1)
     };
 

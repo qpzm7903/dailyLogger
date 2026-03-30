@@ -213,7 +213,9 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
     {
         let path = entry.path();
         if path.is_file() {
-            let relative_path = path.strip_prefix(temp_dir.path()).unwrap();
+            let relative_path = path
+                .strip_prefix(temp_dir.path())
+                .expect("walkdir iterates within temp_dir so prefix is guaranteed");
             let zip_path = relative_path.to_string_lossy().replace("\\", "/");
 
             zip.start_file(&zip_path, SimpleFileOptions::default())
