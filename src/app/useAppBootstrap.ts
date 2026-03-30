@@ -151,26 +151,23 @@ export function useAppBootstrap(options: BootstrapOptions): UseAppBootstrapRetur
       updateAutoCaptureEnabled(autoCaptureEnabled.value)
       updateReportPaths({
         summaryPath: settings.last_summary_path || '',
-        weeklyReportPath: (settings as Settings & { last_weekly_report_path?: string }).last_weekly_report_path || '',
-        monthlyReportPath: (settings as Settings & { last_monthly_report_path?: string }).last_monthly_report_path || '',
-        customReportPath: (settings as Settings & { last_custom_report_path?: string }).last_custom_report_path || '',
+        weeklyReportPath: settings.last_weekly_report_path || '',
+        monthlyReportPath: settings.last_monthly_report_path || '',
+        customReportPath: settings.last_custom_report_path || '',
         comparisonReportPath: ''
       })
+      return settings
     } catch (err) {
       console.error('Failed to load settings:', err)
+      return null
     }
   }
 
-  // Check if onboarding is needed
-  const checkOnboarding = async () => {
-    try {
-      const settings = await invoke<Settings>('get_settings')
-      if (!settings.api_base_url || !settings.onboarding_completed) {
-        showOnboarding.value = true
-        updateShowOnboarding(true)
-      }
-    } catch {
-      // Ignore - onboarding will show on error
+  // Check if onboarding is needed (reuses already-loaded settings)
+  const checkOnboarding = (settings: Settings | null) => {
+    if (!settings || !settings.api_base_url || !settings.onboarding_completed) {
+      showOnboarding.value = true
+      updateShowOnboarding(true)
     }
   }
 
@@ -256,11 +253,11 @@ export function useAppBootstrap(options: BootstrapOptions): UseAppBootstrapRetur
     }
 
     // Load settings, language, records, and tag colors
-    await loadSettings()
+    const settings = await loadSettings()
     await loadLanguageFromBackend()
     await loadTodayRecords()
     await fetchTagColors()
-    await checkOnboarding()
+    checkOnboarding(settings)
   }
 
   // Cleanup on unmount

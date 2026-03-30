@@ -214,8 +214,6 @@ fn load_capture_settings_internal() -> CaptureSettings {
 }
 
 fn load_work_time_settings_internal() -> WorkTimeSettings {
-    crate::services::capture_service::load_capture_settings(); // Use the service function indirectly
-                                                               // Re-implement since it's needed here
     match crate::memory_storage::get_settings_sync() {
         Ok(s) => WorkTimeSettings {
             auto_detect_work_time: s.auto_detect_work_time.unwrap_or(true),

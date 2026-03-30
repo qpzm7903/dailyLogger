@@ -2,7 +2,8 @@
 // Centralized modal management - replaces 21 individual showXxx ref variables
 // UX-5: Extended with ESC key listener
 
-import { ref, readonly, onMounted, onUnmounted, type Ref, type DeepReadonly } from 'vue'
+import { ref, readonly, type Ref, type DeepReadonly } from 'vue'
+import { useFocusTrap } from './useFocusTrap'
 
 // Modal ID type - all possible modal identifiers
 export type ModalId =
@@ -83,8 +84,7 @@ export interface UseModalReturn {
  */
 export function useModal(): UseModalReturn {
   const focusTrapContainerRef = ref<HTMLElement | null>(null)
-  const focusTrapActive = ref(false)
-  let focusTrapPreviousElement: HTMLElement | null = null
+  const { activate: activateFocusTrap, deactivate: deactivateFocusTrap, isActive: focusTrapActive } = useFocusTrap(focusTrapContainerRef)
 
   const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && activeModal.value !== null) {
@@ -98,63 +98,6 @@ export function useModal(): UseModalReturn {
       document.addEventListener('keydown', handleKeydown)
       escListenerRegistered = true
     }
-  }
-
-  const getFocusableElements = (): HTMLElement[] => {
-    if (!focusTrapContainerRef.value) return []
-    const selector = [
-      'button:not([disabled])',
-      'input:not([disabled])',
-      'select:not([disabled])',
-      'textarea:not([disabled])',
-      'a[href]',
-      '[tabindex]:not([tabindex="-1"])',
-      '[contenteditable="true"]',
-    ].join(', ')
-    return Array.from(focusTrapContainerRef.value.querySelectorAll<HTMLElement>(selector))
-  }
-
-  const handleTabKey = (event: KeyboardEvent) => {
-    if (!focusTrapActive.value || event.key !== 'Tab') return
-    const focusable = getFocusableElements()
-    if (focusable.length === 0) return
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    if (event.shiftKey) {
-      if (document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      }
-    } else {
-      if (document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-  }
-
-  const activateFocusTrap = () => {
-    if (focusTrapActive.value) return
-    focusTrapPreviousElement = document.activeElement as HTMLElement
-    focusTrapActive.value = true
-    document.addEventListener('keydown', handleTabKey)
-    requestAnimationFrame(() => {
-      const focusable = getFocusableElements()
-      if (focusable.length > 0) {
-        focusable[0].focus()
-      } else if (focusTrapContainerRef.value) {
-        focusTrapContainerRef.value.focus()
-      }
-    })
-  }
-
-  const deactivateFocusTrap = () => {
-    if (!focusTrapActive.value) return
-    document.removeEventListener('keydown', handleTabKey)
-    if (focusTrapPreviousElement && focusTrapPreviousElement.focus) {
-      focusTrapPreviousElement.focus()
-    }
-    focusTrapActive.value = false
   }
 
   const isOpen = (id: ModalId): boolean => {

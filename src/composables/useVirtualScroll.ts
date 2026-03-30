@@ -5,16 +5,16 @@
 
 import { ref, computed, onMounted, onBeforeUnmount, type Ref } from 'vue'
 
-export interface VirtualScrollOptions {
+export interface VirtualScrollOptions<T> {
   itemHeight: number // Estimated height of each item in pixels
   containerRef: Ref<HTMLElement | null>
-  items: Ref<any[]>
+  items: Ref<T[]>
   buffer?: number // Number of items to render outside visible area
 }
 
-export interface VirtualItem {
+export interface VirtualItem<T> {
   index: number
-  data: any
+  data: T
   style: {
     position: 'absolute'
     transform: string
@@ -22,7 +22,7 @@ export interface VirtualItem {
   }
 }
 
-export function useVirtualScroll(options: VirtualScrollOptions) {
+export function useVirtualScroll<T>(options: VirtualScrollOptions<T>) {
   const { itemHeight, containerRef, items, buffer = 5 } = options
 
   const scrollTop = ref(0)
@@ -41,7 +41,7 @@ export function useVirtualScroll(options: VirtualScrollOptions) {
   })
 
   // Get only the visible items with their positions
-  const visibleItems = computed<VirtualItem[]>(() => {
+  const visibleItems = computed<VirtualItem<T>[]>(() => {
     const { startIndex, endIndex } = visibleRange.value
 
     return items.value.slice(startIndex, endIndex).map((data, i) => {
