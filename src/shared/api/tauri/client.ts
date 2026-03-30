@@ -9,12 +9,8 @@
  */
 
 import { invoke as baseInvoke } from '@tauri-apps/api/core'
-import { COMMANDS } from './commands'
 
 // Re-export invoke directly for test mock compatibility
 export const invoke = baseInvoke
-
-// Also re-export command constants for use in feature actions
-export { COMMANDS }
 
 export default invoke

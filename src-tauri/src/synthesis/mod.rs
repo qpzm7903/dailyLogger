@@ -59,13 +59,7 @@ pub fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
     };
 
     // PERF-001: Parse proxy configuration from settings
-    let proxy_config = crate::ProxyConfig {
-        enabled: settings.proxy_enabled.unwrap_or(false),
-        host: settings.proxy_host.clone(),
-        port: settings.proxy_port,
-        username: settings.proxy_username.clone(),
-        password: settings.proxy_password.clone(),
-    };
+    let proxy_config = crate::ProxyConfig::from_settings(settings);
 
     Ok(ApiConfig {
         api_base_url,

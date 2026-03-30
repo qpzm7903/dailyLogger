@@ -264,13 +264,26 @@ pub fn cleanup_old_tasks() -> Result<i64, String> {
     Ok(deleted as i64)
 }
 
+/// Recover from a poisoned mutex by logging and taking the inner value.
+macro_rules! lock_queue_processing {
+    () => {
+        match QUEUE_PROCESSING.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                tracing::warn!("QUEUE_PROCESSING mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        }
+    };
+}
+
 /// Process pending tasks in the offline queue.
 /// Called when network comes back online.
 /// Uses exponential backoff between retries.
 pub async fn process_queue() {
     // Prevent concurrent processing
     {
-        let mut processing = QUEUE_PROCESSING.lock().unwrap();
+        let mut processing = lock_queue_processing!();
         if *processing {
             tracing::debug!("Queue processing already in progress, skipping");
             return;
@@ -284,7 +297,7 @@ pub async fn process_queue() {
         Ok(t) => t,
         Err(e) => {
             tracing::error!("Failed to get pending tasks: {}", e);
-            let mut processing = QUEUE_PROCESSING.lock().unwrap();
+            let mut processing = lock_queue_processing!();
             *processing = false;
             return;
         }
@@ -292,7 +305,7 @@ pub async fn process_queue() {
 
     if tasks.is_empty() {
         tracing::debug!("No pending tasks in offline queue");
-        let mut processing = QUEUE_PROCESSING.lock().unwrap();
+        let mut processing = lock_queue_processing!();
         *processing = false;
         return;
     }
@@ -352,7 +365,7 @@ pub async fn process_queue() {
         }
     }
 
-    let mut processing = QUEUE_PROCESSING.lock().unwrap();
+    let mut processing = lock_queue_processing!();
     *processing = false;
 }
 

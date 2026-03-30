@@ -25,7 +25,7 @@ import { initToastI18n } from '../stores/toast'
 import { loadLanguageFromBackend } from '../i18n'
 import { showError, showSuccess } from '../stores/toast'
 import { fetchTagColors } from '../composables/useTagColors'
-import type { LogRecord, Settings, Tag } from '../types/tauri'
+import type { LogRecord, Settings } from '../types/tauri'
 import type { ModalId } from '../composables/useModal'
 
 export interface UseAppBootstrapReturn {

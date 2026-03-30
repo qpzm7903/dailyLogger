@@ -234,6 +234,19 @@ pub struct ProxyConfig {
     pub password: Option<String>,
 }
 
+impl ProxyConfig {
+    /// Create a ProxyConfig from Settings fields.
+    pub fn from_settings(settings: &crate::memory_storage::Settings) -> Self {
+        Self {
+            enabled: settings.proxy_enabled.unwrap_or(false),
+            host: settings.proxy_host.clone(),
+            port: settings.proxy_port,
+            username: settings.proxy_username.clone(),
+            password: settings.proxy_password.clone(),
+        }
+    }
+}
+
 /// Create an HTTP client with optional explicit proxy configuration.
 ///
 /// When proxy config is provided and enabled, the client uses the specified proxy.

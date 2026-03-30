@@ -430,6 +430,7 @@ struct ApiConfig {
 fn load_api_config() -> Result<ApiConfig, String> {
     let settings = get_settings_sync()?;
 
+    let proxy_config = crate::ProxyConfig::from_settings(&settings);
     let api_base_url = settings.api_base_url.ok_or("API Base URL not configured")?;
     let api_key = settings.api_key.clone().unwrap_or_default();
     let model_name = settings
@@ -447,15 +448,6 @@ fn load_api_config() -> Result<ApiConfig, String> {
         }
     } else {
         Vec::new()
-    };
-
-    // PERF-001: Parse proxy configuration from settings
-    let proxy_config = crate::ProxyConfig {
-        enabled: settings.proxy_enabled.unwrap_or(false),
-        host: settings.proxy_host.clone(),
-        port: settings.proxy_port,
-        username: settings.proxy_username.clone(),
-        password: settings.proxy_password.clone(),
     };
 
     Ok(ApiConfig {

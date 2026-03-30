@@ -1,9 +1,26 @@
-use chrono::Datelike;
+use chrono::{Datelike, TimeZone};
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
 use super::DB_CONNECTION;
+
+/// Convert a NaiveDateTime to UTC RFC3339 string, handling DST ambiguity by picking the earliest offset.
+fn naive_to_utc_rfc3339(dt: chrono::NaiveDateTime) -> String {
+    chrono::Local
+        .from_local_datetime(&dt)
+        .earliest()
+        .map(|dt| dt.with_timezone(&chrono::Utc).to_rfc3339())
+        .unwrap_or_else(|| dt.and_utc().to_rfc3339())
+}
+
+/// Convert a NaiveDate to UTC RFC3339 string at the given time (h, m, s).
+fn date_to_utc_rfc3339(date: chrono::NaiveDate, h: u32, m: u32, s: u32) -> String {
+    let naive_dt = date
+        .and_hms_opt(h, m, s)
+        .expect("valid time: (h,m,s) are always 0,0,0 or 23,59,59");
+    naive_to_utc_rfc3339(naive_dt)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Record {
@@ -127,14 +144,7 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
         .map_err(|e| format!("Lock error: {}", e))?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
-    let today_start = chrono::Local::now()
-        .date_naive()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let today_start = date_to_utc_rfc3339(chrono::Local::now().date_naive(), 0, 0, 0);
 
     let mut stmt = conn
         .prepare(
@@ -181,22 +191,8 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
     let week_start_date = today - chrono::Duration::days(days_since_week_start as i64);
     let week_end_date = week_start_date + chrono::Duration::days(6);
 
-    // Convert to UTC boundaries
-    let week_start = week_start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
-
-    let week_end = week_end_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let week_start = date_to_utc_rfc3339(week_start_date, 0, 0, 0);
+    let week_end = date_to_utc_rfc3339(week_end_date, 23, 59, 59);
 
     let mut stmt = conn
         .prepare(
@@ -236,31 +232,19 @@ pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
 
     // Calculate month boundaries based on local time
     let now = chrono::Local::now();
-    let first_day = now.date_naive().with_day(1).unwrap();
+    let first_day = now.date_naive().with_day(1).expect("day 1 is always valid");
 
     // Month start: first day of month at 00:00:00 local time
-    let month_start = first_day
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let month_start = date_to_utc_rfc3339(first_day, 0, 0, 0);
 
     // Month end: first day of next month at 00:00:00 - 1 second
     let next_month = if now.month() == 12 {
-        chrono::NaiveDate::from_ymd_opt(now.year() + 1, 1, 1).unwrap()
+        chrono::NaiveDate::from_ymd_opt(now.year() + 1, 1, 1).expect("Jan 1 is always valid")
     } else {
-        chrono::NaiveDate::from_ymd_opt(now.year(), now.month() + 1, 1).unwrap()
+        chrono::NaiveDate::from_ymd_opt(now.year(), now.month() + 1, 1).expect("month+1 <= 12")
     };
 
-    let month_end = next_month
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let month_end = date_to_utc_rfc3339(next_month, 0, 0, 0);
 
     let mut stmt = conn
         .prepare(
@@ -302,14 +286,7 @@ pub fn get_today_record_count_sync() -> Result<usize, String> {
         .map_err(|e| format!("Lock error: {}", e))?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
-    let today_start = chrono::Local::now()
-        .date_naive()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let today_start = date_to_utc_rfc3339(chrono::Local::now().date_naive(), 0, 0, 0);
 
     let count: i64 = conn
         .query_row(
@@ -330,14 +307,7 @@ pub fn get_today_stats_sync() -> Result<TodayStats, String> {
         .map_err(|e| format!("Lock error: {}", e))?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
-    let today_start = chrono::Local::now()
-        .date_naive()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let today_start = date_to_utc_rfc3339(chrono::Local::now().date_naive(), 0, 0, 0);
 
     // Query basic stats in a single query
     let basic_stats = conn
@@ -403,28 +373,15 @@ pub fn get_records_by_date_range_sync(
 
     // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
     let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(0, 0, 0)
-        .unwrap();
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
 
     // Parse end_date (YYYY-MM-DD) to local midnight of next day (exclusive upper bound)
     let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(23, 59, 59)
-        .unwrap();
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
 
     // Convert to UTC RFC3339
-    let start_utc = start_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
-
-    let end_utc = end_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
+    let end_utc = date_to_utc_rfc3339(end_naive, 23, 59, 59);
 
     let mut stmt = conn
         .prepare(
@@ -464,26 +421,13 @@ pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Re
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     let start_naive = chrono::NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(0, 0, 0)
-        .unwrap();
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
 
     let end_naive = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(23, 59, 59)
-        .unwrap();
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
 
-    let start_utc = start_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
-
-    let end_utc = end_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
+    let end_utc = date_to_utc_rfc3339(end_naive, 23, 59, 59);
 
     let mut stmt = conn
         .prepare(
@@ -645,28 +589,15 @@ pub fn get_history_records_with_cursor_sync(
 
     // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
     let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(0, 0, 0)
-        .unwrap();
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
 
     // Parse end_date (YYYY-MM-DD) to local end of day 23:59:59
     let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(23, 59, 59)
-        .unwrap();
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
 
     // Convert to UTC RFC3339
-    let start_utc = start_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
-
-    let end_utc = end_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
+    let end_utc = date_to_utc_rfc3339(end_naive, 23, 59, 59);
 
     // Build query using cursor-based or offset-based pagination
     let (sql, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) = match (
@@ -800,28 +731,15 @@ pub fn get_history_records_cursor_sync(
 
     // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
     let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(0, 0, 0)
-        .unwrap();
+        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
 
     // Parse end_date (YYYY-MM-DD) to local end of day 23:59:59
     let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?
-        .and_hms_opt(23, 59, 59)
-        .unwrap();
+        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
 
     // Convert to UTC RFC3339
-    let start_utc = start_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
-
-    let end_utc = end_naive
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .with_timezone(&chrono::Utc)
-        .to_rfc3339();
+    let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
+    let end_utc = date_to_utc_rfc3339(end_naive, 23, 59, 59);
 
     // Helper to map row to Record
     fn map_row(row: &rusqlite::Row) -> rusqlite::Result<Record> {

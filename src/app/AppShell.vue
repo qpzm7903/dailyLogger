@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LogRecord, Settings } from '../types/tauri'
+import type { LogRecord } from '../types/tauri'
 import type { ModalId } from '../composables/useModal'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'

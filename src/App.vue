@@ -69,7 +69,7 @@ import AppModals from './app/AppModals.vue'
 
 // Toast and errors
 import { showError, showSuccess } from './stores/toast'
-import type { LogRecord, Tag, Settings } from './types/tauri'
+import type { LogRecord, Tag } from './types/tauri'
 
 // Feature actions
 import { captureActions, addQuickNote } from './features/capture/actions'

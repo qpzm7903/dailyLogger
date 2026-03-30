@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LogRecord, Tag, Settings } from '../types/tauri'
+import type { LogRecord, Tag } from '../types/tauri'
 import type { ModalId } from '../composables/useModal'
 
 // Modal Components

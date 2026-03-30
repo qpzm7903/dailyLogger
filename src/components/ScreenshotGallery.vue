@@ -276,12 +276,6 @@ const { visibleItems, totalHeight } = useVirtualScroll({
   buffer: 5
 })
 
-// Computed: paginated screenshots (maintains backward compatibility)
-const paginatedScreenshots = computed(() => {
-  const end = currentPage.value * pageSize
-  return screenshots.value.slice(0, end)
-})
-
 // Computed: has more pages to load
 const hasMorePages = computed(() => {
   return currentPage.value * pageSize < screenshots.value.length
@@ -354,14 +348,6 @@ const loadThumbnailsForPage = async (page: number) => {
   for (const record of records) {
     await loadThumbnail(record)
   }
-}
-
-// Legacy function for compatibility
-const loadThumbnails = async (records: ScreenshotRecord[]) => {
-  records.forEach(r => {
-    r.thumbnailLoaded = false
-    r.thumbnailError = false
-  })
 }
 
 const loadScreenshots = async () => {
