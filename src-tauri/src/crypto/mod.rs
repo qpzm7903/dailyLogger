@@ -4,7 +4,7 @@ use aes_gcm::{
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use once_cell::sync::Lazy;
-use rand::RngCore;
+use rand::Rng;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
