@@ -2,22 +2,24 @@
 
 > 最后更新: 2026-03-30
 > 当前版本: v4.4.2 ✅ (已发布)
-> 项目状态: 508 Rust + 1220 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+> 项目状态: 508 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
 
 ## 当前进行中的工作
 
-### DEBT-003 完成: CSS 变量化 & 性能优化
-- ✅ 所有组件的硬编码 `gray-*` 颜色迁移到 CSS 变量
-- ✅ 新增 `--color-primary-hover` CSS 变量，15 个按钮 hover 状态迁移
-- ✅ Dashboard `getRecordTags` 改为 computed Map 缓存，避免重复 JSON.parse
-- ✅ StatisticsPanel 图表函数转为 computed 属性
-- ✅ 设置子组件双向 watch 循环优化 (isUpdatingFromProps 标志位)
-- ✅ v-for 使用稳定 key 替代 index (customHeaders 用 _id，tags 用字符串值)
+### DEBT-004: 代码质量改善 (进行中)
+- ✅ 提取共享 Vision API 模块 (`services/vision_api.rs`)，消除 3 处 ApiConfig/load_api_config 重复 (~250 行)
+- ✅ 提取共享时间工具函数 (`extract_date`, `calc_gap_minutes`) 到 `lib.rs`
+- ✅ session_service 类型改为从 session_manager re-export，消除重复定义
+- ✅ SearchPanel FTS5 snippet XSS 防护 (`sanitizeSnippet` 工具函数)
+- ✅ OnboardingModal 全面 i18n 国际化 (中/英双语)
+- ✅ 7 个核心 Modal 添加 ARIA dialog 角色和 Escape 键关闭
 
 ### 未来优化方向 (已识别，待排期)
-（当前无待处理优化项）
+- 模态框焦点管理 (useFocusTrap 扩展到更多模态)
+- Rust 错误类型统一 (AppError vs String)
+- Settings 过度 clone 优化 (Arc<Settings>)
 
 ---
 
