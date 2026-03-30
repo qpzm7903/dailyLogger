@@ -65,7 +65,7 @@
             </label>
           </div>
           <div v-if="useCustomTemplate" class="space-y-2">
-            <p class="text-xs text-[var(--color-text-muted)]" v-html="templatePlaceholdersText"></p>
+            <p class="text-xs text-[var(--color-text-muted)]">{{ templatePlaceholdersText }}</p>
             <textarea
               v-model="customTemplate"
               rows="6"

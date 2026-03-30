@@ -1,6 +1,6 @@
 <template>
   <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[900px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
+    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl w-[900px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('statistics.title') }}</h2>
