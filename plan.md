@@ -13,10 +13,11 @@
 - ✅ 新增 `--color-primary-hover` CSS 变量，15 个按钮 hover 状态迁移
 - ✅ Dashboard `getRecordTags` 改为 computed Map 缓存，避免重复 JSON.parse
 - ✅ StatisticsPanel 图表函数转为 computed 属性
+- ✅ 设置子组件双向 watch 循环优化 (isUpdatingFromProps 标志位)
+- ✅ v-for 使用稳定 key 替代 index (customHeaders 用 _id，tags 用字符串值)
 
 ### 未来优化方向 (已识别，待排期)
-- [ ] 设置子组件双向 watch 循环优化 (AISettings, BasicSettings, CaptureSettings, OutputSettings)
-- [ ] OutputSettings/BasicSettings 中 v-for 使用 index 作为 key 的问题
+（当前无待处理优化项）
 
 ---
 
