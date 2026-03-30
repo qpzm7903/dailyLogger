@@ -7,6 +7,7 @@
 //! SESSION-002: Batch analysis of session screenshots via Vision API
 //! SESSION-003: User summary editing for sessions
 
+use crate::infrastructure::retry;
 use crate::memory_storage::{get_settings_sync, SessionScreenshot, DB_CONNECTION};
 
 use chrono::{DateTime, Local, Utc};
@@ -602,38 +603,7 @@ async fn call_vision_api_batch(
     Ok(analysis)
 }
 
-// STAB-001: Retry helpers for Vision API calls
-
-/// Check if an error is retryable (transient network errors, timeouts, 5xx errors)
-fn is_retryable_error(error: &str) -> bool {
-    let error_lower = error.to_lowercase();
-    error_lower.contains("connection")
-        || error_lower.contains("timeout")
-        || error_lower.contains("timed out")
-        || error_lower.contains("network")
-        || error_lower.contains("dns")
-        || error_lower.contains("reset")
-        || error_lower.contains("refused")
-        || error_lower.contains("500")
-        || error_lower.contains("502")
-        || error_lower.contains("503")
-        || error_lower.contains("504")
-        || error_lower.contains("429")
-        || error_lower.contains("rate limit")
-}
-
-/// Calculate delay for next retry with exponential backoff and jitter
-fn calculate_retry_delay(attempt: u32) -> u64 {
-    let exponential_delay = VISION_INITIAL_RETRY_DELAY_MS * 2u64.pow(attempt - 1);
-    let capped_delay = exponential_delay.min(VISION_MAX_RETRY_DELAY_MS);
-    let jitter_range = capped_delay / 4;
-    let jitter = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
-        % jitter_range;
-    capped_delay - jitter_range / 2 + jitter
-}
+// STAB-001: Retry helpers (logic in infrastructure::retry)
 
 /// SESSION-002: Wrapper for call_vision_api_batch with retry logic
 async fn call_vision_api_batch_with_retry(
@@ -647,8 +617,12 @@ async fn call_vision_api_batch_with_retry(
             Ok(result) => return Ok(result),
             Err(e) => {
                 last_error = e.clone();
-                if attempt < VISION_MAX_RETRIES && is_retryable_error(&e) {
-                    let delay = calculate_retry_delay(attempt);
+                if attempt < VISION_MAX_RETRIES && retry::is_retryable_error(&e) {
+                    let delay = retry::calculate_retry_delay(
+                        attempt,
+                        VISION_INITIAL_RETRY_DELAY_MS,
+                        VISION_MAX_RETRY_DELAY_MS,
+                    );
                     tracing::warn!(
                         "Vision API call failed (attempt {}/{}), retrying in {}ms: {}",
                         attempt,

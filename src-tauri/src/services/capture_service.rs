@@ -458,7 +458,7 @@ pub fn evaluate_and_adjust_threshold() -> Option<(u64, u64)> {
     let new_threshold = calculate_optimal_silent_minutes(
         &crate::silent_tracker::SILENT_PATTERN_TRACKER
             .lock()
-            .unwrap(),
+            .unwrap_or_else(|e| e.into_inner()),
     );
     if new_threshold != old_threshold {
         set_threshold(new_threshold);

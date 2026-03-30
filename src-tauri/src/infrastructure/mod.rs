@@ -5,6 +5,8 @@
 //!
 //! ## Modules
 //!
+//! - `retry` - Shared retry utilities (backoff, jitter, error classification)
 //! - `state` - Application state management conventions and AppState definition
 
+pub mod retry;
 pub mod state;

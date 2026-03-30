@@ -229,7 +229,9 @@ async fn run_auto_backup_internal() -> Result<(), String> {
     {
         let path = entry.path();
         if path.is_file() {
-            let relative_path = path.strip_prefix(temp_dir.path()).unwrap();
+            let relative_path = path
+                .strip_prefix(temp_dir.path())
+                .expect("walkdir entry should be under temp_dir");
             let zip_path = relative_path.to_string_lossy().replace("\\", "/");
 
             zip.start_file(&zip_path, SimpleFileOptions::default())

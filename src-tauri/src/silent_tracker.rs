@@ -200,8 +200,14 @@ impl SilentPatternTracker {
 
         for hourly in &self.hourly_stats {
             // Check if this hour is within the duration window
-            let hour_start = hourly.date.and_hms_opt(hourly.hour as u32, 0, 0).unwrap();
-            let hour_dt = hour_start.and_local_timezone(Local).unwrap();
+            let Some(hour_start) = hourly.date.and_hms_opt(hourly.hour as u32, 0, 0) else {
+                continue;
+            };
+            let hour_dt = match hour_start.and_local_timezone(Local) {
+                chrono::LocalResult::Single(dt) => dt,
+                chrono::LocalResult::Ambiguous(dt, _) => dt,
+                chrono::LocalResult::None => continue,
+            };
 
             if hour_dt >= cutoff {
                 stats.total_captures += hourly.total_captures();
