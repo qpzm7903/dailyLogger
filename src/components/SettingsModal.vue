@@ -1,10 +1,9 @@
 <template>
-  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose" @keydown.esc="handleClose">
-    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl w-[700px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
-        <button @click="handleClose" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
-      </div>
+  <BaseModal backdrop="light" content-class="w-[700px] max-h-[85vh] overflow-hidden flex flex-col" @close="handleClose">
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+      <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
+      <button @click="handleClose" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+    </div>
 
       <!-- Tab Navigation -->
       <div class="px-6 pt-4 border-b border-[var(--color-border)] flex gap-1">
@@ -89,7 +88,6 @@
           </button>
         </div>
       </div>
-    </div>
 
     <!-- Close confirmation dialog -->
     <div
@@ -236,7 +234,7 @@
       </div>
     </div>
 
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -244,10 +242,10 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { showError, showSuccess } from '../stores/toast'
 import { useI18n } from 'vue-i18n'
-import { useFocusTrap } from '../composables/useFocusTrap'
 import { BasicSettings, AISettings, CaptureSettings, OutputSettings } from './settings'
 import type { Settings } from '../types/tauri'
 import { settingsActions } from '../features/settings/actions'
+import BaseModal from './BaseModal.vue'
 
 // Types
 interface Monitor {
@@ -285,9 +283,7 @@ const { t } = useI18n()
 // Emits
 const emit = defineEmits<{(e: 'close'): void}>()
 
-// Focus trap for accessibility (UX-5)
-const containerRef = ref<HTMLElement | null>(null)
-const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(containerRef)
+// Focus trap handled by BaseModal
 
 // Tab navigation
 type SettingsTab = 'basic' | 'ai' | 'capture' | 'output'
@@ -702,11 +698,9 @@ async function createCustomModel() {
 
 onMounted(() => {
   loadSettings()
-  activateFocusTrap()
 })
 
 onBeforeUnmount(() => {
-  deactivateFocusTrap()
   if (closeTimer) {
     clearTimeout(closeTimer)
     closeTimer = null

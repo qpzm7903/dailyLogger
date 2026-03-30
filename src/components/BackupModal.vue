@@ -1,11 +1,10 @@
 <template>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')" @keydown.esc="$emit('close')">
-    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl w-[600px] max-h-[80vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <!-- Header -->
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ t('backup.title') }}</h2>
-        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
-      </div>
+  <BaseModal backdrop="light" content-class="w-[600px] max-h-[80vh] overflow-hidden flex flex-col" @close="$emit('close')">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+      <h2 class="text-lg font-semibold">{{ t('backup.title') }}</h2>
+      <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+    </div>
 
       <!-- Tabs -->
       <div class="flex border-b border-[var(--color-border)]">
@@ -216,8 +215,7 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -226,6 +224,7 @@ import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { systemActions } from '../features/system/actions'
+import BaseModal from './BaseModal.vue'
 
 interface BackupInfo {
   path: string

@@ -1,10 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')" @keydown.esc="$emit('close')">
-    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden border border-[var(--color-border)]">
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ t('screenshotModal.title') }}</h2>
-        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
-      </div>
+  <BaseModal content-class="max-w-4xl max-h-[90vh] overflow-hidden" @close="$emit('close')">
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+      <h2 class="text-lg font-semibold">{{ t('screenshotModal.title') }}</h2>
+      <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+    </div>
 
       <div class="p-6 overflow-auto max-h-[70vh]">
         <img
@@ -83,8 +82,7 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -95,6 +93,7 @@ import type { LogRecord } from '../types/tauri'
 import { captureActions } from '../features/capture/actions'
 import type { ScreenAnalysis } from '../features/capture/actions'
 import { recordsActions } from '../features/records/actions'
+import BaseModal from './BaseModal.vue'
 
 const { t, locale } = useI18n()
 
