@@ -6,7 +6,7 @@
 import { invoke } from '../../shared/api/tauri/client'
 import { SESSION_COMMANDS } from '../../shared/api/tauri/commands'
 
-// Session type (should match the type defined in SessionListModal.vue)
+// Session type - canonical definition, import from here
 export interface Session {
   id: number
   date: string

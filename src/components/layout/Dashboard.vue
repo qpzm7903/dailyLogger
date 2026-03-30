@@ -344,6 +344,7 @@ import { extractSummary } from '../../utils/contentUtils'
 import { getTagColorClass } from '../../utils/tagColors'
 import type { LogRecord, Tag } from '../../types/tauri'
 import type { ModalId } from '../../composables/useModal'
+import type { ScreenAnalysis } from '../../features/capture/actions'
 
 const { t } = useI18n()
 
@@ -477,20 +478,7 @@ const formatTime = (timestamp: string): string => {
   return `${h}:${m}`
 }
 
-interface WindowInfo {
-  title?: string
-  process_name?: string
-}
-
-interface ScreenAnalysis {
-  current_focus?: string
-  active_software?: string
-  context_keywords?: string[]
-  active_window?: WindowInfo
-  tags?: string[]
-}
-
-const getWindowInfo = (record: LogRecord): WindowInfo | null => {
+const getWindowInfo = (record: LogRecord): ScreenAnalysis['active_window'] | null => {
   if (!record.content) return null
   try {
     const parsed = JSON.parse(record.content) as ScreenAnalysis

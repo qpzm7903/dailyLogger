@@ -11,6 +11,8 @@ export interface ScreenAnalysis {
   current_focus?: string
   active_software?: string
   context_keywords?: string[]
+  active_window?: { title?: string; process_name?: string }
+  tags?: string[]
 }
 
 export interface CaptureActions {

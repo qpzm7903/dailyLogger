@@ -3,13 +3,7 @@
  * Provides functions for parsing and summarizing AI analysis content
  */
 
-interface ScreenAnalysis {
-  current_focus?: string
-  active_software?: string
-  context_keywords?: string[]
-  active_window?: { title?: string; process_name?: string }
-  tags?: string[]
-}
+import type { ScreenAnalysis } from '../features/capture/actions'
 
 /**
  * Extract a short summary from AI screenshot analysis content.

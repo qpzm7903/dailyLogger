@@ -231,18 +231,13 @@ import { useModal } from '../composables/useModal'
 import { useVirtualScroll } from '../composables/useVirtualScroll'
 import { useThumbnailCache } from '../composables/useThumbnailCache'
 import type { LogRecord } from '../types/tauri'
+import type { ScreenAnalysis } from '../features/capture/actions'
 import { showToast } from '../stores/toast'
 
 interface ScreenshotRecord extends LogRecord {
   thumbnail?: string
   thumbnailLoaded?: boolean
   thumbnailError?: boolean
-}
-
-interface ScreenAnalysis {
-  current_focus?: string
-  active_software?: string
-  context_keywords?: string[]
 }
 
 const { t } = useI18n()

@@ -89,19 +89,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { showToast } from '../stores/toast'
-import { sessionActions } from '../features/sessions/actions'
-
-interface Session {
-  id: number
-  date: string
-  start_time: string
-  end_time: string | null
-  ai_summary: string | null
-  user_summary: string | null
-  context_for_next: string | null
-  status: 'active' | 'ended' | 'analyzed'
-  screenshot_count?: number
-}
+import { sessionActions, type Session } from '../features/sessions/actions'
 
 const { t, locale } = useI18n()
 

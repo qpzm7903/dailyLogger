@@ -93,19 +93,8 @@ import { useI18n } from 'vue-i18n'
 import { showToast } from '../stores/toast'
 import type { LogRecord } from '../types/tauri'
 import { captureActions } from '../features/capture/actions'
+import type { ScreenAnalysis } from '../features/capture/actions'
 import { recordsActions } from '../features/records/actions'
-
-interface WindowInfo {
-  title?: string
-  process_name?: string
-}
-
-interface ScreenAnalysis {
-  current_focus?: string
-  active_software?: string
-  context_keywords?: string[]
-  active_window?: WindowInfo
-}
 
 const { t, locale } = useI18n()
 
@@ -139,7 +128,7 @@ const parseContent = (content: string) => {
 }
 
 // SMART-001 Task 6: Extract window info from content JSON
-const windowInfo = computed<WindowInfo | null>(() => {
+const windowInfo = computed<ScreenAnalysis['active_window'] | null>(() => {
   if (!props.record.content) return null
   try {
     const parsed = JSON.parse(props.record.content) as ScreenAnalysis

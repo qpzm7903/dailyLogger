@@ -70,6 +70,7 @@ import AppModals from './app/AppModals.vue'
 // Toast and errors
 import { showError, showSuccess } from './stores/toast'
 import type { LogRecord, Tag } from './types/tauri'
+import type { Session } from './features/sessions/actions'
 
 // Feature actions
 import { captureActions, addQuickNote } from './features/capture/actions'
@@ -77,18 +78,6 @@ import { reportActions } from './features/reports/actions'
 import { settingsActions } from './features/settings/actions'
 import { recordsActions } from './features/records/actions'
 import { systemActions } from './features/system/actions'
-
-interface Session {
-  id: number
-  date: string
-  start_time: string
-  end_time: string | null
-  ai_summary: string | null
-  user_summary: string | null
-  context_for_next: string | null
-  status: 'active' | 'ended' | 'analyzed'
-  screenshot_count?: number
-}
 
 const { t } = useI18n()
 const { isDesktop } = usePlatform()

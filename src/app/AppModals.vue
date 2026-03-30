@@ -96,6 +96,7 @@
 <script setup lang="ts">
 import type { LogRecord, Tag } from '../types/tauri'
 import type { ModalId } from '../composables/useModal'
+import type { Session } from '../features/sessions/actions'
 
 // Modal Components
 import SettingsModal from '../components/SettingsModal.vue'
@@ -126,18 +127,6 @@ import { useI18n } from 'vue-i18n'
 
 // Feature actions
 import { addQuickNote } from '../features/capture/actions'
-
-interface Session {
-  id: number
-  date: string
-  start_time: string
-  end_time: string | null
-  ai_summary: string | null
-  user_summary: string | null
-  context_for_next: string | null
-  status: 'active' | 'ended' | 'analyzed'
-  screenshot_count?: number
-}
 
 export interface AppModalsProps {
   isOpen: (id: ModalId) => boolean
