@@ -1,14 +1,13 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[480px] max-h-[80vh] overflow-hidden border border-[var(--color-border)]">
-      <!-- Header -->
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ t('reanalyze.title') }}</h2>
-        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
-      </div>
+  <BaseModal content-class="w-[480px] max-h-[80vh] overflow-hidden" @close="$emit('close')">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+      <h2 class="text-lg font-semibold">{{ t('reanalyze.title') }}</h2>
+      <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+    </div>
 
-      <!-- Content -->
-      <div class="p-6">
+    <!-- Content -->
+    <div class="p-6">
         <!-- Date Selection -->
         <div class="mb-6">
           <label class="text-sm text-[var(--color-text-secondary)] block mb-2">{{ t('reanalyze.selectDate') }}</label>
@@ -77,8 +76,7 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -86,6 +84,7 @@ import { ref, watch, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showToast } from '../stores/toast'
+import BaseModal from './BaseModal.vue'
 
 interface ReanalyzeResult {
   total: number

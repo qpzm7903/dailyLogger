@@ -1,11 +1,10 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-[var(--color-border)]">
-      <!-- Header -->
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ t('sessionList.title') }}</h2>
-        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
-      </div>
+  <BaseModal content-class="max-w-2xl w-full max-h-[90vh] overflow-hidden" @close="$emit('close')">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+      <h2 class="text-lg font-semibold">{{ t('sessionList.title') }}</h2>
+      <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+    </div>
 
       <!-- Filter Bar -->
       <div class="px-6 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
@@ -126,8 +125,7 @@
           {{ t('sessionList.close') }}
         </button>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -135,6 +133,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { showToast } from '../stores/toast'
 import { sessionActions, type Session } from '../features/sessions/actions'
+import BaseModal from './BaseModal.vue'
 
 const { t, locale } = useI18n()
 

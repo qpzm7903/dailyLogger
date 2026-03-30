@@ -458,7 +458,7 @@ describe('LogViewer', () => {
       const wrapper = mount(LogViewer)
 
       // Check backdrop
-      expect(wrapper.find('.fixed.inset-0.bg-black\\/60').exists()).toBe(true)
+      expect(wrapper.find('.fixed.inset-0.bg-black\\/70').exists()).toBe(true)
 
       // Check modal container
       expect(wrapper.find('[class*="bg-[var(--color-surface-1)]"]').exists()).toBe(true)

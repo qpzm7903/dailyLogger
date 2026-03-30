@@ -1,11 +1,10 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <!-- Header -->
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ t('customReport.title') }}</h2>
-        <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
-      </div>
+  <BaseModal content-class="w-[90vw] max-w-lg overflow-hidden flex flex-col" @close="$emit('close')">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+      <h2 class="text-lg font-semibold">{{ t('customReport.title') }}</h2>
+      <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+    </div>
 
       <!-- Body -->
       <div class="p-6 space-y-5">
@@ -102,8 +101,7 @@
           {{ isGenerating ? t('customReport.generating') : t('customReport.generate') }}
         </button>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -111,6 +109,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { showError, showSuccess } from '../stores/toast'
+import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()
 const emit = defineEmits<{(e: 'close'): void; (e: 'generated', path: string): void}>()

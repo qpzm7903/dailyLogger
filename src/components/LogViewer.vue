@@ -1,13 +1,12 @@
 <template>
-  <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div class="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl w-full max-w-4xl h-3/4 flex flex-col">
-      <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] shrink-0">
-        <div class="flex items-center gap-3">
-          <span class="text-xl">📋</span>
-          <h2 class="font-medium">{{ t('logViewer.title') }}</h2>
-          <span class="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-0)] px-2 py-0.5 rounded">{{ logPath }}</span>
-        </div>
+  <BaseModal backdrop="medium" content-class="w-full max-w-4xl h-3/4 flex flex-col" @close="$emit('close')">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] shrink-0">
+      <div class="flex items-center gap-3">
+        <span class="text-xl">📋</span>
+        <h2 class="font-medium">{{ t('logViewer.title') }}</h2>
+        <span class="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-0)] px-2 py-0.5 rounded">{{ logPath }}</span>
+      </div>
         <div class="flex items-center gap-2">
           <!-- Level filter -->
           <div class="flex gap-1 text-xs">
@@ -53,14 +52,14 @@
           class="leading-5 whitespace-pre-wrap break-all hover:bg-white/5 px-1 rounded"
         >{{ line }}</div>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()
 
