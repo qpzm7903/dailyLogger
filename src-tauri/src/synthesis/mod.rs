@@ -371,7 +371,12 @@ pub fn send_report_notifications(settings: &Settings, title: &str, content: &str
     }
 }
 
-const DEFAULT_SUMMARY_PROMPT: &str = r"
+/// Return the custom value if Some and non-empty, otherwise fall back to default.
+pub(crate) fn non_empty_or<'a>(custom: Option<&'a str>, default: &'a str) -> &'a str {
+    custom.filter(|s| !s.is_empty()).unwrap_or(default)
+}
+
+pub(crate) const DEFAULT_SUMMARY_PROMPT: &str = r"
 你是一个工作日志助手。请根据以下今日工作记录，生成一份结构化的 Markdown 格式日报。
 
 要求：
@@ -389,7 +394,7 @@ const DEFAULT_SUMMARY_PROMPT: &str = r"
 pub const DEFAULT_TITLE_FORMAT: &str = "工作日报 - {date}";
 
 /// Default prompt template for weekly reports
-const DEFAULT_WEEKLY_REPORT_PROMPT: &str = r"
+pub(crate) const DEFAULT_WEEKLY_REPORT_PROMPT: &str = r"
 你是一个工作日志助手。请根据以下本周工作记录，生成一份结构化的 Markdown 格式周报。
 
 要求：
@@ -410,7 +415,7 @@ pub fn get_default_weekly_report_prompt() -> String {
 }
 
 /// Default prompt template for monthly reports
-const DEFAULT_MONTHLY_REPORT_PROMPT: &str = r"
+pub(crate) const DEFAULT_MONTHLY_REPORT_PROMPT: &str = r"
 你是一个工作日志助手。请根据以下本月工作记录，生成一份结构化的 Markdown 格式月报。
 
 要求：
@@ -427,7 +432,7 @@ const DEFAULT_MONTHLY_REPORT_PROMPT: &str = r"
 请生成月报：";
 
 /// Default prompt template for custom period reports - REPORT-003
-const DEFAULT_CUSTOM_REPORT_PROMPT: &str = r"
+pub(crate) const DEFAULT_CUSTOM_REPORT_PROMPT: &str = r"
 你是一个工作日志助手。请根据以下指定时间段的工作记录，生成一份结构化的 Markdown 格式报告。
 
 要求：
@@ -449,7 +454,7 @@ pub fn get_default_monthly_report_prompt() -> String {
 }
 
 /// Default prompt template for comparison reports - REPORT-004
-const DEFAULT_COMPARISON_REPORT_PROMPT: &str = r"
+pub(crate) const DEFAULT_COMPARISON_REPORT_PROMPT: &str = r"
 你是一个工作日志分析助手。请对比以下两个时间段的工作记录，生成一份结构化的 Markdown 格式对比分析报告。
 
 要求：
@@ -763,11 +768,7 @@ pub fn format_records_for_summary(records: &[Record]) -> String {
 
 /// Generate the filename for the daily summary based on settings.
 pub fn generate_summary_filename(settings: &Settings) -> String {
-    let title_format = settings
-        .summary_title_format
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_TITLE_FORMAT);
+    let title_format = non_empty_or(settings.summary_title_format.as_deref(), DEFAULT_TITLE_FORMAT);
 
     // Replace {date} placeholder and create filename
     let title = format_summary_title(title_format);
@@ -848,11 +849,7 @@ pub fn get_supported_languages() -> Vec<(String, String)> {
 
 /// Generate daily summary filename with language suffix
 pub fn generate_summary_filename_with_lang(settings: &Settings, lang: &str) -> String {
-    let title_format = settings
-        .summary_title_format
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_TITLE_FORMAT);
+    let title_format = non_empty_or(settings.summary_title_format.as_deref(), DEFAULT_TITLE_FORMAT);
 
     let title = format_summary_title(title_format);
     let suffix = get_language_suffix(lang);
@@ -893,11 +890,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
 
         // SESSION-005: Build session-based report
         if let Some(content) = build_session_based_report(&sessions) {
-            let prompt_template = settings
-                .summary_prompt
-                .as_deref()
-                .filter(|s| !s.is_empty())
-                .unwrap_or(DEFAULT_SUMMARY_PROMPT);
+            let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
             let prompt = prompt_template
                 .replace("{records}", &content)
                 .replace("{github_activity}", "");
@@ -920,12 +913,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
             }
 
             // INT-004: Send notifications to Slack/DingTalk if configured
-            let title = settings
-                .summary_title_format
-                .as_ref()
-                .filter(|s| !s.is_empty())
-                .map(|fmt| format_summary_title(fmt))
-                .unwrap_or_else(|| format_summary_title(DEFAULT_TITLE_FORMAT));
+            let title = format_summary_title(non_empty_or(settings.summary_title_format.as_deref(), DEFAULT_TITLE_FORMAT));
             send_report_notifications(&settings, &title, &summary);
 
             let mut updated_settings = settings.clone();
@@ -948,11 +936,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
 
     let records_text = format_records_for_summary(&records);
 
-    let prompt_template = settings
-        .summary_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_SUMMARY_PROMPT);
+    let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
     let prompt = prompt_template
         .replace("{records}", &records_text)
         .replace("{github_activity}", ""); // GitHub integration removed in v3.0.0
@@ -972,12 +956,7 @@ pub async fn generate_daily_summary() -> Result<String, String> {
     }
 
     // INT-004: Send notifications to Slack/DingTalk if configured
-    let title = settings
-        .summary_title_format
-        .as_ref()
-        .filter(|s| !s.is_empty())
-        .map(|fmt| format_summary_title(fmt))
-        .unwrap_or_else(|| format_summary_title(DEFAULT_TITLE_FORMAT));
+    let title = format_summary_title(non_empty_or(settings.summary_title_format.as_deref(), DEFAULT_TITLE_FORMAT));
     send_report_notifications(&settings, &title, &summary);
 
     let mut updated_settings = settings.clone();
@@ -1043,11 +1022,7 @@ pub async fn generate_base_daily_summary(
         let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
 
         if let Some(content) = build_session_based_report(&sessions) {
-            let prompt_template = settings
-                .summary_prompt
-                .as_deref()
-                .filter(|s| !s.is_empty())
-                .unwrap_or(DEFAULT_SUMMARY_PROMPT);
+            let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
             let prompt = prompt_template
                 .replace("{records}", &content)
                 .replace("{github_activity}", "");
@@ -1066,11 +1041,7 @@ pub async fn generate_base_daily_summary(
     }
 
     let records_text = format_records_for_summary(&records);
-    let prompt_template = settings
-        .summary_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_SUMMARY_PROMPT);
+    let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
     let prompt = prompt_template
         .replace("{records}", &records_text)
         .replace("{github_activity}", "");
@@ -1905,11 +1876,7 @@ pub async fn generate_weekly_report() -> Result<String, String> {
     }
 
     let records_text = format_records_for_summary(&records);
-    let prompt_template = settings
-        .weekly_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_WEEKLY_REPORT_PROMPT);
+    let prompt_template = non_empty_or(settings.weekly_report_prompt.as_deref(), DEFAULT_WEEKLY_REPORT_PROMPT);
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary =
@@ -1963,11 +1930,7 @@ pub async fn generate_monthly_report() -> Result<String, String> {
     }
 
     let records_text = format_records_by_week(&records);
-    let prompt_template = settings
-        .monthly_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_MONTHLY_REPORT_PROMPT);
+    let prompt_template = non_empty_or(settings.monthly_report_prompt.as_deref(), DEFAULT_MONTHLY_REPORT_PROMPT);
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary =
@@ -2084,11 +2047,7 @@ pub async fn generate_custom_report(
         format_records_for_summary(&records)
     };
 
-    let prompt_template = settings
-        .custom_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_CUSTOM_REPORT_PROMPT);
+    let prompt_template = non_empty_or(settings.custom_report_prompt.as_deref(), DEFAULT_CUSTOM_REPORT_PROMPT);
     let prompt = prompt_template
         .replace("{records}", &records_text)
         .replace("{start_date}", &start_date)
@@ -2182,11 +2141,7 @@ pub async fn compare_reports(
         format_records_for_summary(&records_b)
     };
 
-    let prompt_template = settings
-        .comparison_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_COMPARISON_REPORT_PROMPT);
+    let prompt_template = non_empty_or(settings.comparison_report_prompt.as_deref(), DEFAULT_COMPARISON_REPORT_PROMPT);
     let prompt = prompt_template
         .replace("{records_a}", &records_text_a)
         .replace("{records_b}", &records_text_b)

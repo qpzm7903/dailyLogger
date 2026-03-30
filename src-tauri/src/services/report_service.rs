@@ -21,6 +21,11 @@ pub use crate::synthesis::{
     translate_report, write_report_to_logseq, write_report_to_obsidian, ApiConfig,
 };
 
+use crate::synthesis::{
+    non_empty_or, DEFAULT_COMPARISON_REPORT_PROMPT, DEFAULT_CUSTOM_REPORT_PROMPT,
+    DEFAULT_MONTHLY_REPORT_PROMPT, DEFAULT_SUMMARY_PROMPT, DEFAULT_WEEKLY_REPORT_PROMPT,
+};
+
 /// Write a generated report to all configured destinations (Obsidian, Logseq,
 /// Notion, Slack/DingTalk), optionally persist the path in settings, and return
 /// the Obsidian file path.
@@ -109,12 +114,7 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Resul
 
         // SESSION-005: Build session-based report
         if let Some(content) = build_session_based_report(&sessions) {
-            let default_prompt = get_default_summary_prompt();
-            let prompt_template = settings
-                .summary_prompt
-                .as_deref()
-                .filter(|s| !s.is_empty())
-                .map_or_else(|| default_prompt.clone(), |s| s.to_string());
+            let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
             let prompt = prompt_template
                 .replace("{records}", &content)
                 .replace("{github_activity}", "");
@@ -149,12 +149,7 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Resul
     }
 
     let records_text = format_records_for_summary(&records);
-    let default_prompt = get_default_summary_prompt();
-    let prompt_template = settings
-        .summary_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .map_or_else(|| default_prompt.clone(), |s| s.to_string());
+    let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
     let prompt = prompt_template
         .replace("{records}", &records_text)
         .replace("{github_activity}", "");
@@ -241,12 +236,7 @@ pub async fn generate_weekly_report_service() -> Result<String, String> {
     }
 
     let records_text = format_records_for_summary(&records);
-    let default_prompt = get_default_weekly_report_prompt();
-    let prompt_template = settings
-        .weekly_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .map_or_else(|| default_prompt.clone(), |s| s.to_string());
+    let prompt_template = non_empty_or(settings.weekly_report_prompt.as_deref(), DEFAULT_WEEKLY_REPORT_PROMPT);
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary = crate::synthesis::call_llm_api_with_retry(
@@ -293,12 +283,7 @@ pub async fn generate_monthly_report_service() -> Result<String, String> {
     }
 
     let records_text = format_records_by_week(&records);
-    let default_prompt = get_default_monthly_report_prompt();
-    let prompt_template = settings
-        .monthly_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .map_or_else(|| default_prompt.clone(), |s| s.to_string());
+    let prompt_template = non_empty_or(settings.monthly_report_prompt.as_deref(), DEFAULT_MONTHLY_REPORT_PROMPT);
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary = crate::synthesis::call_llm_api_with_retry(
@@ -359,12 +344,7 @@ pub async fn generate_custom_report_service(
         format_records_for_summary(&records)
     };
 
-    let default_prompt = get_default_custom_report_prompt();
-    let prompt_template = settings
-        .custom_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .map_or_else(|| default_prompt.clone(), |s| s.to_string());
+    let prompt_template = non_empty_or(settings.custom_report_prompt.as_deref(), DEFAULT_CUSTOM_REPORT_PROMPT);
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary = crate::synthesis::call_llm_api_with_retry(
@@ -452,12 +432,7 @@ pub async fn compare_reports_service(
         format_records_for_summary(&records_b)
     };
 
-    let default_prompt = get_default_comparison_report_prompt();
-    let prompt_template = settings
-        .comparison_report_prompt
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .map_or_else(|| default_prompt.clone(), |s| s.to_string());
+    let prompt_template = non_empty_or(settings.comparison_report_prompt.as_deref(), DEFAULT_COMPARISON_REPORT_PROMPT);
     let prompt = prompt_template
         .replace("{records_a}", &records_text_a)
         .replace("{records_b}", &records_text_b)
