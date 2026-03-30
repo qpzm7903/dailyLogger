@@ -43,7 +43,7 @@
         >
           {{ isLoading ? t('historyViewer.loading') : t('historyViewer.query') }}
         </button>
-        <span v-if="records.length > 0" class="text-sm text-gray-300 ml-auto">
+        <span v-if="records.length > 0" class="text-sm text-[var(--color-text-secondary)] ml-auto">
           {{ t('historyViewer.totalRecords', { count: records.length }) }}
         </span>
       </div>
@@ -170,7 +170,7 @@
         <div class="flex justify-end gap-3">
           <button
             @click="recordToDelete = null"
-            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+            class="px-4 py-2 bg-[var(--color-action-secondary)] text-white rounded hover:bg-[var(--color-surface-2)] transition-colors"
           >
             {{ t('historyViewer.cancel') }}
           </button>

@@ -17,7 +17,7 @@
               @click="getModelInfo('analysis')"
               :disabled="isLoadingModelInfo || !localSettings.model_name"
               type="button"
-              class="text-gray-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
+              class="text-[var(--color-text-muted)] hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
               :title="$t('settings.contextWindow', { size: '' })"
             >ℹ️</button>
           </div>
@@ -38,14 +38,14 @@
             <button
               type="button"
               @click="showDefaultPrompt"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.viewDefault') }}
             </button>
             <button
               type="button"
               @click="resetPrompt"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.resetDefault') }}
             </button>
@@ -56,20 +56,20 @@
 
     <!-- Daily Report Settings -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.dailyReport') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.dailyReport') }}</h3>
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportTitleFormat') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.reportTitleFormat') }}</label>
           <input
             v-model="localSettings.summary_title_format"
             type="text"
             :placeholder="$t('settings.reportTitlePlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
           />
           <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.reportTitleHint') }}</span>
         </div>
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportModel') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.reportModel') }}</label>
           <div class="flex items-center gap-2">
             <input
               v-model="localSettings.summary_model_name"
@@ -81,17 +81,17 @@
               @click="getModelInfo('summary')"
               :disabled="isLoadingModelInfo || !localSettings.summary_model_name"
               type="button"
-              class="text-gray-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
+              class="text-[var(--color-text-muted)] hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-2"
               :title="$t('settings.contextWindow', { size: '' })"
             >ℹ️</button>
           </div>
-          <span v-if="summaryModelInfo?.context_window" class="text-xs text-gray-500 mt-1 block">
+          <span v-if="summaryModelInfo?.context_window" class="text-xs text-[var(--color-text-muted)] mt-1 block">
             {{ $t('settings.contextWindow', { size: summaryModelInfo.context_window / 1000 }) }}
           </span>
           <span v-else class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.textModelHint') }}</span>
         </div>
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.reportPrompt') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.reportPrompt') }}</label>
           <textarea
             v-model="localSettings.summary_prompt"
             rows="4"
@@ -102,35 +102,35 @@
             <button
               type="button"
               @click="showDefaultSummaryPrompt"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.viewDefault') }}
             </button>
             <button
               type="button"
               @click="resetSummaryPrompt"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.resetDefault') }}
             </button>
             <button
               type="button"
               @click="showTemplateLibrary"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.templateLibrary') }}
             </button>
             <button
               type="button"
               @click="exportTemplate"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.exportTemplate') }}
             </button>
             <button
               type="button"
               @click="importTemplate"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.importTemplate') }}
             </button>
@@ -146,36 +146,36 @@
           <label for="include_manual_records" class="text-xs text-[var(--color-text-secondary)] cursor-pointer">
             {{ $t('settings.includeQuickNotes') }}
           </label>
-          <span class="text-xs text-gray-500">{{ $t('settings.includeQuickNotesHint') }}</span>
+          <span class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.includeQuickNotesHint') }}</span>
         </div>
       </div>
     </div>
 
     <!-- Tag Categories -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.tagCategories') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.tagCategories') }}</h3>
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-gray-300 block mb-1">{{ $t('settings.customTagCategories') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.customTagCategories') }}</label>
           <textarea
             v-model="localTagCategoriesText"
             rows="4"
             :placeholder="$t('settings.tagCategoriesPlaceholder')"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none resize-y font-mono"
+            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none resize-y font-mono"
           />
-          <span class="text-xs text-gray-500 mt-1 block">{{ $t('settings.tagCategoriesHint') }}</span>
+          <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.tagCategoriesHint') }}</span>
           <div class="flex gap-3 mt-2">
             <button
               type="button"
               @click="showDefaultTagCategories"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('settings.viewDefaultTags') }}
             </button>
             <button
               type="button"
               @click="resetTagCategories"
-              class="text-xs text-gray-400 hover:text-primary transition-colors"
+              class="text-xs text-[var(--color-text-muted)] hover:text-primary transition-colors"
             >
               {{ $t('common.resetDefault') }}
             </button>

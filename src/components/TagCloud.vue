@@ -24,7 +24,7 @@
         <div v-if="isLoading" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('tagCloud.loading') }}
         </div>
-        <div v-else-if="tags.length === 0" class="text-center py-8 text-gray-500">
+        <div v-else-if="tags.length === 0" class="text-center py-8 text-[var(--color-text-muted)]">
           {{ t('tagCloud.noTagsHint') }}
         </div>
         <div v-else class="flex flex-wrap gap-2">
@@ -50,14 +50,14 @@
         v-if="tagToDelete"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
       >
-        <div class="bg-dark rounded-xl p-6 max-w-sm border border-gray-700">
+        <div class="bg-dark rounded-xl p-6 max-w-sm border border-[var(--color-border)]">
           <h3 class="text-lg font-semibold mb-4">{{ t('tagCloud.deleteTag') }}</h3>
-          <p class="text-gray-400 mb-2">{{ t('tagCloud.confirmDeleteMessage', { name: tagToDelete.name }) }}</p>
+          <p class="text-[var(--color-text-muted)] mb-2">{{ t('tagCloud.confirmDeleteMessage', { name: tagToDelete.name }) }}</p>
           <p class="text-sm text-yellow-500 mb-6">{{ t('tagCloud.deleteWarning') }}</p>
           <div class="flex justify-end gap-3">
             <button
               @click="tagToDelete = null"
-              class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+              class="px-4 py-2 bg-[var(--color-action-secondary)] text-white rounded hover:bg-[var(--color-surface-2)] transition-colors"
             >
               {{ t('tagCloud.cancel') }}
             </button>

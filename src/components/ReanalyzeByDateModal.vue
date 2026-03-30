@@ -11,19 +11,19 @@
       <div class="p-6">
         <!-- Date Selection -->
         <div class="mb-6">
-          <label class="text-sm text-gray-300 block mb-2">{{ t('reanalyze.selectDate') }}</label>
+          <label class="text-sm text-[var(--color-text-secondary)] block mb-2">{{ t('reanalyze.selectDate') }}</label>
           <input
             v-model="selectedDate"
             type="date"
             :max="todayDate"
-            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-sm text-gray-100 focus:border-primary focus:outline-none"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
           <p class="text-xs text-[var(--color-text-muted)] mt-2">{{ t('reanalyze.dateHint') }}</p>
         </div>
 
         <!-- Preview Info -->
         <div v-if="selectedDate" class="bg-[var(--color-surface-0)] rounded-lg p-4 mb-4">
-          <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('reanalyze.preview') }}</h3>
+          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{{ t('reanalyze.preview') }}</h3>
           <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
             <p>{{ t('reanalyze.selectedDate') }}: {{ selectedDate }}</p>
             <p v-if="isLoadingCount" class="text-[var(--color-text-muted)]">{{ t('reanalyze.loadingCount') }}</p>
@@ -38,7 +38,7 @@
           <h4 class="text-sm font-medium mb-2" :class="result.failed > 0 ? 'text-yellow-400' : 'text-green-400'">
             {{ t('reanalyze.complete') }}
           </h4>
-          <div class="text-xs text-gray-300 space-y-1">
+          <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
             <p>{{ t('reanalyze.totalRecords') }}: {{ result.total }}</p>
             <p class="text-green-400">{{ t('reanalyze.successCount') }}: {{ result.success }}</p>
             <p v-if="result.failed > 0" class="text-red-400">{{ t('reanalyze.failedCount') }}: {{ result.failed }}</p>

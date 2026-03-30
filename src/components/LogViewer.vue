@@ -17,7 +17,7 @@
               @click="toggleLevel(level.key)"
               :class="[
                 'px-2 py-1 rounded transition-colors',
-                activelevels.has(level.key) ? level.activeClass : 'bg-gray-800 text-gray-500'
+                activelevels.has(level.key) ? level.activeClass : 'bg-[var(--color-surface-0)] text-[var(--color-text-muted)]'
               ]"
             >{{ level.label }}</button>
           </div>
@@ -28,7 +28,7 @@
           >
             {{ loading ? t('logViewer.loading') : t('logViewer.refresh') }}
           </button>
-          <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none">
+          <label class="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] cursor-pointer select-none">
             <input type="checkbox" v-model="autoRefresh" class="accent-primary" />
             {{ t('logViewer.autoRefresh') }}
           </label>
@@ -103,8 +103,8 @@ const filteredLines = computed(() => {
 const lineClass = (line: string) => {
   if (line.includes(' ERROR ') || line.includes(' ERROR\t')) return 'text-red-400'
   if (line.includes(' WARN ')  || line.includes(' WARN\t'))  return 'text-yellow-400'
-  if (line.includes(' INFO ')  || line.includes(' INFO\t'))  return 'text-gray-300'
-  return 'text-gray-500'
+  if (line.includes(' INFO ')  || line.includes(' INFO\t'))  return 'text-[var(--color-text-secondary)]'
+  return 'text-[var(--color-text-muted)]'
 }
 
 const toggleLevel = (key: string) => {

@@ -35,7 +35,7 @@
             <button
               @click="showApiKey = !showApiKey"
               type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-xs px-2 py-1 rounded hover:bg-[var(--color-action-neutral)]"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-xs px-2 py-1 rounded hover:bg-[var(--color-surface-2)]"
               :title="showApiKey ? $t('common.hide') : $t('common.show')"
             >{{ showApiKey ? $t('common.hide') : $t('common.show') }}</button>
           </div>
@@ -47,7 +47,7 @@
             v-model="localSettings.test_model_name"
             type="text"
             placeholder="gpt-4o"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
           />
           <span class="text-xs text-[var(--color-text-muted)] mt-1 block">
             {{ $t('settings.testModelHint') }}
@@ -60,7 +60,7 @@
             <button
               @click="testConnection"
               :disabled="isTestingConnection || !localSettings.api_base_url || !localSettings.model_name || (!isOllama && !localSettings.api_key)"
-              class="px-3 py-1.5 text-sm bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-neutral)] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              class="px-3 py-1.5 text-sm bg-[var(--color-action-neutral)] hover:bg-[var(--color-surface-2)] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
               {{ isTestingConnection ? $t('settings.testing') : $t('settings.testConnection') }}
             </button>
@@ -155,10 +155,10 @@
               >×</button>
             </div>
           </div>
-          <p v-else-if="!isLoadingOllamaModels" class="text-xs text-gray-500">{{ $t('settings.noModelsFound') }}</p>
+          <p v-else-if="!isLoadingOllamaModels" class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.noModelsFound') }}</p>
 
           <!-- Running models status -->
-          <div class="mt-3 pt-3 border-t border-gray-700">
+          <div class="mt-3 pt-3 border-t border-[var(--color-border)]">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs text-[var(--color-text-secondary)]">{{ $t('settings.runningModels') }}</span>
               <button
@@ -182,11 +182,11 @@
                 </span>
               </div>
             </div>
-            <p v-else-if="!isLoadingRunningModels" class="text-xs text-gray-500">{{ $t('settings.noRunningModels') }}</p>
+            <p v-else-if="!isLoadingRunningModels" class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.noRunningModels') }}</p>
           </div>
 
           <!-- Create custom model button -->
-          <div v-if="ollamaModels.length > 0" class="mt-3 pt-3 border-t border-gray-700">
+          <div v-if="ollamaModels.length > 0" class="mt-3 pt-3 border-t border-[var(--color-border)]">
             <button
               @click="showCreateModelModal = true"
               type="button"
@@ -205,8 +205,8 @@
 
     <!-- Custom API Headers (AI-006) -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.customHeaders') }}</h3>
-      <p class="text-xs text-gray-500 mb-3">{{ $t('settings.customHeadersHint') }}</p>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.customHeaders') }}</h3>
+      <p class="text-xs text-[var(--color-text-muted)] mb-3">{{ $t('settings.customHeadersHint') }}</p>
 
       <div class="space-y-3">
         <!-- Preset Templates -->
@@ -214,7 +214,7 @@
           <select
             v-model="selectedPreset"
             @change="applyPreset"
-            class="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+            class="flex-1 bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           >
             <option value="">{{ $t('settings.selectPreset') }}</option>
             <option value="openrouter">OpenRouter</option>
@@ -235,25 +235,25 @@
           <div
             v-for="(header, index) in customHeaders"
             :key="index"
-            class="flex items-center gap-2 p-2 bg-darker border border-gray-700 rounded-lg"
+            class="flex items-center gap-2 p-2 bg-darker border border-[var(--color-border)] rounded-lg"
           >
             <input
               v-model="header.key"
               type="text"
               :placeholder="$t('settings.headerKeyPlaceholder')"
-              class="flex-1 bg-transparent border-none text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
+              class="flex-1 bg-transparent border-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
             />
             <input
               v-model="header.value"
               :type="header.sensitive ? 'password' : 'text'"
               :placeholder="$t('settings.headerValuePlaceholder')"
-              class="flex-1 bg-transparent border-none text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
+              class="flex-1 bg-transparent border-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
             />
             <label class="flex items-center gap-1 text-xs text-[var(--color-text-secondary)] cursor-pointer">
               <input
                 v-model="header.sensitive"
                 type="checkbox"
-                class="rounded border-gray-600 bg-darker text-primary focus:ring-primary"
+                class="rounded border-[var(--color-border-subtle)] bg-darker text-primary focus:ring-primary"
               />
               <span>{{ $t('settings.sensitive') }}</span>
             </label>
@@ -264,21 +264,21 @@
             >×</button>
           </div>
         </div>
-        <p v-else class="text-xs text-gray-500">{{ $t('settings.noHeaders') }}</p>
+        <p v-else class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.noHeaders') }}</p>
 
         <!-- Add Header Button -->
         <button
           @click="addHeader"
           type="button"
-          class="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+          class="w-full px-3 py-2 text-sm bg-[var(--color-action-neutral)] hover:bg-[var(--color-action-secondary)] rounded-lg transition-colors"
         >
           + {{ $t('settings.addHeader') }}
         </button>
 
         <!-- Headers Preview -->
-        <div v-if="customHeaders.length > 0" class="mt-3 p-3 bg-gray-800/50 rounded-lg">
+        <div v-if="customHeaders.length > 0" class="mt-3 p-3 bg-[var(--color-surface-0)]/50 rounded-lg">
           <h4 class="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{{ $t('settings.headerPreview') }}</h4>
-          <div class="text-xs text-gray-500 font-mono space-y-1">
+          <div class="text-xs text-[var(--color-text-muted)] font-mono space-y-1">
             <div v-for="(header, index) in customHeaders" :key="index">
               {{ header.key }}: {{ header.sensitive ? '***' : header.value || '(empty)' }}
             </div>
@@ -292,22 +292,22 @@
       <button
         @click="showProxyConfig = !showProxyConfig"
         type="button"
-        class="w-full flex items-center justify-between text-sm font-medium text-gray-300 mb-3 hover:text-white transition-colors"
+        class="w-full flex items-center justify-between text-sm font-medium text-[var(--color-text-secondary)] mb-3 hover:text-[var(--color-text-primary)] transition-colors"
       >
         <span>{{ $t('settings.proxyConfig') }}</span>
         <span :class="showProxyConfig ? 'rotate-180' : ''" class="transition-transform">▼</span>
       </button>
 
-      <div v-if="showProxyConfig" class="space-y-3 pl-2 border-l-2 border-gray-700">
+      <div v-if="showProxyConfig" class="space-y-3 pl-2 border-l-2 border-[var(--color-border)]">
         <!-- Enable Proxy Toggle -->
         <div class="flex items-center gap-2">
           <label class="flex items-center gap-2 cursor-pointer">
             <input
               v-model="localSettings.proxy_enabled"
               type="checkbox"
-              class="rounded border-gray-600 bg-darker text-primary focus:ring-primary"
+              class="rounded border-[var(--color-border-subtle)] bg-darker text-primary focus:ring-primary"
             />
-            <span class="text-xs text-gray-300">{{ $t('settings.enableProxy') }}</span>
+            <span class="text-xs text-[var(--color-text-secondary)]">{{ $t('settings.enableProxy') }}</span>
           </label>
         </div>
 
@@ -320,7 +320,7 @@
               type="text"
               :placeholder="$t('settings.proxyHostPlaceholder')"
               :disabled="!localSettings.proxy_enabled"
-              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div class="w-24">
@@ -332,7 +332,7 @@
               max="65535"
               placeholder="8080"
               :disabled="!localSettings.proxy_enabled"
-              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -341,14 +341,14 @@
         <div>
           <label class="text-xs text-[var(--color-text-secondary)] block mb-1">
             {{ $t('settings.proxyUsername') }}
-            <span class="text-gray-500">({{ $t('settings.optional') }})</span>
+            <span class="text-[var(--color-text-muted)]">({{ $t('settings.optional') }})</span>
           </label>
           <input
             v-model="localSettings.proxy_username"
             type="text"
             :placeholder="$t('settings.proxyUsernamePlaceholder')"
             :disabled="!localSettings.proxy_enabled"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -356,7 +356,7 @@
         <div>
           <label class="text-xs text-[var(--color-text-secondary)] block mb-1">
             {{ $t('settings.proxyPassword') }}
-            <span class="text-gray-500">({{ $t('settings.optional') }})</span>
+            <span class="text-[var(--color-text-muted)]">({{ $t('settings.optional') }})</span>
           </label>
           <div class="relative">
             <input
@@ -364,12 +364,12 @@
               :type="showProxyPassword ? 'text' : 'password'"
               :placeholder="$t('settings.proxyPasswordPlaceholder')"
               :disabled="!localSettings.proxy_enabled"
-              class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 pr-16 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 pr-16 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               @click="showProxyPassword = !showProxyPassword"
               type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors text-xs px-2 py-1 rounded hover:bg-gray-700 disabled:opacity-50"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors text-xs px-2 py-1 rounded hover:bg-[var(--color-surface-2)] disabled:opacity-50"
               :disabled="!localSettings.proxy_enabled"
               :title="showProxyPassword ? $t('common.hide') : $t('common.show')"
             >{{ showProxyPassword ? $t('common.hide') : $t('common.show') }}</button>
@@ -380,14 +380,14 @@
 
     <!-- Language Settings -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.language') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.language') }}</h3>
       <div class="space-y-3">
         <div class="flex gap-2">
           <button
             @click="changeLanguage('en')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="locale === 'en' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+            :class="locale === 'en' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.languageEn') }}
           </button>
@@ -395,25 +395,25 @@
             @click="changeLanguage('zh-CN')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="locale === 'zh-CN' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+            :class="locale === 'zh-CN' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.languageZhCN') }}
           </button>
         </div>
-        <p class="text-xs text-gray-500">{{ $t('settings.languageHint') }}</p>
+        <p class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.languageHint') }}</p>
       </div>
     </div>
 
     <!-- PERF-006: Theme Settings -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.theme') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.theme') }}</h3>
       <div class="space-y-3">
         <div class="flex gap-2">
           <button
             @click="changeTheme('dark')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="currentTheme === 'dark' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+            :class="currentTheme === 'dark' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.themeDark') }}
           </button>
@@ -421,27 +421,27 @@
             @click="changeTheme('light')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="currentTheme === 'light' ? 'bg-primary border-primary text-white' : 'bg-darker border-gray-600 text-gray-300 hover:border-primary'"
+            :class="currentTheme === 'light' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.themeLight') }}
           </button>
         </div>
-        <p class="text-xs text-gray-500">{{ $t('settings.themeHint') }}</p>
+        <p class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.themeHint') }}</p>
       </div>
     </div>
 
     <!-- STAB-002: Auto Backup Settings -->
     <div>
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.autoBackup') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.autoBackup') }}</h3>
       <div class="space-y-3">
         <!-- Auto Backup Toggle -->
         <div class="flex items-center justify-between">
-          <label class="text-xs text-gray-300">{{ $t('settings.autoBackupEnabled') }}</label>
+          <label class="text-xs text-[var(--color-text-secondary)]">{{ $t('settings.autoBackupEnabled') }}</label>
           <button
             @click="toggleAutoBackup"
             type="button"
             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-            :class="localSettings.auto_backup_enabled ? 'bg-primary' : 'bg-gray-600'"
+            :class="localSettings.auto_backup_enabled ? 'bg-primary' : 'bg-[var(--color-action-secondary)]'"
           >
             <span
               class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -455,7 +455,7 @@
           <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.autoBackupInterval') }}</label>
           <select
             v-model="localSettings.auto_backup_interval"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           >
             <option value="daily">{{ $t('settings.autoBackupIntervalDaily') }}</option>
             <option value="weekly">{{ $t('settings.autoBackupIntervalWeekly') }}</option>
@@ -473,16 +473,16 @@
             type="number"
             min="3"
             max="20"
-            class="w-full bg-darker border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:border-primary focus:outline-none"
+            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
           <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.autoBackupRetentionHint') }}</span>
         </div>
 
         <!-- Last Auto Backup Status (shown when enabled) -->
-        <div v-if="localSettings.auto_backup_enabled && localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-gray-700">
+        <div v-if="localSettings.auto_backup_enabled && localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-[var(--color-border)]">
           <div class="flex items-center justify-between">
             <span class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.autoBackupLastTime') }}</span>
-            <span class="text-xs text-gray-300">{{ formatLastBackupTime(localSettings.last_auto_backup_at) }}</span>
+            <span class="text-xs text-[var(--color-text-secondary)]">{{ formatLastBackupTime(localSettings.last_auto_backup_at) }}</span>
           </div>
           <button
             @click="triggerManualBackup"
@@ -495,7 +495,7 @@
         </div>
 
         <!-- No backup yet (shown when enabled but no last backup) -->
-        <div v-if="localSettings.auto_backup_enabled && !localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-gray-700">
+        <div v-if="localSettings.auto_backup_enabled && !localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-[var(--color-border)]">
           <span class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.autoBackupNoBackupYet') }}</span>
           <button
             @click="triggerManualBackup"
@@ -511,7 +511,7 @@
 
     <!-- Shortcuts -->
     <div v-if="isDesktop">
-      <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('settings.shortcuts') }}</h3>
+      <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.shortcuts') }}</h3>
       <div class="bg-[var(--color-surface-0)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-secondary)] border border-[var(--color-border)]">
         {{ $t('settings.quickNoteShortcut') }}
       </div>

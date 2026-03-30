@@ -189,8 +189,8 @@ describe('LogViewer', () => {
       await infoBtn?.trigger('click')
 
       // INFO should now be deactivated (gray)
-      expect(infoBtn?.classes()).toContain('bg-gray-800')
-      expect(infoBtn?.classes()).toContain('text-gray-500')
+      expect(infoBtn?.classes()).toContain('bg-[var(--color-surface-0)]')
+      expect(infoBtn?.classes()).toContain('text-[var(--color-text-muted)]')
     })
 
     it('filters log lines based on active levels', async () => {
@@ -286,7 +286,7 @@ describe('LogViewer', () => {
       })
 
       const lineDiv = wrapper.findAll('.leading-5').find((d) => d.text().includes('INFO'))
-      expect(lineDiv?.classes()).toContain('text-gray-300')
+      expect(lineDiv?.classes()).toContain('text-[var(--color-text-secondary)]')
     })
   })
 

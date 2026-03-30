@@ -89,11 +89,11 @@
                 @click="openScreenshot(item.data)"
                 class="bg-[var(--color-surface-0)] rounded-lg overflow-hidden border border-[var(--color-border)] cursor-pointer hover:border-primary transition-colors"
               >
-                <div class="aspect-video relative bg-gray-800 overflow-hidden">
+                <div class="aspect-video relative bg-[var(--color-surface-0)] overflow-hidden">
                   <!-- Blur-up placeholder -->
                   <div
                     v-if="!item.data.thumbnailLoaded && !item.data.thumbnailError && !item.data.thumbnail"
-                    class="absolute inset-0 bg-gray-700 animate-pulse"
+                    class="absolute inset-0 bg-[var(--color-surface-2)] animate-pulse"
                   />
                   <!-- Blur-up image transition -->
                   <img
@@ -122,7 +122,7 @@
                       :disabled="reanalyzingIds.has(item.data.id)"
                       class="px-2 py-0.5 text-xs rounded transition-colors"
                       :class="reanalyzingIds.has(item.data.id)
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        ? 'bg-[var(--color-action-secondary)] text-[var(--color-text-muted)] cursor-not-allowed'
                         : 'bg-primary/20 hover:bg-primary/30 text-primary'"
                     >
                       {{ reanalyzingIds.has(item.data.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
@@ -146,10 +146,10 @@
                 class="flex items-center py-3 px-4 bg-[var(--color-surface-0)] rounded-lg cursor-pointer hover:bg-[var(--color-action-neutral)] transition-colors"
               >
                 <!-- Thumbnail with blur-up -->
-                <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-800 mr-4 relative">
+                <div class="w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-[var(--color-surface-0)] mr-4 relative">
                   <div
                     v-if="!item.data.thumbnailLoaded && !item.data.thumbnailError && !item.data.thumbnail"
-                    class="absolute inset-0 bg-gray-700 animate-pulse"
+                    class="absolute inset-0 bg-[var(--color-surface-2)] animate-pulse"
                   />
                   <img
                     v-if="item.data.thumbnail"
@@ -160,7 +160,7 @@
                     @load="onThumbnailLoad(item.data)"
                     @error="onThumbnailError(item.data)"
                   />
-                  <div v-else-if="item.data.thumbnailError" class="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                  <div v-else-if="item.data.thumbnailError" class="w-full h-full flex items-center justify-center text-[var(--color-text-muted)] text-xs">
                     !
                   </div>
                 </div>
@@ -180,7 +180,7 @@
                     :disabled="reanalyzingIds.has(item.data.id)"
                     class="px-2 py-1 text-xs rounded transition-colors"
                     :class="reanalyzingIds.has(item.data.id)
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      ? 'bg-[var(--color-action-secondary)] text-[var(--color-text-muted)] cursor-not-allowed'
                       : 'bg-primary/20 hover:bg-primary/30 text-primary'"
                   >
                     {{ reanalyzingIds.has(item.data.id) ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}
@@ -194,8 +194,8 @@
           </div>
 
           <!-- Load More Section -->
-          <div v-if="hasMorePages" class="text-center py-4 mt-4 border-t border-gray-700">
-            <div v-if="isLoadingMore" class="text-gray-400 text-sm">
+          <div v-if="hasMorePages" class="text-center py-4 mt-4 border-t border-[var(--color-border)]">
+            <div v-if="isLoadingMore" class="text-[var(--color-text-muted)] text-sm">
               <span class="animate-pulse">{{ t('screenshotGallery.loadingMore') }}</span>
             </div>
             <button

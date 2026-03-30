@@ -8,7 +8,7 @@
       <h1 class="text-lg font-semibold text-[var(--color-text-primary)]">DailyLogger</h1>
 
       <!-- Auto Capture Status Indicator -->
-      <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-surface-1/50 border border-gray-700/30">
+      <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-surface-1/50 border border-[var(--color-border)]/30">
         <span
           :class="autoCaptureEnabled ? 'bg-status-success animate-pulse' : 'bg-gray-500'"
           class="w-2 h-2 rounded-full inline-block transition-colors duration-300"
@@ -19,7 +19,7 @@
       </div>
 
       <!-- Today's Record Count -->
-      <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-1/50 border border-gray-700/30">
+      <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-1/50 border border-[var(--color-border)]/30">
         <span class="text-sm">📝</span>
         <span class="text-xs text-[var(--color-text-secondary)]">
           {{ todayRecordsCount }} {{ t('header.records') }}

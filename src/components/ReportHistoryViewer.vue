@@ -25,7 +25,7 @@
             :class="{ 'border-primary': selectedFile?.path === file.path }"
           >
             <div class="flex-1 min-w-0">
-              <div class="text-sm text-gray-200 truncate">{{ file.name }}</div>
+              <div class="text-sm text-[var(--color-text-primary)] truncate">{{ file.name }}</div>
               <div class="text-xs text-[var(--color-text-muted)] mt-1">
                 {{ t('reportHistory.modified') }}: {{ file.modified_time }}
                 <span class="ml-2">{{ formatSize(file.size_bytes) }}</span>
@@ -44,7 +44,7 @@
       <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
         <button
           @click="$emit('close')"
-          class="px-4 py-2 bg-[var(--color-action-secondary)] hover:bg-[var(--color-action-neutral)] rounded-lg text-sm text-gray-200 transition-colors"
+          class="px-4 py-2 bg-[var(--color-action-secondary)] hover:bg-[var(--color-action-neutral)] rounded-lg text-sm text-[var(--color-text-primary)] transition-colors"
         >
           {{ t('common.close') }}
         </button>

@@ -25,7 +25,7 @@
           <div class="text-sm text-[var(--color-text-secondary)] mb-4">
             {{ t('dailySummaryViewer.filePath') }} {{ summaryPath }}
           </div>
-          <div class="whitespace-pre-wrap text-gray-300 leading-relaxed">
+          <div class="whitespace-pre-wrap text-[var(--color-text-secondary)] leading-relaxed">
             {{ content }}
           </div>
         </div>

@@ -40,10 +40,10 @@
       <div class="px-6 py-6">
         <!-- Step 1: API Configuration -->
         <div v-if="currentStep === 1 && !isCompleted">
-          <h3 class="text-sm font-medium text-gray-300 mb-4">Step 1: 配置 AI API</h3>
+          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">Step 1: 配置 AI API</h3>
           <div class="space-y-4">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">API Base URL</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">API Base URL</label>
               <input
                 v-model="apiBaseUrl"
                 type="text"
@@ -52,7 +52,7 @@
               />
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">API Key</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">API Key</label>
               <input
                 v-model="apiKey"
                 type="password"
@@ -61,7 +61,7 @@
               />
             </div>
             <div>
-              <label class="text-xs text-gray-300 block mb-1">Model Name</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">Model Name</label>
               <input
                 v-model="modelName"
                 type="text"
@@ -86,21 +86,21 @@
 
         <!-- Step 2: Obsidian Path -->
         <div v-if="currentStep === 2 && !isCompleted">
-          <h3 class="text-sm font-medium text-gray-300 mb-4">Step 2: 配置输出路径</h3>
+          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">Step 2: 配置输出路径</h3>
           <div class="space-y-4">
             <div>
-              <label class="text-xs text-gray-300 block mb-1">Obsidian Vault 路径</label>
+              <label class="text-xs text-[var(--color-text-secondary)] block mb-1">Obsidian Vault 路径</label>
               <div class="flex gap-2">
                 <input
                   v-model="obsidianPath"
                   type="text"
                   placeholder="选择文件夹路径..."
-                  class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                  class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
                   readonly
                 />
                 <button
                   @click="selectFolder"
-                  class="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  class="px-4 py-2 text-sm bg-[var(--color-surface-2)] hover:bg-[var(--color-action-secondary)] rounded-lg transition-colors"
                 >
                   选择文件夹
                 </button>
@@ -118,7 +118,7 @@
 
         <!-- Step 3: Completion -->
         <div v-if="currentStep === 3 && !isCompleted">
-          <h3 class="text-sm font-medium text-gray-300 mb-4">Step 3: 完成设置</h3>
+          <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-4">Step 3: 完成设置</h3>
           <div class="space-y-3">
             <div class="bg-[var(--color-surface-0)] rounded-lg p-4">
               <div class="text-sm text-[var(--color-text-secondary)] space-y-2">

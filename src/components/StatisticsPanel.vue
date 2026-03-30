@@ -48,7 +48,7 @@
               v-model="customStart"
               class="bg-[var(--color-surface-1)]/50 border border-[var(--color-border-subtle)] rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
             />
-            <span class="text-gray-500">-</span>
+            <span class="text-[var(--color-text-muted)]">-</span>
             <input
               type="date"
               v-model="customEnd"
@@ -92,7 +92,7 @@
                 <div class="text-3xl font-bold text-[var(--color-text-primary)]">{{ statistics.record_count }}</div>
                 <div class="text-sm text-[var(--color-text-secondary)] mt-1">{{ t('statistics.records') }}</div>
               </div>
-              <div class="bg-darker rounded-xl p-4 border border-gray-700">
+              <div class="bg-darker rounded-xl p-4 border border-[var(--color-border)]">
                 <div class="text-3xl font-bold" :class="statistics.analysis_success_rate >= 80 ? 'text-green-400' : statistics.analysis_success_rate >= 50 ? 'text-yellow-400' : 'text-red-400'">
                   {{ statistics.analysis_success_rate.toFixed(1) }}%
                 </div>
@@ -133,7 +133,7 @@
                         :title="`${t('statistics.sessions')}: ${day.session_count}`"
                       ></div>
                     </div>
-                    <div class="w-12 text-xs text-gray-400 text-right">{{ day.session_count }}</div>
+                    <div class="w-12 text-xs text-[var(--color-text-muted)] text-right">{{ day.session_count }}</div>
                   </div>
                   <div class="flex-1 flex items-center gap-2">
                     <!-- Record Bar -->
@@ -144,7 +144,7 @@
                         :title="`${t('statistics.records')}: ${day.record_count}`"
                       ></div>
                     </div>
-                    <div class="w-12 text-xs text-gray-400 text-right">{{ day.record_count }}</div>
+                    <div class="w-12 text-xs text-[var(--color-text-muted)] text-right">{{ day.record_count }}</div>
                   </div>
                 </div>
                 <!-- Legend -->
@@ -507,7 +507,7 @@ function formatChangePercent(percent: number): string {
 function getTrendColor(trend: string): string {
   if (trend === 'up') return 'text-green-400'
   if (trend === 'down') return 'text-red-400'
-  return 'text-gray-400'
+  return 'text-[var(--color-text-muted)]'
 }
 
 // Format date range for display

@@ -93,7 +93,7 @@
           <span>{{ t('timelineWidget.manualNote') }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <span class="w-3 h-3 rounded-sm bg-gray-700/30"></span>
+          <span class="w-3 h-3 rounded-sm bg-[var(--color-surface-2)]/30"></span>
           <span>{{ t('timelineWidget.noActivity') }}</span>
         </div>
       </div>
@@ -196,7 +196,7 @@ function getHourCellClass(hour: number): string {
   const group = hourMap.value.get(hour);
 
   if (!group || group.count === 0) {
-    return 'bg-gray-700/30 hover:bg-gray-700/50';
+    return 'bg-[var(--color-surface-2)]/30 hover:bg-[var(--color-surface-2)]/50';
   }
 
   // Check event types in this hour

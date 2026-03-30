@@ -77,7 +77,7 @@
 
       <!-- Today's Workflow Card -->
       <div
-        class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+        class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-[var(--color-border)]/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
       >
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
@@ -228,7 +228,7 @@
 
       <!-- Output Files Card (UX-4: Task 3 - Tab-based) -->
       <div
-        class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-gray-700/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
+        class="bg-dark/60 backdrop-blur-md rounded-2xl p-5 border border-[var(--color-border)]/50 shadow-xl transition-all duration-200 hover:shadow-2xl"
       >
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">

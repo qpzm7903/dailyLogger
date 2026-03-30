@@ -49,7 +49,7 @@
         <!-- Backup Tab -->
         <div v-if="activeTab === 'backup'" class="space-y-4">
           <div class="bg-[var(--color-surface-0)] rounded-lg p-4">
-            <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.backupInfo') }}</h3>
+            <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{{ t('backup.backupInfo') }}</h3>
             <ul class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <li>{{ t('backup.backupIncludes') }}</li>
               <li>{{ t('backup.backupFormat') }}</li>
@@ -58,13 +58,13 @@
           </div>
 
           <div>
-            <label class="text-xs text-gray-300 block mb-2">{{ t('backup.backupPath') }}</label>
+            <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ t('backup.backupPath') }}</label>
             <div class="flex gap-2">
               <input
                 v-model="backupDir"
                 type="text"
                 :placeholder="t('backup.backupPathPlaceholder')"
-                class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
+                class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
               />
               <button
                 @click="selectBackupDir"
@@ -86,7 +86,7 @@
           <!-- Backup Result -->
           <div v-if="backupResult" class="bg-green-900/30 border border-green-700 rounded-lg p-4">
             <h4 class="text-sm font-medium text-green-400 mb-2">{{ t('backup.backupSuccess') }}</h4>
-            <div class="text-xs text-gray-300 space-y-1">
+            <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <p>{{ t('backup.path') }} {{ backupResult.path }}</p>
               <p>{{ t('backup.size') }} {{ formatSize(backupResult.size_bytes) }}</p>
               <p>{{ t('backup.recordCount') }} {{ backupResult.record_count }}</p>
@@ -98,7 +98,7 @@
         <!-- Restore Tab -->
         <div v-if="activeTab === 'restore'" class="space-y-4">
           <div class="bg-[var(--color-surface-0)] rounded-lg p-4">
-            <h3 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.restoreInfo') }}</h3>
+            <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{{ t('backup.restoreInfo') }}</h3>
             <ul class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <li>{{ t('backup.restoreIncludes') }}</li>
               <li>{{ t('backup.restoreAutoBackup') }}</li>
@@ -115,7 +115,7 @@
 
           <!-- Selected Backup Info -->
           <div v-if="selectedBackup" class="bg-[var(--color-surface-0)] rounded-lg p-4">
-            <h4 class="text-sm font-medium text-gray-300 mb-2">{{ t('backup.selectedBackup') }}</h4>
+            <h4 class="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{{ t('backup.selectedBackup') }}</h4>
             <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <p>{{ t('backup.createdAt') }} {{ formatDate(selectedBackup.created_at) }}</p>
               <p>{{ t('backup.size') }} {{ formatSize(selectedBackup.size_bytes) }}</p>
@@ -136,7 +136,7 @@
 
           <div v-if="showConfirm && selectedBackup" class="bg-red-900/30 border border-red-700 rounded-lg p-4">
             <h4 class="text-sm font-medium text-red-400 mb-2">{{ t('backup.confirmRestoreTitle') }}</h4>
-            <p class="text-xs text-gray-300 mb-3">
+            <p class="text-xs text-[var(--color-text-secondary)] mb-3">
               {{ t('backup.confirmRestoreMessage') }}
             </p>
             <div class="flex gap-2">
@@ -159,7 +159,7 @@
           <!-- Restore Result -->
           <div v-if="restoreResult" class="bg-green-900/30 border border-green-700 rounded-lg p-4">
             <h4 class="text-sm font-medium text-green-400 mb-2">{{ t('backup.restoreSuccess') }}</h4>
-            <div class="text-xs text-gray-300 space-y-1">
+            <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
               <p>{{ t('backup.recordCount') }} {{ restoreResult.record_count }}</p>
               <p>{{ t('backup.screenshotCount') }} {{ restoreResult.screenshot_count }}</p>
               <p v-if="restoreResult.auto_backup_created">{{ t('backup.autoBackupCreated') }}</p>
@@ -184,7 +184,7 @@
               class="bg-[var(--color-surface-0)] rounded-lg p-4 flex items-center justify-between"
             >
               <div class="flex-1">
-                <div class="text-sm font-medium text-gray-200">
+                <div class="text-sm font-medium text-[var(--color-text-primary)]">
                   {{ formatDate(backup.created_at) }}
                 </div>
                 <div class="text-xs text-[var(--color-text-secondary)] mt-1">

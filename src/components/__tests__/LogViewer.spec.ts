@@ -241,7 +241,7 @@ describe('LogViewer', () => {
     await vi.runAllTimersAsync()
     await wrapper.vm.$nextTick()
 
-    const logLine = wrapper.find('.text-gray-300')
+    const logLine = wrapper.find('.text-\\[var\\(--color-text-secondary\\)\\]')
     expect(logLine.exists()).toBe(true)
   })
 
