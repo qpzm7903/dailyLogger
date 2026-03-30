@@ -138,7 +138,7 @@ describe('Header', () => {
           todayRecordsCount: 5
         }
       })
-      const indicator = wrapper.find('.bg-gray-500')
+      const indicator = wrapper.find('.bg-\\[var\\(--color-action-neutral\\)\\]')
       expect(indicator.exists()).toBe(true)
     })
   })

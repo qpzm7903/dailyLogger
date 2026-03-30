@@ -385,7 +385,7 @@ describe('OfflineQueueModal', () => {
     await nextTick()
 
     const className = wrapper.vm.getTaskTypeClass('unknown_type')
-    expect(className).toBe('bg-gray-500/20 text-gray-400')
+    expect(className).toBe('bg-[var(--color-action-neutral)]/20 text-[var(--color-text-muted)]')
   })
 
   it('getTaskDescription parses screenshot path correctly', async () => {

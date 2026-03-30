@@ -105,7 +105,7 @@
                 :key="event.record.id"
                 @click="handleEventClick(event)"
                 :class="[
-                  'px-4 py-3 hover:bg-gray-800/30 transition-colors',
+                  'px-4 py-3 hover:bg-[var(--color-surface-2)]/30 transition-colors',
                   event.record.screenshot_path ? 'cursor-pointer' : 'cursor-default'
                 ]"
               >

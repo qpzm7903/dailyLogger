@@ -66,7 +66,7 @@
                 :disabled="isSaving"
                 class="px-3 py-1.5 text-xs rounded-md transition-colors"
                 :class="isSaving
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  ? 'bg-[var(--color-action-neutral)] text-[var(--color-text-muted)] cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700 text-white'"
               >
                 {{ isSaving ? t('sessionDetailView.saving') : t('sessionDetailView.save') }}

@@ -44,7 +44,7 @@
           <!-- Tooltip -->
           <div
             v-if="hoveredHour === hour - 1"
-            class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap z-10"
+            class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[var(--color-surface-0)] text-white text-xs rounded shadow-lg whitespace-nowrap z-10"
           >
             {{ getHourTooltip(hour - 1) }}
           </div>

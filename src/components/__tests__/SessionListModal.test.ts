@@ -375,7 +375,7 @@ describe('SessionListModal', () => {
     await nextTick()
 
     const badgeClass = wrapper.vm.getStatusBadgeClass('unknown')
-    expect(badgeClass).toBe('bg-gray-500/20 text-gray-400')
+    expect(badgeClass).toBe('bg-[var(--color-action-neutral)]/20 text-[var(--color-text-muted)]')
   })
 
   it('displays selection count in filter bar', async () => {

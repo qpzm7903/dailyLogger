@@ -55,7 +55,7 @@
               :disabled="isSavingNotes"
               class="px-3 py-1 text-xs rounded-md transition-colors"
               :class="isSavingNotes
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                ? 'bg-[var(--color-action-neutral)] text-[var(--color-text-muted)] cursor-not-allowed'
                 : 'bg-green-600 hover:bg-green-700 text-white'"
             >
               {{ isSavingNotes ? t('screenshotModal.saving') : t('screenshotModal.save') }}
@@ -76,7 +76,7 @@
             :disabled="isReanalyzing"
             class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             :class="isReanalyzing
-              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              ? 'bg-[var(--color-action-neutral)] text-[var(--color-text-muted)] cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 text-white'"
           >
             {{ isReanalyzing ? t('screenshotModal.reanalyzing') : t('screenshotModal.reanalyze') }}

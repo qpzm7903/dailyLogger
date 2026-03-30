@@ -14,7 +14,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span
-                :class="autoCaptureEnabled ? 'bg-status-success animate-pulse' : 'bg-gray-500'"
+                :class="autoCaptureEnabled ? 'bg-status-success animate-pulse' : 'bg-[var(--color-action-neutral)]'"
                 class="w-2 h-2 rounded-full inline-block transition-colors duration-300"
               ></span>
               <span class="text-xs text-[var(--color-text-secondary)]">

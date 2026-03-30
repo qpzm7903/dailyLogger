@@ -192,7 +192,7 @@ const getStatusBadgeClass = (status: string): string => {
     case 'analyzed':
       return 'bg-blue-500/20 text-blue-400'
     default:
-      return 'bg-gray-500/20 text-gray-400'
+      return 'bg-[var(--color-action-neutral)]/20 text-[var(--color-text-muted)]'
   }
 }
 

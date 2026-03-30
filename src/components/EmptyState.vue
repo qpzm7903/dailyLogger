@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+  <div class="flex flex-col items-center justify-center py-8 text-[var(--color-text-muted)]">
     <!-- SVG illustrations for different empty states -->
     <div class="mb-4 opacity-60">
       <!-- Screenshots empty state -->

@@ -401,7 +401,7 @@ describe('TimelineVisualization', () => {
       await nextTick()
 
       // Find event with screenshot (has 📷 icon)
-      const events = wrapper.findAll('.hover\\:bg-gray-800\\/30')
+      const events = wrapper.findAll('.hover\\:bg-\\[var\\(--color-surface-2\\)\\]\\/30')
       const eventWithScreenshot = events.find(e => e.text().includes('📷'))
 
       await eventWithScreenshot?.trigger('click')
@@ -422,7 +422,7 @@ describe('TimelineVisualization', () => {
       await nextTick()
 
       // Find event without screenshot
-      const events = wrapper.findAll('.hover\\:bg-gray-800\\/30')
+      const events = wrapper.findAll('.hover\\:bg-\\[var\\(--color-surface-2\\)\\]\\/30')
       const eventWithoutScreenshot = events.find(e => !e.text().includes('📷'))
 
       await eventWithoutScreenshot?.trigger('click')

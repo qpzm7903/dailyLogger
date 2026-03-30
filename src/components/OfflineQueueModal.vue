@@ -130,7 +130,7 @@ function getTaskTypeClass(taskType: string): string {
     case 'monthly_report':
       return 'bg-orange-500/20 text-orange-400'
     default:
-      return 'bg-gray-500/20 text-gray-400'
+      return 'bg-[var(--color-action-neutral)]/20 text-[var(--color-text-muted)]'
   }
 }
 

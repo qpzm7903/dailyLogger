@@ -86,7 +86,7 @@ describe('EmptyState', () => {
       expect(container.classes()).toContain('items-center')
       expect(container.classes()).toContain('justify-center')
       expect(container.classes()).toContain('py-8')
-      expect(container.classes()).toContain('text-gray-400')
+      expect(container.classes()).toContain('text-[var(--color-text-muted)]')
     })
 
     it('SVG has opacity styling', () => {
