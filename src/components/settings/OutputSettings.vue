@@ -6,7 +6,7 @@
       <div class="space-y-3">
         <label class="text-xs text-[var(--color-text-secondary)] block">{{ $t('settings.obsidianVaults') }}</label>
         <!-- Vault list -->
-        <div v-for="(vault, index) in localVaults" :key="index"
+        <div v-for="(vault, index) in localVaults" :key="vault.path"
           class="bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2">
           <div class="flex items-center gap-2">
             <button @click="setDefaultVault(index)" class="text-xs shrink-0"
@@ -64,7 +64,7 @@
     <div>
       <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.logseqGraphs') }}</label>
       <!-- Graph list -->
-      <div v-for="(graph, index) in graphs" :key="index"
+      <div v-for="(graph, index) in graphs" :key="graph.path"
         class="flex items-center gap-2 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 mb-2">
         <button @click="setDefaultGraph(index)" class="text-xs shrink-0"
           :class="graph.is_default ? 'text-primary font-bold' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'">
