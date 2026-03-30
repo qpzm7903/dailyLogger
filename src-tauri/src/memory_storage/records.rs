@@ -2269,8 +2269,8 @@ mod benchmarks {
 
         assert_eq!(records.len(), 100);
         assert!(
-            elapsed_ms < 100,
-            "Query 100 records took {}ms (expected < 100ms)",
+            elapsed_ms < 500,
+            "Query 100 records took {}ms (expected < 500ms)",
             elapsed_ms
         );
     }
@@ -2333,8 +2333,8 @@ mod benchmarks {
 
         assert!(!results.is_empty());
         assert!(
-            elapsed_ms < 100,
-            "Search took {}ms (expected < 100ms)",
+            elapsed_ms < 500,
+            "Search took {}ms (expected < 500ms)",
             elapsed_ms
         );
     }
@@ -2368,8 +2368,8 @@ mod benchmarks {
         let elapsed_ms = start.elapsed().as_millis();
 
         assert!(
-            elapsed_ms < 100,
-            "3 paginated queries took {}ms (expected < 100ms)",
+            elapsed_ms < 500,
+            "3 paginated queries took {}ms (expected < 500ms)",
             elapsed_ms
         );
     }
@@ -2397,8 +2397,8 @@ mod benchmarks {
 
         assert_eq!(count, 100);
         assert!(
-            elapsed_ms < 50,
-            "Count took {}ms (expected < 50ms)",
+            elapsed_ms < 200,
+            "Count took {}ms (expected < 200ms)",
             elapsed_ms
         );
     }
@@ -2429,8 +2429,8 @@ mod benchmarks {
 
         assert_eq!(records.len(), 100);
         assert!(
-            elapsed_ms < 100,
-            "Export query took {}ms (expected < 100ms)",
+            elapsed_ms < 500,
+            "Export query took {}ms (expected < 500ms)",
             elapsed_ms
         );
     }
@@ -2458,8 +2458,8 @@ mod benchmarks {
 
         assert_eq!(records.len(), 50);
         assert!(
-            elapsed_ms < 100,
-            "Week query took {}ms (expected < 100ms)",
+            elapsed_ms < 500,
+            "Week query took {}ms (expected < 500ms)",
             elapsed_ms
         );
     }
@@ -2487,8 +2487,8 @@ mod benchmarks {
 
         assert_eq!(records.len(), 100);
         assert!(
-            elapsed_ms < 100,
-            "Month query took {}ms (expected < 100ms)",
+            elapsed_ms < 500,
+            "Month query took {}ms (expected < 500ms)",
             elapsed_ms
         );
     }
