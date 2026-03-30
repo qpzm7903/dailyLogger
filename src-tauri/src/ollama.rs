@@ -27,6 +27,11 @@ pub struct OllamaModelDetails {
     pub quantization_level: Option<String>,
 }
 
+/// Normalize an Ollama base URL by removing trailing slashes and /v1 suffix.
+fn normalize_ollama_url(base_url: &str) -> &str {
+    base_url.trim_end_matches('/').trim_end_matches("/v1")
+}
+
 /// Result structure for Ollama model list retrieval.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OllamaModelsResult {
@@ -72,7 +77,7 @@ pub fn is_ollama_endpoint(url: &str) -> bool {
 #[command]
 pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, String> {
     // Normalize URL: remove /v1 suffix if present, then append /api/tags
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/tags", base);
 
     let client = create_http_client(&url, 10)?;
@@ -201,7 +206,7 @@ pub async fn pull_ollama_model(
     quantization: Option<String>,
 ) -> Result<PullModelResult, String> {
     // Normalize URL: remove /v1 suffix if present, then append /api/pull
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/pull", base);
 
     // 10 minutes timeout for large models
@@ -273,12 +278,10 @@ pub async fn delete_ollama_model(
     model_name: String,
 ) -> Result<DeleteModelResult, String> {
     // Normalize URL: remove /v1 suffix if present, then append /api/delete
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/delete", base);
 
     let client = create_http_client(&url, 30)?;
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
-    let url = format!("{}/api/delete", base);
 
     tracing::info!("Deleting Ollama model '{}' from: {}", model_name, url);
 
@@ -318,7 +321,7 @@ pub async fn delete_ollama_model(
 #[command]
 pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult, String> {
     // Normalize URL: remove /v1 suffix if present, then append /api/ps
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/ps", base);
 
     let client = create_http_client(&url, 10)?;
@@ -609,7 +612,7 @@ pub async fn create_ollama_model(
     params: CreateModelParams,
 ) -> Result<CreateModelResult, String> {
     // Normalize URL: remove /v1 suffix if present, then append /api/create
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/create", base);
 
     // 5 minutes timeout for model creation
@@ -691,7 +694,7 @@ pub async fn copy_ollama_model(
     destination: String,
 ) -> Result<CopyModelResult, String> {
     // Normalize URL: remove /v1 suffix if present, then append /api/copy
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/copy", base);
 
     let client = create_http_client(&url, 60)?;
@@ -762,7 +765,7 @@ pub async fn show_ollama_model(
     model_name: String,
 ) -> Result<ShowModelResult, String> {
     // Normalize URL: remove /v1 suffix if present, then append /api/show
-    let base = base_url.trim_end_matches('/').trim_end_matches("/v1");
+    let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/show", base);
 
     let client = create_http_client(&url, 30)?;

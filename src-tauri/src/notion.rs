@@ -527,10 +527,14 @@ async fn get_title_property_name(api_key: &str, database_id: &str) -> Result<Str
 
 /// Check if Notion is configured in settings
 pub fn is_notion_configured(settings: &crate::memory_storage::Settings) -> bool {
-    settings.notion_api_key.is_some()
-        && !settings.notion_api_key.as_ref().unwrap().is_empty()
-        && settings.notion_database_id.is_some()
-        && !settings.notion_database_id.as_ref().unwrap().is_empty()
+    settings
+        .notion_api_key
+        .as_ref()
+        .is_some_and(|k| !k.is_empty())
+        && settings
+            .notion_database_id
+            .as_ref()
+            .is_some_and(|id| !id.is_empty())
 }
 
 /// Write a report to Notion as a new page in the configured database.
