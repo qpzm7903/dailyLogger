@@ -266,7 +266,7 @@ describe('TimelineWidget', () => {
 
       // Most hours should be gray (inactive)
       const html = wrapper.html()
-      expect(html).toContain('bg-gray-700/30')
+      expect(html).toContain('bg-[var(--color-surface-2)]/30')
     })
   })
 
