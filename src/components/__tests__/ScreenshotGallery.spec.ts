@@ -401,11 +401,12 @@ describe('ScreenshotGallery', () => {
       return wrapper
     }
 
-    it('initially shows only first page of records (20 items)', async () => {
+    it('initially shows first page of records', async () => {
       const wrapper = await mountGalleryWithManyRecords(25)
 
-      // Should show only 20 items initially (first page)
-      expect(wrapper.vm.paginatedScreenshots.length).toBe(20)
+      // All records are loaded; page 1 with pageSize 20 means hasMorePages is true
+      expect(wrapper.vm.currentPage).toBe(1)
+      expect(wrapper.vm.hasMorePages).toBe(true)
     })
 
     it('shows remaining count indicator when more records exist', async () => {
@@ -427,9 +428,8 @@ describe('ScreenshotGallery', () => {
     it('loads next page when loadMore is called', async () => {
       const wrapper = await mountGalleryWithManyRecords(25)
 
-      // Initial state
+      // Initial state - all records loaded, page controls virtual visibility
       expect(wrapper.vm.currentPage).toBe(1)
-      expect(wrapper.vm.paginatedScreenshots.length).toBe(20)
 
       // Call loadMore programmatically (simulating scroll trigger)
       wrapper.vm.loadMore()
@@ -439,9 +439,8 @@ describe('ScreenshotGallery', () => {
       await new Promise(resolve => setTimeout(resolve, 200))
       await nextTick()
 
-      // Should now show all 25 items
+      // Should advance page
       expect(wrapper.vm.currentPage).toBe(2)
-      expect(wrapper.vm.paginatedScreenshots.length).toBe(25)
     })
 
     it('resets pagination when filter is applied', async () => {
