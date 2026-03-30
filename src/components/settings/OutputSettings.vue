@@ -190,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError, showSuccess } from '../../stores/toast'
@@ -257,13 +257,20 @@ const dingtalkConnectionStatus = ref<'success' | 'failed' | null>(null)
 const isExportingLogs = ref(false)
 const exportError = ref('')
 
+// Flag to prevent bidirectional watch loop
+let isUpdatingFromProps = false
+
 // Watch for external changes
 watch(() => props.settings, (newVal) => {
+  isUpdatingFromProps = true
   localSettings.value = { ...newVal }
+  nextTick(() => { isUpdatingFromProps = false })
 }, { deep: true })
 
 watch(() => props.vaults, (newVal) => {
+  isUpdatingFromProps = true
   localVaults.value = [...newVal]
+  nextTick(() => { isUpdatingFromProps = false })
 }, { deep: true })
 
 watch(() => props.graphs, (newVal) => {
@@ -272,7 +279,9 @@ watch(() => props.graphs, (newVal) => {
 
 // Watch for local changes and emit
 watch(localSettings, (newVal) => {
-  emit('update:settings', newVal)
+  if (!isUpdatingFromProps) {
+    emit('update:settings', newVal)
+  }
 }, { deep: true })
 
 // Vault management methods
@@ -318,7 +327,9 @@ function updateVaultPatterns(vault: Vault, patternsStr: string) {
 
 // Watch for local vault changes and emit
 watch(localVaults, (newVal) => {
-  emit('update:vaults', [...newVal])
+  if (!isUpdatingFromProps) {
+    emit('update:vaults', [...newVal])
+  }
 }, { deep: true })
 
 // Graph management methods

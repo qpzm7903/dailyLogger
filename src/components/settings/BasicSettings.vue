@@ -234,7 +234,7 @@
         <div v-if="customHeaders.length > 0" class="space-y-2">
           <div
             v-for="(header, index) in customHeaders"
-            :key="index"
+            :key="header._id"
             class="flex items-center gap-2 p-2 bg-darker border border-[var(--color-border)] rounded-lg"
           >
             <input
@@ -279,7 +279,7 @@
         <div v-if="customHeaders.length > 0" class="mt-3 p-3 bg-[var(--color-surface-0)]/50 rounded-lg">
           <h4 class="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{{ $t('settings.headerPreview') }}</h4>
           <div class="text-xs text-[var(--color-text-muted)] font-mono space-y-1">
-            <div v-for="(header, index) in customHeaders" :key="index">
+            <div v-for="header in customHeaders" :key="header._id">
               {{ header.key }}: {{ header.sensitive ? '***' : header.value || '(empty)' }}
             </div>
           </div>
@@ -520,7 +520,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError, showSuccess } from '../../stores/toast'
@@ -585,13 +585,16 @@ interface CustomHeader {
   key: string
   value: string
   sensitive: boolean
+  _id: number
 }
+
+let headerIdCounter = 0
 
 const customHeaders = ref<CustomHeader[]>([])
 const selectedPreset = ref('')
 
 // Preset templates
-const headerPresets: Record<string, CustomHeader[]> = {
+const headerPresets: Record<string, Omit<CustomHeader, '_id'>[]> = {
   openrouter: [
     { key: 'HTTP-Referer', value: 'https://dailylogger.app', sensitive: false },
     { key: 'X-Title', value: 'DailyLogger', sensitive: false }
@@ -604,29 +607,39 @@ const headerPresets: Record<string, CustomHeader[]> = {
   ]
 }
 
+// Flag to prevent bidirectional watch loop
+let isUpdatingFromProps = false
+
 // Watch for external changes
 watch(() => props.settings, (newVal) => {
+  isUpdatingFromProps = true
   localSettings.value = { ...newVal }
   // AI-006: Parse custom headers from JSON
   if (newVal.custom_headers) {
     try {
-      customHeaders.value = JSON.parse(newVal.custom_headers)
+      const parsed = JSON.parse(newVal.custom_headers)
+      customHeaders.value = parsed.map((h: Omit<CustomHeader, '_id'>) => ({ ...h, _id: headerIdCounter++ }))
     } catch {
       customHeaders.value = []
     }
   } else {
     customHeaders.value = []
   }
+  nextTick(() => { isUpdatingFromProps = false })
 }, { deep: true, immediate: true })
 
 // Watch for local changes and emit
 watch(localSettings, (newVal) => {
-  emit('update:settings', newVal as Props['settings'])
+  if (!isUpdatingFromProps) {
+    emit('update:settings', newVal as Props['settings'])
+  }
 }, { deep: true })
 
 // AI-006: Watch custom headers and sync to localSettings
 watch(customHeaders, (newVal) => {
-  localSettings.value.custom_headers = JSON.stringify(newVal)
+  if (!isUpdatingFromProps) {
+    localSettings.value.custom_headers = JSON.stringify(newVal.map(({ _id, ...rest }) => rest))
+  }
 }, { deep: true })
 
 // UI State
@@ -879,7 +892,7 @@ function formatLastBackupTime(timestamp: string): string {
 
 // AI-006: Custom Headers Methods
 function addHeader() {
-  customHeaders.value.push({ key: '', value: '', sensitive: false })
+  customHeaders.value.push({ key: '', value: '', sensitive: false, _id: headerIdCounter++ })
 }
 
 function removeHeader(index: number) {
@@ -894,7 +907,7 @@ function applyPreset() {
     // Add preset headers (don't overwrite existing ones with same key)
     for (const header of preset) {
       if (!customHeaders.value.some(h => h.key.toLowerCase() === header.key.toLowerCase())) {
-        customHeaders.value.push({ ...header })
+        customHeaders.value.push({ ...header, _id: headerIdCounter++ })
       }
     }
     showSuccess(t('settings.headersCount', { count: customHeaders.value.length }))

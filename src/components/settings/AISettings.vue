@@ -187,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { open } from '@tauri-apps/plugin-dialog'
@@ -232,22 +232,33 @@ const { isDesktop } = usePlatform()
 const localSettings = ref({ ...props.settings })
 const localTagCategoriesText = ref(props.tagCategoriesText)
 
+// Flag to prevent bidirectional watch loop
+let isUpdatingFromProps = false
+
 // Watch for external changes
 watch(() => props.settings, (newVal) => {
+  isUpdatingFromProps = true
   localSettings.value = { ...newVal }
+  nextTick(() => { isUpdatingFromProps = false })
 }, { deep: true })
 
 watch(() => props.tagCategoriesText, (newVal) => {
+  isUpdatingFromProps = true
   localTagCategoriesText.value = newVal
+  nextTick(() => { isUpdatingFromProps = false })
 })
 
 // Watch for local changes and emit
 watch(localSettings, (newVal) => {
-  emit('update:settings', newVal)
+  if (!isUpdatingFromProps) {
+    emit('update:settings', newVal)
+  }
 }, { deep: true })
 
 watch(localTagCategoriesText, (newVal) => {
-  emit('update:tagCategoriesText', newVal)
+  if (!isUpdatingFromProps) {
+    emit('update:tagCategoriesText', newVal)
+  }
 })
 
 // UI State

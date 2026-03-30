@@ -158,14 +158,14 @@
           <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.windowWhitelist') }}</label>
           <div class="flex flex-wrap gap-2 mb-2">
             <span
-              v-for="(tag, index) in whitelistTags"
-              :key="'wl-' + index"
+              v-for="tag in whitelistTags"
+              :key="tag"
               class="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 text-primary text-xs rounded-lg"
             >
               {{ tag }}
               <button
                 type="button"
-                @click="removeWhitelistTag(index)"
+                @click="removeWhitelistTag(tag)"
                 class="hover:text-white transition-colors"
               >✕</button>
             </span>
@@ -182,14 +182,14 @@
           <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.windowBlacklist') }}</label>
           <div class="flex flex-wrap gap-2 mb-2">
             <span
-              v-for="(tag, index) in blacklistTags"
-              :key="'bl-' + index"
+              v-for="tag in blacklistTags"
+              :key="tag"
               class="inline-flex items-center gap-1 px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-lg"
             >
               {{ tag }}
               <button
                 type="button"
-                @click="removeBlacklistTag(index)"
+                @click="removeBlacklistTag(tag)"
                 class="hover:text-white transition-colors"
               >✕</button>
             </span>
@@ -335,7 +335,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { usePlatform } from '../../composables/usePlatform'
 import { invoke } from '@tauri-apps/api/core'
 
@@ -417,9 +417,14 @@ const qualitySensitivity = computed({
   }
 })
 
+// Flag to prevent bidirectional watch loop
+let isUpdatingFromProps = false
+
 // Watch for external changes
 watch(() => props.settings, (newVal) => {
+  isUpdatingFromProps = true
   localSettings.value = { ...newVal }
+  nextTick(() => { isUpdatingFromProps = false })
 }, { deep: true })
 
 watch(() => props.whitelistTags, (newVal) => {
@@ -432,7 +437,9 @@ watch(() => props.blacklistTags, (newVal) => {
 
 // Watch for local changes and emit
 watch(localSettings, (newVal) => {
-  emit('update:settings', newVal)
+  if (!isUpdatingFromProps) {
+    emit('update:settings', newVal)
+  }
 }, { deep: true })
 
 // Tag management methods
@@ -444,9 +451,12 @@ function addWhitelistTag() {
   }
 }
 
-function removeWhitelistTag(index: number) {
-  localWhitelistTags.value.splice(index, 1)
-  emit('update:whitelistTags', [...localWhitelistTags.value])
+function removeWhitelistTag(tag: string) {
+  const idx = localWhitelistTags.value.indexOf(tag)
+  if (idx !== -1) {
+    localWhitelistTags.value.splice(idx, 1)
+    emit('update:whitelistTags', [...localWhitelistTags.value])
+  }
 }
 
 function addBlacklistTag() {
@@ -457,9 +467,12 @@ function addBlacklistTag() {
   }
 }
 
-function removeBlacklistTag(index: number) {
-  localBlacklistTags.value.splice(index, 1)
-  emit('update:blacklistTags', [...localBlacklistTags.value])
+function removeBlacklistTag(tag: string) {
+  const idx = localBlacklistTags.value.indexOf(tag)
+  if (idx !== -1) {
+    localBlacklistTags.value.splice(idx, 1)
+    emit('update:blacklistTags', [...localBlacklistTags.value])
+  }
 }
 
 // EXP-002: Load quality filter stats
