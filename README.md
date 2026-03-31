@@ -223,7 +223,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.6.0
+**最新版本**: v4.6.1
+- 修复 hardware/platform.rs AppResult 返回类型不匹配导致跨平台构建失败
+- Settings 写穿缓存：避免重复 DB 查询和加解密开销 (~37 处调用受益)
+- 提取 get_log_dir() 辅助函数，消除 4 处重复路径构建
+
+**v4.6.0**:
 - 消除 session_manager/session_service ~560 行重复代码
 - AppResult 迁移完成：全部业务逻辑函数使用结构化错误类型 (~120+ 函数)
 - Tauri 命令层统一 `.map_err(|e| e.to_string())` IPC 边界模式
