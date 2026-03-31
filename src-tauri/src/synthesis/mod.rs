@@ -2,13 +2,10 @@ use chrono::Datelike;
 use rusqlite::params;
 use std::path::PathBuf;
 
-use crate::dingtalk;
 use crate::errors::{AppError, AppResult};
 use crate::infrastructure::retry;
-
 use crate::memory_storage::{self, Record, Settings};
 use crate::services::session_service::{Session, SessionStatus};
-use crate::slack;
 
 // STAB-001: Retry configuration for AI API calls
 const MAX_RETRIES: u32 = 3;
@@ -353,29 +350,6 @@ pub fn write_report_to_logseq(
             }
         }
         Err(_) => None, // Logseq not configured, silently skip
-    }
-}
-
-/// INT-004: Send report notifications to Slack and DingTalk.
-/// This function sends notifications to configured channels after a report is generated.
-/// Errors are logged but do not affect the main report generation flow.
-pub fn send_report_notifications(settings: &Settings, title: &str, content: &str) {
-    // Send to Slack if configured
-    if slack::is_slack_configured(settings) {
-        match slack::send_to_slack_sync(settings, title, content) {
-            Some(true) => tracing::info!("Report sent to Slack: {}", title),
-            Some(false) => tracing::warn!("Failed to send report to Slack"),
-            None => tracing::debug!("Slack not configured or send returned None"),
-        }
-    }
-
-    // Send to DingTalk if configured
-    if dingtalk::is_dingtalk_configured(settings) {
-        match dingtalk::send_to_dingtalk_sync(settings, title, content) {
-            Some(true) => tracing::info!("Report sent to DingTalk: {}", title),
-            Some(false) => tracing::warn!("Failed to send report to DingTalk"),
-            None => tracing::debug!("DingTalk not configured or send returned None"),
-        }
     }
 }
 

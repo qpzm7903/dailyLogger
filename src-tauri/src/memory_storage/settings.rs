@@ -47,9 +47,7 @@ pub fn get_settings_sync() -> AppResult<Arc<Settings>> {
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
                 last_monthly_report_path, obsidian_vaults,
                 auto_detect_vault_by_window,
-                comparison_report_prompt, logseq_graphs,
-                notion_api_key, notion_database_id,
-                slack_webhook_url, dingtalk_webhook_url, capture_only_mode, custom_headers,
+                logseq_graphs, capture_only_mode, custom_headers,
                 quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
                 proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,
                 test_model_name, onboarding_completed, language,
@@ -118,10 +116,6 @@ pub fn get_settings_sync() -> AppResult<Arc<Settings>> {
                     .map(|v| v != 0),
                 comparison_report_prompt: row.get("comparison_report_prompt")?,
                 logseq_graphs: row.get("logseq_graphs")?,
-                notion_api_key: row.get("notion_api_key")?,
-                notion_database_id: row.get("notion_database_id")?,
-                slack_webhook_url: row.get("slack_webhook_url")?,
-                dingtalk_webhook_url: row.get("dingtalk_webhook_url")?,
                 capture_only_mode: row
                     .get::<_, Option<i32>>("capture_only_mode")?
                     .map(|v| v != 0),
@@ -168,13 +162,7 @@ pub fn get_settings_sync() -> AppResult<Arc<Settings>> {
         if !api_key.is_empty() {
             let mut decrypted_settings = settings.clone();
             decrypted_settings.api_key = Some(crypto::decrypt_api_key(api_key)?);
-            // Also decrypt notion_api_key if present
-            if let Some(ref notion_api_key) = settings.notion_api_key {
-                if !notion_api_key.is_empty() {
-                    decrypted_settings.notion_api_key =
-                        Some(crypto::decrypt_api_key(notion_api_key)?);
-                }
-            }
+
             // PERF-001: Decrypt proxy password if present
             if let Some(ref proxy_password) = settings.proxy_password {
                 if !proxy_password.is_empty() {
@@ -239,17 +227,6 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
             Some(crypto::encrypt_api_key(api_key)?)
         } else {
             settings.api_key.clone()
-        }
-    } else {
-        None
-    };
-
-    // INT-001: Encrypt Notion API key before saving
-    let encrypted_notion_api_key = if let Some(ref notion_api_key) = settings.notion_api_key {
-        if !notion_api_key.is_empty() && !crypto::is_encrypted(notion_api_key) {
-            Some(crypto::encrypt_api_key(notion_api_key)?)
-        } else {
-            settings.notion_api_key.clone()
         }
     } else {
         None
@@ -356,10 +333,6 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
             auto_detect_vault_by_window = :auto_detect_vault_by_window,
             comparison_report_prompt = :comparison_report_prompt,
             logseq_graphs = :logseq_graphs,
-            notion_api_key = :notion_api_key,
-            notion_database_id = :notion_database_id,
-            slack_webhook_url = :slack_webhook_url,
-            dingtalk_webhook_url = :dingtalk_webhook_url,
             capture_only_mode = :capture_only_mode,
             custom_headers = :custom_headers,
             quality_filter_enabled = :quality_filter_enabled,
@@ -421,10 +394,6 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
             ":auto_detect_vault_by_window": settings.auto_detect_vault_by_window.map(|v| if v { 1 } else { 0 }),
             ":comparison_report_prompt": settings.comparison_report_prompt,
             ":logseq_graphs": settings.logseq_graphs,
-            ":notion_api_key": encrypted_notion_api_key,
-            ":notion_database_id": settings.notion_database_id,
-            ":slack_webhook_url": settings.slack_webhook_url,
-            ":dingtalk_webhook_url": settings.dingtalk_webhook_url,
             ":capture_only_mode": settings.capture_only_mode.map(|v| if v { 1 } else { 0 }),
             ":custom_headers": encrypted_custom_headers,
             ":quality_filter_enabled": settings.quality_filter_enabled.map(|v| if v { 1 } else { 0 }),

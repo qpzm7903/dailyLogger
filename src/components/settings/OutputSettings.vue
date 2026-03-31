@@ -92,85 +92,7 @@
       </div>
     </div>
 
-    <!-- Notion Integration -->
-    <div>
-      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.notionIntegration') }}</label>
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.notionApiKey') }}</label>
-          <input v-model="localSettings.notion_api_key" type="password" :placeholder="$t('settings.notionApiKeyPlaceholder')"
-            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
-        </div>
-        <div>
-          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.notionDatabaseId') }}</label>
-          <input v-model="localSettings.notion_database_id" type="text" :placeholder="$t('settings.notionDatabaseIdPlaceholder')"
-            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
-        </div>
-        <div class="flex gap-2">
-          <button @click="testNotionConnection" :disabled="isTestingNotionConnection"
-            class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
-            {{ isTestingNotionConnection ? $t('common.testing') : $t('common.testConnection') }}
-          </button>
-          <span v-if="notionConnectionStatus" class="text-xs"
-            :class="notionConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
-            {{ notionConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
-          </span>
-        </div>
-        <p class="text-xs text-[var(--color-text-muted)]">
-          {{ $t('settings.notionHint') }}
-        </p>
-      </div>
-    </div>
 
-    <!-- Slack Notification -->
-    <div>
-      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.slackNotification') }}</label>
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.slackWebhookUrl') }}</label>
-          <input v-model="localSettings.slack_webhook_url" type="password" :placeholder="$t('settings.slackWebhookPlaceholder')"
-            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
-        </div>
-        <div class="flex gap-2">
-          <button @click="testSlackConnection" :disabled="isTestingSlackConnection"
-            class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
-            {{ isTestingSlackConnection ? $t('common.testing') : $t('common.testConnection') }}
-          </button>
-          <span v-if="slackConnectionStatus" class="text-xs"
-            :class="slackConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
-            {{ slackConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
-          </span>
-        </div>
-        <p class="text-xs text-[var(--color-text-muted)]">
-          {{ $t('settings.slackHint') }}
-        </p>
-      </div>
-    </div>
-
-    <!-- DingTalk Notification -->
-    <div>
-      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.dingtalkNotification') }}</label>
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.dingtalkWebhookUrl') }}</label>
-          <input v-model="localSettings.dingtalk_webhook_url" type="password" :placeholder="$t('settings.dingtalkWebhookPlaceholder')"
-            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
-        </div>
-        <div class="flex gap-2">
-          <button @click="testDingtalkConnection" :disabled="isTestingDingtalkConnection"
-            class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 rounded-lg text-xs text-primary transition-colors">
-            {{ isTestingDingtalkConnection ? $t('common.testing') : $t('common.testConnection') }}
-          </button>
-          <span v-if="dingtalkConnectionStatus" class="text-xs"
-            :class="dingtalkConnectionStatus === 'success' ? 'text-green-400' : 'text-red-400'">
-            {{ dingtalkConnectionStatus === 'success' ? '✓ ' + $t('common.connected') : '✗ ' + $t('common.failed') }}
-          </span>
-        </div>
-        <p class="text-xs text-[var(--color-text-muted)]">
-          {{ $t('settings.dingtalkHint') }}
-        </p>
-      </div>
-    </div>
 
     <!-- Debug Tools -->
     <div>
@@ -212,10 +134,6 @@ interface Graph {
 
 interface Props {
   settings: {
-    notion_api_key: string | null
-    notion_database_id: string | null
-    slack_webhook_url: string | null
-    dingtalk_webhook_url: string | null
     auto_detect_vault_by_window: boolean
   }
   vaults: Vault[]
@@ -245,13 +163,7 @@ const newVaultPath = ref('')
 const newGraphName = ref('')
 const newGraphPath = ref('')
 
-// Connection test state
-const isTestingNotionConnection = ref(false)
-const notionConnectionStatus = ref<'success' | 'failed' | null>(null)
-const isTestingSlackConnection = ref(false)
-const slackConnectionStatus = ref<'success' | 'failed' | null>(null)
-const isTestingDingtalkConnection = ref(false)
-const dingtalkConnectionStatus = ref<'success' | 'failed' | null>(null)
+
 
 // Export state
 const isExportingLogs = ref(false)
@@ -358,89 +270,6 @@ function setDefaultGraph(index: number) {
   emit('update:graphs', [...localGraphs.value])
 }
 
-// Connection test methods
-async function testNotionConnection() {
-  if (!localSettings.value.notion_api_key || !localSettings.value.notion_database_id) {
-    showError(t('settings.notionConfigRequired'))
-    return
-  }
-
-  isTestingNotionConnection.value = true
-  notionConnectionStatus.value = null
-
-  try {
-    const result = await invoke<{ success: boolean; message: string }>('test_notion_connection', {
-      apiKey: localSettings.value.notion_api_key,
-      databaseId: localSettings.value.notion_database_id
-    })
-
-    notionConnectionStatus.value = result.success ? 'success' : 'failed'
-    if (result.success) {
-      showSuccess(t('settings.notionConnectionSuccess'))
-    } else {
-      showError(result.message)
-    }
-  } catch (err) {
-    notionConnectionStatus.value = 'failed'
-    showError(err)
-  } finally {
-    isTestingNotionConnection.value = false
-  }
-}
-
-async function testSlackConnection() {
-  if (!localSettings.value.slack_webhook_url) {
-    showError(t('settings.slackWebhookRequired'))
-    return
-  }
-
-  isTestingSlackConnection.value = true
-  slackConnectionStatus.value = null
-
-  try {
-    const result = await invoke<{ success: boolean; message: string }>('test_slack_webhook', {
-      webhookUrl: localSettings.value.slack_webhook_url
-    })
-
-    slackConnectionStatus.value = result.success ? 'success' : 'failed'
-    if (result.success) {
-      showSuccess(t('settings.slackConnectionSuccess'))
-    } else {
-      showError(result.message)
-    }
-  } catch (err) {
-    slackConnectionStatus.value = 'failed'
-    showError(err)
-  } finally {
-    isTestingSlackConnection.value = false
-  }
-}
-
-async function testDingtalkConnection() {
-  if (!localSettings.value.dingtalk_webhook_url) {
-    showError(t('settings.dingtalkWebhookRequired'))
-    return
-  }
-
-  isTestingDingtalkConnection.value = true
-  dingtalkConnectionStatus.value = null
-
-  try {
-    const result = await invoke<boolean>('test_dingtalk_connection')
-
-    dingtalkConnectionStatus.value = result ? 'success' : 'failed'
-    if (result) {
-      showSuccess(t('settings.dingtalkConnectionSuccess'))
-    } else {
-      showError(t('settings.dingtalkConnectionFailed'))
-    }
-  } catch (err) {
-    dingtalkConnectionStatus.value = 'failed'
-    showError(err)
-  } finally {
-    isTestingDingtalkConnection.value = false
-  }
-}
 
 // Export logs
 async function exportLogs() {

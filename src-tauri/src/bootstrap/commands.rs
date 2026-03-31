@@ -83,10 +83,6 @@ pub fn register_commands(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
         daily_logger_lib::ollama::create_ollama_model,
         daily_logger_lib::ollama::copy_ollama_model,
         daily_logger_lib::ollama::show_ollama_model,
-        // Notification commands
-        daily_logger_lib::notion::test_notion_connection,
-        daily_logger_lib::slack::test_slack_connection,
-        daily_logger_lib::dingtalk::test_dingtalk_connection,
         // Network status commands
         daily_logger_lib::network_status::get_network_status,
         daily_logger_lib::network_status::check_network_status,

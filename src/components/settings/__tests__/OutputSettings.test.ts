@@ -57,10 +57,7 @@ vi.mock('vue-i18n', () => ({
 describe('OutputSettings', () => {
   const defaultProps = {
     settings: {
-      notion_api_key: null,
-      notion_database_id: null,
-      slack_webhook_url: null,
-      dingtalk_webhook_url: null
+      auto_detect_vault_by_window: false
     },
     vaults: [
       { name: 'Personal', path: '/Users/test/Documents/Personal', is_default: true }
@@ -93,15 +90,7 @@ describe('OutputSettings', () => {
       expect(wrapper.text()).toContain('Logseq Graphs')
     })
 
-    it('renders Notion integration section', () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      expect(wrapper.text()).toContain('Notion Integration')
-    })
 
-    it('renders Slack notification section', () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      expect(wrapper.text()).toContain('Slack Notification')
-    })
 
     it('renders debug tools section', () => {
       const wrapper = mount(OutputSettings, { props: defaultProps })
@@ -223,81 +212,7 @@ describe('OutputSettings', () => {
     })
   })
 
-  // === Notion Integration ===
-  describe('notion integration', () => {
-    it('updates notion api key', async () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      const inputs = wrapper.findAll('input[type="password"]')
-      const notionKeyInput = inputs.find(i => i.attributes('placeholder')?.includes('secret'))
-      if (notionKeyInput) {
-        await notionKeyInput.setValue('secret_test_key')
-      }
 
-      const emitted = wrapper.emitted('update:settings')
-      expect(emitted).toBeTruthy()
-    })
-
-    it('tests notion connection', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ success: true, message: 'OK' })
-
-      const wrapper = mount(OutputSettings, {
-        props: {
-          ...defaultProps,
-          settings: {
-            ...defaultProps.settings,
-            notion_api_key: 'secret_test',
-            notion_database_id: 'db123'
-          }
-        }
-      })
-
-      const testButtons = wrapper.findAll('button').filter(b => b.text().includes('Test Connection'))
-      await testButtons[0]?.trigger('click')
-      await flushPromises()
-
-      expect(invoke).toHaveBeenCalledWith('test_notion_connection', expect.objectContaining({
-        apiKey: 'secret_test',
-        databaseId: 'db123'
-      }))
-    })
-  })
-
-  // === Slack Integration ===
-  describe('slack integration', () => {
-    it('updates slack webhook url', async () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      const inputs = wrapper.findAll('input[type="password"]')
-      const slackInput = inputs.find(i => i.attributes('placeholder')?.includes('hooks.slack.com'))
-      if (slackInput) {
-        await slackInput.setValue('https://hooks.slack.com/test')
-      }
-
-      const emitted = wrapper.emitted('update:settings')
-      expect(emitted).toBeTruthy()
-    })
-
-    it('tests slack connection', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ success: true, message: 'OK' })
-
-      const wrapper = mount(OutputSettings, {
-        props: {
-          ...defaultProps,
-          settings: {
-            ...defaultProps.settings,
-            slack_webhook_url: 'https://hooks.slack.com/test'
-          }
-        }
-      })
-
-      const testButtons = wrapper.findAll('button').filter(b => b.text().includes('Test Connection'))
-      await testButtons[1]?.trigger('click')
-      await flushPromises()
-
-      expect(invoke).toHaveBeenCalledWith('test_slack_webhook', expect.objectContaining({
-        webhookUrl: 'https://hooks.slack.com/test'
-      }))
-    })
-  })
 
   // === Export Logs ===
   describe('export logs', () => {
@@ -332,11 +247,11 @@ describe('OutputSettings', () => {
         ...defaultProps,
         settings: {
           ...defaultProps.settings,
-          notion_api_key: 'new_key'
+          auto_detect_vault_by_window: true
         }
       })
 
-      expect(wrapper.vm.localSettings.notion_api_key).toBe('new_key')
+      expect((wrapper.vm as any).localSettings.auto_detect_vault_by_window).toBe(true)
     })
 
     it('updates local vaults when props change', async () => {
@@ -348,8 +263,8 @@ describe('OutputSettings', () => {
         ]
       })
 
-      expect(wrapper.vm.localVaults.length).toBe(1)
-      expect(wrapper.vm.localVaults[0].name).toBe('NewVault')
+      expect((wrapper.vm as any).localVaults.length).toBe(1)
+      expect((wrapper.vm as any).localVaults[0].name).toBe('NewVault')
     })
 
     it('updates local graphs when props change', async () => {
@@ -361,8 +276,8 @@ describe('OutputSettings', () => {
         ]
       })
 
-      expect(wrapper.vm.localGraphs.length).toBe(1)
-      expect(wrapper.vm.localGraphs[0].name).toBe('NewGraph')
+      expect((wrapper.vm as any).localGraphs.length).toBe(1)
+      expect((wrapper.vm as any).localGraphs[0].name).toBe('NewGraph')
     })
   })
 })

@@ -95,11 +95,6 @@ pub use crate::ollama::{
     get_running_models, pull_ollama_model, show_ollama_model, test_api_connection_with_ollama,
 };
 
-// Notification commands
-pub use crate::dingtalk::test_dingtalk_connection;
-pub use crate::notion::test_notion_connection;
-pub use crate::slack::test_slack_connection;
-
 // Network commands
 pub use crate::network_status::{check_network_status, get_network_status};
 

@@ -64,13 +64,9 @@ export interface Settings {
   auto_detect_vault_by_window?: boolean
 
   // Other integrations (INT-001, INT-002, INT-003, INT-004)
-  notion_api_key?: string
-  notion_database_id?: string
   logseq_graphs?: string // JSON: LogseqGraph[]
   github_token?: string
   github_repositories?: string // JSON: Vec<String>
-  slack_webhook_url?: string
-  dingtalk_webhook_url?: string
 
   // Feature flags
   capture_only_mode?: boolean // FEAT-006
@@ -271,35 +267,6 @@ export interface PluginInfo {
   enabled: boolean
 }
 
-// ============================================
-// Notion Integration Types
-// ============================================
-
-export interface NotionDatabase {
-  id: string
-  title: string
-}
-
-export interface NotionPage {
-  id: string
-  title: string
-  created_at: string
-}
-
-// ============================================
-// Slack Integration Types
-// ============================================
-
-export interface SlackChannel {
-  id: string
-  name: string
-  is_private: boolean
-}
-
-export interface SendToSlackArgs {
-  channel_id: string
-  content: string
-}
 
 // ============================================
 // Ollama Types

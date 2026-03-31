@@ -17,8 +17,8 @@ pub use crate::synthesis::{
     generate_summary_filename_with_lang, generate_weekly_report_filename,
     get_default_comparison_report_prompt, get_default_custom_report_prompt,
     get_default_monthly_report_prompt, get_default_summary_prompt,
-    get_default_weekly_report_prompt, get_supported_languages, send_report_notifications,
-    translate_report, write_report_to_logseq, write_report_to_obsidian, ApiConfig,
+    get_default_weekly_report_prompt, get_supported_languages, translate_report,
+    write_report_to_logseq, write_report_to_obsidian, ApiConfig,
 };
 
 use crate::errors::{AppError, AppResult};
@@ -49,17 +49,6 @@ fn write_report_to_all_destinations(
 
     // INT-002: Also write to Logseq if configured
     write_report_to_logseq(settings, filename, summary);
-
-    // INT-001: Also write to Notion if configured
-    if let Some(notion_url) =
-        crate::notion::write_report_to_notion_sync(settings, filename, summary)
-    {
-        tracing::info!("{} also written to Notion: {}", report_label, notion_url);
-    }
-
-    // INT-004: Send notifications to Slack/DingTalk if configured
-    let title = filename.trim_end_matches(".md");
-    send_report_notifications(settings, title, summary);
 
     // Persist last-report-path in settings
     if let Some(updater) = update_settings {

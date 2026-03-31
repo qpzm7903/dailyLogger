@@ -93,13 +93,6 @@ pub struct Settings {
     pub comparison_report_prompt: Option<String>,
     // INT-002: Logseq 导出支持
     pub logseq_graphs: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
-    // INT-001: Notion 导出支持
-    pub notion_api_key: Option<String>, // Notion integration secret (encrypted)
-    pub notion_database_id: Option<String>, // Notion database ID to write pages to
-    // INT-004: Slack 通知配置
-    pub slack_webhook_url: Option<String>, // Slack Incoming Webhook URL
-    // INT-004: DingTalk 通知配置
-    pub dingtalk_webhook_url: Option<String>, // DingTalk Robot Webhook URL
     // FEAT-006: 仅截图模式 (#65)
     pub capture_only_mode: Option<bool>, // Only capture screenshots without AI analysis
     // AI-006: 自定义 API Headers (#68)
