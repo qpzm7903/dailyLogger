@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount, flushPromises, config as vtuConfig } from '@vue/test-utils'
 import TagCloud from '../TagCloud.vue'
+import BaseModal from '../BaseModal.vue'
 
 // Mock Tauri API
 vi.mock('@tauri-apps/api/core', () => ({
@@ -19,6 +20,7 @@ import { showSuccess, showError } from '../../stores/toast'
 describe('TagCloud', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vtuConfig.global.components = { ...vtuConfig.global.components, BaseModal }
   })
 
   afterEach(() => {

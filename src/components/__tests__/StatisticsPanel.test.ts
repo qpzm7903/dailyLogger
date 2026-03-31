@@ -138,7 +138,7 @@ describe('StatisticsPanel', () => {
 
       const wrapper = mount(StatisticsPanel)
 
-      expect(wrapper.find('.fixed.inset-0.bg-black\\/50').exists()).toBe(true)
+      expect(wrapper.find('.fixed.inset-0.bg-black\\/80').exists()).toBe(true)
       expect(wrapper.find('[class*="bg-[var(--color-surface-1)]"].rounded-2xl').exists()).toBe(true)
       expect(wrapper.find('.z-50').exists()).toBe(true)
     })
@@ -580,7 +580,7 @@ describe('StatisticsPanel', () => {
       })
 
       // Click on the overlay (outside the modal content)
-      const overlay = wrapper.find('.fixed.inset-0.bg-black\\/50')
+      const overlay = wrapper.find('.fixed.inset-0.bg-black\\/80')
       await overlay.trigger('click.self')
 
       expect(wrapper.emitted('close')).toBeTruthy()

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, config } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import SessionDetailView from '../SessionDetailView.vue'
+import BaseModal from '../BaseModal.vue'
 
 // Mock sessionActions
 vi.mock('../../features/sessions/actions', () => ({
@@ -62,6 +63,7 @@ describe('SessionDetailView', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    config.global.components = { ...config.global.components, BaseModal }
   })
 
   describe('rendering', () => {
