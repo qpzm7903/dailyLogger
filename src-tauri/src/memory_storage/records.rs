@@ -3,6 +3,8 @@ use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
+use crate::errors::{AppError, AppResult};
+
 use super::DB_CONNECTION;
 
 /// Convert a NaiveDateTime to UTC RFC3339 string, handling DST ambiguity by picking the earliest offset.
@@ -83,7 +85,7 @@ pub fn add_record(
     screenshot_path: Option<&str>,
     monitor_info: Option<&str>,
     tags: Option<&str>,
-) -> Result<i64, String> {
+) -> AppResult<i64> {
     add_record_with_session(
         source_type,
         content,
@@ -102,21 +104,20 @@ pub fn add_record_with_session(
     monitor_info: Option<&str>,
     tags: Option<&str>,
     session_id: Option<i64>,
-) -> Result<i64, String> {
+) -> AppResult<i64> {
     // STAB-001 Task 4.2: Ensure database connection is valid before operation
     crate::memory_storage::schema::ensure_connection()?;
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let timestamp = chrono::Utc::now().to_rfc3339();
 
     // STAB-001 AC4: Use explicit transaction for data integrity
     // Begin transaction and ensure rollback on error
-    conn.execute("BEGIN TRANSACTION", [])
-        .map_err(|e| format!("Failed to begin transaction: {}", e))?;
+    conn.execute("BEGIN TRANSACTION", [])?;
 
     let result = conn.execute(
         "INSERT INTO records (timestamp, source_type, content, screenshot_path, monitor_info, tags, session_id, analysis_status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'pending')",
@@ -126,32 +127,32 @@ pub fn add_record_with_session(
     match result {
         Ok(_) => {
             // Commit transaction
-            conn.execute("COMMIT", [])
-                .map_err(|e| format!("Failed to commit transaction: {}", e))?;
+            conn.execute("COMMIT", [])?;
             Ok(conn.last_insert_rowid())
         }
         Err(e) => {
             // Rollback on error
             let _ = conn.execute("ROLLBACK", []);
-            Err(format!("Failed to insert record: {}", e))
+            Err(AppError::database(format!(
+                "Failed to insert record: {}",
+                e
+            )))
         }
     }
 }
 
-pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_today_records_sync() -> AppResult<Vec<Record>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let today_start = date_to_utc_rfc3339(chrono::Local::now().date_naive(), 0, 0, 0);
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 ORDER BY timestamp DESC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
     let records = stmt
         .query_map(params![today_start], |row| {
@@ -167,21 +168,20 @@ pub fn get_today_records_sync() -> Result<Vec<Record>, String> {
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
 
     Ok(records)
 }
 
 /// Get records for the current week (Monday to Sunday)
 /// week_start_day: 0=Monday, 6=Sunday (default is Monday)
-pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_week_records_sync(week_start_day: i32) -> AppResult<Vec<Record>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Calculate week boundaries based on local time
     let today = chrono::Local::now().date_naive();
@@ -194,12 +194,10 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
     let week_start = date_to_utc_rfc3339(week_start_date, 0, 0, 0);
     let week_end = date_to_utc_rfc3339(week_end_date, 23, 59, 59);
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
     let records = stmt
         .query_map(params![week_start, week_end], |row| {
@@ -215,20 +213,19 @@ pub fn get_week_records_sync(week_start_day: i32) -> Result<Vec<Record>, String>
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
 
     Ok(records)
 }
 
 /// Get all records for the current month (used for monthly report)
-pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_month_records_sync() -> AppResult<Vec<Record>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Calculate month boundaries based on local time
     let now = chrono::Local::now();
@@ -246,12 +243,10 @@ pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
 
     let month_end = date_to_utc_rfc3339(next_month, 0, 0, 0);
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp < ?2 ORDER BY timestamp DESC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
     let records = stmt
         .query_map(params![month_start, month_end], |row| {
@@ -267,70 +262,65 @@ pub fn get_month_records_sync() -> Result<Vec<Record>, String> {
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
 
     Ok(records)
 }
 
-pub fn get_all_today_records_for_summary() -> Result<Vec<Record>, String> {
+pub fn get_all_today_records_for_summary() -> AppResult<Vec<Record>> {
     get_today_records_sync()
 }
 
 /// Get the count of today's records (more efficient than fetching all records).
-pub fn get_today_record_count_sync() -> Result<usize, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_today_record_count_sync() -> AppResult<usize> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let today_start = date_to_utc_rfc3339(chrono::Local::now().date_naive(), 0, 0, 0);
 
-    let count: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM records WHERE timestamp >= ?1",
-            params![today_start],
-            |row| row.get(0),
-        )
-        .map_err(|e| format!("Failed to count records: {}", e))?;
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM records WHERE timestamp >= ?1",
+        params![today_start],
+        |row| row.get(0),
+    )?;
 
     Ok(count as usize)
 }
 
 /// EXP-005: Get today's statistics for the summary widget.
 /// Returns aggregated stats including record counts, time span, and busiest hour.
-pub fn get_today_stats_sync() -> Result<TodayStats, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_today_stats_sync() -> AppResult<TodayStats> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let today_start = date_to_utc_rfc3339(chrono::Local::now().date_naive(), 0, 0, 0);
 
     // Query basic stats in a single query
-    let basic_stats = conn
-        .query_row(
-            "SELECT
+    let basic_stats = conn.query_row(
+        "SELECT
                 COUNT(*) as total,
                 COALESCE(SUM(CASE WHEN source_type='auto' THEN 1 ELSE 0 END), 0) as auto_count,
                 COALESCE(SUM(CASE WHEN source_type='manual' THEN 1 ELSE 0 END), 0) as manual_count,
                 MIN(timestamp) as first_time,
                 MAX(timestamp) as latest_time
             FROM records WHERE timestamp >= ?1",
-            params![today_start],
-            |row| {
-                Ok((
-                    row.get::<_, i64>(0)?,            // total
-                    row.get::<_, i64>(1)?,            // auto_count
-                    row.get::<_, i64>(2)?,            // manual_count
-                    row.get::<_, Option<String>>(3)?, // first_time
-                    row.get::<_, Option<String>>(4)?, // latest_time
-                ))
-            },
-        )
-        .map_err(|e| format!("Failed to query today stats: {}", e))?;
+        params![today_start],
+        |row| {
+            Ok((
+                row.get::<_, i64>(0)?,            // total
+                row.get::<_, i64>(1)?,            // auto_count
+                row.get::<_, i64>(2)?,            // manual_count
+                row.get::<_, Option<String>>(3)?, // first_time
+                row.get::<_, Option<String>>(4)?, // latest_time
+            ))
+        },
+    )?;
 
     let (total, auto_count, manual_count, first_record_time, latest_record_time) = basic_stats;
 
@@ -345,8 +335,7 @@ pub fn get_today_stats_sync() -> Result<TodayStats, String> {
             LIMIT 1",
             params![today_start],
             |row| Ok((row.get::<_, i64>(0)? as u32, row.get::<_, i64>(1)? as u32)),
-        )
-        .map_err(|e| format!("Failed to query busiest hour: {}", e))?
+        )?
     } else {
         (0, 0)
     };
@@ -365,30 +354,36 @@ pub fn get_today_stats_sync() -> Result<TodayStats, String> {
 pub fn get_records_by_date_range_sync(
     start_date: String,
     end_date: String,
-) -> Result<Vec<Record>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+) -> AppResult<Vec<Record>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
-    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
+    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid start_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
     // Parse end_date (YYYY-MM-DD) to local midnight of next day (exclusive upper bound)
-    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
+    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid end_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
     // Convert to UTC RFC3339
     let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
     let end_utc = date_to_utc_rfc3339(end_naive, 23, 59, 59);
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
     let records = stmt
         .query_map(params![start_utc, end_utc], |row| {
@@ -404,37 +399,42 @@ pub fn get_records_by_date_range_sync(
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
 
     Ok(records)
 }
 
 /// Get records within a date range for export (chronological ASC order).
 /// - start_date/end_date: YYYY-MM-DD format (local timezone)
-pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Record>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_records_for_export(start_date: &str, end_date: &str) -> AppResult<Vec<Record>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let start_naive = chrono::NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
+    let start_naive = chrono::NaiveDate::parse_from_str(start_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid start_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
-    let end_naive = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
+    let end_naive = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid end_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
     let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
     let end_utc = date_to_utc_rfc3339(end_naive, 23, 59, 59);
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
          WHERE timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp ASC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
     let records = stmt
         .query_map(params![start_utc, end_utc], |row| {
@@ -450,27 +450,27 @@ pub fn get_records_for_export(start_date: &str, end_date: &str) -> Result<Vec<Re
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
 
     Ok(records)
 }
 
 /// Delete a record by ID
-pub fn delete_record_sync(id: i64) -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn delete_record_sync(id: i64) -> AppResult<()> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let rows_affected = conn
-        .execute("DELETE FROM records WHERE id = ?1", params![id])
-        .map_err(|e| format!("Failed to delete record: {}", e))?;
+    let rows_affected = conn.execute("DELETE FROM records WHERE id = ?1", params![id])?;
 
     if rows_affected == 0 {
-        return Err(format!("Record with id {} not found", id));
+        return Err(AppError::validation(format!(
+            "Record with id {} not found",
+            id
+        )));
     }
 
     tracing::info!("Deleted record with id {}", id);
@@ -479,11 +479,11 @@ pub fn delete_record_sync(id: i64) -> Result<(), String> {
 
 /// Get a single record by ID
 /// Used by reanalyze_record to fetch record details
-pub fn get_record_by_id_sync(id: i64) -> Result<Record, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_record_by_id_sync(id: i64) -> AppResult<Record> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let record = conn
         .query_row(
@@ -505,28 +505,29 @@ pub fn get_record_by_id_sync(id: i64) -> Result<Record, String> {
                 })
             },
         )
-        .map_err(|e| format!("Record with id {} not found: {}", id, e))?;
+        .map_err(|e| AppError::database(format!("Record with id {} not found: {}", id, e)))?;
 
     Ok(record)
 }
 
 /// Update the content of a record by ID
 /// Used by offline queue retry to update screenshot analysis results
-pub fn update_record_content_sync(id: i64, content: &str) -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn update_record_content_sync(id: i64, content: &str) -> AppResult<()> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let rows_affected = conn
-        .execute(
-            "UPDATE records SET content = ?1 WHERE id = ?2",
-            params![content, id],
-        )
-        .map_err(|e| format!("Failed to update record: {}", e))?;
+    let rows_affected = conn.execute(
+        "UPDATE records SET content = ?1 WHERE id = ?2",
+        params![content, id],
+    )?;
 
     if rows_affected == 0 {
-        return Err(format!("Record with id {} not found", id));
+        return Err(AppError::validation(format!(
+            "Record with id {} not found",
+            id
+        )));
     }
 
     tracing::info!("Updated content for record {}", id);
@@ -535,21 +536,22 @@ pub fn update_record_content_sync(id: i64, content: &str) -> Result<(), String> 
 
 /// Update user notes for a specific record
 /// FEAT-005: User can add manual notes to screenshot records (#66)
-pub fn update_record_user_notes_sync(id: i64, user_notes: Option<&str>) -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn update_record_user_notes_sync(id: i64, user_notes: Option<&str>) -> AppResult<()> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let rows_affected = conn
-        .execute(
-            "UPDATE records SET user_notes = ?1, analysis_status = 'user_edited' WHERE id = ?2",
-            params![user_notes, id],
-        )
-        .map_err(|e| format!("Failed to update user notes: {}", e))?;
+    let rows_affected = conn.execute(
+        "UPDATE records SET user_notes = ?1, analysis_status = 'user_edited' WHERE id = ?2",
+        params![user_notes, id],
+    )?;
 
     if rows_affected == 0 {
-        return Err(format!("Record with id {} not found", id));
+        return Err(AppError::validation(format!(
+            "Record with id {} not found",
+            id
+        )));
     }
 
     tracing::info!("Updated user notes for record {}", id);
@@ -567,7 +569,7 @@ pub fn get_history_records_sync(
     source_type: Option<String>,
     page: i64,
     page_size: i64,
-) -> Result<Vec<Record>, String> {
+) -> AppResult<Vec<Record>> {
     get_history_records_with_cursor_sync(start_date, end_date, source_type, page, page_size, None)
 }
 
@@ -581,19 +583,27 @@ pub fn get_history_records_with_cursor_sync(
     page: i64,
     page_size: i64,
     last_id: Option<i64>,
-) -> Result<Vec<Record>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+) -> AppResult<Vec<Record>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
-    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
+    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid start_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
     // Parse end_date (YYYY-MM-DD) to local end of day 23:59:59
-    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
+    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid end_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
     // Convert to UTC RFC3339
     let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
@@ -607,10 +617,10 @@ pub fn get_history_records_with_cursor_sync(
         (Some(ref st), Some(last_id_val)) => {
             // Cursor-based pagination with source_type filter (efficient)
             if *st != "auto" && *st != "manual" {
-                return Err(format!(
+                return Err(AppError::validation(format!(
                     "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
                     st
-                ));
+                )));
             }
             (
                     "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
@@ -629,10 +639,10 @@ pub fn get_history_records_with_cursor_sync(
         (Some(ref st), None) => {
             // Offset-based pagination with source_type filter (backward compatible)
             if *st != "auto" && *st != "manual" {
-                return Err(format!(
+                return Err(AppError::validation(format!(
                     "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
                     st
-                ));
+                )));
             }
             let offset = page * page_size;
             (
@@ -682,9 +692,7 @@ pub fn get_history_records_with_cursor_sync(
         }
     };
 
-    let mut stmt = conn
-        .prepare(&sql)
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare(&sql)?;
 
     let params_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
 
@@ -702,10 +710,9 @@ pub fn get_history_records_with_cursor_sync(
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
 
     Ok(records)
 }
@@ -723,19 +730,27 @@ pub fn get_history_records_cursor_sync(
     source_type: Option<String>,
     last_id: Option<i64>,
     page_size: i64,
-) -> Result<Vec<Record>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+) -> AppResult<Vec<Record>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Parse start_date (YYYY-MM-DD) to local midnight 00:00:00
-    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start_date format (expected YYYY-MM-DD): {}", e))?;
+    let start_naive = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid start_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
     // Parse end_date (YYYY-MM-DD) to local end of day 23:59:59
-    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end_date format (expected YYYY-MM-DD): {}", e))?;
+    let end_naive = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!(
+            "Invalid end_date format (expected YYYY-MM-DD): {}",
+            e
+        ))
+    })?;
 
     // Convert to UTC RFC3339
     let start_utc = date_to_utc_rfc3339(start_naive, 0, 0, 0);
@@ -760,69 +775,57 @@ pub fn get_history_records_cursor_sync(
     // Build query with cursor-based pagination and execute
     match (source_type, last_id) {
         (Some(st), Some(lid)) if st == "auto" || st == "manual" => {
-            let mut stmt = conn
-                .prepare(
-                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3 AND id < ?4
                      ORDER BY id DESC LIMIT ?5",
-                )
-                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            )?;
             let records = stmt
-                .query_map(params![start_utc, end_utc, st, lid, page_size], map_row)
-                .map_err(|e| format!("Failed to query records: {}", e))?
+                .query_map(params![start_utc, end_utc, st, lid, page_size], map_row)?
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| format!("Failed to collect records: {}", e))?;
+                .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
             Ok(records)
         }
         (Some(st), None) if st == "auto" || st == "manual" => {
-            let mut stmt = conn
-                .prepare(
-                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2 AND source_type = ?3
                      ORDER BY id DESC LIMIT ?4",
-                )
-                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            )?;
             let records = stmt
-                .query_map(params![start_utc, end_utc, st, page_size], map_row)
-                .map_err(|e| format!("Failed to query records: {}", e))?
+                .query_map(params![start_utc, end_utc, st, page_size], map_row)?
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| format!("Failed to collect records: {}", e))?;
+                .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
             Ok(records)
         }
         (None, Some(lid)) => {
-            let mut stmt = conn
-                .prepare(
-                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2 AND id < ?3
                      ORDER BY id DESC LIMIT ?4",
-                )
-                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            )?;
             let records = stmt
-                .query_map(params![start_utc, end_utc, lid, page_size], map_row)
-                .map_err(|e| format!("Failed to query records: {}", e))?
+                .query_map(params![start_utc, end_utc, lid, page_size], map_row)?
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| format!("Failed to collect records: {}", e))?;
+                .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
             Ok(records)
         }
         (None, None) => {
-            let mut stmt = conn
-                .prepare(
-                    "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status FROM records
                      WHERE timestamp >= ?1 AND timestamp <= ?2
                      ORDER BY id DESC LIMIT ?3",
-                )
-                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+            )?;
             let records = stmt
-                .query_map(params![start_utc, end_utc, page_size], map_row)
-                .map_err(|e| format!("Failed to query records: {}", e))?
+                .query_map(params![start_utc, end_utc, page_size], map_row)?
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| format!("Failed to collect records: {}", e))?;
+                .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
             Ok(records)
         }
-        (Some(st), _) => Err(format!(
+        (Some(st), _) => Err(AppError::validation(format!(
             "Invalid source_type '{}'. Must be 'auto', 'manual', or null for all",
             st
-        )),
+        ))),
     }
 }
 
@@ -837,15 +840,15 @@ pub fn search_records_sync(
     query: &str,
     order_by: &str,
     limit: i64,
-) -> Result<Vec<SearchResult>, String> {
+) -> AppResult<Vec<SearchResult>> {
     if query.trim().is_empty() {
         return Ok(Vec::new());
     }
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Check if query contains CJK characters
     let has_cjk = query.chars().any(|c| {
@@ -868,9 +871,7 @@ pub fn search_records_sync(
             ORDER BY timestamp DESC
             LIMIT ?2";
 
-        let mut stmt = conn
-            .prepare(sql)
-            .map_err(|e| format!("Failed to prepare search query: {}", e))?;
+        let mut stmt = conn.prepare(sql)?;
 
         let like_pattern = format!("%{}%", query);
 
@@ -895,15 +896,14 @@ pub fn search_records_sync(
                     snippet,
                     rank: 0.0, // LIKE search doesn't have relevance score
                 })
-            })
-            .map_err(|e| format!("Failed to search records: {}", e))?
+            })?
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| format!("Failed to collect search results: {}", e))?;
+            .map_err(|e| AppError::database(format!("Failed to collect search results: {}", e)))?;
 
         Ok(results)
     } else {
         // Use FTS5 for non-CJK queries
-        let escaped_query = query.replace('\"', "\"\"");
+        let escaped_query = query.replace('"', "\"\"");
 
         let sql = if order_by == "time" {
             "SELECT
@@ -927,9 +927,7 @@ pub fn search_records_sync(
             LIMIT ?2"
         };
 
-        let mut stmt = conn
-            .prepare(sql)
-            .map_err(|e| format!("Failed to prepare search query: {}", e))?;
+        let mut stmt = conn.prepare(sql)?;
 
         // Wrap query in double quotes for exact phrase matching
         let fts_query = format!("\"{}\"", escaped_query);
@@ -953,9 +951,9 @@ pub fn search_records_sync(
                     rank: row.get(11)?,
                 })
             })
-            .map_err(|e| format!("Failed to search records: {}", e))?
+            .map_err(|e| AppError::database(format!("Failed to search records: {}", e)))?
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| format!("Failed to collect search results: {}", e))?;
+            .map_err(|e| AppError::database(format!("Failed to collect search results: {}", e)))?;
 
         Ok(results)
     }
@@ -964,7 +962,7 @@ pub fn search_records_sync(
 // ── Async Tauri command wrappers ──
 
 #[command]
-pub async fn get_today_records() -> Result<Vec<Record>, String> {
+pub async fn get_today_records() -> AppResult<Vec<Record>> {
     get_today_records_sync()
 }
 
@@ -972,13 +970,13 @@ pub async fn get_today_records() -> Result<Vec<Record>, String> {
 pub async fn get_records_by_date_range(
     start_date: String,
     end_date: String,
-) -> Result<Vec<Record>, String> {
+) -> AppResult<Vec<Record>> {
     get_records_by_date_range_sync(start_date, end_date)
 }
 
 /// Delete a record by ID
 #[command]
-pub async fn delete_record(id: i64) -> Result<(), String> {
+pub async fn delete_record(id: i64) -> AppResult<()> {
     delete_record_sync(id)
 }
 
@@ -990,7 +988,7 @@ pub async fn get_history_records(
     source_type: Option<String>,
     page: Option<i64>,
     page_size: Option<i64>,
-) -> Result<Vec<Record>, String> {
+) -> AppResult<Vec<Record>> {
     let page = page.unwrap_or(0);
     let page_size = page_size.unwrap_or(50);
     get_history_records_sync(start_date, end_date, source_type, page, page_size)
@@ -1004,7 +1002,7 @@ pub async fn get_history_records_cursor(
     source_type: Option<String>,
     last_id: Option<i64>,
     page_size: Option<i64>,
-) -> Result<Vec<Record>, String> {
+) -> AppResult<Vec<Record>> {
     let page_size = page_size.unwrap_or(50);
     get_history_records_cursor_sync(start_date, end_date, source_type, last_id, page_size)
 }
@@ -1015,7 +1013,7 @@ pub async fn search_records(
     query: String,
     order_by: Option<String>,
     limit: Option<i64>,
-) -> Result<Vec<SearchResult>, String> {
+) -> AppResult<Vec<SearchResult>> {
     let order_by = order_by.unwrap_or_else(|| "rank".to_string());
     let limit = limit.unwrap_or(50);
     search_records_sync(&query, &order_by, limit)
@@ -1024,13 +1022,13 @@ pub async fn search_records(
 /// Update user notes for a record
 /// FEAT-005: User can add manual notes to screenshot records (#66)
 #[command]
-pub async fn update_record_user_notes(id: i64, user_notes: Option<String>) -> Result<(), String> {
+pub async fn update_record_user_notes(id: i64, user_notes: Option<String>) -> AppResult<()> {
     update_record_user_notes_sync(id, user_notes.as_deref())
 }
 
 /// EXP-005: Get today's statistics for the summary widget
 #[command]
-pub async fn get_today_stats() -> Result<TodayStats, String> {
+pub async fn get_today_stats() -> AppResult<TodayStats> {
     get_today_stats_sync()
 }
 
@@ -1038,19 +1036,17 @@ pub async fn get_today_stats() -> Result<TodayStats, String> {
 ///
 /// Returns records that have `analysis_status = 'pending'` and belong to the given session.
 /// These are screenshots that have been captured but not yet analyzed by AI.
-pub fn get_records_by_session_id(session_id: i64) -> Result<Vec<SessionScreenshot>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_records_by_session_id(session_id: i64) -> AppResult<Vec<SessionScreenshot>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, screenshot_path FROM records
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, screenshot_path FROM records
              WHERE session_id = ?1 AND analysis_status = 'pending' AND screenshot_path IS NOT NULL
              ORDER BY timestamp ASC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
     let screenshots = stmt
         .query_map(params![session_id], |row| {
@@ -1059,8 +1055,7 @@ pub fn get_records_by_session_id(session_id: i64) -> Result<Vec<SessionScreensho
                 timestamp: row.get(1)?,
                 screenshot_path: row.get::<_, Option<String>>(2)?.unwrap_or_default(),
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .filter_map(|r| r.ok())
         .filter(|s| !s.screenshot_path.is_empty())
         .collect::<Vec<_>>();
@@ -1069,17 +1064,16 @@ pub fn get_records_by_session_id(session_id: i64) -> Result<Vec<SessionScreensho
 }
 
 /// SESSION-002: Update record content and analysis status after AI analysis
-pub fn update_record_analysis(record_id: i64, content: &str) -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn update_record_analysis(record_id: i64, content: &str) -> AppResult<()> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     conn.execute(
         "UPDATE records SET content = ?1, analysis_status = 'analyzed' WHERE id = ?2",
         params![content, record_id],
-    )
-    .map_err(|e| format!("Failed to update record: {}", e))?;
+    )?;
 
     Ok(())
 }
@@ -1089,17 +1083,16 @@ pub fn update_session_analysis(
     session_id: i64,
     ai_summary: &str,
     context_for_next: &str,
-) -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+) -> AppResult<()> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     conn.execute(
         "UPDATE sessions SET ai_summary = ?1, context_for_next = ?2, status = 'analyzed' WHERE id = ?3",
         params![ai_summary, context_for_next, session_id],
-    )
-    .map_err(|e| format!("Failed to update session: {}", e))?;
+    )?;
 
     Ok(())
 }
@@ -1457,7 +1450,10 @@ mod tests {
         let result =
             get_records_by_date_range_sync("invalid".to_string(), "2024-01-01".to_string());
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Invalid start_date format"));
+        assert!(result
+            .unwrap_err()
+            .message
+            .contains("Invalid start_date format"));
     }
 
     // ── get_history_records_sync tests ──
@@ -1533,7 +1529,7 @@ mod tests {
             50,
         );
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Invalid source_type"));
+        assert!(result.unwrap_err().message.contains("Invalid source_type"));
     }
 
     // ── delete_record_sync tests ──
@@ -1558,7 +1554,7 @@ mod tests {
 
         let result = delete_record_sync(99999);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not found"));
+        assert!(result.unwrap_err().message.contains("not found"));
     }
 
     // ── search_records_sync tests ──
@@ -1952,7 +1948,10 @@ mod tests {
 
         let result = get_records_for_export("not-a-date", "2024-01-01");
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Invalid start_date format"));
+        assert!(result
+            .unwrap_err()
+            .message
+            .contains("Invalid start_date format"));
     }
 
     #[test]
@@ -2118,7 +2117,7 @@ mod tests {
 
         let result = update_record_content_sync(99999, "new content");
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not found"));
+        assert!(result.unwrap_err().message.contains("not found"));
     }
 
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)

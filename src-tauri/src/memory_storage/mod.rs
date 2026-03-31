@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::command;
 
+use crate::errors::{AppError, AppResult};
+
 pub use schema::init_database;
 // Re-export all public items from settings module (including Tauri command generated types)
 pub use settings::*;
@@ -290,13 +292,13 @@ impl Settings {
         &self,
         vault_name: Option<&str>,
         auto_detect: bool,
-    ) -> Result<String, String> {
+    ) -> AppResult<String> {
         // 1. If explicitly specified, use that vault
         if let Some(name) = vault_name {
             if let Some(vault) = self.get_vault_by_name(name) {
                 return Ok(vault.path.clone());
             }
-            return Err(format!("Vault '{}' not found", name));
+            return Err(AppError::validation(format!("Vault '{}' not found", name)));
         }
 
         // 2. If auto-detect is enabled, try to detect by window
@@ -315,7 +317,7 @@ impl Settings {
         }
 
         // 3. Fall back to default vault (existing logic)
-        self.get_obsidian_output_path()
+        self.get_obsidian_output_path().map_err(AppError::internal)
     }
 }
 
@@ -581,24 +583,18 @@ fn get_last_day_of_month(year: i32, month: u32) -> u32 {
 }
 
 /// Parse a date string (YYYY-MM-DD) and return NaiveDate
-fn parse_date(date_str: &str) -> Result<NaiveDate, String> {
+fn parse_date(date_str: &str) -> AppResult<NaiveDate> {
     NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-        .map_err(|e| format!("Failed to parse date '{}': {}", date_str, e))
+        .map_err(|e| AppError::validation(format!("Failed to parse date '{}': {}", date_str, e)))
 }
 
 /// Count records in a date range
-fn count_records_in_range(
-    conn: &rusqlite::Connection,
-    start: &str,
-    end: &str,
-) -> Result<i64, String> {
-    let count: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ?",
-            [start, end],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+fn count_records_in_range(conn: &rusqlite::Connection, start: &str, end: &str) -> AppResult<i64> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ?",
+        [start, end],
+        |row| row.get(0),
+    )?;
     Ok(count)
 }
 
@@ -607,30 +603,23 @@ fn count_screenshots_in_range(
     conn: &rusqlite::Connection,
     start: &str,
     end: &str,
-) -> Result<i64, String> {
+) -> AppResult<i64> {
     let count: i64 = conn
         .query_row(
             "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ? AND screenshot_path IS NOT NULL AND screenshot_path != ''",
             [start, end],
             |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+        )?;
     Ok(count)
 }
 
 /// Count sessions in a date range
-fn count_sessions_in_range(
-    conn: &rusqlite::Connection,
-    start: &str,
-    end: &str,
-) -> Result<i64, String> {
-    let count: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM sessions WHERE date >= ? AND date <= ?",
-            [start[..10].to_string(), end[..10].to_string()],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+fn count_sessions_in_range(conn: &rusqlite::Connection, start: &str, end: &str) -> AppResult<i64> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM sessions WHERE date >= ? AND date <= ?",
+        [start[..10].to_string(), end[..10].to_string()],
+        |row| row.get(0),
+    )?;
     Ok(count)
 }
 
@@ -639,14 +628,12 @@ fn get_analysis_success_rate(
     conn: &rusqlite::Connection,
     start: &str,
     end: &str,
-) -> Result<f64, String> {
-    let total: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ?",
-            [start, end],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+) -> AppResult<f64> {
+    let total: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ?",
+        [start, end],
+        |row| row.get(0),
+    )?;
 
     if total == 0 {
         return Ok(0.0);
@@ -657,8 +644,7 @@ fn get_analysis_success_rate(
             "SELECT COUNT(*) FROM records WHERE timestamp >= ? AND timestamp <= ? AND analysis_status = 'analyzed'",
             [start, end],
             |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+        )?;
 
     Ok((analyzed as f64) / (total as f64) * 100.0)
 }
@@ -668,7 +654,7 @@ fn get_daily_breakdown(
     conn: &rusqlite::Connection,
     start: &str,
     end: &str,
-) -> Result<Vec<DailyStatistic>, String> {
+) -> AppResult<Vec<DailyStatistic>> {
     let start_date = parse_date(&start[..10])?;
     let end_date = parse_date(&end[..10])?;
 
@@ -708,7 +694,7 @@ pub async fn get_statistics(
     range_type: String,
     custom_start: Option<String>,
     custom_end: Option<String>,
-) -> Result<Statistics, String> {
+) -> AppResult<Statistics> {
     let (start, end, label) = match range_type.to_lowercase().as_str() {
         "today" => {
             let (s, e) = get_today_range();
@@ -725,10 +711,10 @@ pub async fn get_statistics(
         "custom" => {
             let start_str = custom_start
                 .clone()
-                .ok_or("custom_start is required for custom range")?;
+                .ok_or_else(|| AppError::validation("custom_start is required for custom range"))?;
             let end_str = custom_end
                 .clone()
-                .ok_or("custom_end is required for custom range")?;
+                .ok_or_else(|| AppError::validation("custom_end is required for custom range"))?;
 
             // Validate and parse dates
             let _ = parse_date(&start_str)?;
@@ -739,17 +725,17 @@ pub async fn get_statistics(
             (start, end, format!("{} 至 {}", start_str, end_str))
         }
         _ => {
-            return Err(format!(
+            return Err(AppError::validation(format!(
                 "Invalid range_type: {}. Use: today, week, month, custom",
                 range_type
-            ))
+            )))
         }
     };
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let screenshot_count = count_screenshots_in_range(conn, &start, &end)?;
     let session_count = count_sessions_in_range(conn, &start, &end)?;
@@ -1257,7 +1243,7 @@ mod tests_statistics {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(get_statistics("invalid".to_string(), None, None));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Invalid range_type"));
+        assert!(result.unwrap_err().message.contains("Invalid range_type"));
     }
 
     #[test]
@@ -1267,7 +1253,10 @@ mod tests_statistics {
         // Custom range without dates should fail
         let result = rt.block_on(get_statistics("custom".to_string(), None, None));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("custom_start is required"));
+        assert!(result
+            .unwrap_err()
+            .message
+            .contains("custom_start is required"));
 
         // Custom range with only start date should fail
         let result = rt.block_on(get_statistics(
@@ -1276,7 +1265,10 @@ mod tests_statistics {
             None,
         ));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("custom_end is required"));
+        assert!(result
+            .unwrap_err()
+            .message
+            .contains("custom_end is required"));
     }
 
     // STAB-001 Task 4.2: Database connection reconnection tests
@@ -1472,7 +1464,7 @@ mod tests_vault_001 {
         let settings = create_test_vaults();
         let result = settings.get_effective_vault(Some("Non Existent"), false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not found"));
+        assert!(result.unwrap_err().message.contains("not found"));
     }
 
     #[test]

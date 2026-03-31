@@ -405,9 +405,7 @@ pub fn update_session_user_summary_service(
 
 /// Get screenshots for a session
 pub fn get_session_screenshots_service(session_id: i64) -> AppResult<Vec<SessionScreenshot>> {
-    Ok(crate::memory_storage::get_records_by_session_id(
-        session_id,
-    )?)
+    crate::memory_storage::get_records_by_session_id(session_id)
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

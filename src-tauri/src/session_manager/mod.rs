@@ -458,7 +458,7 @@ pub async fn analyze_session(session_id: i64) -> AppResult<()> {
 /// SESSION-002: Get screenshots for a session
 /// Note: This function is kept for backward compatibility. The command is now in session_commands.rs.
 pub async fn get_session_screenshots(session_id: i64) -> AppResult<Vec<SessionScreenshot>> {
-    crate::memory_storage::get_records_by_session_id(session_id).map_err(AppError::from)
+    crate::memory_storage::get_records_by_session_id(session_id)
 }
 
 // ── SESSION-003: User summary editing ────────────────────────────────────────

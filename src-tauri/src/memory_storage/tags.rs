@@ -3,6 +3,7 @@
 //! Tag management module for manual tagging of records.
 //! Supports CRUD operations for tags, tag-record associations, and tag-based filtering.
 
+use crate::errors::{AppError, AppResult};
 use crate::memory_storage::{Record, DB_CONNECTION};
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -53,19 +54,17 @@ pub fn get_default_tag_categories() -> Vec<String> {
 
 /// Get all unique tags currently used in records
 #[command]
-pub fn get_all_tags() -> Result<Vec<String>, String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn get_all_tags() -> AppResult<Vec<String>> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare("SELECT DISTINCT tags FROM records WHERE tags IS NOT NULL AND tags != '[]'")
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt =
+        conn.prepare("SELECT DISTINCT tags FROM records WHERE tags IS NOT NULL AND tags != '[]'")?;
 
     let tag_strings: Vec<String> = stmt
-        .query_map([], |row| row.get(0))
-        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .query_map([], |row| row.get(0))?
         .filter_map(|r| r.ok())
         .collect();
 
@@ -86,21 +85,19 @@ pub fn get_all_tags() -> Result<Vec<String>, String> {
 
 /// Get records filtered by a specific tag
 #[command]
-pub fn get_records_by_tag(tag: String) -> Result<Vec<Record>, String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn get_records_by_tag(tag: String) -> AppResult<Vec<Record>> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Get all records with tags and filter in Rust (SQLite doesn't handle JSON arrays well)
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status
-             FROM records
-             WHERE tags IS NOT NULL
-             ORDER BY timestamp DESC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status
+         FROM records
+         WHERE tags IS NOT NULL
+         ORDER BY timestamp DESC",
+    )?;
 
     let records: Vec<Record> = stmt
         .query_map([], |row| {
@@ -116,8 +113,7 @@ pub fn get_records_by_tag(tag: String) -> Result<Vec<Record>, String> {
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        })?
         .filter_map(|r| r.ok())
         .filter(|r| {
             r.tags
@@ -135,25 +131,25 @@ pub fn get_records_by_tag(tag: String) -> Result<Vec<Record>, String> {
 
 /// 创建手动标签
 #[command]
-pub fn create_manual_tag(name: String, color: String) -> Result<ManualTag, String> {
+pub fn create_manual_tag(name: String, color: String) -> AppResult<ManualTag> {
     // 验证标签名长度
     if name.is_empty() || name.len() > 20 {
-        return Err("标签名长度必须在 1-20 个字符之间".to_string());
+        return Err(AppError::validation("标签名长度必须在 1-20 个字符之间"));
     }
 
     // 验证颜色是否有效
     if !PRESET_TAG_COLORS.contains(&color.as_str()) {
-        return Err(format!(
+        return Err(AppError::validation(format!(
             "无效的颜色 '{}', 可选颜色: {}",
             color,
             PRESET_TAG_COLORS.join(", ")
-        ));
+        )));
     }
 
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let created_at = chrono::Utc::now().to_rfc3339();
 
@@ -163,9 +159,9 @@ pub fn create_manual_tag(name: String, color: String) -> Result<ManualTag, Strin
     )
     .map_err(|e| {
         if e.to_string().contains("UNIQUE constraint failed") {
-            format!("标签 '{}' 已存在", name)
+            AppError::validation(format!("标签 '{}' 已存在", name))
         } else {
-            format!("Failed to create tag: {}", e)
+            AppError::from(e)
         }
     })?;
 
@@ -182,21 +178,19 @@ pub fn create_manual_tag(name: String, color: String) -> Result<ManualTag, Strin
 
 /// 获取所有手动标签（含使用计数）
 #[command]
-pub fn get_all_manual_tags() -> Result<Vec<ManualTag>, String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn get_all_manual_tags() -> AppResult<Vec<ManualTag>> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT t.id, t.name, t.color, t.created_at, COUNT(rmt.record_id) as usage_count
-             FROM manual_tags t
-             LEFT JOIN record_manual_tags rmt ON t.id = rmt.tag_id
-             GROUP BY t.id, t.name, t.color, t.created_at
-             ORDER BY usage_count DESC, t.name ASC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare(
+        "SELECT t.id, t.name, t.color, t.created_at, COUNT(rmt.record_id) as usage_count
+         FROM manual_tags t
+         LEFT JOIN record_manual_tags rmt ON t.id = rmt.tag_id
+         GROUP BY t.id, t.name, t.color, t.created_at
+         ORDER BY usage_count DESC, t.name ASC",
+    )?;
 
     let tags = stmt
         .query_map([], |row| {
@@ -207,35 +201,33 @@ pub fn get_all_manual_tags() -> Result<Vec<ManualTag>, String> {
                 created_at: row.get(3)?,
                 usage_count: Some(row.get(4)?),
             })
-        })
-        .map_err(|e| format!("Failed to query tags: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(tags)
 }
 
 /// 更新手动标签
 #[command]
-pub fn update_manual_tag(id: i64, name: String, color: String) -> Result<(), String> {
+pub fn update_manual_tag(id: i64, name: String, color: String) -> AppResult<()> {
     // 验证标签名长度
     if name.is_empty() || name.len() > 20 {
-        return Err("标签名长度必须在 1-20 个字符之间".to_string());
+        return Err(AppError::validation("标签名长度必须在 1-20 个字符之间"));
     }
 
     // 验证颜色是否有效
     if !PRESET_TAG_COLORS.contains(&color.as_str()) {
-        return Err(format!(
+        return Err(AppError::validation(format!(
             "无效的颜色 '{}', 可选颜色: {}",
             color,
             PRESET_TAG_COLORS.join(", ")
-        ));
+        )));
     }
 
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let rows_affected = conn
         .execute(
@@ -244,14 +236,14 @@ pub fn update_manual_tag(id: i64, name: String, color: String) -> Result<(), Str
         )
         .map_err(|e| {
             if e.to_string().contains("UNIQUE constraint failed") {
-                format!("标签 '{}' 已存在", name)
+                AppError::validation(format!("标签 '{}' 已存在", name))
             } else {
-                format!("Failed to update tag: {}", e)
+                AppError::from(e)
             }
         })?;
 
     if rows_affected == 0 {
-        return Err(format!("标签 ID {} 不存在", id));
+        return Err(AppError::validation(format!("标签 ID {} 不存在", id)));
     }
 
     Ok(())
@@ -259,26 +251,23 @@ pub fn update_manual_tag(id: i64, name: String, color: String) -> Result<(), Str
 
 /// 删除手动标签（级联删除关联）
 #[command]
-pub fn delete_manual_tag(id: i64) -> Result<(), String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn delete_manual_tag(id: i64) -> AppResult<()> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // 先删除关联记录
     conn.execute(
         "DELETE FROM record_manual_tags WHERE tag_id = ?1",
         params![id],
-    )
-    .map_err(|e| format!("Failed to delete tag associations: {}", e))?;
+    )?;
 
     // 再删除标签
-    let rows_affected = conn
-        .execute("DELETE FROM manual_tags WHERE id = ?1", params![id])
-        .map_err(|e| format!("Failed to delete tag: {}", e))?;
+    let rows_affected = conn.execute("DELETE FROM manual_tags WHERE id = ?1", params![id])?;
 
     if rows_affected == 0 {
-        return Err(format!("标签 ID {} 不存在", id));
+        return Err(AppError::validation(format!("标签 ID {} 不存在", id)));
     }
 
     Ok(())
@@ -288,21 +277,18 @@ pub fn delete_manual_tag(id: i64) -> Result<(), String> {
 
 /// 获取所有标签的颜色映射
 #[command]
-pub fn get_tag_colors() -> Result<HashMap<String, String>, String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn get_tag_colors() -> AppResult<HashMap<String, String>> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare("SELECT name, color FROM manual_tags")
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare("SELECT name, color FROM manual_tags")?;
 
     let colors: HashMap<String, String> = stmt
         .query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-        })
-        .map_err(|e| format!("Failed to query tag colors: {}", e))?
+        })?
         .filter_map(|r| r.ok())
         .collect();
 
@@ -311,56 +297,51 @@ pub fn get_tag_colors() -> Result<HashMap<String, String>, String> {
 
 /// 设置标签颜色
 #[command]
-pub fn set_tag_color(tag_name: String, color: String) -> Result<(), String> {
+pub fn set_tag_color(tag_name: String, color: String) -> AppResult<()> {
     // 验证颜色是否有效
     if !PRESET_TAG_COLORS.contains(&color.as_str()) {
-        return Err(format!(
+        return Err(AppError::validation(format!(
             "无效的颜色 '{}', 可选颜色: {}",
             color,
             PRESET_TAG_COLORS.join(", ")
-        ));
+        )));
     }
 
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let rows_affected = conn
-        .execute(
-            "UPDATE manual_tags SET color = ?1 WHERE name = ?2",
-            params![color, tag_name],
-        )
-        .map_err(|e| format!("Failed to update tag color: {}", e))?;
+    let rows_affected = conn.execute(
+        "UPDATE manual_tags SET color = ?1 WHERE name = ?2",
+        params![color, tag_name],
+    )?;
 
     if rows_affected == 0 {
-        return Err(format!("标签 '{}' 不存在", tag_name));
+        return Err(AppError::validation(format!("标签 '{}' 不存在", tag_name)));
     }
 
     Ok(())
 }
 
 /// 获取颜色使用统计（用于自动分配）
-fn get_color_usage_counts() -> Result<HashMap<String, i64>, String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+fn get_color_usage_counts() -> AppResult<HashMap<String, i64>> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT mt.color, COUNT(rmt.record_id) as usage_count
-             FROM manual_tags mt
-             LEFT JOIN record_manual_tags rmt ON mt.id = rmt.tag_id
-             GROUP BY mt.color",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare(
+        "SELECT mt.color, COUNT(rmt.record_id) as usage_count
+         FROM manual_tags mt
+         LEFT JOIN record_manual_tags rmt ON mt.id = rmt.tag_id
+         GROUP BY mt.color",
+    )?;
 
     let counts: HashMap<String, i64> = stmt
         .query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
-        })
-        .map_err(|e| format!("Failed to query color counts: {}", e))?
+        })?
         .filter_map(|r| r.ok())
         .collect();
 
@@ -368,7 +349,7 @@ fn get_color_usage_counts() -> Result<HashMap<String, i64>, String> {
 }
 
 /// 为新标签自动分配颜色（TAG-002: 使用次数最少的颜色优先）
-pub fn allocate_color_for_new_tag() -> Result<String, String> {
+pub fn allocate_color_for_new_tag() -> AppResult<String> {
     let counts = get_color_usage_counts()?;
 
     // 找出使用次数最少的颜色
@@ -390,11 +371,11 @@ pub fn allocate_color_for_new_tag() -> Result<String, String> {
 
 /// 为记录添加标签
 #[command]
-pub fn add_tag_to_record(record_id: i64, tag_id: i64) -> Result<(), String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn add_tag_to_record(record_id: i64, tag_id: i64) -> AppResult<()> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // 检查记录是否存在
     let record_exists: bool = conn
@@ -403,12 +384,14 @@ pub fn add_tag_to_record(record_id: i64, tag_id: i64) -> Result<(), String> {
             params![record_id],
             |_row| Ok(true),
         )
-        .optional()
-        .map_err(|e| format!("Failed to check record: {}", e))?
+        .optional()?
         .unwrap_or(false);
 
     if !record_exists {
-        return Err(format!("记录 ID {} 不存在", record_id));
+        return Err(AppError::validation(format!(
+            "记录 ID {} 不存在",
+            record_id
+        )));
     }
 
     // 检查标签是否存在
@@ -418,12 +401,11 @@ pub fn add_tag_to_record(record_id: i64, tag_id: i64) -> Result<(), String> {
             params![tag_id],
             |_row| Ok(true),
         )
-        .optional()
-        .map_err(|e| format!("Failed to check tag: {}", e))?
+        .optional()?
         .unwrap_or(false);
 
     if !tag_exists {
-        return Err(format!("标签 ID {} 不存在", tag_id));
+        return Err(AppError::validation(format!("标签 ID {} 不存在", tag_id)));
     }
 
     // 检查是否已关联
@@ -433,8 +415,7 @@ pub fn add_tag_to_record(record_id: i64, tag_id: i64) -> Result<(), String> {
             params![record_id, tag_id],
             |_row| Ok(true),
         )
-        .optional()
-        .map_err(|e| format!("Failed to check link: {}", e))?
+        .optional()?
         .unwrap_or(false);
 
     if already_linked {
@@ -442,44 +423,39 @@ pub fn add_tag_to_record(record_id: i64, tag_id: i64) -> Result<(), String> {
     }
 
     // 检查该记录的标签数量是否已达上限
-    let tag_count: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM record_manual_tags WHERE record_id = ?1",
-            params![record_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| format!("Failed to count tags: {}", e))?;
+    let tag_count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM record_manual_tags WHERE record_id = ?1",
+        params![record_id],
+        |row| row.get(0),
+    )?;
 
     if tag_count >= 10 {
-        return Err("每条记录最多只能添加 10 个标签".to_string());
+        return Err(AppError::validation("每条记录最多只能添加 10 个标签"));
     }
 
     conn.execute(
         "INSERT INTO record_manual_tags (record_id, tag_id) VALUES (?1, ?2)",
         params![record_id, tag_id],
-    )
-    .map_err(|e| format!("Failed to add tag to record: {}", e))?;
+    )?;
 
     Ok(())
 }
 
 /// 从记录移除标签
 #[command]
-pub fn remove_tag_from_record(record_id: i64, tag_id: i64) -> Result<(), String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn remove_tag_from_record(record_id: i64, tag_id: i64) -> AppResult<()> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let rows_affected = conn
-        .execute(
-            "DELETE FROM record_manual_tags WHERE record_id = ?1 AND tag_id = ?2",
-            params![record_id, tag_id],
-        )
-        .map_err(|e| format!("Failed to remove tag from record: {}", e))?;
+    let rows_affected = conn.execute(
+        "DELETE FROM record_manual_tags WHERE record_id = ?1 AND tag_id = ?2",
+        params![record_id, tag_id],
+    )?;
 
     if rows_affected == 0 {
-        return Err("记录与标签未关联".to_string());
+        return Err(AppError::validation("记录与标签未关联"));
     }
 
     Ok(())
@@ -487,21 +463,19 @@ pub fn remove_tag_from_record(record_id: i64, tag_id: i64) -> Result<(), String>
 
 /// 获取记录的所有手动标签
 #[command]
-pub fn get_tags_for_record(record_id: i64) -> Result<Vec<ManualTag>, String> {
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+pub fn get_tags_for_record(record_id: i64) -> AppResult<Vec<ManualTag>> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT t.id, t.name, t.color, t.created_at
-             FROM manual_tags t
-             INNER JOIN record_manual_tags rmt ON t.id = rmt.tag_id
-             WHERE rmt.record_id = ?1
-             ORDER BY t.name",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare(
+        "SELECT t.id, t.name, t.color, t.created_at
+         FROM manual_tags t
+         INNER JOIN record_manual_tags rmt ON t.id = rmt.tag_id
+         WHERE rmt.record_id = ?1
+         ORDER BY t.name",
+    )?;
 
     let tags = stmt
         .query_map(params![record_id], |row| {
@@ -512,25 +486,23 @@ pub fn get_tags_for_record(record_id: i64) -> Result<Vec<ManualTag>, String> {
                 created_at: row.get(3)?,
                 usage_count: None,
             })
-        })
-        .map_err(|e| format!("Failed to query tags: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(tags)
 }
 
 /// 批量获取多条记录的手动标签 (PERF-001: 替代 N+1 查询)
 #[command]
-pub fn get_tags_for_records(record_ids: Vec<i64>) -> Result<HashMap<i64, Vec<ManualTag>>, String> {
+pub fn get_tags_for_records(record_ids: Vec<i64>) -> AppResult<HashMap<i64, Vec<ManualTag>>> {
     if record_ids.is_empty() {
         return Ok(HashMap::new());
     }
 
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let placeholders: Vec<String> = record_ids.iter().map(|_| "?".to_string()).collect();
     let placeholders_str = placeholders.join(",");
@@ -544,9 +516,7 @@ pub fn get_tags_for_records(record_ids: Vec<i64>) -> Result<HashMap<i64, Vec<Man
         placeholders_str
     );
 
-    let mut stmt = conn
-        .prepare(&sql)
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare(&sql)?;
 
     let params: Vec<Box<dyn rusqlite::types::ToSql>> = record_ids
         .iter()
@@ -566,10 +536,8 @@ pub fn get_tags_for_records(record_ids: Vec<i64>) -> Result<HashMap<i64, Vec<Man
                     usage_count: None,
                 },
             ))
-        })
-        .map_err(|e| format!("Failed to query tags: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
 
     let mut result: HashMap<i64, Vec<ManualTag>> = HashMap::new();
     for (record_id, tag) in rows {
@@ -585,15 +553,15 @@ pub fn get_records_by_manual_tags(
     tag_ids: Vec<i64>,
     page: i64,
     page_size: i64,
-) -> Result<Vec<Record>, String> {
+) -> AppResult<Vec<Record>> {
     if tag_ids.is_empty() {
         return Ok(Vec::new());
     }
 
-    let db_guard = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("Database not initialized")?;
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // 构建参数占位符
     let placeholders: Vec<String> = tag_ids.iter().map(|_| "?".to_string()).collect();
@@ -617,9 +585,7 @@ pub fn get_records_by_manual_tags(
     let offset = page * page_size;
     let tag_count = tag_ids.len() as i64;
 
-    let mut stmt = conn
-        .prepare(&sql)
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let mut stmt = conn.prepare(&sql)?;
 
     // 构建参数列表
     let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
@@ -646,10 +612,8 @@ pub fn get_records_by_manual_tags(
                 session_id: row.get(8)?,
                 analysis_status: row.get(9)?,
             })
-        })
-        .map_err(|e| format!("Failed to query records: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(records)
 }
@@ -815,7 +779,7 @@ mod tests {
 
         let result = create_manual_tag("".to_string(), "blue".to_string());
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("1-20"));
+        assert!(result.unwrap_err().message.contains("1-20"));
     }
 
     #[test]
@@ -826,7 +790,7 @@ mod tests {
         let long_name = "这是一个非常长的标签名称超过了二十个字符的限制";
         let result = create_manual_tag(long_name.to_string(), "blue".to_string());
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("1-20"));
+        assert!(result.unwrap_err().message.contains("1-20"));
     }
 
     #[test]
@@ -836,7 +800,7 @@ mod tests {
 
         let result = create_manual_tag("工作".to_string(), "invalid".to_string());
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("无效的颜色"));
+        assert!(result.unwrap_err().message.contains("无效的颜色"));
     }
 
     #[test]
@@ -847,7 +811,7 @@ mod tests {
         let _ = create_manual_tag("工作".to_string(), "blue".to_string()).unwrap();
         let result = create_manual_tag("工作".to_string(), "green".to_string());
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("已存在"));
+        assert!(result.unwrap_err().message.contains("已存在"));
     }
 
     #[test]
@@ -929,7 +893,7 @@ mod tests {
         let result = add_tag_to_record(999, tag.id);
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("不存在"));
+        assert!(result.unwrap_err().message.contains("不存在"));
     }
 
     #[test]
@@ -941,7 +905,7 @@ mod tests {
         let result = add_tag_to_record(record_id, 999);
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("不存在"));
+        assert!(result.unwrap_err().message.contains("不存在"));
     }
 
     #[test]
@@ -962,7 +926,7 @@ mod tests {
         let result = add_tag_to_record(record_id, tag11.id);
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("10"));
+        assert!(result.unwrap_err().message.contains("10"));
     }
 
     #[test]
