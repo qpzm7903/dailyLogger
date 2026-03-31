@@ -445,13 +445,13 @@ async function loadStatistics() {
   error.value = ''
 
   try {
-    const args: { range_type: string; custom_start?: string; custom_end?: string } = {
-      range_type: selectedRange.value,
+    const args: { rangeType: string; customStart?: string; customEnd?: string } = {
+      rangeType: selectedRange.value,
     }
 
     if (selectedRange.value === 'custom') {
-      args.custom_start = customStart.value
-      args.custom_end = customEnd.value
+      args.customStart = customStart.value
+      args.customEnd = customEnd.value
     }
 
     statistics.value = await invoke<Statistics>('get_statistics', args)

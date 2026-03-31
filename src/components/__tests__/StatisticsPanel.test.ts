@@ -376,7 +376,7 @@ describe('StatisticsPanel', () => {
       mount(StatisticsPanel)
 
       await vi.waitFor(() => {
-        expect(invoke).toHaveBeenCalledWith('get_statistics', { range_type: 'today' })
+        expect(invoke).toHaveBeenCalledWith('get_statistics', { rangeType: 'today' })
       })
     })
 
@@ -411,7 +411,7 @@ describe('StatisticsPanel', () => {
       await weekBtn?.trigger('click')
 
       await vi.waitFor(() => {
-        expect(invoke).toHaveBeenCalledWith('get_statistics', { range_type: 'week' })
+        expect(invoke).toHaveBeenCalledWith('get_statistics', { rangeType: 'week' })
       })
     })
 
@@ -446,7 +446,7 @@ describe('StatisticsPanel', () => {
       await monthBtn?.trigger('click')
 
       await vi.waitFor(() => {
-        expect(invoke).toHaveBeenCalledWith('get_statistics', { range_type: 'month' })
+        expect(invoke).toHaveBeenCalledWith('get_statistics', { rangeType: 'month' })
       })
     })
   })
@@ -507,9 +507,9 @@ describe('StatisticsPanel', () => {
 
       await vi.waitFor(() => {
         expect(invoke).toHaveBeenCalledWith('get_statistics', {
-          range_type: 'custom',
-          custom_start: '2026-03-01',
-          custom_end: '2026-03-15',
+          rangeType: 'custom',
+          customStart: '2026-03-01',
+          customEnd: '2026-03-15',
         })
       })
     })
