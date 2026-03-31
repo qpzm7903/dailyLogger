@@ -203,7 +203,7 @@ pub struct PlatformDisplayProvider;
 
 impl DisplayProvider for PlatformDisplayProvider {
     fn get_monitor_list(&self) -> Result<Vec<MonitorDetail>, String> {
-        crate::monitor::get_monitor_list()
+        crate::monitor::get_monitor_list().map_err(|e| e.to_string())
     }
 
     fn get_monitor_summaries(&self) -> Result<Vec<MonitorSummary>, String> {
