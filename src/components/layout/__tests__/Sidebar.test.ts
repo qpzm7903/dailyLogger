@@ -89,7 +89,7 @@ describe('Sidebar', () => {
       const wrapper = mount(Sidebar, {
         props: { offlineQueueCount: 0 }
       })
-      expect(wrapper.text()).toContain('设置')
+      expect(wrapper.text()).toContain('Settings')
     })
 
     it('renders collapse/expand toggle button', () => {
@@ -192,7 +192,7 @@ describe('Sidebar', () => {
 
       // Find the settings button (not in nav, in bottom actions)
       const allButtons = wrapper.findAll('button')
-      const settingsButton = allButtons.find(btn => btn.text().includes('设置'))
+      const settingsButton = allButtons.find(btn => btn.text().includes('Settings'))
       await settingsButton?.trigger('click')
 
       expect(wrapper.emitted('open')).toBeTruthy()
