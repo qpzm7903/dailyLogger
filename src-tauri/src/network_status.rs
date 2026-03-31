@@ -31,7 +31,9 @@ pub async fn check_connectivity() -> bool {
 
     let api_url = settings
         .api_base_url
+        .as_ref()
         .filter(|u| !u.is_empty())
+        .cloned()
         .unwrap_or_else(|| "https://api.openai.com".to_string());
 
     let online = ping_endpoint(&api_url).await;

@@ -1,13 +1,16 @@
 use crate::crypto;
 use crate::errors::{AppError, AppResult};
 use once_cell::sync::Lazy;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use super::{Settings, DB_CONNECTION};
 
 /// In-memory cache for Settings to avoid repeated DB queries.
 /// Write-through: updated on every `save_settings_sync` call.
-static SETTINGS_CACHE: Lazy<RwLock<Option<Settings>>> = Lazy::new(|| RwLock::new(None));
+/// Uses `Arc<Settings>` so all readers share the same allocation —
+/// `get_settings_sync()` returns a cheap `Arc` clone instead of cloning
+/// the full 64-field `Settings` struct.
+static SETTINGS_CACHE: Lazy<RwLock<Option<Arc<Settings>>>> = Lazy::new(|| RwLock::new(None));
 
 /// Invalidate the settings cache. Called when the database is re-initialized.
 pub fn invalidate_settings_cache() {
@@ -16,11 +19,11 @@ pub fn invalidate_settings_cache() {
     }
 }
 
-pub fn get_settings_sync() -> AppResult<Settings> {
-    // Fast path: return cached settings if available
+pub fn get_settings_sync() -> AppResult<Arc<Settings>> {
+    // Fast path: return cached Arc (cheap atomic refcount bump, no struct clone)
     if let Ok(cache) = SETTINGS_CACHE.read() {
         if let Some(ref settings) = *cache {
-            return Ok(settings.clone());
+            return Ok(Arc::clone(settings));
         }
     }
 
@@ -219,9 +222,11 @@ pub fn get_settings_sync() -> AppResult<Settings> {
         settings
     };
 
+    let settings = Arc::new(settings);
+
     // Update cache
     if let Ok(mut cache) = SETTINGS_CACHE.write() {
-        *cache = Some(settings.clone());
+        *cache = Some(Arc::clone(&settings));
     }
 
     Ok(settings)
@@ -445,7 +450,7 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
 
     // Update cache with the saved (decrypted) settings
     if let Ok(mut cache) = SETTINGS_CACHE.write() {
-        *cache = Some(settings.clone());
+        *cache = Some(Arc::new(settings.clone()));
     }
 
     tracing::info!("Settings saved");
@@ -455,7 +460,7 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
 // ── Async wrappers (for use by command layer) ──
 
 /// Async wrapper for getting settings (used by command layer)
-pub async fn get_settings() -> AppResult<Settings> {
+pub async fn get_settings() -> AppResult<Arc<Settings>> {
     get_settings_sync()
 }
 

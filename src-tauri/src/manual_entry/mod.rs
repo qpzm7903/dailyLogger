@@ -426,7 +426,7 @@ mod tests {
         setup_test_db_with_settings();
 
         // Save settings with empty obsidian_path
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = Some("".to_string());
         memory_storage::save_settings_sync(&settings).unwrap();
 
@@ -446,7 +446,7 @@ mod tests {
         setup_test_db_with_settings();
 
         // Save settings with whitespace-only obsidian_path
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = Some("   \t\n  ".to_string());
         memory_storage::save_settings_sync(&settings).unwrap();
 
@@ -466,7 +466,7 @@ mod tests {
         setup_test_db_with_settings();
 
         // Save settings with a path that doesn't exist
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = Some("/nonexistent/path/that/does/not/exist".to_string());
         memory_storage::save_settings_sync(&settings).unwrap();
 
@@ -489,7 +489,7 @@ mod tests {
         let temp_dir = std::env::temp_dir();
         let path_str = temp_dir.to_string_lossy().to_string();
 
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = Some(path_str.clone());
         memory_storage::save_settings_sync(&settings).unwrap();
 
@@ -519,7 +519,7 @@ mod tests {
         setup_test_db_with_settings();
 
         // Explicitly clear obsidian_path to ensure it's None (protect against parallel test interference)
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = None;
         memory_storage::save_settings_sync(&settings).unwrap();
 
@@ -569,7 +569,7 @@ mod tests {
 
         // Use a valid existing directory
         let temp_dir = std::env::temp_dir();
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = Some(temp_dir.to_string_lossy().to_string());
         memory_storage::save_settings_sync(&settings).unwrap();
 
@@ -587,7 +587,7 @@ mod tests {
         setup_test_db_with_settings();
 
         let temp_dir = std::env::temp_dir();
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = Some(temp_dir.to_string_lossy().to_string());
         memory_storage::save_settings_sync(&settings).unwrap();
 
@@ -604,7 +604,7 @@ mod tests {
         setup_test_db_with_settings();
 
         // Path validation (empty, nonexistent) should work the same on all platforms
-        let mut settings = memory_storage::get_settings_sync().unwrap();
+        let mut settings = (*memory_storage::get_settings_sync().unwrap()).clone();
         settings.obsidian_path = Some("/absolutely/nonexistent/path/12345".to_string());
         memory_storage::save_settings_sync(&settings).unwrap();
 

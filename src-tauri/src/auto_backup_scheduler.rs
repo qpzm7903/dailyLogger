@@ -110,7 +110,8 @@ pub fn should_run_backup_now() -> bool {
 
 /// Update last_auto_backup_at timestamp
 pub fn update_last_backup_time() -> AppResult<()> {
-    let mut settings = get_settings_sync()?;
+    let settings = get_settings_sync()?;
+    let mut settings = (*settings).clone();
     settings.last_auto_backup_at = Some(Local::now().format("%Y-%m-%dT%H:%M:%S%.f").to_string());
     save_settings_sync(&settings)
 }
