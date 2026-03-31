@@ -15,7 +15,7 @@
       v-if="!isCollapsed"
       class="text-[var(--color-text-muted)] text-xs mb-2"
     >
-      v2.14.0
+      v{{ appVersion }}
     </div>
 
     <!-- Navigation Items -->
@@ -66,7 +66,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getVersion } from '@tauri-apps/api/app'
 import {
   FileText,
   History,
@@ -94,6 +95,16 @@ const { activeModal } = useModal()
 
 // Collapsed state
 const isCollapsed = ref(false)
+
+// App version from Tauri
+const appVersion = ref('')
+onMounted(async () => {
+  try {
+    appVersion.value = await getVersion()
+  } catch {
+    appVersion.value = ''
+  }
+})
 
 interface NavItem {
   id: string

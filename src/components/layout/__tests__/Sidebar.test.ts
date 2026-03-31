@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, ref } from 'vue'
+import { flushPromises } from '@vue/test-utils'
 import Sidebar from '../Sidebar.vue'
 
 // Mock lucide-vue-next icons
@@ -15,6 +16,11 @@ vi.mock('lucide-vue-next', () => ({
   Settings: { template: '<span class="icon-settings">Settings</span>' },
   ChevronLeft: { template: '<span class="icon-chevron-left">ChevronLeft</span>' },
   ChevronRight: { template: '<span class="icon-chevron-right">ChevronRight</span>' }
+}))
+
+// Mock @tauri-apps/api/app
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: vi.fn().mockResolvedValue('4.4.2')
 }))
 
 // Mock useModal
@@ -48,19 +54,21 @@ describe('Sidebar', () => {
       expect(wrapper.text()).toContain('📝')
     })
 
-    it('displays version number when not collapsed', () => {
+    it('displays version number when not collapsed', async () => {
       const wrapper = mount(Sidebar, {
         props: { offlineQueueCount: 0 }
       })
-      expect(wrapper.text()).toContain('v2.14.0')
+      await flushPromises()
+      expect(wrapper.text()).toContain('v4.4.2')
     })
 
     it('hides version number when collapsed', async () => {
       const wrapper = mount(Sidebar, {
         props: { offlineQueueCount: 0 }
       })
+      await flushPromises()
       // Initially not collapsed
-      expect(wrapper.text()).toContain('v2.14.0')
+      expect(wrapper.text()).toContain('v4.4.2')
 
       // Toggle collapse via the collapse button
       const collapseButton = wrapper.findAll('button').at(-1)
