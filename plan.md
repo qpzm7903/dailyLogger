@@ -63,9 +63,14 @@
 - ✅ 更新 plan.md，清理已完成的未来优化项
 
 ### 未来优化方向 (已识别，待排期)
-- Settings 过度 clone 优化 (Arc<Settings> 或缓存机制) → v4.7.0 规划中
 - report_service 5 个报告生成函数结构相似，可提取通用模板方法
 - i18n: Dashboard/Sidebar/ReportDropdown 仍有 15+ 硬编码中文字符串
+
+### v4.7.0: Settings 性能优化 🔄 进行中
+- ✅ Settings 缓存改为 Arc<Settings>，消除每次读取的 64 字段 struct clone
+- ✅ auto_backup_scheduler 合并冗余 settings 读取 (5→1)
+- ✅ capture_service 适配 Arc<Settings> 返回类型
+- 🔄 其他高频 settings 读取场景逐步优化
 
 ### v4.6.2: Bug 修复 & DRY 收窄 ✅ 已完成
 - ✅ 修复 TimelineWidget 动态 Tailwind 类名 (bg-purple-${n}) 未被 JIT 编译的 bug
