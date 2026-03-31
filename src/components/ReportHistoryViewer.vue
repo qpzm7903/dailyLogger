@@ -1,7 +1,6 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] h-[80vh] max-w-3xl overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+  <BaseModal @close="$emit('close')" contentClass="w-[90vw] h-[80vh] max-w-3xl overflow-hidden flex flex-col">
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">📁 {{ t('reportHistory.title') }}</h2>
         <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
@@ -56,13 +55,13 @@
           {{ t('reportHistory.viewSelected') }}
         </button>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import BaseModal from './BaseModal.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

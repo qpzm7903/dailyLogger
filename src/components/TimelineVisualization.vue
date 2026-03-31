@@ -1,6 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div class="bg-[var(--color-surface-1)] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-[var(--color-border)]">
+  <BaseModal @close="$emit('close')" contentClass="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
       <!-- Header -->
       <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
         <div class="flex items-center gap-3">
@@ -129,14 +128,14 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from 'vue-i18n';
+import BaseModal from './BaseModal.vue'
 import type { LogRecord, Tag } from '../types/tauri';
 
 interface TimelineEvent {

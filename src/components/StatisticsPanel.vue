@@ -1,7 +1,6 @@
 <template>
-  <div ref="containerRef" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="handleClose">
-    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl w-[900px] max-h-[85vh] overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <!-- Header -->
+  <BaseModal @close="handleClose" contentClass="w-[900px] max-h-[85vh] overflow-hidden flex flex-col">
+    <!-- Header -->
       <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('statistics.title') }}</h2>
         <button @click="handleClose" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
@@ -351,24 +350,20 @@
           {{ t('statistics.close') }}
         </button>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import BaseModal from './BaseModal.vue'
 import { useFocusTrap } from '../composables/useFocusTrap'
 import type { Statistics, ProductivityTrend } from '../types/tauri'
 
 const emit = defineEmits<{(e: 'close'): void}>()
 
 const { t } = useI18n()
-
-// Focus trap for accessibility
-const containerRef = ref<HTMLElement | null>(null)
-const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(containerRef)
 
 // Tab state
 const activeTab = ref<'details' | 'trends'>('details')
@@ -686,11 +681,6 @@ function handleClose() {
 }
 
 onMounted(() => {
-  activateFocusTrap()
   loadStatistics()
-})
-
-onBeforeUnmount(() => {
-  deactivateFocusTrap()
 })
 </script>

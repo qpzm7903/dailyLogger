@@ -1,11 +1,6 @@
 <template>
-  <div
-    class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-    @click.self="$emit('close')"
-    :ref="focusTrap.containerRef"
-  >
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+  <BaseModal @close="$emit('close')" contentClass="w-[90vw] h-[90vh] max-w-6xl overflow-hidden flex flex-col">
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">📷 {{ t('screenshotGallery.title') }}</h2>
         <div class="flex items-center gap-2">
           <!-- View toggle buttons -->
@@ -208,7 +203,6 @@
           </div>
         </template>
       </div>
-    </div>
 
     <!-- Screenshot detail modal -->
     <ScreenshotModal
@@ -217,17 +211,17 @@
       @close="showDetail = false"
       @updated="handleRecordUpdated"
     />
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import BaseModal from './BaseModal.vue'
 import ScreenshotModal from './ScreenshotModal.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonLoader from './SkeletonLoader.vue'
-import { useModal } from '../composables/useModal'
 import { useVirtualScroll } from '../composables/useVirtualScroll'
 import { useThumbnailCache } from '../composables/useThumbnailCache'
 import type { LogRecord } from '../types/tauri'
@@ -242,7 +236,6 @@ interface ScreenshotRecord extends LogRecord {
 
 const { t } = useI18n()
 const emit = defineEmits<{(e: 'close'): void}>()
-const { focusTrap } = useModal()
 
 const screenshots = ref<ScreenshotRecord[]>([])
 const isLoading = ref(true)
@@ -505,11 +498,6 @@ const reanalyzeRecord = async (screenshot: ScreenshotRecord) => {
 }
 
 onMounted(() => {
-  focusTrap.activate()
   loadScreenshots()
-})
-
-onBeforeUnmount(() => {
-  focusTrap.deactivate()
 })
 </script>

@@ -1,13 +1,7 @@
 <template>
-  <div
-    class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-    @click.self="$emit('close')"
-    @keydown.esc="$emit('close')"
-    :ref="focusTrap.containerRef"
-  >
-    <div role="dialog" aria-modal="true" class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] h-[90vh] max-w-4xl overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <!-- Header -->
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+  <BaseModal @close="$emit('close')" contentClass="w-[90vw] h-[90vh] max-w-4xl overflow-hidden flex flex-col">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 class="text-lg font-semibold">{{ t('searchPanel.title') }}</h2>
         <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
@@ -143,8 +137,7 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -153,12 +146,12 @@ import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useDebounceFn } from '@vueuse/core'
+import BaseModal from './BaseModal.vue'
 import EmptyState from './EmptyState.vue'
-import { useModal } from '../composables/useModal'
-import { showError } from '../stores/toast'
-import SkeletonLoader from './SkeletonLoader.vue'
 import { sanitizeSnippet } from '../utils/contentUtils'
+import { showError } from '../stores/toast'
 import type { Record } from '../types/tauri'
+import SkeletonLoader from './SkeletonLoader.vue'
 
 interface SearchResult {
   record: Record
@@ -171,7 +164,6 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'viewScreenshot', record: Record): void
 }>()
-const { focusTrap } = useModal()
 
 // UX-022: Virtual scroll configuration
 const VIRTUAL_SCROLL_CONFIG = {
@@ -266,15 +258,6 @@ function handleResultClick(record: Record) {
   emit('viewScreenshot', record)
   emit('close')
 }
-
-// UX-5: Focus trap lifecycle
-onMounted(() => {
-  focusTrap.activate()
-})
-
-onBeforeUnmount(() => {
-  focusTrap.deactivate()
-})
 </script>
 
 <style scoped>

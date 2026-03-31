@@ -1,8 +1,7 @@
 <template>
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-[var(--color-surface-1)] rounded-2xl w-[90vw] max-w-lg overflow-hidden border border-[var(--color-border)] flex flex-col">
-      <!-- Header -->
-      <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+  <BaseModal @close="$emit('close')" contentClass="w-[90vw] max-w-lg overflow-hidden flex flex-col">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h3 class="text-lg font-semibold">{{ t('tagCloud.title') }}</h3>
         <button @click="$emit('close')" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
       </div>
@@ -71,8 +70,7 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
