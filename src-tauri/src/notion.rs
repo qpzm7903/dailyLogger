@@ -507,10 +507,13 @@ async fn get_title_property_name(api_key: &str, database_id: &str) -> AppResult<
         )));
     }
 
-    let db: NotionDatabaseResponse = response
-        .json()
-        .await
-        .map_err(|e| AppError::with_context(ErrorCode::Network, "Failed to parse Notion database response", e.to_string()))?;
+    let db: NotionDatabaseResponse = response.json().await.map_err(|e| {
+        AppError::with_context(
+            ErrorCode::Network,
+            "Failed to parse Notion database response",
+            e.to_string(),
+        )
+    })?;
 
     // Find the title property in the database schema
     if let serde_json::Value::Object(props) = db.properties {

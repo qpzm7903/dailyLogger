@@ -4,6 +4,7 @@
 //! using Robot Webhooks.
 
 use crate::create_http_client;
+use crate::errors::AppResult;
 use tauri::command;
 
 /// Check if DingTalk is configured in settings
@@ -92,11 +93,8 @@ pub async fn send_to_dingtalk(
     }
 }
 
-/// Test DingTalk webhook connection
-/// Returns Ok(true) if connection is successful, Ok(false) if DingTalk is not configured,
-/// or Err with error message if connection fails.
-#[command]
-pub async fn test_dingtalk_connection() -> Result<bool, String> {
+/// Internal: test DingTalk webhook connection
+pub async fn test_dingtalk_connection_service() -> AppResult<bool> {
     let settings = crate::memory_storage::get_settings_sync()?;
 
     let webhook_url = match settings.dingtalk_webhook_url {
@@ -104,7 +102,7 @@ pub async fn test_dingtalk_connection() -> Result<bool, String> {
         _ => return Ok(false), // Not configured
     };
 
-    let client = create_http_client(webhook_url, 30).map_err(|e| e.to_string())?;
+    let client = create_http_client(webhook_url, 30)?;
 
     // Send a test message
     let body = serde_json::json!({
@@ -119,8 +117,7 @@ pub async fn test_dingtalk_connection() -> Result<bool, String> {
         .header("Content-Type", "application/json")
         .json(&body)
         .send()
-        .await
-        .map_err(|e| e.to_string())?;
+        .await?;
 
     if response.status().is_success() {
         match response.json::<serde_json::Value>().await {
@@ -132,16 +129,30 @@ pub async fn test_dingtalk_connection() -> Result<bool, String> {
                         .get("errmsg")
                         .and_then(|v| v.as_str())
                         .unwrap_or("unknown error");
-                    Err(format!("DingTalk API error: {}", errmsg))
+                    Err(crate::errors::AppError::network(format!(
+                        "DingTalk API error: {}",
+                        errmsg
+                    )))
                 }
             }
-            Err(e) => Err(e.to_string()),
+            Err(e) => Err(e.into()),
         }
     } else {
         let status = response.status();
         let error_text = response.text().await.unwrap_or_default();
-        Err(format!("DingTalk API error: {} - {}", status, error_text))
+        Err(crate::errors::AppError::network(format!(
+            "DingTalk API error: {} - {}",
+            status, error_text
+        )))
     }
+}
+
+/// Test DingTalk webhook connection (Tauri command wrapper)
+#[command]
+pub async fn test_dingtalk_connection() -> Result<bool, String> {
+    test_dingtalk_connection_service()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Send a report to DingTalk synchronously (wrapper for async function)

@@ -6,6 +6,7 @@
 
 use crate::create_http_client;
 use crate::create_http_client_with_proxy;
+use crate::errors::AppResult;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
@@ -70,12 +71,8 @@ pub fn is_ollama_endpoint(url: &str) -> bool {
         || url_lower.ends_with(":11434")
 }
 
-/// Get the list of installed models from an Ollama endpoint.
-///
-/// Uses Ollama's native API endpoint `/api/tags` to retrieve the model list.
-/// The base_url should be the Ollama server URL (e.g., `http://localhost:11434`).
-#[command]
-pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, String> {
+/// Internal: get the list of installed models from an Ollama endpoint.
+pub async fn get_ollama_models_service(base_url: String) -> AppResult<OllamaModelsResult> {
     // Normalize URL: remove /v1 suffix if present, then append /api/tags
     let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/tags", base);
@@ -84,11 +81,9 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
 
     tracing::info!("Fetching Ollama models from: {}", url);
 
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+    let response = client.get(&url).send().await.map_err(|e| {
+        crate::errors::AppError::network(format_connection_error(&e.to_string(), true))
+    })?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -101,7 +96,7 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
         });
     }
 
-    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = response.json().await?;
 
     let (models, model_details): (Vec<String>, Vec<OllamaModelInfo>) = json["models"]
         .as_array()
@@ -141,6 +136,14 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
         model_details,
         message: format!("Found {} models", model_count),
     })
+}
+
+/// Get the list of installed models from an Ollama endpoint (Tauri command wrapper).
+#[command]
+pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, String> {
+    get_ollama_models_service(base_url)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Result structure for model pull operation.
@@ -191,17 +194,16 @@ pub struct RunningModelsResult {
 /// # Example
 /// ```ignore
 /// // Pull with default quantization
-/// pull_ollama_model("http://localhost:11434", "llama3.2", None).await?;
+/// pull_ollama_model_service("http://localhost:11434", "llama3.2", None).await?;
 ///
 /// // Pull with specific quantization
-/// pull_ollama_model("http://localhost:11434", "llama3.2", Some("q4_0".to_string())).await?;
+/// pull_ollama_model_service("http://localhost:11434", "llama3.2", Some("q4_0".to_string())).await?;
 /// ```
-#[command]
-pub async fn pull_ollama_model(
+pub async fn pull_ollama_model_service(
     base_url: String,
     model_name: String,
     quantization: Option<String>,
-) -> Result<PullModelResult, String> {
+) -> AppResult<PullModelResult> {
     // Normalize URL: remove /v1 suffix if present, then append /api/pull
     let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/pull", base);
@@ -232,7 +234,9 @@ pub async fn pull_ollama_model(
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+        .map_err(|e| {
+            crate::errors::AppError::network(format_connection_error(&e.to_string(), true))
+        })?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -245,7 +249,7 @@ pub async fn pull_ollama_model(
     }
 
     // Parse the response to get status
-    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = response.json().await?;
 
     let status = json["status"].as_str().unwrap_or("completed").to_string();
     let message = if status == "success" || status == "completed" {
@@ -263,14 +267,25 @@ pub async fn pull_ollama_model(
     })
 }
 
+/// Pull (download) a model from Ollama registry (Tauri command wrapper).
+#[command]
+pub async fn pull_ollama_model(
+    base_url: String,
+    model_name: String,
+    quantization: Option<String>,
+) -> Result<PullModelResult, String> {
+    pull_ollama_model_service(base_url, model_name, quantization)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Delete a model from Ollama.
 ///
 /// Uses Ollama's native API endpoint `/api/delete` to remove an installed model.
-#[command]
-pub async fn delete_ollama_model(
+pub async fn delete_ollama_model_service(
     base_url: String,
     model_name: String,
-) -> Result<DeleteModelResult, String> {
+) -> AppResult<DeleteModelResult> {
     // Normalize URL: remove /v1 suffix if present, then append /api/delete
     let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/delete", base);
@@ -289,7 +304,9 @@ pub async fn delete_ollama_model(
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+        .map_err(|e| {
+            crate::errors::AppError::network(format_connection_error(&e.to_string(), true))
+        })?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -308,12 +325,22 @@ pub async fn delete_ollama_model(
     })
 }
 
+/// Delete a model from Ollama (Tauri command wrapper).
+#[command]
+pub async fn delete_ollama_model(
+    base_url: String,
+    model_name: String,
+) -> Result<DeleteModelResult, String> {
+    delete_ollama_model_service(base_url, model_name)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Get the list of currently running models from an Ollama endpoint.
 ///
 /// Uses Ollama's native API endpoint `/api/ps` to retrieve currently loaded models.
 /// This helps users see which models are loaded in memory and their resource usage.
-#[command]
-pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult, String> {
+pub async fn get_running_models_service(base_url: String) -> AppResult<RunningModelsResult> {
     // Normalize URL: remove /v1 suffix if present, then append /api/ps
     let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/ps", base);
@@ -322,11 +349,9 @@ pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult,
 
     tracing::info!("Fetching running models from: {}", url);
 
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+    let response = client.get(&url).send().await.map_err(|e| {
+        crate::errors::AppError::network(format_connection_error(&e.to_string(), true))
+    })?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -338,7 +363,7 @@ pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult,
         });
     }
 
-    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = response.json().await?;
 
     let running_models: Vec<RunningModelInfo> = json["models"]
         .as_array()
@@ -379,14 +404,21 @@ pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult,
     })
 }
 
+/// Get the list of currently running models from an Ollama endpoint (Tauri command wrapper).
+#[command]
+pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult, String> {
+    get_running_models_service(base_url)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Test API connection for both OpenAI and Ollama endpoints.
 ///
 /// This function detects if the endpoint is Ollama and adjusts the request accordingly:
 /// - For Ollama: No API key required, uses empty string if not provided
 /// - For OpenAI: API key is required
 #[allow(clippy::too_many_arguments)]
-#[command]
-pub async fn test_api_connection_with_ollama(
+pub async fn test_api_connection_with_ollama_service(
     api_base_url: String,
     api_key: Option<String>,
     model_name: String,
@@ -396,7 +428,7 @@ pub async fn test_api_connection_with_ollama(
     proxy_port: Option<i32>,
     proxy_username: Option<String>,
     proxy_password: Option<String>,
-) -> Result<ConnectionTestResult, String> {
+) -> AppResult<ConnectionTestResult> {
     let is_ollama = is_ollama_endpoint(&api_base_url);
     let effective_api_key = api_key.unwrap_or_default();
 
@@ -486,6 +518,33 @@ pub async fn test_api_connection_with_ollama(
             })
         }
     }
+}
+
+/// Test API connection for both OpenAI and Ollama endpoints (Tauri command wrapper).
+#[allow(clippy::too_many_arguments)]
+#[command]
+pub async fn test_api_connection_with_ollama(
+    api_base_url: String,
+    api_key: Option<String>,
+    model_name: String,
+    proxy_enabled: Option<bool>,
+    proxy_host: Option<String>,
+    proxy_port: Option<i32>,
+    proxy_username: Option<String>,
+    proxy_password: Option<String>,
+) -> Result<ConnectionTestResult, String> {
+    test_api_connection_with_ollama_service(
+        api_base_url,
+        api_key,
+        model_name,
+        proxy_enabled,
+        proxy_host,
+        proxy_port,
+        proxy_username,
+        proxy_password,
+    )
+    .await
+    .map_err(|e| e.to_string())
 }
 
 /// Format connection error message with Ollama-specific guidance.
@@ -595,13 +654,12 @@ pub struct ShowModelResult {
 ///     }),
 ///     template: None,
 /// };
-/// let result = create_ollama_model("http://localhost:11434", params).await?;
+/// let result = create_ollama_model_service("http://localhost:11434", params).await?;
 /// ```
-#[command]
-pub async fn create_ollama_model(
+pub async fn create_ollama_model_service(
     base_url: String,
     params: CreateModelParams,
-) -> Result<CreateModelResult, String> {
+) -> AppResult<CreateModelResult> {
     // Normalize URL: remove /v1 suffix if present, then append /api/create
     let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/create", base);
@@ -644,7 +702,9 @@ pub async fn create_ollama_model(
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+        .map_err(|e| {
+            crate::errors::AppError::network(format_connection_error(&e.to_string(), true))
+        })?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -665,6 +725,17 @@ pub async fn create_ollama_model(
     })
 }
 
+/// Create a custom model in Ollama (Tauri command wrapper).
+#[command]
+pub async fn create_ollama_model(
+    base_url: String,
+    params: CreateModelParams,
+) -> Result<CreateModelResult, String> {
+    create_ollama_model_service(base_url, params)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Copy an existing model to a new name.
 ///
 /// Uses Ollama's native API endpoint `/api/copy` to create a copy of an existing model.
@@ -672,18 +743,17 @@ pub async fn create_ollama_model(
 ///
 /// # Example
 /// ```ignore
-/// let result = copy_ollama_model(
+/// let result = copy_ollama_model_service(
 ///     "http://localhost:11434",
 ///     "llama3.2",
 ///     "my-llama3.2-copy"
 /// ).await?;
 /// ```
-#[command]
-pub async fn copy_ollama_model(
+pub async fn copy_ollama_model_service(
     base_url: String,
     source: String,
     destination: String,
-) -> Result<CopyModelResult, String> {
+) -> AppResult<CopyModelResult> {
     // Normalize URL: remove /v1 suffix if present, then append /api/copy
     let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/copy", base);
@@ -708,7 +778,9 @@ pub async fn copy_ollama_model(
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+        .map_err(|e| {
+            crate::errors::AppError::network(format_connection_error(&e.to_string(), true))
+        })?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -738,6 +810,18 @@ pub async fn copy_ollama_model(
     })
 }
 
+/// Copy an existing model to a new name (Tauri command wrapper).
+#[command]
+pub async fn copy_ollama_model(
+    base_url: String,
+    source: String,
+    destination: String,
+) -> Result<CopyModelResult, String> {
+    copy_ollama_model_service(base_url, source, destination)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Get detailed information about an Ollama model.
 ///
 /// Uses Ollama's native API endpoint `/api/show` to retrieve detailed model information
@@ -745,16 +829,15 @@ pub async fn copy_ollama_model(
 ///
 /// # Example
 /// ```ignore
-/// let result = show_ollama_model("http://localhost:11434", "llama3.2").await?;
+/// let result = show_ollama_model_service("http://localhost:11434", "llama3.2").await?;
 /// if result.success {
 ///     println!("Modelfile: {:?}", result.details.unwrap().modelfile);
 /// }
 /// ```
-#[command]
-pub async fn show_ollama_model(
+pub async fn show_ollama_model_service(
     base_url: String,
     model_name: String,
-) -> Result<ShowModelResult, String> {
+) -> AppResult<ShowModelResult> {
     // Normalize URL: remove /v1 suffix if present, then append /api/show
     let base = normalize_ollama_url(&base_url);
     let url = format!("{}/api/show", base);
@@ -777,7 +860,9 @@ pub async fn show_ollama_model(
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format_connection_error(&e.to_string(), true))?;
+        .map_err(|e| {
+            crate::errors::AppError::network(format_connection_error(&e.to_string(), true))
+        })?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -791,7 +876,7 @@ pub async fn show_ollama_model(
     }
 
     // Parse the response
-    let response_text = response.text().await.map_err(|e| e.to_string())?;
+    let response_text = response.text().await?;
 
     let details: ModelShowDetails = match serde_json::from_str(&response_text) {
         Ok(d) => d,
@@ -818,6 +903,17 @@ pub async fn show_ollama_model(
         model_name,
         details: Some(details),
     })
+}
+
+/// Get detailed information about an Ollama model (Tauri command wrapper).
+#[command]
+pub async fn show_ollama_model(
+    base_url: String,
+    model_name: String,
+) -> Result<ShowModelResult, String> {
+    show_ollama_model_service(base_url, model_name)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

@@ -4,6 +4,7 @@
 //! using Incoming Webhooks.
 
 use crate::create_http_client;
+use crate::errors::AppResult;
 use tauri::command;
 
 /// Check if Slack is configured in settings
@@ -79,11 +80,8 @@ pub async fn send_to_slack(
     }
 }
 
-/// Test Slack webhook connection
-/// Returns Ok(true) if connection is successful, Ok(false) if Slack is not configured,
-/// or Err with error message if connection fails.
-#[command]
-pub async fn test_slack_connection() -> Result<bool, String> {
+/// Internal: test Slack webhook connection
+pub async fn test_slack_connection_service() -> AppResult<bool> {
     let settings = crate::memory_storage::get_settings_sync()?;
 
     let webhook_url = match settings.slack_webhook_url {
@@ -91,7 +89,7 @@ pub async fn test_slack_connection() -> Result<bool, String> {
         _ => return Ok(false), // Not configured
     };
 
-    let client = create_http_client(webhook_url, 30).map_err(|e| e.to_string())?;
+    let client = create_http_client(webhook_url, 30)?;
 
     // Send a test message
     let body = serde_json::json!({
@@ -104,21 +102,34 @@ pub async fn test_slack_connection() -> Result<bool, String> {
         .header("Content-Type", "application/json")
         .json(&body)
         .send()
-        .await
-        .map_err(|e| e.to_string())?;
+        .await?;
 
     if response.status().is_success() {
         let text = response.text().await.unwrap_or_default();
         if text == "ok" {
             Ok(true)
         } else {
-            Err(format!("Unexpected Slack response: {}", text))
+            Err(crate::errors::AppError::network(format!(
+                "Unexpected Slack response: {}",
+                text
+            )))
         }
     } else {
         let status = response.status();
         let error_text = response.text().await.unwrap_or_default();
-        Err(format!("Slack API error: {} - {}", status, error_text))
+        Err(crate::errors::AppError::network(format!(
+            "Slack API error: {} - {}",
+            status, error_text
+        )))
     }
+}
+
+/// Test Slack webhook connection (Tauri command wrapper)
+#[command]
+pub async fn test_slack_connection() -> Result<bool, String> {
+    test_slack_connection_service()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Send a report to Slack synchronously (wrapper for async function)
