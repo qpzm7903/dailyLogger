@@ -7,6 +7,7 @@ use chrono::Local;
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
+use crate::errors::{AppError, AppResult};
 use crate::memory_storage::{get_settings_sync, DB_CONNECTION};
 
 /// SESSION-002: Per-screenshot analysis result from AI
@@ -117,11 +118,11 @@ fn get_today_date() -> String {
 /// # Returns
 /// * `Ok(session_id)` - 当前时段的 ID
 /// * `Err(message)` - 数据库操作失败
-pub fn detect_or_create_session(current_timestamp: &str) -> Result<i64, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn detect_or_create_session(current_timestamp: &str) -> AppResult<i64> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let today = extract_date_from_timestamp(current_timestamp);
 
@@ -153,11 +154,11 @@ pub fn detect_or_create_session(current_timestamp: &str) -> Result<i64, String> 
 /// # Returns
 /// * `Some(session)` - 存在活跃时段
 /// * `None` - 没有活跃时段
-pub fn get_current_session() -> Result<Option<Session>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_current_session() -> AppResult<Option<Session>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let today = get_today_date();
     get_active_session_with_conn(conn, &today)
@@ -169,16 +170,16 @@ pub fn get_current_session() -> Result<Option<Session>, String> {
 /// * `Vec<Session>` - 今日所有时段列表（按开始时间升序）
 ///
 /// Note: This function is kept for backward compatibility. The command is now in session_commands.rs.
-pub async fn get_today_sessions() -> Result<Vec<Session>, String> {
+pub async fn get_today_sessions() -> AppResult<Vec<Session>> {
     get_today_sessions_sync()
 }
 
 /// 同步版本：获取今日所有时段
-pub fn get_today_sessions_sync() -> Result<Vec<Session>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_today_sessions_sync() -> AppResult<Vec<Session>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let today = get_today_date();
     get_sessions_by_date_with_conn(conn, &today)
@@ -187,11 +188,11 @@ pub fn get_today_sessions_sync() -> Result<Vec<Session>, String> {
 /// 结束当前活跃时段
 ///
 /// 通常在应用退出时调用
-pub fn end_current_session() -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn end_current_session() -> AppResult<()> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let today = get_today_date();
     if let Some(active_session) = get_active_session_with_conn(conn, &today)? {
@@ -209,15 +210,15 @@ fn extract_date_from_timestamp(timestamp: &str) -> String {
 }
 
 /// 计算两个时间戳之间的分钟数差
-fn calc_gap_minutes(start: &str, end: &str) -> Result<i64, String> {
-    crate::calc_gap_minutes(start, end)
+fn calc_gap_minutes(start: &str, end: &str) -> AppResult<i64> {
+    crate::calc_gap_minutes(start, end).map_err(AppError::from)
 }
 
 /// 使用已有连接获取活跃时段
 fn get_active_session_with_conn(
     conn: &rusqlite::Connection,
     date: &str,
-) -> Result<Option<Session>, String> {
+) -> AppResult<Option<Session>> {
     let result = conn.query_row(
         "SELECT s.id, s.date, s.start_time, s.end_time, s.ai_summary, s.user_summary, s.context_for_next, s.status,
                 (SELECT COUNT(*) FROM records WHERE session_id = s.id AND screenshot_path IS NOT NULL) as screenshot_count
@@ -244,7 +245,10 @@ fn get_active_session_with_conn(
     match result {
         Ok(session) => Ok(Some(session)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-        Err(e) => Err(format!("Failed to query active session: {}", e)),
+        Err(e) => Err(AppError::database(format!(
+            "Failed to query active session: {}",
+            e
+        ))),
     }
 }
 
@@ -252,7 +256,7 @@ fn get_active_session_with_conn(
 fn get_last_record_timestamp_with_conn(
     conn: &rusqlite::Connection,
     session_id: i64,
-) -> Result<Option<String>, String> {
+) -> AppResult<Option<String>> {
     let result = conn.query_row(
         "SELECT timestamp FROM records WHERE session_id = ?1 ORDER BY timestamp DESC LIMIT 1",
         params![session_id],
@@ -262,7 +266,10 @@ fn get_last_record_timestamp_with_conn(
     match result {
         Ok(timestamp) => Ok(Some(timestamp)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-        Err(e) => Err(format!("Failed to query last record timestamp: {}", e)),
+        Err(e) => Err(AppError::database(format!(
+            "Failed to query last record timestamp: {}",
+            e
+        ))),
     }
 }
 
@@ -271,25 +278,23 @@ fn create_new_session_with_conn(
     conn: &rusqlite::Connection,
     date: &str,
     start_time: &str,
-) -> Result<i64, String> {
+) -> AppResult<i64> {
     conn.execute(
         "INSERT INTO sessions (date, start_time, status) VALUES (?1, ?2, 'active')",
         params![date, start_time],
-    )
-    .map_err(|e| format!("Failed to create session: {}", e))?;
+    )?;
 
     Ok(conn.last_insert_rowid())
 }
 
 /// 使用已有连接结束时段
-fn end_session_with_conn(conn: &rusqlite::Connection, session_id: i64) -> Result<(), String> {
+fn end_session_with_conn(conn: &rusqlite::Connection, session_id: i64) -> AppResult<()> {
     let end_time = Local::now().to_rfc3339();
 
     conn.execute(
         "UPDATE sessions SET end_time = ?1, status = 'ended' WHERE id = ?2",
         params![end_time, session_id],
-    )
-    .map_err(|e| format!("Failed to end session: {}", e))?;
+    )?;
 
     Ok(())
 }
@@ -298,16 +303,14 @@ fn end_session_with_conn(conn: &rusqlite::Connection, session_id: i64) -> Result
 fn get_sessions_by_date_with_conn(
     conn: &rusqlite::Connection,
     date: &str,
-) -> Result<Vec<Session>, String> {
-    let mut stmt = conn
-        .prepare(
-            "SELECT s.id, s.date, s.start_time, s.end_time, s.ai_summary, s.user_summary, s.context_for_next, s.status,
-                    (SELECT COUNT(*) FROM records WHERE session_id = s.id AND screenshot_path IS NOT NULL) as screenshot_count
-             FROM sessions s
-             WHERE s.date = ?1
-             ORDER BY s.start_time ASC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+) -> AppResult<Vec<Session>> {
+    let mut stmt = conn.prepare(
+        "SELECT s.id, s.date, s.start_time, s.end_time, s.ai_summary, s.user_summary, s.context_for_next, s.status,
+                (SELECT COUNT(*) FROM records WHERE session_id = s.id AND screenshot_path IS NOT NULL) as screenshot_count
+         FROM sessions s
+         WHERE s.date = ?1
+         ORDER BY s.start_time ASC",
+    )?;
 
     let sessions = stmt
         .query_map(params![date], |row| {
@@ -322,10 +325,8 @@ fn get_sessions_by_date_with_conn(
                 status: SessionStatus::from(row.get::<_, String>(7)?),
                 screenshot_count: row.get(8)?,
             })
-        })
-        .map_err(|e| format!("Failed to query sessions: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect sessions: {}", e))?;
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(sessions)
 }
@@ -334,11 +335,11 @@ fn get_sessions_by_date_with_conn(
 ///
 /// Returns the `context_for_next` field from the previous session (same date, earlier time).
 /// This context is passed to the AI to help understand the continuity of work.
-pub fn get_previous_session_context(session_id: i64) -> Result<Option<String>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_previous_session_context(session_id: i64) -> AppResult<Option<String>> {
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Get current session's date and start_time
     let current_session: Option<(String, String)> = conn
@@ -347,8 +348,7 @@ pub fn get_previous_session_context(session_id: i64) -> Result<Option<String>, S
             params![session_id],
             |row| Ok((row.get(0)?, row.get(1)?)),
         )
-        .optional()
-        .map_err(|e| format!("Failed to query session: {}", e))?;
+        .optional()?;
 
     let Some((date, start_time)) = current_session else {
         return Ok(None);
@@ -364,8 +364,7 @@ pub fn get_previous_session_context(session_id: i64) -> Result<Option<String>, S
             params![date, start_time],
             |row| row.get::<_, String>(0),
         )
-        .optional()
-        .map_err(|e| format!("Failed to query previous session: {}", e))?;
+        .optional()?;
 
     Ok(result)
 }
@@ -378,12 +377,12 @@ pub fn get_previous_session_context(session_id: i64) -> Result<Option<String>, S
 /// together with context from the previous session, and stores the analysis results.
 ///
 /// Note: This function is kept for backward compatibility. The command is now in session_commands.rs.
-pub async fn analyze_session(session_id: i64) -> Result<(), String> {
+pub async fn analyze_session(session_id: i64) -> AppResult<()> {
     // 1. Get screenshots for this session
     let screenshots = crate::memory_storage::get_records_by_session_id(session_id)?;
 
     if screenshots.is_empty() {
-        return Err("No pending screenshots in session".to_string());
+        return Err(AppError::validation("No pending screenshots in session"));
     }
 
     tracing::info!(
@@ -414,11 +413,11 @@ pub async fn analyze_session(session_id: i64) -> Result<(), String> {
 
     // 6. Validate response
     if response.per_screenshot_analysis.len() != screenshots.len() {
-        return Err(format!(
+        return Err(AppError::validation(format!(
             "Analysis count mismatch: expected {}, got {}",
             screenshots.len(),
             response.per_screenshot_analysis.len()
-        ));
+        )));
     }
 
     // 7. Store results
@@ -458,8 +457,8 @@ pub async fn analyze_session(session_id: i64) -> Result<(), String> {
 
 /// SESSION-002: Get screenshots for a session
 /// Note: This function is kept for backward compatibility. The command is now in session_commands.rs.
-pub async fn get_session_screenshots(session_id: i64) -> Result<Vec<SessionScreenshot>, String> {
-    crate::memory_storage::get_records_by_session_id(session_id)
+pub async fn get_session_screenshots(session_id: i64) -> AppResult<Vec<SessionScreenshot>> {
+    crate::memory_storage::get_records_by_session_id(session_id).map_err(AppError::from)
 }
 
 // ── SESSION-003: User summary editing ────────────────────────────────────────
@@ -468,21 +467,22 @@ pub async fn get_session_screenshots(session_id: i64) -> Result<Vec<SessionScree
 pub fn update_session_user_summary_sync(
     session_id: i64,
     user_summary: Option<&str>,
-) -> Result<(), String> {
-    let db = crate::memory_storage::DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+) -> AppResult<()> {
+    let db = crate::memory_storage::DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let rows_affected = conn
-        .execute(
-            "UPDATE sessions SET user_summary = ?1 WHERE id = ?2",
-            params![user_summary, session_id],
-        )
-        .map_err(|e| format!("Failed to update session user summary: {}", e))?;
+    let rows_affected = conn.execute(
+        "UPDATE sessions SET user_summary = ?1 WHERE id = ?2",
+        params![user_summary, session_id],
+    )?;
 
     if rows_affected == 0 {
-        return Err(format!("Session with id {} not found", session_id));
+        return Err(AppError::database(format!(
+            "Session with id {} not found",
+            session_id
+        )));
     }
 
     tracing::info!("Updated user summary for session {}", session_id);
@@ -494,7 +494,7 @@ pub fn update_session_user_summary_sync(
 pub async fn update_session_user_summary(
     session_id: i64,
     user_summary: Option<String>,
-) -> Result<(), String> {
+) -> AppResult<()> {
     update_session_user_summary_sync(session_id, user_summary.as_deref())
 }
 
