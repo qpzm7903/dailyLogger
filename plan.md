@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-31
-> 当前版本: v4.6.1 🔄 (发布中)
+> 当前版本: v4.6.1 ✅ 已发布
 > 项目状态: 507 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
@@ -54,16 +54,30 @@
 - ✅ 提取 BaseModal 共享组件 (focus trap, ARIA, Escape, backdrop)
 - ✅ 13 个 Modal 迁移到 BaseModal (含 OnboardingModal)
 
-### 未来优化方向 (已识别，待排期)
-- Settings 过度 clone 优化 (Arc<Settings> 或缓存机制) → v4.7.0 规划中
-
 ---
 
-### v4.6.1: 构建修复 & 性能优化 🔄 进行中
+### v4.6.1: 构建修复 & 性能优化 ✅ 已完成
 - ✅ 修复 hardware/platform.rs AppResult 返回类型不匹配导致跨平台构建失败
 - ✅ 添加 Settings 写穿缓存 (RwLock)，避免 ~37 处重复 DB 查询和加解密
 - ✅ 提取 manual_entry get_log_dir() 辅助函数，消除 4 处重复路径构建
 - ✅ 更新 plan.md，清理已完成的未来优化项
+
+### 未来优化方向 (已识别，待排期)
+- Settings 过度 clone 优化 (Arc<Settings> 或缓存机制) → v4.7.0 规划中
+- report_service 5 个报告生成函数结构相似，可提取通用模板方法
+- i18n: Dashboard/Sidebar/ReportDropdown 仍有 15+ 硬编码中文字符串
+- i18n: 6 个组件硬编码 'zh-CN' 日期格式（尚未使用 dateFormat.ts）
+
+### v4.6.2: Bug 修复 & DRY 收窄 🔄 进行中
+- ✅ 修复 TimelineWidget 动态 Tailwind 类名 (bg-purple-${n}) 未被 JIT 编译的 bug
+- ✅ 修复 SearchPanel 虚拟滚动 count 非响应式 (改为 getter 函数)
+- ✅ 提取共享 dateFormat.ts 工具函数，7 个组件消除硬编码 'zh-CN'
+- ✅ 合并 TagBadge/TagFilter/TagInput 颜色映射到 tagColors.ts
+- ✅ 消除 capture_commands 中重复的 load_work_time_settings
+
+---
+
+## 最近 10 个已完成版本摘要
 
 ## v4.3.5 ✅ 已发布
 
