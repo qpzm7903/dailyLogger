@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::command;
 
+use crate::errors::{AppError, AppResult};
 use crate::memory_storage::DB_CONNECTION;
 use crate::network_status;
 
@@ -67,7 +68,7 @@ const DEFAULT_MAX_RETRIES: i32 = 5;
 static QUEUE_PROCESSING: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
 
 /// Create the offline_queue table. Called from init_database().
-pub fn create_offline_queue_table(conn: &rusqlite::Connection) -> Result<(), String> {
+pub fn create_offline_queue_table(conn: &rusqlite::Connection) -> AppResult<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS offline_queue (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,14 +84,12 @@ pub fn create_offline_queue_table(conn: &rusqlite::Connection) -> Result<(), Str
             FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE SET NULL
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_offline_queue_status ON offline_queue(status)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     Ok(())
 }
@@ -100,9 +99,11 @@ pub fn enqueue_task(
     task_type: &OfflineTaskType,
     payload: &str,
     record_id: Option<i64>,
-) -> Result<i64, String> {
-    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+) -> AppResult<i64> {
+    let db = DB_CONNECTION.lock().map_err(AppError::from)?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let now = chrono::Utc::now().to_rfc3339();
     let task_type_str = task_type.to_string();
@@ -111,8 +112,7 @@ pub fn enqueue_task(
         "INSERT INTO offline_queue (task_type, payload, record_id, status, created_at, max_retries)
          VALUES (?1, ?2, ?3, 'pending', ?4, ?5)",
         params![task_type_str, payload, record_id, now, DEFAULT_MAX_RETRIES],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     let id = conn.last_insert_rowid();
     tracing::info!(
@@ -125,19 +125,19 @@ pub fn enqueue_task(
 }
 
 /// Get all pending tasks from the queue, ordered by creation time (oldest first).
-pub fn get_pending_tasks() -> Result<Vec<OfflineTask>, String> {
-    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_pending_tasks() -> AppResult<Vec<OfflineTask>> {
+    let db = DB_CONNECTION.lock().map_err(AppError::from)?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, task_type, payload, record_id, status, error_message,
-                    created_at, completed_at, retry_count, max_retries
-             FROM offline_queue
-             WHERE status = 'pending' AND retry_count < max_retries
-             ORDER BY created_at ASC",
-        )
-        .map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(
+        "SELECT id, task_type, payload, record_id, status, error_message,
+                created_at, completed_at, retry_count, max_retries
+         FROM offline_queue
+         WHERE status = 'pending' AND retry_count < max_retries
+         ORDER BY created_at ASC",
+    )?;
 
     let tasks = stmt
         .query_map([], |row| {
@@ -153,63 +153,58 @@ pub fn get_pending_tasks() -> Result<Vec<OfflineTask>, String> {
                 retry_count: row.get(8)?,
                 max_retries: row.get(9)?,
             })
-        })
-        .map_err(|e| e.to_string())?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.to_string())?;
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(tasks)
 }
 
 /// Mark a task as completed.
-pub fn mark_task_completed(task_id: i64) -> Result<(), String> {
-    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn mark_task_completed(task_id: i64) -> AppResult<()> {
+    let db = DB_CONNECTION.lock().map_err(AppError::from)?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let now = chrono::Utc::now().to_rfc3339();
     conn.execute(
         "UPDATE offline_queue SET status = 'completed', completed_at = ?1 WHERE id = ?2",
         params![now, task_id],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     Ok(())
 }
 
 /// Mark a task as failed, incrementing the retry count.
-pub fn mark_task_failed(task_id: i64, error: &str) -> Result<(), String> {
-    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn mark_task_failed(task_id: i64, error: &str) -> AppResult<()> {
+    let db = DB_CONNECTION.lock().map_err(AppError::from)?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     conn.execute(
         "UPDATE offline_queue SET retry_count = retry_count + 1, error_message = ?1 WHERE id = ?2",
         params![error, task_id],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Check if max retries exceeded — mark as permanently failed
-    let retry_count: i32 = conn
-        .query_row(
-            "SELECT retry_count FROM offline_queue WHERE id = ?1",
-            params![task_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+    let retry_count: i32 = conn.query_row(
+        "SELECT retry_count FROM offline_queue WHERE id = ?1",
+        params![task_id],
+        |row| row.get(0),
+    )?;
 
-    let max_retries: i32 = conn
-        .query_row(
-            "SELECT max_retries FROM offline_queue WHERE id = ?1",
-            params![task_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+    let max_retries: i32 = conn.query_row(
+        "SELECT max_retries FROM offline_queue WHERE id = ?1",
+        params![task_id],
+        |row| row.get(0),
+    )?;
 
     if retry_count >= max_retries {
         conn.execute(
             "UPDATE offline_queue SET status = 'failed' WHERE id = ?1",
             params![task_id],
-        )
-        .map_err(|e| e.to_string())?;
+        )?;
         tracing::warn!(
             "Offline task {} permanently failed after {} retries",
             task_id,
@@ -221,33 +216,33 @@ pub fn mark_task_failed(task_id: i64, error: &str) -> Result<(), String> {
 }
 
 /// Get the count of pending tasks in the queue.
-pub fn get_pending_count() -> Result<i64, String> {
-    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_pending_count() -> AppResult<i64> {
+    let db = DB_CONNECTION.lock().map_err(AppError::from)?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let count: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM offline_queue WHERE status = 'pending' AND retry_count < max_retries",
-            [],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM offline_queue WHERE status = 'pending' AND retry_count < max_retries",
+        [],
+        |row| row.get(0),
+    )?;
 
     Ok(count)
 }
 
 /// Clean up completed and permanently failed tasks older than 7 days.
-pub fn cleanup_old_tasks() -> Result<i64, String> {
-    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn cleanup_old_tasks() -> AppResult<i64> {
+    let db = DB_CONNECTION.lock().map_err(AppError::from)?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let cutoff = (chrono::Utc::now() - chrono::Duration::days(7)).to_rfc3339();
-    let deleted = conn
-        .execute(
-            "DELETE FROM offline_queue WHERE status IN ('completed', 'failed') AND created_at < ?1",
-            params![cutoff],
-        )
-        .map_err(|e| e.to_string())?;
+    let deleted = conn.execute(
+        "DELETE FROM offline_queue WHERE status IN ('completed', 'failed') AND created_at < ?1",
+        params![cutoff],
+    )?;
 
     Ok(deleted as i64)
 }
@@ -341,7 +336,7 @@ pub async fn process_queue() {
             }
             Err(e) => {
                 tracing::warn!("Queued task {} failed: {}", task.id, e);
-                let _ = mark_task_failed(task.id, &e);
+                let _ = mark_task_failed(task.id, &e.to_string());
             }
         }
     }
@@ -362,7 +357,7 @@ async fn execute_queued_task(
     task_type: &OfflineTaskType,
     payload: &str,
     _record_id: Option<i64>,
-) -> Result<(), String> {
+) -> AppResult<()> {
     match task_type {
         OfflineTaskType::ScreenshotAnalysis => {
             // Call the retry function from auto_perception
@@ -376,7 +371,7 @@ async fn execute_queued_task(
                 }
 
                 let parsed: ScreenshotPayload = serde_json::from_str(payload)
-                    .map_err(|e| format!("Failed to parse ScreenshotAnalysis payload: {}", e))?;
+                    .map_err(|e| AppError::validation(format!("Failed to parse ScreenshotAnalysis payload: {}", e)))?;
 
                 crate::services::retry_screenshot_analysis_service(
                     &parsed.screenshot_path,
@@ -397,19 +392,16 @@ async fn execute_queued_task(
             crate::services::report_service::generate_daily_summary_service(None)
                 .await
                 .map(|_| ())
-                .map_err(|e| e.to_string())
         }
         OfflineTaskType::WeeklyReport => {
             crate::services::report_service::generate_weekly_report_service()
                 .await
                 .map(|_| ())
-                .map_err(|e| e.to_string())
         }
         OfflineTaskType::MonthlyReport => {
             crate::services::report_service::generate_monthly_report_service()
                 .await
                 .map(|_| ())
-                .map_err(|e| e.to_string())
         }
     }
 }
@@ -417,7 +409,7 @@ async fn execute_queued_task(
 /// Tauri command: get offline queue status
 #[command]
 pub fn get_offline_queue_status() -> Result<serde_json::Value, String> {
-    let pending = get_pending_count()?;
+    let pending = get_pending_count().map_err(|e| e.to_string())?;
     Ok(serde_json::json!({
         "pending_count": pending,
         "is_online": network_status::is_online(),
@@ -427,7 +419,7 @@ pub fn get_offline_queue_status() -> Result<serde_json::Value, String> {
 /// Tauri command: get all pending tasks with details
 #[command]
 pub fn get_pending_offline_tasks() -> Result<Vec<OfflineTask>, String> {
-    get_pending_tasks()
+    get_pending_tasks().map_err(|e| e.to_string())
 }
 
 /// Tauri command: manually trigger queue processing
@@ -437,7 +429,7 @@ pub async fn process_offline_queue() -> Result<String, String> {
         return Err("无法处理队列：当前处于离线状态".to_string());
     }
     process_queue().await;
-    let remaining = get_pending_count()?;
+    let remaining = get_pending_count().map_err(|e| e.to_string())?;
     Ok(format!("队列处理完成，剩余 {} 个待处理任务", remaining))
 }
 
