@@ -4,6 +4,7 @@
 //! using the Notion API.
 
 use crate::create_http_client;
+use crate::errors::{AppError, AppResult, ErrorCode};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use serde::{Deserialize, Serialize};
 use tauri::command;
@@ -486,25 +487,30 @@ fn chunk_blocks(blocks: Vec<NotionBlock>) -> Vec<Vec<NotionBlock>> {
 }
 
 /// Get the title property name from a Notion database
-async fn get_title_property_name(api_key: &str, database_id: &str) -> Result<String, String> {
+async fn get_title_property_name(api_key: &str, database_id: &str) -> AppResult<String> {
     let url = format!("{}/databases/{}", NOTION_API_BASE, database_id);
-    let client = create_http_client(&url, 30).map_err(|e| e.to_string())?;
+    let client = create_http_client(&url, 30)?;
 
     let response = client
         .get(&url)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Notion-Version", NOTION_API_VERSION)
         .send()
-        .await
-        .map_err(|e| e.to_string())?;
+        .await?;
 
     if !response.status().is_success() {
         let status = response.status();
         let error_text = response.text().await.unwrap_or_default();
-        return Err(format!("Notion API error: {} - {}", status, error_text));
+        return Err(AppError::network(format!(
+            "Notion API error: {} - {}",
+            status, error_text
+        )));
     }
 
-    let db: NotionDatabaseResponse = response.json().await.map_err(|e| e.to_string())?;
+    let db: NotionDatabaseResponse = response
+        .json()
+        .await
+        .map_err(|e| AppError::with_context(ErrorCode::Network, "Failed to parse Notion database response", e.to_string()))?;
 
     // Find the title property in the database schema
     if let serde_json::Value::Object(props) = db.properties {
@@ -645,11 +651,10 @@ pub async fn write_report_to_notion(
     Some(page_url)
 }
 
-/// Test Notion API connection
+/// Internal: test Notion API connection
 /// Returns Ok(true) if connection is successful, Ok(false) if Notion is not configured,
-/// or Err with error message if connection fails.
-#[command]
-pub async fn test_notion_connection() -> Result<bool, String> {
+/// or Err if connection fails.
+pub async fn test_notion_connection_service() -> AppResult<bool> {
     let settings = crate::memory_storage::get_settings_sync()?;
 
     let api_key = match settings.notion_api_key {
@@ -663,24 +668,35 @@ pub async fn test_notion_connection() -> Result<bool, String> {
     };
 
     let url = format!("{}/databases/{}", NOTION_API_BASE, database_id);
-    let client = create_http_client(&url, 30).map_err(|e| e.to_string())?;
+    let client = create_http_client(&url, 30)?;
 
-    // Try to retrieve the database to verify access
     let response = client
         .get(&url)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Notion-Version", NOTION_API_VERSION)
         .send()
-        .await
-        .map_err(|e| e.to_string())?;
+        .await?;
 
     if response.status().is_success() {
         Ok(true)
     } else {
         let status = response.status();
         let error_text = response.text().await.unwrap_or_default();
-        Err(format!("Notion API error: {} - {}", status, error_text))
+        Err(AppError::network(format!(
+            "Notion API error: {} - {}",
+            status, error_text
+        )))
     }
+}
+
+/// Test Notion API connection (Tauri command wrapper)
+/// Returns Ok(true) if connection is successful, Ok(false) if Notion is not configured,
+/// or Err with error message if connection fails.
+#[command]
+pub async fn test_notion_connection() -> Result<bool, String> {
+    test_notion_connection_service()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Write a report to Notion synchronously (wrapper for async function)

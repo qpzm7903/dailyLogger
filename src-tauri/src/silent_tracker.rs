@@ -10,6 +10,8 @@ use std::time::Instant;
 
 use once_cell::sync::Lazy;
 
+use crate::errors::{AppError, AppResult};
+
 /// Maximum number of days to keep in the sliding window.
 const MAX_HISTORY_DAYS: i64 = 7;
 
@@ -397,14 +399,14 @@ fn save_hourly_stats_to_db(
     hour: u8,
     silent_captures: u32,
     change_captures: u32,
-) -> Result<(), String> {
+) -> AppResult<()> {
     use crate::memory_storage::DB_CONNECTION;
     use rusqlite::params;
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let date_str = date.format("%Y-%m-%d").to_string();
     conn.execute(
@@ -416,52 +418,47 @@ fn save_hourly_stats_to_db(
             silent_captures as i32,
             change_captures as i32
         ],
-    )
-    .map_err(|e| format!("Failed to save silent pattern stats: {}", e))?;
+    )?;
 
     Ok(())
 }
 
 /// Load all hourly stats from database into the tracker (internal, caller holds lock)
-fn load_hourly_stats_from_db_internal(tracker: &mut SilentPatternTracker) -> Result<(), String> {
+fn load_hourly_stats_from_db_internal(tracker: &mut SilentPatternTracker) -> AppResult<()> {
     use crate::memory_storage::DB_CONNECTION;
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let cutoff_date = Local::now().date_naive() - Duration::days(MAX_HISTORY_DAYS);
     let cutoff_str = cutoff_date.format("%Y-%m-%d").to_string();
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT date, hour, silent_captures, change_captures
+    let mut stmt = conn.prepare(
+        "SELECT date, hour, silent_captures, change_captures
              FROM silent_pattern_stats
              WHERE date >= ?1
              ORDER BY date, hour",
-        )
-        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+    )?;
 
-    let rows = stmt
-        .query_map([&cutoff_str], |row| {
-            let date_str: String = row.get(0)?;
-            let hour: i32 = row.get(1)?;
-            let silent_captures: i32 = row.get(2)?;
-            let change_captures: i32 = row.get(3)?;
-            Ok((
-                NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").unwrap_or(cutoff_date),
-                hour as u8,
-                silent_captures as u32,
-                change_captures as u32,
-            ))
-        })
-        .map_err(|e| format!("Failed to query silent pattern stats: {}", e))?;
+    let cutoff_date_val = cutoff_date;
+    let rows = stmt.query_map([&cutoff_str], |row| {
+        let date_str: String = row.get(0)?;
+        let hour: i32 = row.get(1)?;
+        let silent_captures: i32 = row.get(2)?;
+        let change_captures: i32 = row.get(3)?;
+        Ok((
+            NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").unwrap_or(cutoff_date_val),
+            hour as u8,
+            silent_captures as u32,
+            change_captures as u32,
+        ))
+    })?;
 
     tracker.hourly_stats.clear();
     for row_result in rows {
-        let (date, hour, silent_captures, change_captures) =
-            row_result.map_err(|e| format!("Failed to read row: {}", e))?;
+        let (date, hour, silent_captures, change_captures) = row_result?;
         let mut stats = HourlyStats::new(date, hour);
         stats.silent_captures = silent_captures;
         stats.change_captures = change_captures;
@@ -472,7 +469,7 @@ fn load_hourly_stats_from_db_internal(tracker: &mut SilentPatternTracker) -> Res
 }
 
 /// Load all hourly stats from database into the tracker (public, acquires lock)
-fn load_hourly_stats_from_db(tracker: &mut SilentPatternTracker) -> Result<(), String> {
+fn load_hourly_stats_from_db(tracker: &mut SilentPatternTracker) -> AppResult<()> {
     load_hourly_stats_from_db_internal(tracker)
 }
 
@@ -497,10 +494,8 @@ fn ensure_stats_loaded() {
 }
 
 /// Persist the current tracker state to database
-pub fn persist_silent_pattern_stats() -> Result<(), String> {
-    let tracker = SILENT_PATTERN_TRACKER
-        .lock()
-        .map_err(|e| format!("Tracker lock error: {}", e))?;
+pub fn persist_silent_pattern_stats() -> AppResult<()> {
+    let tracker = SILENT_PATTERN_TRACKER.lock()?;
 
     for stats in &tracker.hourly_stats {
         save_hourly_stats_to_db(
@@ -519,10 +514,8 @@ pub fn persist_silent_pattern_stats() -> Result<(), String> {
 }
 
 /// Load persisted stats into the global tracker
-pub fn load_silent_pattern_stats() -> Result<(), String> {
-    let mut tracker = SILENT_PATTERN_TRACKER
-        .lock()
-        .map_err(|e| format!("Tracker lock error: {}", e))?;
+pub fn load_silent_pattern_stats() -> AppResult<()> {
+    let mut tracker = SILENT_PATTERN_TRACKER.lock()?;
 
     load_hourly_stats_from_db(&mut tracker)?;
 
