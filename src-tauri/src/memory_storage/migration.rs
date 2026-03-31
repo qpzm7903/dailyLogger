@@ -644,9 +644,125 @@ pub fn get_current_version(conn: &Connection) -> Result<i32, String> {
     .map_err(|e| format!("Failed to get current schema version: {}", e))
 }
 
+/// Check if a column exists in a table using PRAGMA table_info
+fn column_exists(conn: &Connection, table: &str, column: &str) -> bool {
+    let sql = format!("PRAGMA table_info({})", table);
+    match conn.prepare(&sql) {
+        Ok(mut stmt) => {
+            let result = stmt
+                .query_map([], |row| {
+                    let name: String = row.get(1)?;
+                    Ok(name)
+                })
+                .map(|rows| rows.filter_map(|r| r.ok()).any(|name| name == column));
+            result.unwrap_or(false)
+        }
+        Err(_) => false,
+    }
+}
+
+/// Check if a table exists in the database
+fn table_exists(conn: &Connection, table: &str) -> bool {
+    conn.query_row(
+        "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name=?1",
+        [table],
+        |row| row.get::<_, bool>(0),
+    )
+    .unwrap_or(false)
+}
+
+/// Helper to add a column to a table if it doesn't already exist.
+/// Uses ALTER TABLE ADD COLUMN; ignores "duplicate column name" errors.
+fn add_column_if_not_exists(conn: &Connection, table: &str, col_def: &str) -> Result<(), String> {
+    let sql = format!("ALTER TABLE {} ADD COLUMN {}", table, col_def);
+    match conn.execute(&sql, []) {
+        Ok(_) => {
+            tracing::debug!(
+                "Added column {} to {}",
+                col_def.split_whitespace().next().unwrap_or("?"),
+                table
+            );
+            Ok(())
+        }
+        Err(e) => {
+            let e_str = e.to_string();
+            if e_str.contains("duplicate column name") {
+                Ok(())
+            } else {
+                Err(e.to_string())
+            }
+        }
+    }
+}
+
+/// Ensure legacy databases have all required columns, regardless of schema version number.
+///
+/// This is a safety net for the migration skip-path bug: older versions set
+/// `schema_version = CURRENT_SCHEMA_VERSION` (1) before the sessions table had
+/// columns like `start_time`, `end_time`, etc.  When `run_migrations()` sees
+/// the version is current it returns early, leaving the table schema incomplete.
+///
+/// This function is called *before* the early-return version check so that
+/// missing columns are always repaired.
+pub fn ensure_legacy_columns_exist(conn: &Connection) -> Result<(), String> {
+    // -- sessions table --
+    if table_exists(conn, "sessions") {
+        // Columns that must exist on the sessions table
+        let session_columns: &[(&str, &str)] = &[
+            ("date", "TEXT NOT NULL DEFAULT ''"),
+            ("start_time", "TEXT NOT NULL DEFAULT ''"),
+            ("end_time", "TEXT"),
+            ("ai_summary", "TEXT"),
+            ("user_summary", "TEXT"),
+            ("context_for_next", "TEXT"),
+            ("status", "TEXT DEFAULT 'active'"),
+        ];
+
+        for (col_name, col_type) in session_columns {
+            if !column_exists(conn, "sessions", col_name) {
+                tracing::warn!(
+                    "Legacy repair: adding missing column '{}' to sessions table",
+                    col_name
+                );
+                add_column_if_not_exists(conn, "sessions", &format!("{} {}", col_name, col_type))?;
+            }
+        }
+    }
+
+    // -- records table --
+    if table_exists(conn, "records") {
+        let records_columns: &[(&str, &str)] = &[
+            ("monitor_info", "TEXT"),
+            ("tags", "TEXT"),
+            ("user_notes", "TEXT"),
+            ("session_id", "INTEGER REFERENCES sessions(id)"),
+            ("analysis_status", "TEXT DEFAULT 'pending'"),
+        ];
+
+        for (col_name, col_type) in records_columns {
+            if !column_exists(conn, "records", col_name) {
+                tracing::warn!(
+                    "Legacy repair: adding missing column '{}' to records table",
+                    col_name
+                );
+                add_column_if_not_exists(conn, "records", &format!("{} {}", col_name, col_type))?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
 /// Run all pending migrations
 pub fn run_migrations(conn: &Connection) -> Result<(), String> {
     let current_version = get_current_version(conn)?;
+
+    // Safety net: repair missing columns in legacy databases before the version
+    // check can short-circuit.  This fixes the upgrade path for users whose
+    // older builds already set schema_version = CURRENT_SCHEMA_VERSION but
+    // whose actual table schemas are incomplete.
+    ensure_legacy_columns_exist(conn)?;
+
     let migrations = get_migrations();
 
     if current_version >= CURRENT_SCHEMA_VERSION {
@@ -774,5 +890,84 @@ mod tests {
         // Should only have one migration recorded
         let history = get_migration_history(&conn).unwrap();
         assert_eq!(history.len(), 1);
+    }
+
+    /// Regression test for the migration skip-path bug.
+    /// Simulates a legacy database where schema_version was already set to
+    /// CURRENT_SCHEMA_VERSION but the sessions table is missing required columns.
+    /// `run_migrations()` must still repair the schema despite the version match.
+    #[test]
+    fn test_legacy_column_repair_when_version_is_current() {
+        use rusqlite::Connection;
+        use tempfile::NamedTempFile;
+
+        let temp_file = NamedTempFile::new().unwrap();
+        let conn = Connection::open(temp_file.path()).unwrap();
+
+        // Simulate a very old database: sessions table with only `id`
+        conn.execute_batch(
+            "CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT);
+             CREATE TABLE records (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL, source_type TEXT NOT NULL, content TEXT NOT NULL, screenshot_path TEXT);
+             CREATE TABLE settings (id INTEGER PRIMARY KEY CHECK (id = 1), api_key TEXT);
+             INSERT OR IGNORE INTO settings (id) VALUES (1);",
+        )
+        .unwrap();
+
+        // Set schema version to CURRENT_SCHEMA_VERSION (simulates old code bumping it)
+        init_schema_version_table(&conn).unwrap();
+        conn.execute(
+            "UPDATE schema_version SET version = ?1 WHERE id = 1",
+            params![CURRENT_SCHEMA_VERSION],
+        )
+        .unwrap();
+
+        // Insert a migration record so init_database sees "migrations exist"
+        conn.execute(
+            "INSERT INTO schema_migrations (version, description, applied_at) VALUES (?1, 'fake legacy', 0)",
+            params![CURRENT_SCHEMA_VERSION],
+        )
+        .unwrap();
+
+        // Verify the sessions table is missing expected columns before repair
+        assert!(!column_exists(&conn, "sessions", "start_time"));
+        assert!(!column_exists(&conn, "sessions", "end_time"));
+        assert!(!column_exists(&conn, "sessions", "status"));
+
+        // Call ensure_legacy_columns_exist directly first to verify it works
+        ensure_legacy_columns_exist(&conn).unwrap();
+
+        // Now verify columns were added
+        assert!(column_exists(&conn, "sessions", "start_time"));
+        assert!(column_exists(&conn, "sessions", "end_time"));
+        assert!(column_exists(&conn, "sessions", "ai_summary"));
+        assert!(column_exists(&conn, "sessions", "user_summary"));
+        assert!(column_exists(&conn, "sessions", "context_for_next"));
+        assert!(column_exists(&conn, "sessions", "status"));
+        assert!(column_exists(&conn, "sessions", "date"));
+
+        // Verify records table columns were also repaired
+        assert!(column_exists(&conn, "records", "monitor_info"));
+        assert!(column_exists(&conn, "records", "session_id"));
+    }
+
+    /// Test that ensure_legacy_columns_exist is idempotent on a fully-migrated database.
+    #[test]
+    fn test_ensure_legacy_columns_idempotent() {
+        use rusqlite::Connection;
+        use tempfile::NamedTempFile;
+
+        let temp_file = NamedTempFile::new().unwrap();
+        let conn = Connection::open(temp_file.path()).unwrap();
+
+        // Full migration from scratch
+        init_schema_version_table(&conn).unwrap();
+        run_migrations(&conn).unwrap();
+
+        // Run ensure_legacy_columns_exist again -- should not fail
+        ensure_legacy_columns_exist(&conn).unwrap();
+
+        // Columns still present
+        assert!(column_exists(&conn, "sessions", "start_time"));
+        assert!(column_exists(&conn, "sessions", "status"));
     }
 }

@@ -70,9 +70,13 @@ pub fn init_database() -> Result<(), String> {
     // This handles databases created by legacy code where version was bumped but migration wasn't recorded
     if migrations_exist && current_version >= CURRENT_SCHEMA_VERSION {
         tracing::info!(
-            "init_database: Migrations exist and version is current ({}), no action needed",
+            "init_database: Migrations exist and version is current ({}), verifying column completeness",
             current_version
         );
+        // Safety net: legacy databases may report version = CURRENT_SCHEMA_VERSION
+        // but still be missing columns (e.g. sessions.start_time).  Run the column
+        // check regardless of version so upgrades are always repaired.
+        migration::ensure_legacy_columns_exist(&conn)?;
     } else if migrations_exist && current_version < CURRENT_SCHEMA_VERSION {
         // Migrations recorded but version behind - this shouldn't happen normally
         // but we can recover by running migrations
