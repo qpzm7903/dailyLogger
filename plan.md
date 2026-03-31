@@ -1,7 +1,6 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-31
-> 当前版本: v4.6.2 ✅ 已发布
 > 项目状态: 507 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
@@ -70,7 +69,13 @@
 - ✅ Settings 缓存改为 Arc<Settings>，消除每次读取的 64 字段 struct clone
 - ✅ auto_backup_scheduler 合并冗余 settings 读取 (5→1)
 - ✅ capture_service 适配 Arc<Settings> 返回类型
-- 🔄 其他高频 settings 读取场景逐步优化
+- ✅ capture loop 合并为单次 Arc 读取 (work time + capture 共享一次 get_settings_sync)
+- ✅ evaluate_and_adjust_threshold 消除二次 settings 读取
+- ✅ 提取 capture_settings_from_settings() 共享 CaptureSettings 构造逻辑
+- ✅ 添加 load_capture_settings_from_arc/should_capture_by_work_time_from_arc 供调用方复用
+- ✅ 移除 auto_backup_scheduler 3 个未使用的 settings 访问器函数
+- ✅ 移除 capture_commands 2 个废弃的 internal helper 函数
+- ✅ Sidebar.vue i18n: 硬编码"设置"改为 t('header.settings')
 
 ### v4.6.2: Bug 修复 & DRY 收窄 ✅ 已完成
 - ✅ 修复 TimelineWidget 动态 Tailwind 类名 (bg-purple-${n}) 未被 JIT 编译的 bug
