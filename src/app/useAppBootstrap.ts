@@ -23,6 +23,7 @@ import { useI18n } from 'vue-i18n'
 import { initTheme } from '../theme'
 import { initToastI18n } from '../stores/toast'
 import { loadLanguageFromBackend } from '../i18n'
+import { formatCurrentTime } from '../utils/dateFormat'
 import { showError, showSuccess } from '../stores/toast'
 import { fetchTagColors } from '../composables/useTagColors'
 import type { LogRecord, Settings } from '../types/tauri'
@@ -109,12 +110,7 @@ export function useAppBootstrap(options: BootstrapOptions): UseAppBootstrapRetur
 
   // Update time display
   const updateTime = () => {
-    currentTime.value = new Date().toLocaleString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    currentTime.value = formatCurrentTime()
   }
 
   // Load today's records

@@ -76,6 +76,7 @@
 import { ref, onMounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from 'vue-i18n';
+import { formatTimeHM } from '../utils/dateFormat';
 
 // TodayStats interface matching the Rust struct
 interface TodayStats {
@@ -106,12 +107,7 @@ function toggleCollapsed() {
 // Format RFC3339 timestamp to HH:MM
 function formatTime(rfc3339: string): string {
   try {
-    const date = new Date(rfc3339);
-    return date.toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+    return formatTimeHM(rfc3339);
   } catch {
     return rfc3339;
   }

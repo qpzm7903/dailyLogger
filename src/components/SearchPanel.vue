@@ -149,6 +149,7 @@ import { useDebounceFn } from '@vueuse/core'
 import BaseModal from './BaseModal.vue'
 import EmptyState from './EmptyState.vue'
 import { sanitizeSnippet } from '../utils/contentUtils'
+import { formatDateTime } from '../utils/dateFormat'
 import { showError } from '../stores/toast'
 import type { Record } from '../types/tauri'
 import SkeletonLoader from './SkeletonLoader.vue'
@@ -185,7 +186,7 @@ const shouldUseVirtualScroll = computed(() => results.value.length > VIRTUAL_SCR
 
 // UX-022: Virtualizer instance
 const virtualizer = useVirtualizer({
-  count: results.value.length,
+  get count() { return results.value.length },
   getScrollElement: () => scrollContainer.value,
   estimateSize: () => VIRTUAL_SCROLL_CONFIG.itemHeight,
   overscan: VIRTUAL_SCROLL_CONFIG.overscan,
@@ -207,14 +208,7 @@ watch(searchQuery, (newQuery) => {
 })
 
 function formatTime(timestamp: string) {
-  const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return formatDateTime(timestamp)
 }
 
 function clearSearch() {

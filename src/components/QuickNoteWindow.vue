@@ -46,6 +46,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useI18n } from 'vue-i18n'
 import { usePlatform } from '../composables/usePlatform'
+import { formatCurrentTimeFull } from '../utils/dateFormat'
 import { systemActions } from '../features/system/actions'
 
 const { t } = useI18n()
@@ -57,13 +58,7 @@ const currentTime = ref('')
 const isSaving = ref(false)
 
 const updateTime = () => {
-  currentTime.value = new Date().toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })
+  currentTime.value = formatCurrentTimeFull()
 }
 
 const closeWindow = async () => {

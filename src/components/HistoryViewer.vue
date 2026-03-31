@@ -190,6 +190,7 @@ import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import BaseModal from './BaseModal.vue'
 import { useI18n } from 'vue-i18n'
+import { formatDateISO, formatDateTime } from '../utils/dateFormat'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { showSuccess, showError } from '../stores/toast'
 import { recordsActions } from '../features/records/actions'
@@ -266,18 +267,11 @@ watch(selectedTags, () => {
 }, { deep: true })
 
 function formatDate(date: Date) {
-  return date.toISOString().split('T')[0]
+  return formatDateISO(date)
 }
 
 function formatTime(timestamp: string) {
-  const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return formatDateTime(timestamp)
 }
 
 function truncateContent(content: string) {

@@ -221,6 +221,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatFull } from '../utils/dateFormat'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { systemActions } from '../features/system/actions'
@@ -366,8 +367,7 @@ function formatSize(bytes: number) {
 
 function formatDate(isoString: string) {
   try {
-    const date = new Date(isoString)
-    return date.toLocaleString('zh-CN')
+    return formatFull(isoString)
   } catch {
     return isoString
   }

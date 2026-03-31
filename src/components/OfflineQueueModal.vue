@@ -63,6 +63,7 @@
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
+import { formatDateTime } from '../utils/dateFormat'
 import { showSuccess, showError } from '../stores/toast'
 import BaseModal from './BaseModal.vue'
 
@@ -161,12 +162,6 @@ function getTaskDescription(task: OfflineTask): string {
 }
 
 function formatTime(timestamp: string): string {
-  const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return formatDateTime(timestamp)
 }
 </script>

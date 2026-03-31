@@ -203,18 +203,38 @@ function getHourCellClass(hour: number): string {
   const hasAuto = group.events.some(e => e.event_type === 'auto');
   const hasManual = group.events.some(e => e.event_type === 'manual');
 
-  // Determine intensity based on event count
+  // Determine intensity level (1-4) based on event count
   const intensity = Math.min(Math.ceil(group.count / 2), 4);
 
+  // Intensity-to-Tailwind-class mapping (static classes for JIT compilation)
+  const autoClasses = [
+    '',                                                          // 0 unused
+    'bg-blue-400 hover:bg-blue-500',                            // 1
+    'bg-blue-500 hover:bg-blue-600',                            // 2
+    'bg-blue-600 hover:bg-blue-700',                            // 3
+    'bg-blue-700 hover:bg-blue-800',                            // 4
+  ];
+  const manualClasses = [
+    '',                                                          // 0 unused
+    'bg-green-400 hover:bg-green-500',                          // 1
+    'bg-green-500 hover:bg-green-600',                          // 2
+    'bg-green-600 hover:bg-green-700',                          // 3
+    'bg-green-700 hover:bg-green-800',                          // 4
+  ];
+  const mixedClasses = [
+    '',                                                          // 0 unused
+    'bg-purple-400 hover:bg-purple-500',                        // 1
+    'bg-purple-500 hover:bg-purple-600',                        // 2
+    'bg-purple-600 hover:bg-purple-700',                        // 3
+    'bg-purple-700 hover:bg-purple-800',                        // 4
+  ];
+
   if (hasAuto && hasManual) {
-    // Mixed: purple gradient
-    return `bg-purple-${400 + intensity * 50} hover:bg-purple-${500 + intensity * 50}`;
+    return mixedClasses[intensity];
   } else if (hasManual) {
-    // Manual notes: green
-    return `bg-green-${400 + intensity * 50} hover:bg-green-${500 + intensity * 50}`;
+    return manualClasses[intensity];
   } else {
-    // Auto screenshots: blue
-    return `bg-blue-${400 + intensity * 50} hover:bg-blue-${500 + intensity * 50}`;
+    return autoClasses[intensity];
   }
 }
 
