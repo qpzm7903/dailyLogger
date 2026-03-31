@@ -61,7 +61,7 @@ pub fn export_to_json(
         "records": json_records,
     });
 
-    serde_json::to_string_pretty(&output).map_err(|e| format!("Failed to serialize JSON: {}", e))
+    serde_json::to_string_pretty(&output).map_err(|e| e.to_string())
 }
 
 /// Default markdown export template
@@ -271,7 +271,7 @@ pub async fn open_export_dir(path: String) -> Result<(), String> {
         std::process::Command::new("explorer")
             .arg(&dir_str)
             .spawn()
-            .map_err(|e| format!("Failed to open directory: {}", e))?;
+            .map_err(|e| e.to_string())?;
     }
 
     #[cfg(target_os = "macos")]
@@ -279,7 +279,7 @@ pub async fn open_export_dir(path: String) -> Result<(), String> {
         std::process::Command::new("open")
             .arg(&dir_str)
             .spawn()
-            .map_err(|e| format!("Failed to open directory: {}", e))?;
+            .map_err(|e| e.to_string())?;
     }
 
     #[cfg(target_os = "linux")]
@@ -287,7 +287,7 @@ pub async fn open_export_dir(path: String) -> Result<(), String> {
         std::process::Command::new("xdg-open")
             .arg(&dir_str)
             .spawn()
-            .map_err(|e| format!("Failed to open directory: {}", e))?;
+            .map_err(|e| e.to_string())?;
     }
 
     tracing::info!("Opened export directory: {}", dir_str);
@@ -311,8 +311,7 @@ pub async fn export_records(request: ExportRequest) -> Result<ExportResult, Stri
     };
 
     let export_dir = get_export_dir();
-    std::fs::create_dir_all(&export_dir)
-        .map_err(|e| format!("Failed to create export directory: {}", e))?;
+    std::fs::create_dir_all(&export_dir).map_err(|e| e.to_string())?;
 
     // Generate filename with timestamp to avoid overwriting previous exports
     let now = chrono::Local::now();
@@ -328,8 +327,7 @@ pub async fn export_records(request: ExportRequest) -> Result<ExportResult, Stri
     );
     let output_path = export_dir.join(&filename);
 
-    std::fs::write(&output_path, &content)
-        .map_err(|e| format!("Failed to write export file: {}", e))?;
+    std::fs::write(&output_path, &content).map_err(|e| e.to_string())?;
 
     let file_size = std::fs::metadata(&output_path)
         .map(|m| m.len())

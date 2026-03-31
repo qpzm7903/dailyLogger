@@ -158,21 +158,19 @@ async fn run_auto_backup_internal() -> Result<(), String> {
     let target_dir = crate::backup::get_default_backup_dir();
 
     // Ensure backup directory exists
-    fs::create_dir_all(&target_dir)
-        .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+    fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
 
     // Create temp directory
     let temp_dir = tempfile::Builder::new()
         .prefix("dailylogger-auto-backup-")
         .tempdir()
-        .map_err(|e| format!("Failed to create temp directory: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let data_dir = temp_dir.path().join("data");
     let screenshots_dir = temp_dir.path().join("screenshots");
 
-    fs::create_dir_all(&data_dir).map_err(|e| format!("Failed to create data dir: {}", e))?;
-    fs::create_dir_all(&screenshots_dir)
-        .map_err(|e| format!("Failed to create screenshots dir: {}", e))?;
+    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&screenshots_dir).map_err(|e| e.to_string())?;
 
     // Get database stats with lock
     let record_count = {
@@ -184,12 +182,11 @@ async fn run_auto_backup_internal() -> Result<(), String> {
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))
-            .map_err(|e| format!("Failed to count records: {}", e))?;
+            .map_err(|e| e.to_string())?;
 
         let db_path = crate::backup::get_db_path();
         if db_path.exists() {
-            fs::copy(&db_path, data_dir.join("local.db"))
-                .map_err(|e| format!("Failed to copy database: {}", e))?;
+            fs::copy(&db_path, data_dir.join("local.db")).map_err(|e| e.to_string())?;
         }
 
         count as usize
@@ -219,8 +216,7 @@ async fn run_auto_backup_internal() -> Result<(), String> {
     let backup_path = target_dir.join(&backup_filename);
 
     // Create zip file
-    let file = fs::File::create(&backup_path)
-        .map_err(|e| format!("Failed to create backup file: {}", e))?;
+    let file = fs::File::create(&backup_path).map_err(|e| e.to_string())?;
     let mut zip = ZipWriter::new(file);
 
     for entry in walkdir::WalkDir::new(temp_dir.path())

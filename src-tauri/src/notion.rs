@@ -488,8 +488,7 @@ fn chunk_blocks(blocks: Vec<NotionBlock>) -> Vec<Vec<NotionBlock>> {
 /// Get the title property name from a Notion database
 async fn get_title_property_name(api_key: &str, database_id: &str) -> Result<String, String> {
     let url = format!("{}/databases/{}", NOTION_API_BASE, database_id);
-    let client =
-        create_http_client(&url, 30).map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+    let client = create_http_client(&url, 30).map_err(|e| e.to_string())?;
 
     let response = client
         .get(&url)
@@ -497,7 +496,7 @@ async fn get_title_property_name(api_key: &str, database_id: &str) -> Result<Str
         .header("Notion-Version", NOTION_API_VERSION)
         .send()
         .await
-        .map_err(|e| format!("Failed to get database: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -505,10 +504,7 @@ async fn get_title_property_name(api_key: &str, database_id: &str) -> Result<Str
         return Err(format!("Notion API error: {} - {}", status, error_text));
     }
 
-    let db: NotionDatabaseResponse = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse database response: {}", e))?;
+    let db: NotionDatabaseResponse = response.json().await.map_err(|e| e.to_string())?;
 
     // Find the title property in the database schema
     if let serde_json::Value::Object(props) = db.properties {
@@ -667,8 +663,7 @@ pub async fn test_notion_connection() -> Result<bool, String> {
     };
 
     let url = format!("{}/databases/{}", NOTION_API_BASE, database_id);
-    let client =
-        create_http_client(&url, 30).map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+    let client = create_http_client(&url, 30).map_err(|e| e.to_string())?;
 
     // Try to retrieve the database to verify access
     let response = client
@@ -677,7 +672,7 @@ pub async fn test_notion_connection() -> Result<bool, String> {
         .header("Notion-Version", NOTION_API_VERSION)
         .send()
         .await
-        .map_err(|e| format!("Connection error: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     if response.status().is_success() {
         Ok(true)

@@ -16,9 +16,9 @@
 - ✅ model_service 迁移到 AppResult (1 函数)
 - ✅ report_service 迁移到 AppResult (6 函数 + offline_queue 适配)
 - ✅ timeline 模块迁移到 AppResult (3 公开函数)
-- 🔄 synthesis 模块迁移 (最大模块, ~30 函数)
-- ⬜ session_manager 迁移
-- ⬜ memory_storage (records, settings, tags) 迁移
+- ✅ synthesis 模块迁移 (最大模块, ~30 函数)
+- ✅ session_manager 迁移
+- ✅ memory_storage (records, tags, mod) 迁移 (~20 函数)
 - ⬜ 命令层统一使用 .map_err(|e| e.to_string()) 模式
 
 ### v4.4.3: Bug 修复 (issues #89, #90, #91) ✅ 已发布

@@ -3,9 +3,7 @@ use crate::crypto;
 use super::{Settings, DB_CONNECTION};
 
 pub fn get_settings_sync() -> Result<Settings, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     let mut stmt = conn
@@ -34,7 +32,7 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 last_auto_backup_at, custom_export_template
          FROM settings WHERE id = 1",
         )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let settings = stmt
         .query_row([], |row| {
@@ -137,32 +135,26 @@ pub fn get_settings_sync() -> Result<Settings, String> {
                 custom_export_template: row.get("custom_export_template")?,
             })
         })
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     // Decrypt API key if it's encrypted
     let settings = if let Some(ref api_key) = settings.api_key {
         if !api_key.is_empty() {
             let mut decrypted_settings = settings.clone();
-            decrypted_settings.api_key = Some(
-                crypto::decrypt_api_key(api_key)
-                    .map_err(|e| format!("Failed to decrypt API key: {}", e))?,
-            );
+            decrypted_settings.api_key =
+                Some(crypto::decrypt_api_key(api_key).map_err(|e| e.to_string())?);
             // Also decrypt notion_api_key if present
             if let Some(ref notion_api_key) = settings.notion_api_key {
                 if !notion_api_key.is_empty() {
-                    decrypted_settings.notion_api_key = Some(
-                        crypto::decrypt_api_key(notion_api_key)
-                            .map_err(|e| format!("Failed to decrypt Notion API key: {}", e))?,
-                    );
+                    decrypted_settings.notion_api_key =
+                        Some(crypto::decrypt_api_key(notion_api_key).map_err(|e| e.to_string())?);
                 }
             }
             // PERF-001: Decrypt proxy password if present
             if let Some(ref proxy_password) = settings.proxy_password {
                 if !proxy_password.is_empty() {
-                    decrypted_settings.proxy_password = Some(
-                        crypto::decrypt_api_key(proxy_password)
-                            .map_err(|e| format!("Failed to decrypt proxy password: {}", e))?,
-                    );
+                    decrypted_settings.proxy_password =
+                        Some(crypto::decrypt_api_key(proxy_password).map_err(|e| e.to_string())?);
                 }
             }
             // AI-006: Decrypt sensitive values in custom_headers
@@ -212,10 +204,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
     // Encrypt API key before saving
     let encrypted_api_key = if let Some(ref api_key) = settings.api_key {
         if !api_key.is_empty() && !crypto::is_encrypted(api_key) {
-            Some(
-                crypto::encrypt_api_key(api_key)
-                    .map_err(|e| format!("Failed to encrypt API key: {}", e))?,
-            )
+            Some(crypto::encrypt_api_key(api_key).map_err(|e| e.to_string())?)
         } else {
             settings.api_key.clone()
         }
@@ -226,10 +215,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
     // INT-001: Encrypt Notion API key before saving
     let encrypted_notion_api_key = if let Some(ref notion_api_key) = settings.notion_api_key {
         if !notion_api_key.is_empty() && !crypto::is_encrypted(notion_api_key) {
-            Some(
-                crypto::encrypt_api_key(notion_api_key)
-                    .map_err(|e| format!("Failed to encrypt Notion API key: {}", e))?,
-            )
+            Some(crypto::encrypt_api_key(notion_api_key).map_err(|e| e.to_string())?)
         } else {
             settings.notion_api_key.clone()
         }
@@ -276,10 +262,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
     // PERF-001: Encrypt proxy password before saving
     let encrypted_proxy_password = if let Some(ref proxy_password) = settings.proxy_password {
         if !proxy_password.is_empty() && !crypto::is_encrypted(proxy_password) {
-            Some(
-                crypto::encrypt_api_key(proxy_password)
-                    .map_err(|e| format!("Failed to encrypt proxy password: {}", e))?,
-            )
+            Some(crypto::encrypt_api_key(proxy_password).map_err(|e| e.to_string())?)
         } else {
             settings.proxy_password.clone()
         }
@@ -294,9 +277,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
         .map(|url| crate::ollama::is_ollama_endpoint(url))
         .unwrap_or(false);
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     conn.execute(
@@ -431,7 +412,7 @@ pub fn save_settings_sync(settings: &Settings) -> Result<(), String> {
             ":last_auto_backup_at": settings.last_auto_backup_at,
         },
     )
-    .map_err(|e| format!("Failed to save settings: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     tracing::info!("Settings saved");
     Ok(())

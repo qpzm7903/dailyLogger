@@ -85,16 +85,14 @@ pub fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> Result<(), String> {
     if !src_dir.exists() {
         return Ok(());
     }
-    fs::create_dir_all(dst_dir)
-        .map_err(|e| format!("Failed to create dir {}: {e}", dst_dir.display()))?;
+    fs::create_dir_all(dst_dir).map_err(|e| e.to_string())?;
 
     for entry in fs::read_dir(src_dir).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let src_path = entry.path();
         if src_path.is_file() {
             if let Some(file_name) = src_path.file_name() {
-                fs::copy(&src_path, dst_dir.join(file_name))
-                    .map_err(|e| format!("Failed to copy {}: {e}", src_path.display()))?;
+                fs::copy(&src_path, dst_dir.join(file_name)).map_err(|e| e.to_string())?;
             }
         }
     }
@@ -110,8 +108,7 @@ fn clear_dir_files(dir: &Path) -> Result<(), String> {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
         if path.is_file() {
-            fs::remove_file(&path)
-                .map_err(|e| format!("Failed to remove {}: {e}", path.display()))?;
+            fs::remove_file(&path).map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -139,21 +136,19 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
         .unwrap_or_else(get_default_backup_dir);
 
     // 确保备份目录存在
-    fs::create_dir_all(&target_dir)
-        .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+    fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
 
     // 创建临时目录
     let temp_dir = tempfile::Builder::new()
         .prefix("dailylogger-backup-")
         .tempdir()
-        .map_err(|e| format!("Failed to create temp directory: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let data_dir = temp_dir.path().join("data");
     let screenshots_dir = temp_dir.path().join("screenshots");
 
-    fs::create_dir_all(&data_dir).map_err(|e| format!("Failed to create data dir: {}", e))?;
-    fs::create_dir_all(&screenshots_dir)
-        .map_err(|e| format!("Failed to create screenshots dir: {}", e))?;
+    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&screenshots_dir).map_err(|e| e.to_string())?;
 
     // 获取统计信息并复制数据库（在同一个 DB 锁内，确保一致性）
     let record_count = {
@@ -166,13 +161,12 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))
-            .map_err(|e| format!("Failed to count records: {}", e))?;
+            .map_err(|e| e.to_string())?;
 
         // 复制数据库文件（在锁内，防止并发写入导致不一致）
         let db_path = get_db_path();
         if db_path.exists() {
-            fs::copy(&db_path, data_dir.join("local.db"))
-                .map_err(|e| format!("Failed to copy database: {}", e))?;
+            fs::copy(&db_path, data_dir.join("local.db")).map_err(|e| e.to_string())?;
         }
 
         count as usize
@@ -202,8 +196,7 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
     let backup_path = target_dir.join(&backup_filename);
 
     // 创建 zip 文件
-    let file = fs::File::create(&backup_path)
-        .map_err(|e| format!("Failed to create backup file: {}", e))?;
+    let file = fs::File::create(&backup_path).map_err(|e| e.to_string())?;
     let mut zip = ZipWriter::new(file);
 
     // 添加所有文件到 zip
@@ -377,7 +370,7 @@ pub async fn delete_backup(backup_path: String) -> Result<(), String> {
         return Err("Backup file not found".to_string());
     }
 
-    fs::remove_file(&path).map_err(|e| format!("Failed to delete backup: {}", e))
+    fs::remove_file(&path).map_err(|e| e.to_string())
 }
 
 /// Rollback: restore data from rollback_dir to the app data directory.
@@ -392,8 +385,7 @@ fn rollback_from(rollback_dir: &Path) -> Result<(), String> {
     if rollback_db.exists() {
         let target_data_dir = crate::get_app_data_dir().join("data");
         fs::create_dir_all(&target_data_dir).map_err(|e| e.to_string())?;
-        fs::copy(&rollback_db, &target_db)
-            .map_err(|e| format!("Rollback: failed to restore database: {}", e))?;
+        fs::copy(&rollback_db, &target_db).map_err(|e| e.to_string())?;
     }
 
     // Restore screenshots: clear current, copy rollback
@@ -408,11 +400,11 @@ fn perform_restore_inner(archive: &mut ZipArchive<fs::File>) -> Result<(), Strin
     let temp_extract = tempfile::Builder::new()
         .prefix("dailylogger-restore-")
         .tempdir()
-        .map_err(|e| format!("Failed to create temp directory: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     archive
         .extract(temp_extract.path())
-        .map_err(|e| format!("Failed to extract backup: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let extracted_data_dir = temp_extract.path().join("data");
     let extracted_screenshots_dir = temp_extract.path().join("screenshots");
@@ -426,7 +418,7 @@ fn perform_restore_inner(archive: &mut ZipArchive<fs::File>) -> Result<(), Strin
             extracted_data_dir.join("local.db"),
             target_data_dir.join("local.db"),
         )
-        .map_err(|e| format!("Failed to restore database: {}", e))?;
+        .map_err(|e| e.to_string())?;
     }
 
     // Restore screenshots: clear old files first, then copy from backup
@@ -473,8 +465,7 @@ pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String
         fs::create_dir_all(&rollback_screenshots_dir).map_err(|e| e.to_string())?;
 
         if current_db.exists() {
-            fs::copy(&current_db, rollback_db_dir.join("local.db"))
-                .map_err(|e| format!("Failed to backup current database: {}", e))?;
+            fs::copy(&current_db, rollback_db_dir.join("local.db")).map_err(|e| e.to_string())?;
         }
 
         copy_dir_files(&current_screenshots, &rollback_screenshots_dir)?;

@@ -11,7 +11,7 @@ pub use crate::monitor_types::{CaptureMode, MonitorDetail, MonitorInfo, MonitorS
 
 /// Get list of all connected monitors (all platforms using xcap)
 pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
-    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+    let monitors = xcap::Monitor::all().map_err(|e| e.to_string())?;
 
     if monitors.is_empty() {
         return Err("No monitors found".to_string());

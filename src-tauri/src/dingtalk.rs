@@ -104,8 +104,7 @@ pub async fn test_dingtalk_connection() -> Result<bool, String> {
         _ => return Ok(false), // Not configured
     };
 
-    let client = create_http_client(webhook_url, 30)
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+    let client = create_http_client(webhook_url, 30).map_err(|e| e.to_string())?;
 
     // Send a test message
     let body = serde_json::json!({
@@ -121,7 +120,7 @@ pub async fn test_dingtalk_connection() -> Result<bool, String> {
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Connection error: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     if response.status().is_success() {
         match response.json::<serde_json::Value>().await {
@@ -136,7 +135,7 @@ pub async fn test_dingtalk_connection() -> Result<bool, String> {
                     Err(format!("DingTalk API error: {}", errmsg))
                 }
             }
-            Err(e) => Err(format!("Failed to parse response: {}", e)),
+            Err(e) => Err(e.to_string()),
         }
     } else {
         let status = response.status();

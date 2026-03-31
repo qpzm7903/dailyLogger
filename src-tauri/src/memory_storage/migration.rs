@@ -30,7 +30,7 @@ impl Migration {
 
         // Begin transaction for atomic execution
         conn.execute("BEGIN IMMEDIATE", [])
-            .map_err(|e| format!("Failed to begin migration transaction: {}", e))?;
+            .map_err(|e| e.to_string())?;
 
         let result = (|| {
             // For v1 migration: handle legacy sessions table that may be missing the date column
@@ -302,15 +302,14 @@ impl Migration {
                 "UPDATE schema_version SET version = ?1, updated_at = ?2 WHERE id = 1",
                 params![self.version, applied_at],
             )
-            .map_err(|e| format!("Failed to update schema version: {}", e))?;
+            .map_err(|e| e.to_string())?;
 
             Ok(())
         })();
 
         match result {
             Ok(()) => {
-                conn.execute("COMMIT", [])
-                    .map_err(|e| format!("Failed to commit migration: {}", e))?;
+                conn.execute("COMMIT", []).map_err(|e| e.to_string())?;
                 tracing::info!("Migration v{} applied successfully", self.version);
                 Ok(())
             }
@@ -485,7 +484,7 @@ pub fn init_schema_version_table(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create schema_version table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Create schema_migrations history table if not exists
     conn.execute(
@@ -497,14 +496,14 @@ pub fn init_schema_version_table(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create schema_migrations table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Insert initial version row if not exists
     conn.execute(
         "INSERT OR IGNORE INTO schema_version (id, version, updated_at) VALUES (1, 0, 0)",
         [],
     )
-    .map_err(|e| format!("Failed to insert initial schema version: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -516,7 +515,7 @@ pub fn get_current_version(conn: &Connection) -> Result<i32, String> {
         [],
         |row| row.get(0),
     )
-    .map_err(|e| format!("Failed to get current schema version: {}", e))
+    .map_err(|e| e.to_string())
 }
 
 /// Check if a column exists in a table using PRAGMA table_info
@@ -591,7 +590,7 @@ pub fn ensure_legacy_columns_exist(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create sessions table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // -- sessions table --
     if table_exists(conn, "sessions") {
@@ -679,15 +678,15 @@ pub fn run_migrations(conn: &Connection) -> Result<(), String> {
 pub fn get_migration_history(conn: &Connection) -> Result<Vec<(i32, String, i64)>, String> {
     let mut stmt = conn
         .prepare("SELECT version, description, applied_at FROM schema_migrations ORDER BY version")
-        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let rows = stmt
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
-        .map_err(|e| format!("Failed to query migrations: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let mut history = Vec::new();
     for row in rows {
-        history.push(row.map_err(|e| format!("Failed to read row: {}", e))?);
+        history.push(row.map_err(|e| e.to_string())?);
     }
 
     Ok(history)

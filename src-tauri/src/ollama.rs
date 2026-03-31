@@ -101,10 +101,7 @@ pub async fn get_ollama_models(base_url: String) -> Result<OllamaModelsResult, S
         });
     }
 
-    let json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
 
     let (models, model_details): (Vec<String>, Vec<OllamaModelInfo>) = json["models"]
         .as_array()
@@ -248,10 +245,7 @@ pub async fn pull_ollama_model(
     }
 
     // Parse the response to get status
-    let json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
 
     let status = json["status"].as_str().unwrap_or("completed").to_string();
     let message = if status == "success" || status == "completed" {
@@ -344,10 +338,7 @@ pub async fn get_running_models(base_url: String) -> Result<RunningModelsResult,
         });
     }
 
-    let json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
 
     let running_models: Vec<RunningModelInfo> = json["models"]
         .as_array()
@@ -800,10 +791,7 @@ pub async fn show_ollama_model(
     }
 
     // Parse the response
-    let response_text = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response body: {}", e))?;
+    let response_text = response.text().await.map_err(|e| e.to_string())?;
 
     let details: ModelShowDetails = match serde_json::from_str(&response_text) {
         Ok(d) => d,

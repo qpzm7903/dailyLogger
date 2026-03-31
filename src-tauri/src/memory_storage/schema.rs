@@ -59,10 +59,10 @@ pub fn init_database() -> Result<(), String> {
     let migrations_exist = {
         let mut stmt = conn
             .prepare("SELECT COUNT(*) FROM schema_migrations")
-            .map_err(|e| format!("Failed to prepare migration check: {}", e))?;
+            .map_err(|e| e.to_string())?;
         let count: i32 = stmt
             .query_row([], |row| row.get(0))
-            .map_err(|e| format!("Failed to query migrations: {}", e))?;
+            .map_err(|e| e.to_string())?;
         count > 0
     };
 
@@ -90,14 +90,10 @@ pub fn init_database() -> Result<(), String> {
         let table_exists = {
             let mut stmt = conn
                 .prepare("PRAGMA table_info(records)")
-                .map_err(|e| format!("Failed to prepare table check: {}", e))?;
-            let mut rows = stmt
-                .query([])
-                .map_err(|e| format!("Failed to query table info: {}", e))?;
+                .map_err(|e| e.to_string())?;
+            let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
             // If we can iterate and get at least one column (id), table exists
-            rows.next()
-                .map_err(|e| format!("Query error: {}", e))?
-                .is_some()
+            rows.next().map_err(|e| e.to_string())?.is_some()
         };
 
         if !table_exists {
@@ -129,7 +125,7 @@ pub fn init_database() -> Result<(), String> {
         [],
     )
     .map_err(|e| {
-        let msg = format!("Failed to create records table: {}", e);
+        let msg = e.to_string();
         tracing::error!("{}", msg);
         msg
     })?;
@@ -158,7 +154,7 @@ pub fn init_database() -> Result<(), String> {
             "UPDATE schema_version SET version = ?1, updated_at = ?2 WHERE id = 1",
             params![CURRENT_SCHEMA_VERSION, applied_at],
         )
-        .map_err(|e| format!("Failed to update schema version: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
         // Record that we've applied all legacy migrations
         conn.execute(
@@ -201,9 +197,7 @@ pub fn init_database() -> Result<(), String> {
 /// STAB-001 Task 4.2: Check if the database connection is still valid
 /// Returns Ok(true) if connection is valid, Ok(false) if reconnect needed, Err on error
 pub fn check_connection() -> Result<bool, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     Ok(connection_is_valid(db.as_ref()))
 }
 
@@ -228,9 +222,7 @@ pub fn ensure_connection() -> Result<(), String> {
 
     // Clear the old connection
     {
-        let mut db = DB_CONNECTION
-            .lock()
-            .map_err(|e| format!("Lock error: {}", e))?;
+        let mut db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
         *db = None;
     }
 
@@ -247,7 +239,7 @@ fn migrate_plain_api_key_with_conn(conn: &Connection) -> Result<(), String> {
             row.get::<_, Option<String>>(0)
         })
         .optional()
-        .map_err(|e| format!("Failed to query API key: {}", e))?
+        .map_err(|e| e.to_string())?
         .flatten();
 
     if let Some(key) = api_key {
@@ -258,7 +250,7 @@ fn migrate_plain_api_key_with_conn(conn: &Connection) -> Result<(), String> {
                 "UPDATE settings SET api_key = ?1 WHERE id = 1",
                 params![encrypted],
             )
-            .map_err(|e| format!("Failed to update encrypted API key: {}", e))?;
+            .map_err(|e| e.to_string())?;
             tracing::info!("Migrated plain API key to encrypted storage");
         }
     }
@@ -284,7 +276,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create records table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Create sessions table (SESSION-001)
     conn.execute(
@@ -300,7 +292,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create sessions table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Migrate: add date column if not exists (for existing test databases)
     let _ = conn.execute("ALTER TABLE sessions ADD COLUMN date TEXT", []);
@@ -309,26 +301,26 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         "CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date)",
         [],
     )
-    .map_err(|e| format!("Failed to create idx_sessions_date index: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_session_id ON records(session_id)",
         [],
     )
-    .map_err(|e| format!("Failed to create idx_session_id index: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // PERF-004: Composite indexes for query optimization (test DB)
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_timestamp_source_type ON records(timestamp DESC, source_type)",
         [],
     )
-    .map_err(|e| format!("Failed to create idx_timestamp_source_type index: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_session_timestamp ON records(session_id, timestamp DESC)",
         [],
     )
-    .map_err(|e| format!("Failed to create idx_session_timestamp index: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Create settings table
     conn.execute(
@@ -403,10 +395,10 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create settings table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
-        .map_err(|e| format!("Failed to initialize settings: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     // Create FTS5 table
     conn.execute(
@@ -418,7 +410,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create FTS5 table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // FTS5 triggers
     conn.execute(
@@ -427,7 +419,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         END",
         [],
     )
-    .map_err(|e| format!("Failed to create FTS5 insert trigger: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TRIGGER IF NOT EXISTS records_ad AFTER DELETE ON records BEGIN
@@ -436,7 +428,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         END",
         [],
     )
-    .map_err(|e| format!("Failed to create FTS5 delete trigger: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TRIGGER IF NOT EXISTS records_au AFTER UPDATE ON records BEGIN
@@ -446,7 +438,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         END",
         [],
     )
-    .map_err(|e| format!("Failed to create FTS5 update trigger: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Create manual tags tables
     conn.execute(
@@ -458,7 +450,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create manual_tags table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS record_manual_tags (
@@ -470,19 +462,19 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create record_manual_tags table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_record_manual_tags_tag_id ON record_manual_tags(tag_id)",
         [],
     )
-    .map_err(|e| format!("Failed to create index: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_manual_tags_name ON manual_tags(name)",
         [],
     )
-    .map_err(|e| format!("Failed to create index: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Create offline queue table
     crate::offline_queue::create_offline_queue_table(conn)?;
@@ -498,7 +490,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create silent_pattern_stats table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS work_time_activity (
@@ -509,7 +501,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create work_time_activity table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // DEBT-001: Ensure test isolation by clearing data tables after schema creation.
     // This prevents leftover data from previous tests affecting current test results.

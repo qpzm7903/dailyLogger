@@ -84,13 +84,13 @@ pub fn create_offline_queue_table(conn: &rusqlite::Connection) -> Result<(), Str
         )",
         [],
     )
-    .map_err(|e| format!("Failed to create offline_queue table: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_offline_queue_status ON offline_queue(status)",
         [],
     )
-    .map_err(|e| format!("Failed to create index on offline_queue: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -101,9 +101,7 @@ pub fn enqueue_task(
     payload: &str,
     record_id: Option<i64>,
 ) -> Result<i64, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     let now = chrono::Utc::now().to_rfc3339();
@@ -114,7 +112,7 @@ pub fn enqueue_task(
          VALUES (?1, ?2, ?3, 'pending', ?4, ?5)",
         params![task_type_str, payload, record_id, now, DEFAULT_MAX_RETRIES],
     )
-    .map_err(|e| format!("Failed to enqueue task: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     let id = conn.last_insert_rowid();
     tracing::info!(
@@ -128,9 +126,7 @@ pub fn enqueue_task(
 
 /// Get all pending tasks from the queue, ordered by creation time (oldest first).
 pub fn get_pending_tasks() -> Result<Vec<OfflineTask>, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     let mut stmt = conn
@@ -141,7 +137,7 @@ pub fn get_pending_tasks() -> Result<Vec<OfflineTask>, String> {
              WHERE status = 'pending' AND retry_count < max_retries
              ORDER BY created_at ASC",
         )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let tasks = stmt
         .query_map([], |row| {
@@ -158,18 +154,16 @@ pub fn get_pending_tasks() -> Result<Vec<OfflineTask>, String> {
                 max_retries: row.get(9)?,
             })
         })
-        .map_err(|e| format!("Failed to query tasks: {}", e))?
+        .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect tasks: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     Ok(tasks)
 }
 
 /// Mark a task as completed.
 pub fn mark_task_completed(task_id: i64) -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     let now = chrono::Utc::now().to_rfc3339();
@@ -177,23 +171,21 @@ pub fn mark_task_completed(task_id: i64) -> Result<(), String> {
         "UPDATE offline_queue SET status = 'completed', completed_at = ?1 WHERE id = ?2",
         params![now, task_id],
     )
-    .map_err(|e| format!("Failed to mark task completed: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
 
 /// Mark a task as failed, incrementing the retry count.
 pub fn mark_task_failed(task_id: i64, error: &str) -> Result<(), String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     conn.execute(
         "UPDATE offline_queue SET retry_count = retry_count + 1, error_message = ?1 WHERE id = ?2",
         params![error, task_id],
     )
-    .map_err(|e| format!("Failed to mark task failed: {}", e))?;
+    .map_err(|e| e.to_string())?;
 
     // Check if max retries exceeded — mark as permanently failed
     let retry_count: i32 = conn
@@ -202,7 +194,7 @@ pub fn mark_task_failed(task_id: i64, error: &str) -> Result<(), String> {
             params![task_id],
             |row| row.get(0),
         )
-        .map_err(|e| format!("Failed to get retry count: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     let max_retries: i32 = conn
         .query_row(
@@ -210,14 +202,14 @@ pub fn mark_task_failed(task_id: i64, error: &str) -> Result<(), String> {
             params![task_id],
             |row| row.get(0),
         )
-        .map_err(|e| format!("Failed to get max retries: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     if retry_count >= max_retries {
         conn.execute(
             "UPDATE offline_queue SET status = 'failed' WHERE id = ?1",
             params![task_id],
         )
-        .map_err(|e| format!("Failed to mark task as permanently failed: {}", e))?;
+        .map_err(|e| e.to_string())?;
         tracing::warn!(
             "Offline task {} permanently failed after {} retries",
             task_id,
@@ -230,9 +222,7 @@ pub fn mark_task_failed(task_id: i64, error: &str) -> Result<(), String> {
 
 /// Get the count of pending tasks in the queue.
 pub fn get_pending_count() -> Result<i64, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     let count: i64 = conn
@@ -241,16 +231,14 @@ pub fn get_pending_count() -> Result<i64, String> {
             [],
             |row| row.get(0),
         )
-        .map_err(|e| format!("Failed to count pending tasks: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     Ok(count)
 }
 
 /// Clean up completed and permanently failed tasks older than 7 days.
 pub fn cleanup_old_tasks() -> Result<i64, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
+    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
     let conn = db.as_ref().ok_or("Database not initialized")?;
 
     let cutoff = (chrono::Utc::now() - chrono::Duration::days(7)).to_rfc3339();
@@ -259,7 +247,7 @@ pub fn cleanup_old_tasks() -> Result<i64, String> {
             "DELETE FROM offline_queue WHERE status IN ('completed', 'failed') AND created_at < ?1",
             params![cutoff],
         )
-        .map_err(|e| format!("Failed to cleanup old tasks: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     Ok(deleted as i64)
 }

@@ -91,8 +91,7 @@ pub async fn test_slack_connection() -> Result<bool, String> {
         _ => return Ok(false), // Not configured
     };
 
-    let client = create_http_client(webhook_url, 30)
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+    let client = create_http_client(webhook_url, 30).map_err(|e| e.to_string())?;
 
     // Send a test message
     let body = serde_json::json!({
@@ -106,7 +105,7 @@ pub async fn test_slack_connection() -> Result<bool, String> {
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Connection error: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     if response.status().is_success() {
         let text = response.text().await.unwrap_or_default();

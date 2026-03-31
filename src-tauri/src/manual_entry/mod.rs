@@ -7,8 +7,7 @@ pub fn add_quick_note_sync(content: &str) -> Result<i64, String> {
         return Err("内容不能为空".to_string());
     }
 
-    memory_storage::add_record("manual", content, None, None, None)
-        .map_err(|e| format!("保存记录失败: {}", e))
+    memory_storage::add_record("manual", content, None, None, None).map_err(|e| e.to_string())
 }
 
 /// Save a quick note from the tray menu.
@@ -29,7 +28,7 @@ pub fn open_obsidian_folder_sync() -> Result<(), String> {
     use crate::memory_storage::get_settings_sync;
     use std::path::Path;
 
-    let settings = get_settings_sync().map_err(|e| format!("获取设置失败: {}", e))?;
+    let settings = get_settings_sync().map_err(|e| e.to_string())?;
 
     let path_str = settings
         .get_obsidian_output_path()
@@ -45,7 +44,7 @@ pub fn open_obsidian_folder_sync() -> Result<(), String> {
         std::process::Command::new("explorer")
             .arg(&path_str)
             .spawn()
-            .map_err(|e| format!("无法打开文件夹: {}", e))?;
+            .map_err(|e| e.to_string())?;
     }
 
     #[cfg(target_os = "macos")]
@@ -53,7 +52,7 @@ pub fn open_obsidian_folder_sync() -> Result<(), String> {
         std::process::Command::new("open")
             .arg(&path_str)
             .spawn()
-            .map_err(|e| format!("无法打开文件夹: {}", e))?;
+            .map_err(|e| e.to_string())?;
     }
 
     #[cfg(target_os = "linux")]
@@ -61,7 +60,7 @@ pub fn open_obsidian_folder_sync() -> Result<(), String> {
         std::process::Command::new("xdg-open")
             .arg(&path_str)
             .spawn()
-            .map_err(|e| format!("无法打开文件夹: {}", e))?;
+            .map_err(|e| e.to_string())?;
     }
 
     tracing::info!("Opened Obsidian folder: {}", path_str);
@@ -79,8 +78,7 @@ pub async fn add_quick_note(content: String) -> Result<(), String> {
         return Err("Content cannot be empty".to_string());
     }
 
-    memory_storage::add_record("manual", &content, None, None, None)
-        .map_err(|e| format!("Failed to save note: {}", e))?;
+    memory_storage::add_record("manual", &content, None, None, None).map_err(|e| e.to_string())?;
 
     tracing::info!("Quick note added: {}...", &content[..content.len().min(50)]);
     Ok(())
@@ -88,8 +86,7 @@ pub async fn add_quick_note(content: String) -> Result<(), String> {
 
 #[command]
 pub async fn get_screenshot(path: String) -> Result<String, String> {
-    let image_data =
-        std::fs::read(&path).map_err(|e| format!("Failed to read screenshot: {}", e))?;
+    let image_data = std::fs::read(&path).map_err(|e| e.to_string())?;
 
     let base64_data =
         base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
@@ -98,7 +95,7 @@ pub async fn get_screenshot(path: String) -> Result<String, String> {
 
 #[command]
 pub async fn read_file(path: String) -> Result<String, String> {
-    std::fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
 /// Find all log files in the given directory, sorted by name (oldest first).
@@ -134,8 +131,7 @@ pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
 
     // Read from the most recent log file
     let latest = log_files.last().unwrap();
-    let content =
-        std::fs::read_to_string(latest).map_err(|e| format!("Failed to read log file: {}", e))?;
+    let content = std::fs::read_to_string(latest).map_err(|e| e.to_string())?;
 
     let n = lines.unwrap_or(300);
     let recent: Vec<&str> = content
@@ -165,8 +161,7 @@ pub async fn get_logs_for_export() -> Result<String, String> {
 
     let mut content = String::new();
     for file in &log_files {
-        let file_content =
-            std::fs::read_to_string(file).map_err(|e| format!("Failed to read log file: {}", e))?;
+        let file_content = std::fs::read_to_string(file).map_err(|e| e.to_string())?;
         content.push_str(&file_content);
     }
 
@@ -207,8 +202,7 @@ pub async fn log_frontend_error(
         .join("logs");
 
     // Ensure log directory exists
-    std::fs::create_dir_all(&log_dir)
-        .map_err(|e| format!("Failed to create log directory: {}", e))?;
+    std::fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;
 
     // Write to error log file (separate from main log for easier debugging)
     let error_log_path = log_dir.join("frontend-errors.log");
@@ -216,11 +210,11 @@ pub async fn log_frontend_error(
         .create(true)
         .append(true)
         .open(&error_log_path)
-        .map_err(|e| format!("Failed to open error log file: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     use std::io::Write;
     file.write_all(error_msg.as_bytes())
-        .map_err(|e| format!("Failed to write error log: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     // Also log to the main tracing system for monitoring
     tracing::error!(
@@ -248,7 +242,7 @@ pub struct ReportFile {
 pub async fn list_report_files() -> Result<Vec<ReportFile>, String> {
     use crate::memory_storage::get_settings_sync;
 
-    let settings = get_settings_sync().map_err(|e| format!("Failed to get settings: {}", e))?;
+    let settings = get_settings_sync().map_err(|e| e.to_string())?;
     let output_path = settings
         .get_obsidian_output_path()
         .map_err(|_| "Obsidian output path not configured".to_string())?;
@@ -259,7 +253,7 @@ pub async fn list_report_files() -> Result<Vec<ReportFile>, String> {
     }
 
     let mut files: Vec<ReportFile> = std::fs::read_dir(output_dir)
-        .map_err(|e| format!("Failed to read directory: {}", e))?
+        .map_err(|e| e.to_string())?
         .filter_map(|entry| entry.ok())
         .filter(|entry| {
             entry

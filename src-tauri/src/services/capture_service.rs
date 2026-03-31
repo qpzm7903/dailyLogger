@@ -255,9 +255,8 @@ pub fn get_screenshot_error_message(kind: &ScreenshotErrorKind, original_error: 
 fn compute_fingerprint(image_base64: &str) -> Result<Vec<u8>, String> {
     let image_data =
         base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)
-            .map_err(|e| format!("Failed to decode base64: {}", e))?;
-    let img =
-        image::load_from_memory(&image_data).map_err(|e| format!("Failed to load image: {}", e))?;
+            .map_err(|e| e.to_string())?;
+    let img = image::load_from_memory(&image_data).map_err(|e| e.to_string())?;
     let thumb = img
         .resize_exact(THUMB_SIZE, THUMB_SIZE, image::imageops::FilterType::Nearest)
         .to_luma8();
@@ -282,9 +281,8 @@ const QUALITY_THUMB_SIZE: u32 = 32;
 fn compute_quality_score(image_base64: &str) -> Result<f64, String> {
     let image_data =
         base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)
-            .map_err(|e| format!("Failed to decode base64: {}", e))?;
-    let img =
-        image::load_from_memory(&image_data).map_err(|e| format!("Failed to load image: {}", e))?;
+            .map_err(|e| e.to_string())?;
+    let img = image::load_from_memory(&image_data).map_err(|e| e.to_string())?;
     let thumb = img
         .resize_exact(
             QUALITY_THUMB_SIZE,
@@ -487,7 +485,7 @@ fn capture_screen_with_mode(
     selected_index: usize,
 ) -> Result<(String, MonitorInfo), String> {
     let monitor_details = get_monitor_list()?;
-    let monitors = xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
+    let monitors = xcap::Monitor::all().map_err(|e| e.to_string())?;
     if monitors.is_empty() {
         return Err("No monitors found".to_string());
     }
@@ -549,8 +547,7 @@ fn stitch_monitors_xcap(
         let image_data =
             base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &image_base64)
                 .map_err(|e| format!("Failed to decode captured image: {}", e))?;
-        let img = image::load_from_memory(&image_data)
-            .map_err(|e| format!("Failed to load image: {}", e))?;
+        let img = image::load_from_memory(&image_data).map_err(|e| e.to_string())?;
         let rgba_image = img.to_rgba8();
         let detail = monitor_details.get(index).cloned().unwrap_or_else(|| {
             crate::monitor_types::MonitorDetail {
@@ -675,7 +672,7 @@ async fn analyze_screen(
         .json(&payload)
         .send()
         .await
-        .map_err(|e| format!("HTTP request failed: {}", e))?;
+        .map_err(|e| e.to_string())?;
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
@@ -684,10 +681,7 @@ async fn analyze_screen(
             status, body
         ));
     }
-    let response_body: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse API response: {}", e))?;
+    let response_body: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
     let content = response_body["choices"][0]["message"]["content"]
         .as_str()
         .ok_or_else(|| format!("Invalid API response format: {:?}", response_body))?;
@@ -794,8 +788,7 @@ pub async fn reanalyze_record_service(record_id: i64) -> Result<ScreenAnalysis, 
         .screenshot_path
         .as_ref()
         .ok_or_else(|| "Record has no screenshot".to_string())?;
-    let image_data =
-        std::fs::read(screenshot_path).map_err(|e| format!("Failed to read screenshot: {}", e))?;
+    let image_data = std::fs::read(screenshot_path).map_err(|e| e.to_string())?;
     let image_base64 =
         base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
     let settings = load_capture_settings();
@@ -804,8 +797,7 @@ pub async fn reanalyze_record_service(record_id: i64) -> Result<ScreenAnalysis, 
     }
     tracing::info!("Reanalyzing record {}", record_id);
     let analysis = analyze_screen(&settings, &image_base64).await?;
-    let content_json = serde_json::to_string(&analysis)
-        .map_err(|e| format!("Failed to serialize analysis: {}", e))?;
+    let content_json = serde_json::to_string(&analysis).map_err(|e| e.to_string())?;
     memory_storage::update_record_content_sync(record_id, &content_json)?;
     tracing::info!(
         "Reanalysis complete for record {}: {}",
@@ -995,8 +987,7 @@ pub async fn retry_screenshot_analysis_service(
         record_id,
         screenshot_path
     );
-    let image_data = std::fs::read(screenshot_path)
-        .map_err(|e| format!("Failed to read screenshot file: {}", e))?;
+    let image_data = std::fs::read(screenshot_path).map_err(|e| e.to_string())?;
     let image_base64 =
         base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
     let settings = load_capture_settings();
@@ -1004,8 +995,7 @@ pub async fn retry_screenshot_analysis_service(
         return Err("API base URL not configured".to_string());
     }
     let analysis = analyze_screen(&settings, &image_base64).await?;
-    let content = serde_json::to_string(&analysis)
-        .map_err(|e| format!("Failed to serialize analysis: {}", e))?;
+    let content = serde_json::to_string(&analysis).map_err(|e| e.to_string())?;
     memory_storage::update_record_content_sync(record_id, &content)?;
     tracing::info!(
         "Successfully updated record {} with analysis result",
