@@ -64,7 +64,7 @@
             v-model="localSettings.summary_title_format"
             type="text"
             :placeholder="$t('settings.reportTitlePlaceholder')"
-            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
           />
           <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.reportTitleHint') }}</span>
         </div>
@@ -161,7 +161,7 @@
             v-model="localTagCategoriesText"
             rows="4"
             :placeholder="$t('settings.tagCategoriesPlaceholder')"
-            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none resize-y font-mono"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none resize-y font-mono"
           />
           <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.tagCategoriesHint') }}</span>
           <div class="flex gap-3 mt-2">

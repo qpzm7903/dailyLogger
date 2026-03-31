@@ -91,7 +91,7 @@
                 <div class="text-3xl font-bold text-[var(--color-text-primary)]">{{ statistics.record_count }}</div>
                 <div class="text-sm text-[var(--color-text-secondary)] mt-1">{{ t('statistics.records') }}</div>
               </div>
-              <div class="bg-darker rounded-xl p-4 border border-[var(--color-border)]">
+              <div class="bg-[var(--color-surface-0)] rounded-xl p-4 border border-[var(--color-border)]">
                 <div class="text-3xl font-bold" :class="statistics.analysis_success_rate >= 80 ? 'text-green-400' : statistics.analysis_success_rate >= 50 ? 'text-yellow-400' : 'text-red-400'">
                   {{ statistics.analysis_success_rate.toFixed(1) }}%
                 </div>

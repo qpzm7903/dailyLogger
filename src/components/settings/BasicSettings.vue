@@ -47,7 +47,7 @@
             v-model="localSettings.test_model_name"
             type="text"
             placeholder="gpt-4o"
-            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none"
           />
           <span class="text-xs text-[var(--color-text-muted)] mt-1 block">
             {{ $t('settings.testModelHint') }}
@@ -69,7 +69,7 @@
               v-if="isOllama"
               @click="fetchOllamaModels"
               :disabled="isLoadingOllamaModels || !localSettings.api_base_url"
-              class="px-3 py-1.5 text-sm bg-purple-700 hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              class="px-3 py-1.5 text-sm text-white bg-purple-700 hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
               {{ isLoadingOllamaModels ? $t('settings.fetching') : $t('settings.fetchModels') }}
             </button>
@@ -119,7 +119,7 @@
               @click="pullModel"
               :disabled="isPullingModel || !pullModelName"
               type="button"
-              class="px-2 py-1 text-xs rounded bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="px-2 py-1 text-xs text-white rounded bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {{ isPullingModel ? $t('settings.pulling') : $t('settings.pullModel') }}
             </button>
@@ -190,7 +190,7 @@
             <button
               @click="showCreateModelModal = true"
               type="button"
-              class="w-full px-3 py-2 text-xs bg-linear-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 rounded-lg transition-colors"
+              class="w-full px-3 py-2 text-xs text-white bg-linear-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 rounded-lg transition-colors"
             >
               {{ $t('settings.createCustomModel') }}
             </button>
@@ -214,7 +214,7 @@
           <select
             v-model="selectedPreset"
             @change="applyPreset"
-            class="flex-1 bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
+            class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           >
             <option value="">{{ $t('settings.selectPreset') }}</option>
             <option value="openrouter">OpenRouter</option>
@@ -224,7 +224,7 @@
           <button
             @click="clearAllHeaders"
             type="button"
-            class="px-3 py-2 text-sm bg-red-700 hover:bg-red-600 rounded-lg transition-colors"
+            class="px-3 py-2 text-sm text-white bg-red-700 hover:bg-red-600 rounded-lg transition-colors"
           >
             {{ $t('settings.clearAllHeaders') }}
           </button>
@@ -235,7 +235,7 @@
           <div
             v-for="(header, index) in customHeaders"
             :key="header._id"
-            class="flex items-center gap-2 p-2 bg-darker border border-[var(--color-border)] rounded-lg"
+            class="flex items-center gap-2 p-2 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg"
           >
             <input
               v-model="header.key"
@@ -253,7 +253,7 @@
               <input
                 v-model="header.sensitive"
                 type="checkbox"
-                class="rounded border-[var(--color-border-subtle)] bg-darker text-primary focus:ring-primary"
+                class="rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-primary focus:ring-primary"
               />
               <span>{{ $t('settings.sensitive') }}</span>
             </label>
@@ -305,7 +305,7 @@
             <input
               v-model="localSettings.proxy_enabled"
               type="checkbox"
-              class="rounded border-[var(--color-border-subtle)] bg-darker text-primary focus:ring-primary"
+              class="rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-primary focus:ring-primary"
             />
             <span class="text-xs text-[var(--color-text-secondary)]">{{ $t('settings.enableProxy') }}</span>
           </label>
@@ -320,7 +320,7 @@
               type="text"
               :placeholder="$t('settings.proxyHostPlaceholder')"
               :disabled="!localSettings.proxy_enabled"
-              class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div class="w-24">
@@ -332,7 +332,7 @@
               max="65535"
               placeholder="8080"
               :disabled="!localSettings.proxy_enabled"
-              class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -348,7 +348,7 @@
             type="text"
             :placeholder="$t('settings.proxyUsernamePlaceholder')"
             :disabled="!localSettings.proxy_enabled"
-            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -364,7 +364,7 @@
               :type="showProxyPassword ? 'text' : 'password'"
               :placeholder="$t('settings.proxyPasswordPlaceholder')"
               :disabled="!localSettings.proxy_enabled"
-              class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 pr-16 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 pr-16 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               @click="showProxyPassword = !showProxyPassword"
@@ -387,7 +387,7 @@
             @click="changeLanguage('en')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="locale === 'en' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
+            :class="locale === 'en' ? 'bg-primary border-primary text-white' : 'bg-[var(--color-surface-0)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.languageEn') }}
           </button>
@@ -395,7 +395,7 @@
             @click="changeLanguage('zh-CN')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="locale === 'zh-CN' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
+            :class="locale === 'zh-CN' ? 'bg-primary border-primary text-white' : 'bg-[var(--color-surface-0)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.languageZhCN') }}
           </button>
@@ -413,7 +413,7 @@
             @click="changeTheme('dark')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="currentTheme === 'dark' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
+            :class="currentTheme === 'dark' ? 'bg-primary border-primary text-white' : 'bg-[var(--color-surface-0)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.themeDark') }}
           </button>
@@ -421,7 +421,7 @@
             @click="changeTheme('light')"
             type="button"
             class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors"
-            :class="currentTheme === 'light' ? 'bg-primary border-primary text-white' : 'bg-darker border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
+            :class="currentTheme === 'light' ? 'bg-primary border-primary text-white' : 'bg-[var(--color-surface-0)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-primary'"
           >
             {{ $t('settings.themeLight') }}
           </button>
@@ -455,7 +455,7 @@
           <label class="text-xs text-[var(--color-text-secondary)] block mb-1">{{ $t('settings.autoBackupInterval') }}</label>
           <select
             v-model="localSettings.auto_backup_interval"
-            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           >
             <option value="daily">{{ $t('settings.autoBackupIntervalDaily') }}</option>
             <option value="weekly">{{ $t('settings.autoBackupIntervalWeekly') }}</option>
@@ -473,13 +473,13 @@
             type="number"
             min="3"
             max="20"
-            class="w-full bg-darker border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
+            class="w-full bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-primary focus:outline-none"
           />
           <span class="text-xs text-[var(--color-text-muted)] mt-1 block">{{ $t('settings.autoBackupRetentionHint') }}</span>
         </div>
 
         <!-- Last Auto Backup Status (shown when enabled) -->
-        <div v-if="localSettings.auto_backup_enabled && localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-[var(--color-border)]">
+        <div v-if="localSettings.auto_backup_enabled && localSettings.last_auto_backup_at" class="bg-[var(--color-surface-0)] rounded-lg px-3 py-2 border border-[var(--color-border)]">
           <div class="flex items-center justify-between">
             <span class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.autoBackupLastTime') }}</span>
             <span class="text-xs text-[var(--color-text-secondary)]">{{ formatLastBackupTime(localSettings.last_auto_backup_at) }}</span>
@@ -495,7 +495,7 @@
         </div>
 
         <!-- No backup yet (shown when enabled but no last backup) -->
-        <div v-if="localSettings.auto_backup_enabled && !localSettings.last_auto_backup_at" class="bg-darker rounded-lg px-3 py-2 border border-[var(--color-border)]">
+        <div v-if="localSettings.auto_backup_enabled && !localSettings.last_auto_backup_at" class="bg-[var(--color-surface-0)] rounded-lg px-3 py-2 border border-[var(--color-border)]">
           <span class="text-xs text-[var(--color-text-muted)]">{{ $t('settings.autoBackupNoBackupYet') }}</span>
           <button
             @click="triggerManualBackup"
