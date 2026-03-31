@@ -47,10 +47,10 @@
           isActive('settings') ? 'bg-primary/20 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
           isCollapsed ? 'w-10 h-10' : 'w-full px-3 h-10 gap-3'
         ]"
-        :title="isCollapsed ? '设置' : undefined"
+        :title="isCollapsed ? t('header.settings') : undefined"
       >
         <Settings class="w-5 h-5 flex-shrink-0" />
-        <span v-if="!isCollapsed" class="text-sm whitespace-nowrap">设置</span>
+        <span v-if="!isCollapsed" class="text-sm whitespace-nowrap">{{ t('header.settings') }}</span>
       </button>
 
       <!-- Collapse/Expand Toggle -->
