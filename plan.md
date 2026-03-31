@@ -1,8 +1,8 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-31
-> 当前版本: v4.6.0 ✅ (已发布)
-> 项目状态: 512 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+> 当前版本: v4.7.0 🔄 (开发中)
+> 项目状态: 507 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
 
@@ -55,10 +55,17 @@
 - ✅ 13 个 Modal 迁移到 BaseModal (含 OnboardingModal)
 
 ### 未来优化方向 (已识别，待排期)
-- Settings 过度 clone 优化 (Arc<Settings> 或缓存机制)
-- session_manager / session_service 重复逻辑消除
+- Settings 过度 clone 优化 (Arc<Settings> 或缓存机制) → v4.7.0 规划中
 
 ---
+
+### v4.7.0: 稳定性修复 & 性能优化 🔄 进行中
+- 🔄 修复 synthesis/mod.rs 13 个 .expect() 日期解析 — 改用 AppResult 错误传播
+- 🔄 修复 4 个文件的 DB_CONNECTION .lock().unwrap() — 改用 .map_err(AppError::from)?
+- 🔄 提取 manual_entry/mod.rs 日志目录重复代码 — 复用 get_app_data_dir()
+- 🔄 消除 capture_service/hardware/platform monitor stitching 重复 (~120 行)
+- 🔄 Settings 缓存机制 — 避免每次读取都查 DB
+- ⬜ 修复 silenced PRAGMA wal_checkpoint 错误 (backup, auto_backup_scheduler)
 
 ## v4.3.5 ✅ 已发布
 
