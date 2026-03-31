@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use crate::errors::{AppError, AppResult};
+
 /// Activity statistics for a single hour on a single day
 #[derive(Debug, Clone)]
 pub struct HourlyActivity {
@@ -290,66 +292,58 @@ fn save_hourly_activity_to_db(
     date: chrono::NaiveDate,
     hour: u8,
     capture_count: u32,
-) -> Result<(), String> {
+) -> AppResult<()> {
     use crate::memory_storage::DB_CONNECTION;
     use rusqlite::params;
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let date_str = date.format("%Y-%m-%d").to_string();
     conn.execute(
         "INSERT OR REPLACE INTO work_time_activity (date, hour, capture_count)
          VALUES (?1, ?2, ?3)",
         params![date_str, hour as i32, capture_count as i32],
-    )
-    .map_err(|e| format!("Failed to save work time activity: {}", e))?;
+    )?;
 
     Ok(())
 }
 
 /// Load all hourly activities from database into the learner (internal, caller holds lock)
-fn load_hourly_activities_from_db_internal(
-    learner: &mut WorkTimePatternLearner,
-) -> Result<(), String> {
+fn load_hourly_activities_from_db_internal(learner: &mut WorkTimePatternLearner) -> AppResult<()> {
     use crate::memory_storage::DB_CONNECTION;
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("DB lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     let cutoff_date = chrono::Local::now().date_naive() - chrono::Duration::days(14);
     let cutoff_str = cutoff_date.format("%Y-%m-%d").to_string();
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT date, hour, capture_count
-             FROM work_time_activity
-             WHERE date >= ?1
-             ORDER BY date, hour",
-        )
-        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+    let mut stmt = conn.prepare(
+        "SELECT date, hour, capture_count
+         FROM work_time_activity
+         WHERE date >= ?1
+         ORDER BY date, hour",
+    )?;
 
-    let rows = stmt
-        .query_map([&cutoff_str], |row| {
-            let date_str: String = row.get(0)?;
-            let hour: i32 = row.get(1)?;
-            let capture_count: i32 = row.get(2)?;
-            Ok((
-                chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").unwrap_or(cutoff_date),
-                hour as u8,
-                capture_count as u32,
-            ))
-        })
-        .map_err(|e| format!("Failed to query work time activity: {}", e))?;
+    let rows = stmt.query_map([&cutoff_str], |row| {
+        let date_str: String = row.get(0)?;
+        let hour: i32 = row.get(1)?;
+        let capture_count: i32 = row.get(2)?;
+        Ok((
+            chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").unwrap_or(cutoff_date),
+            hour as u8,
+            capture_count as u32,
+        ))
+    })?;
 
     learner.hourly_activities.clear();
     for row_result in rows {
-        let (date, hour, capture_count) =
-            row_result.map_err(|e| format!("Failed to read row: {}", e))?;
+        let (date, hour, capture_count) = row_result?;
         learner.hourly_activities.push(HourlyActivity {
             date,
             hour,
@@ -361,7 +355,7 @@ fn load_hourly_activities_from_db_internal(
 }
 
 /// Load all hourly activities from database into the learner (public)
-fn load_hourly_activities_from_db(learner: &mut WorkTimePatternLearner) -> Result<(), String> {
+fn load_hourly_activities_from_db(learner: &mut WorkTimePatternLearner) -> AppResult<()> {
     load_hourly_activities_from_db_internal(learner)
 }
 
@@ -386,10 +380,8 @@ fn ensure_work_time_loaded() {
 }
 
 /// Persist the current learner state to database
-pub fn persist_work_time_activity() -> Result<(), String> {
-    let learner = WORK_TIME_LEARNER
-        .lock()
-        .map_err(|e| format!("Learner lock error: {}", e))?;
+pub fn persist_work_time_activity() -> AppResult<()> {
+    let learner = WORK_TIME_LEARNER.lock()?;
 
     for activity in &learner.hourly_activities {
         save_hourly_activity_to_db(activity.date, activity.hour, activity.capture_count)?;
@@ -403,10 +395,8 @@ pub fn persist_work_time_activity() -> Result<(), String> {
 }
 
 /// Load persisted activities into the global learner
-pub fn load_work_time_activity() -> Result<(), String> {
-    let mut learner = WORK_TIME_LEARNER
-        .lock()
-        .map_err(|e| format!("Learner lock error: {}", e))?;
+pub fn load_work_time_activity() -> AppResult<()> {
+    let mut learner = WORK_TIME_LEARNER.lock()?;
 
     load_hourly_activities_from_db(&mut learner)?;
 
