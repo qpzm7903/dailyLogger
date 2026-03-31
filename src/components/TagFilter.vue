@@ -62,6 +62,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showError } from '../stores/toast'
+import { TAG_COLOR_BG, DEFAULT_TAG_COLOR_BG } from '../utils/tagColors'
 import TagBadge from './TagBadge.vue'
 import type { Tag } from '../types/tauri'
 
@@ -92,20 +93,8 @@ const availableTags = computed(() => {
   return allTags.value.filter(tag => !selectedIds.has(tag.id))
 })
 
-// Color dots
-const colorDots: Record<string, string> = {
-  blue: 'w-2 h-2 rounded-full bg-blue-500',
-  green: 'w-2 h-2 rounded-full bg-green-500',
-  yellow: 'w-2 h-2 rounded-full bg-yellow-400',
-  red: 'w-2 h-2 rounded-full bg-red-500',
-  purple: 'w-2 h-2 rounded-full bg-purple-500',
-  pink: 'w-2 h-2 rounded-full bg-pink-500',
-  cyan: 'w-2 h-2 rounded-full bg-cyan-500',
-  orange: 'w-2 h-2 rounded-full bg-orange-500'
-}
-
 function getDotClass(color: string) {
-  return colorDots[color] || colorDots.blue
+  return `w-2 h-2 rounded-full ${TAG_COLOR_BG[color] || DEFAULT_TAG_COLOR_BG}`
 }
 
 // Load all tags

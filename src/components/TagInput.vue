@@ -82,14 +82,11 @@ import { showSuccess, showError } from '../stores/toast'
 import TagBadge from './TagBadge.vue'
 import type { Tag } from '../types/tauri'
 import { tagActions } from '../features/records/actions'
+import { PRESET_TAG_COLORS } from '../utils/tags'
+import { TAG_COLOR_BG, DEFAULT_TAG_COLOR_BG } from '../utils/tagColors'
 
 interface TagWithUsage extends Tag {
   usage_count?: number
-}
-
-interface ColorOption {
-  name: string
-  bgClass: string
 }
 
 const { t } = useI18n()
@@ -109,17 +106,11 @@ const selectedColor = ref('blue')
 const allTags = ref<TagWithUsage[]>([])
 const isCreating = ref(false)
 
-// Preset colors
-const colors: ColorOption[] = [
-  { name: 'blue', bgClass: 'bg-blue-500' },
-  { name: 'green', bgClass: 'bg-green-500' },
-  { name: 'yellow', bgClass: 'bg-yellow-400' },
-  { name: 'red', bgClass: 'bg-red-500' },
-  { name: 'purple', bgClass: 'bg-purple-500' },
-  { name: 'pink', bgClass: 'bg-pink-500' },
-  { name: 'cyan', bgClass: 'bg-cyan-500' },
-  { name: 'orange', bgClass: 'bg-orange-500' }
-]
+// Preset colors (derived from shared constants)
+const colors = PRESET_TAG_COLORS.map(name => ({
+  name,
+  bgClass: TAG_COLOR_BG[name] || DEFAULT_TAG_COLOR_BG,
+}))
 
 // Filter tags not already added
 const filteredTags = computed(() => {

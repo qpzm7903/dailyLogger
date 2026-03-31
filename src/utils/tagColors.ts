@@ -51,6 +51,37 @@ export const DEFAULT_TAG_COLOR_CLASS = 'bg-gray-500/20 text-gray-400'
 export const DEFAULT_TAG_COLOR_CLASS_INTERACTIVE = 'bg-gray-500/30 text-gray-300 hover:bg-gray-500/50'
 
 /**
+ * Solid color classes for opaque tag badges (TagBadge component)
+ */
+export const TAG_COLOR_CLASSES_SOLID: Record<string, string> = {
+  blue: 'bg-blue-500 text-white',
+  green: 'bg-green-500 text-white',
+  yellow: 'bg-yellow-400 text-slate-800',
+  red: 'bg-red-500 text-white',
+  purple: 'bg-purple-500 text-white',
+  pink: 'bg-pink-500 text-white',
+  cyan: 'bg-cyan-500 text-white',
+  orange: 'bg-orange-500 text-white',
+}
+
+/**
+ * Base background classes per color (used for dots, swatches, etc.)
+ */
+export const TAG_COLOR_BG: Record<string, string> = {
+  blue: 'bg-blue-500',
+  green: 'bg-green-500',
+  yellow: 'bg-yellow-400',
+  red: 'bg-red-500',
+  purple: 'bg-purple-500',
+  pink: 'bg-pink-500',
+  cyan: 'bg-cyan-500',
+  orange: 'bg-orange-500',
+}
+
+export const DEFAULT_TAG_COLOR_SOLID = 'bg-gray-500 text-white'
+export const DEFAULT_TAG_COLOR_BG = 'bg-gray-500'
+
+/**
  * Mapping from default tag categories to their assigned colors
  * These are the AI-generated work classification tags
  */
