@@ -3,7 +3,9 @@ use rusqlite::params;
 use std::path::PathBuf;
 
 use crate::dingtalk;
+use crate::errors::{AppError, AppResult};
 use crate::infrastructure::retry;
+
 use crate::memory_storage::{self, Record, Settings};
 use crate::session_manager::{Session, SessionStatus};
 use crate::slack;
@@ -54,12 +56,13 @@ impl ApiConfig {
 
 /// Extract API configuration from settings (shared by all report generators).
 /// Uses `summary_model_name` with fallback to `model_name`.
-pub fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
+pub fn load_api_config(settings: &Settings) -> AppResult<ApiConfig> {
     let api_base_url = settings
         .api_base_url
         .clone()
-        .ok_or("API Base URL not configured")?;
+        .ok_or_else(|| AppError::validation("API Base URL not configured"))?;
     let api_key = settings.api_key.clone().unwrap_or_default();
+
     let model_name = settings
         .summary_model_name
         .clone()
@@ -72,14 +75,15 @@ pub fn load_api_config(settings: &Settings) -> Result<ApiConfig, String> {
 
 /// Load API configuration for Vision (screenshot analysis) calls.
 /// Uses `model_name` directly (vision-capable model), not `summary_model_name`.
-pub fn load_vision_api_config() -> Result<ApiConfig, String> {
+pub fn load_vision_api_config() -> AppResult<ApiConfig> {
     let settings = crate::memory_storage::get_settings_sync()?;
 
     let api_base_url = settings
         .api_base_url
         .clone()
-        .ok_or("API Base URL not configured")?;
+        .ok_or_else(|| AppError::validation("API Base URL not configured"))?;
     let api_key = settings.api_key.clone().unwrap_or_default();
+
     let model_name = settings
         .model_name
         .clone()
@@ -94,11 +98,13 @@ fn build_api_config(
     api_key: String,
     model_name: String,
     settings: &Settings,
-) -> Result<ApiConfig, String> {
+) -> AppResult<ApiConfig> {
     let is_ollama = crate::ollama::is_ollama_endpoint(&api_base_url);
 
     if !is_ollama && api_key.is_empty() {
-        return Err("API Key is required for non-Ollama endpoints".to_string());
+        return Err(AppError::validation(
+            "API Key is required for non-Ollama endpoints",
+        ));
     }
 
     // AI-006: Parse custom headers from settings
@@ -132,7 +138,7 @@ async fn call_llm_api(
     prompt: &str,
     max_tokens: u32,
     caller: &str,
-) -> Result<String, String> {
+) -> AppResult<String> {
     let endpoint = format!("{}/chat/completions", config.api_base_url);
 
     // Create HTTP client with proxy configuration
@@ -208,7 +214,7 @@ async fn call_llm_api(
                 "elapsed_ms": elapsed_ms,
             })
         );
-        error_msg
+        AppError::network(error_msg)
     })?;
     let elapsed_ms = start.elapsed().as_millis();
 
@@ -225,17 +231,20 @@ async fn call_llm_api(
                 "elapsed_ms": elapsed_ms,
             })
         );
-        return Err(format!("API error ({}): {}", status, body));
+        return Err(AppError::network(format!(
+            "API error ({}): {}",
+            status, body
+        )));
     }
 
     let response_json: serde_json::Value = response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+        .map_err(|e| AppError::network(format!("Failed to parse response: {}", e)))?;
 
     let content = response_json["choices"][0]["message"]["content"]
         .as_str()
-        .ok_or("No content in response")?
+        .ok_or_else(|| AppError::validation("No content in response"))?
         .to_string();
 
     tracing::info!(
@@ -261,15 +270,15 @@ pub async fn call_llm_api_with_retry(
     prompt: &str,
     max_tokens: u32,
     caller: &str,
-) -> Result<String, String> {
-    let mut last_error = String::new();
+) -> AppResult<String> {
+    let mut last_error = AppError::internal("No attempts made");
 
     for attempt in 1..=MAX_RETRIES {
         match call_llm_api(config, prompt, max_tokens, caller).await {
             Ok(result) => return Ok(result),
             Err(e) => {
-                last_error = e.clone();
-                if attempt < MAX_RETRIES && retry::is_retryable_error(&e) {
+                let is_retryable = retry::is_retryable_error(&e.to_string());
+                if attempt < MAX_RETRIES && is_retryable {
                     let delay = retry::calculate_retry_delay(
                         attempt,
                         INITIAL_RETRY_DELAY_MS,
@@ -282,19 +291,20 @@ pub async fn call_llm_api_with_retry(
                         delay,
                         e
                     );
+                    last_error = e;
                     tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
                 } else {
-                    // Non-retryable error or max retries reached
+                    last_error = e;
                     break;
                 }
             }
         }
     }
 
-    Err(format!(
+    Err(AppError::network(format!(
         "LLM API call failed after {} attempts: {}",
         MAX_RETRIES, last_error
-    ))
+    )))
 }
 
 /// Write report content to the Obsidian output directory and return the full path.
@@ -302,13 +312,12 @@ pub fn write_report_to_obsidian(
     obsidian_path: &str,
     filename: &str,
     content: &str,
-) -> Result<String, String> {
+) -> AppResult<String> {
     let output_dir = PathBuf::from(obsidian_path);
-    std::fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+    std::fs::create_dir_all(&output_dir)?;
 
     let output_path = output_dir.join(filename);
-    std::fs::write(&output_path, content).map_err(|e| format!("Failed to write report: {}", e))?;
+    std::fs::write(&output_path, content)?;
 
     Ok(output_path.to_string_lossy().to_string())
 }
@@ -579,45 +588,39 @@ fn get_session_display_summary(session: &Session) -> String {
 
 /// SESSION-005: Get records for a specific session, with user_notes preferred over content.
 /// Skips records with analysis_status = 'pending'.
-fn get_session_records_for_summary(
-    session_id: i64,
-) -> Result<Vec<(String, String, String)>, String> {
+fn get_session_records_for_summary(session_id: i64) -> AppResult<Vec<(String, String, String)>> {
     // Use get_records_by_session_id which returns SessionScreenshot (id, timestamp, screenshot_path)
     // We need full Record to get user_notes and content
-    let db = crate::memory_storage::DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = crate::memory_storage::DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, timestamp, content, user_notes, analysis_status, source_type
+    let mut stmt = conn.prepare(
+        "SELECT id, timestamp, content, user_notes, analysis_status, source_type
              FROM records
              WHERE session_id = ?1
              ORDER BY timestamp ASC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
-    let records = stmt
-        .query_map(params![session_id], |row| {
-            Ok(Record {
-                id: row.get(0)?,
-                timestamp: row.get(1)?,
-                source_type: row.get(5)?,
-                content: row.get(2)?,
-                screenshot_path: None,
-                monitor_info: None,
-                tags: None,
-                user_notes: row.get(3)?,
-                session_id: Some(session_id),
-                analysis_status: row.get(4)?,
-            })
+    let records = stmt.query_map(params![session_id], |row| {
+        Ok(Record {
+            id: row.get(0)?,
+            timestamp: row.get(1)?,
+            source_type: row.get(5)?,
+            content: row.get(2)?,
+            screenshot_path: None,
+            monitor_info: None,
+            tags: None,
+            user_notes: row.get(3)?,
+            session_id: Some(session_id),
+            analysis_status: row.get(4)?,
         })
-        .map_err(|e| format!("Query failed: {}", e))?;
+    })?;
 
     let mut result = Vec::new();
     for record in records {
-        let record = record.map_err(|e| format!("Failed to read record: {}", e))?;
+        let record = record?;
         // Skip pending records
         if record.analysis_status.as_deref() == Some("pending") {
             continue;
@@ -832,7 +835,7 @@ pub async fn translate_report(
     config: &ApiConfig,
     original_report: &str,
     target_lang: &str,
-) -> Result<String, String> {
+) -> AppResult<String> {
     let lang_name = get_language_name(target_lang);
     let prompt = TRANSLATION_PROMPT
         .replace("{language}", lang_name)
@@ -862,13 +865,14 @@ pub fn generate_summary_filename_with_lang(settings: &Settings, lang: &str) -> S
 }
 
 // DATA-007: Multi-language daily report command
-pub async fn generate_multilingual_daily_summary(target_lang: String) -> Result<String, String> {
+pub async fn generate_multilingual_daily_summary(target_lang: String) -> AppResult<String> {
     if !crate::network_status::is_online() {
-        return Err("当前处于离线状态，多语言日报生成需要网络连接".to_string());
+        return Err(AppError::network(
+            "当前处于离线状态，多语言日报生成需要网络连接",
+        ));
     }
 
-    let settings = memory_storage::get_settings_sync()
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
+    let settings = memory_storage::get_settings_sync()?;
     let api_config = load_api_config(&settings)?;
 
     // Get the default (Chinese) summary first
@@ -899,7 +903,7 @@ pub async fn generate_multilingual_daily_summary(target_lang: String) -> Result<
 pub async fn generate_base_daily_summary(
     settings: &Settings,
     api_config: &ApiConfig,
-) -> Result<String, String> {
+) -> AppResult<String> {
     // Try session-based approach first
     let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
 
@@ -927,11 +931,10 @@ pub async fn generate_base_daily_summary(
     }
 
     // Fallback to legacy flat record format
-    let all_records = memory_storage::get_all_today_records_for_summary()
-        .map_err(|e| format!("Failed to get records: {}", e))?;
+    let all_records = memory_storage::get_all_today_records_for_summary()?;
     let records = filter_records_by_settings(all_records, settings);
     if records.is_empty() {
-        return Err("No records for today after filtering".to_string());
+        return Err(AppError::validation("No records for today after filtering"));
     }
 
     let records_text = format_records_for_summary(&records);
@@ -1476,7 +1479,10 @@ mod tests {
         let settings = create_settings_with_include_manual(true);
         let result = load_api_config(&settings);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("API Base URL not configured"));
+        assert!(result
+            .unwrap_err()
+            .message
+            .contains("API Base URL not configured"));
     }
 
     #[test]
@@ -1486,7 +1492,7 @@ mod tests {
         settings.api_key = None;
         let result = load_api_config(&settings);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("API Key is required"));
+        assert!(result.unwrap_err().message.contains("API Key is required"));
     }
 
     #[test]
