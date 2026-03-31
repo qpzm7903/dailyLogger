@@ -2,6 +2,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use std::path::PathBuf;
 
 use crate::crypto;
+use crate::errors::{AppError, AppResult};
 
 use super::migration::{self, CURRENT_SCHEMA_VERSION};
 use super::DB_CONNECTION;
@@ -10,7 +11,7 @@ fn get_db_path() -> PathBuf {
     crate::get_app_data_dir().join("data").join("local.db")
 }
 
-pub fn init_database() -> Result<(), String> {
+pub fn init_database() -> AppResult<()> {
     crate::write_diagnostic_file("init_database: Starting");
     tracing::info!("init_database: Starting");
 
@@ -22,10 +23,12 @@ pub fn init_database() -> Result<(), String> {
     tracing::info!("init_database: Creating data directory: {:?}", db_dir);
 
     std::fs::create_dir_all(&db_dir).map_err(|e| {
-        let msg = format!("Failed to create data directory {:?}: {}", db_dir, e);
         crate::write_diagnostic_file(&format!("init_database: FAILED to create data dir: {}", e));
-        tracing::error!("{}", msg);
-        msg
+        tracing::error!("Failed to create data directory {:?}: {}", db_dir, e);
+        AppError::database(format!(
+            "Failed to create data directory {:?}: {}",
+            db_dir, e
+        ))
     })?;
     crate::write_diagnostic_file("init_database: Data directory ready");
     tracing::info!("init_database: Data directory ready");
@@ -38,10 +41,9 @@ pub fn init_database() -> Result<(), String> {
     tracing::info!("init_database: Opening database at: {:?}", db_path);
 
     let conn = Connection::open(&db_path).map_err(|e| {
-        let msg = format!("Failed to open database at {:?}: {}", db_path, e);
         crate::write_diagnostic_file(&format!("init_database: FAILED to open database: {}", e));
-        tracing::error!("{}", msg);
-        msg
+        tracing::error!("Failed to open database at {:?}: {}", db_path, e);
+        AppError::database(format!("Failed to open database at {:?}: {}", db_path, e))
     })?;
     crate::write_diagnostic_file("init_database: Database connection opened");
     tracing::info!("init_database: Database connection opened");
@@ -57,12 +59,8 @@ pub fn init_database() -> Result<(), String> {
 
     // Check if migrations have already been recorded
     let migrations_exist = {
-        let mut stmt = conn
-            .prepare("SELECT COUNT(*) FROM schema_migrations")
-            .map_err(|e| e.to_string())?;
-        let count: i32 = stmt
-            .query_row([], |row| row.get(0))
-            .map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare("SELECT COUNT(*) FROM schema_migrations")?;
+        let count: i32 = stmt.query_row([], |row| row.get(0))?;
         count > 0
     };
 
@@ -88,12 +86,10 @@ pub fn init_database() -> Result<(), String> {
         // No migrations recorded - this is either a new database or a legacy database
         // Check if this is a new database by looking for existing schema
         let table_exists = {
-            let mut stmt = conn
-                .prepare("PRAGMA table_info(records)")
-                .map_err(|e| e.to_string())?;
-            let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
+            let mut stmt = conn.prepare("PRAGMA table_info(records)")?;
+            let mut rows = stmt.query([])?;
             // If we can iterate and get at least one column (id), table exists
-            rows.next().map_err(|e| e.to_string())?.is_some()
+            rows.next()?.is_some()
         };
 
         if !table_exists {
@@ -125,9 +121,8 @@ pub fn init_database() -> Result<(), String> {
         [],
     )
     .map_err(|e| {
-        let msg = e.to_string();
-        tracing::error!("{}", msg);
-        msg
+        tracing::error!("Failed to create records table: {}", e);
+        AppError::database(e.to_string())
     })?;
     tracing::info!("init_database: records table ready");
 
@@ -153,8 +148,7 @@ pub fn init_database() -> Result<(), String> {
         conn.execute(
             "UPDATE schema_version SET version = ?1, updated_at = ?2 WHERE id = 1",
             params![CURRENT_SCHEMA_VERSION, applied_at],
-        )
-        .map_err(|e| e.to_string())?;
+        )?;
 
         // Record that we've applied all legacy migrations
         conn.execute(
@@ -175,10 +169,9 @@ pub fn init_database() -> Result<(), String> {
 
     crate::write_diagnostic_file("init_database: Acquiring DB connection lock");
     let mut db = DB_CONNECTION.lock().map_err(|e| {
-        let msg = format!("Lock error: {}", e);
         crate::write_diagnostic_file(&format!("init_database: Lock error: {}", e));
-        tracing::error!("{}", msg);
-        msg
+        tracing::error!("Lock error: {}", e);
+        AppError::internal(format!("Lock error: {}", e))
     })?;
     crate::write_diagnostic_file("init_database: DB connection lock acquired");
     tracing::info!("init_database: DB connection lock acquired");
@@ -196,8 +189,8 @@ pub fn init_database() -> Result<(), String> {
 
 /// STAB-001 Task 4.2: Check if the database connection is still valid
 /// Returns Ok(true) if connection is valid, Ok(false) if reconnect needed, Err on error
-pub fn check_connection() -> Result<bool, String> {
-    let db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
+pub fn check_connection() -> AppResult<bool> {
+    let db = DB_CONNECTION.lock()?;
     Ok(connection_is_valid(db.as_ref()))
 }
 
@@ -212,7 +205,7 @@ pub(crate) fn connection_is_valid(conn: Option<&Connection>) -> bool {
 
 /// STAB-001 Task 4.2: Ensure database connection is valid, reconnect if needed
 /// This should be called before critical database operations
-pub fn ensure_connection() -> Result<(), String> {
+pub fn ensure_connection() -> AppResult<()> {
     if check_connection()? {
         return Ok(());
     }
@@ -222,7 +215,7 @@ pub fn ensure_connection() -> Result<(), String> {
 
     // Clear the old connection
     {
-        let mut db = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
+        let mut db = DB_CONNECTION.lock()?;
         *db = None;
     }
 
@@ -232,14 +225,13 @@ pub fn ensure_connection() -> Result<(), String> {
 
 /// Migrate plain text API key to encrypted storage
 /// Takes a connection reference to avoid deadlock when called from init_database
-fn migrate_plain_api_key_with_conn(conn: &Connection) -> Result<(), String> {
+fn migrate_plain_api_key_with_conn(conn: &Connection) -> AppResult<()> {
     // Query current API key
     let api_key: Option<String> = conn
         .query_row("SELECT api_key FROM settings WHERE id = 1", [], |row| {
             row.get::<_, Option<String>>(0)
         })
-        .optional()
-        .map_err(|e| e.to_string())?
+        .optional()?
         .flatten();
 
     if let Some(key) = api_key {
@@ -249,8 +241,7 @@ fn migrate_plain_api_key_with_conn(conn: &Connection) -> Result<(), String> {
             conn.execute(
                 "UPDATE settings SET api_key = ?1 WHERE id = 1",
                 params![encrypted],
-            )
-            .map_err(|e| e.to_string())?;
+            )?;
             tracing::info!("Migrated plain API key to encrypted storage");
         }
     }
@@ -259,7 +250,7 @@ fn migrate_plain_api_key_with_conn(conn: &Connection) -> Result<(), String> {
 }
 
 #[cfg(test)]
-pub fn init_test_database(conn: &Connection) -> Result<(), String> {
+pub fn init_test_database(conn: &Connection) -> AppResult<()> {
     // Create records table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS records (
@@ -275,8 +266,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             analysis_status TEXT DEFAULT 'pending'
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Create sessions table (SESSION-001)
     conn.execute(
@@ -291,8 +281,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             status TEXT DEFAULT 'active'
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Migrate: add date column if not exists (for existing test databases)
     let _ = conn.execute("ALTER TABLE sessions ADD COLUMN date TEXT", []);
@@ -300,27 +289,23 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_session_id ON records(session_id)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // PERF-004: Composite indexes for query optimization (test DB)
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_timestamp_source_type ON records(timestamp DESC, source_type)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_session_timestamp ON records(session_id, timestamp DESC)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Create settings table
     conn.execute(
@@ -394,11 +379,9 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             custom_export_template TEXT
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
-    conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])
-        .map_err(|e| e.to_string())?;
+    conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", [])?;
 
     // Create FTS5 table
     conn.execute(
@@ -409,8 +392,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             tokenize='unicode61'
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // FTS5 triggers
     conn.execute(
@@ -418,8 +400,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
         END",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE TRIGGER IF NOT EXISTS records_ad AFTER DELETE ON records BEGIN
@@ -427,8 +408,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             VALUES ('delete', old.id, old.content);
         END",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE TRIGGER IF NOT EXISTS records_au AFTER UPDATE ON records BEGIN
@@ -437,8 +417,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             INSERT INTO records_fts(rowid, content) VALUES (new.id, new.content);
         END",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Create manual tags tables
     conn.execute(
@@ -449,8 +428,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             created_at TEXT NOT NULL
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS record_manual_tags (
@@ -461,20 +439,17 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             FOREIGN KEY (tag_id) REFERENCES manual_tags(id) ON DELETE CASCADE
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_record_manual_tags_tag_id ON record_manual_tags(tag_id)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_manual_tags_name ON manual_tags(name)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Create offline queue table
     crate::offline_queue::create_offline_queue_table(conn)?;
@@ -489,8 +464,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             PRIMARY KEY (date, hour)
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS work_time_activity (
@@ -500,8 +474,7 @@ pub fn init_test_database(conn: &Connection) -> Result<(), String> {
             PRIMARY KEY (date, hour)
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // DEBT-001: Ensure test isolation by clearing data tables after schema creation.
     // This prevents leftover data from previous tests affecting current test results.

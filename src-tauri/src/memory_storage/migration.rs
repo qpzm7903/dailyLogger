@@ -6,6 +6,7 @@
 //! - Supports idempotent migrations (safe to run multiple times)
 //! - Applies migrations in order during database initialization
 
+use crate::errors::{AppError, AppResult};
 use rusqlite::{params, Connection};
 use std::time::SystemTime;
 
@@ -25,12 +26,11 @@ pub struct Migration {
 
 impl Migration {
     /// Execute this migration on the given connection
-    fn execute(&self, conn: &Connection) -> Result<(), String> {
+    fn execute(&self, conn: &Connection) -> AppResult<()> {
         tracing::info!("Applying migration v{}: {}", self.version, self.description);
 
         // Begin transaction for atomic execution
-        conn.execute("BEGIN IMMEDIATE", [])
-            .map_err(|e| e.to_string())?;
+        conn.execute("BEGIN IMMEDIATE", [])?;
 
         let result = (|| {
             // For v1 migration: handle legacy sessions table that may be missing the date column
@@ -45,7 +45,7 @@ impl Migration {
                 // Helper to add a column if it doesn't exist (idempotent)
                 // Uses "ALTER TABLE ADD COLUMN" which fails with "duplicate column name" if column exists
                 let add_column_if_not_exists =
-                    |conn: &Connection, table: &str, col_def: &str| -> Result<(), String> {
+                    |conn: &Connection, table: &str, col_def: &str| -> AppResult<()> {
                         let sql = format!("ALTER TABLE {} ADD COLUMN {}", table, col_def);
                         match conn.execute(&sql, []) {
                             Ok(_) => tracing::debug!(
@@ -58,7 +58,7 @@ impl Migration {
                                 if e_str.contains("duplicate column name") {
                                     // Column already exists, that's fine
                                 } else {
-                                    return Err(e.to_string());
+                                    return Err(AppError::from(e));
                                 }
                             }
                         }
@@ -282,8 +282,12 @@ impl Migration {
             }
 
             // Execute the migration SQL
-            conn.execute_batch(self.sql)
-                .map_err(|e| format!("Failed to execute migration v{}: {}", self.version, e))?;
+            conn.execute_batch(self.sql).map_err(|e| {
+                AppError::database(format!(
+                    "Failed to execute migration v{}: {}",
+                    self.version, e
+                ))
+            })?;
 
             // Record the migration in history
             let applied_at = SystemTime::now()
@@ -295,21 +299,20 @@ impl Migration {
                 "INSERT INTO schema_migrations (version, description, applied_at) VALUES (?1, ?2, ?3)",
                 params![self.version, self.description, applied_at],
             )
-            .map_err(|e| format!("Failed to record migration v{}: {}", self.version, e))?;
+            .map_err(|e| AppError::database(format!("Failed to record migration v{}: {}", self.version, e)))?;
 
             // Update schema version
             conn.execute(
                 "UPDATE schema_version SET version = ?1, updated_at = ?2 WHERE id = 1",
                 params![self.version, applied_at],
-            )
-            .map_err(|e| e.to_string())?;
+            )?;
 
             Ok(())
         })();
 
         match result {
             Ok(()) => {
-                conn.execute("COMMIT", []).map_err(|e| e.to_string())?;
+                conn.execute("COMMIT", [])?;
                 tracing::info!("Migration v{} applied successfully", self.version);
                 Ok(())
             }
@@ -474,7 +477,7 @@ fn get_migrations() -> Vec<Migration> {
 }
 
 /// Initialize the schema version tracking tables
-pub fn init_schema_version_table(conn: &Connection) -> Result<(), String> {
+pub fn init_schema_version_table(conn: &Connection) -> AppResult<()> {
     // Create schema_version table if not exists
     conn.execute(
         "CREATE TABLE IF NOT EXISTS schema_version (
@@ -483,8 +486,7 @@ pub fn init_schema_version_table(conn: &Connection) -> Result<(), String> {
             updated_at INTEGER NOT NULL
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Create schema_migrations history table if not exists
     conn.execute(
@@ -495,27 +497,25 @@ pub fn init_schema_version_table(conn: &Connection) -> Result<(), String> {
             applied_at INTEGER NOT NULL
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // Insert initial version row if not exists
     conn.execute(
         "INSERT OR IGNORE INTO schema_version (id, version, updated_at) VALUES (1, 0, 0)",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     Ok(())
 }
 
 /// Get current database schema version
-pub fn get_current_version(conn: &Connection) -> Result<i32, String> {
+pub fn get_current_version(conn: &Connection) -> AppResult<i32> {
     conn.query_row(
         "SELECT version FROM schema_version WHERE id = 1",
         [],
         |row| row.get(0),
     )
-    .map_err(|e| e.to_string())
+    .map_err(AppError::from)
 }
 
 /// Check if a column exists in a table using PRAGMA table_info
@@ -547,7 +547,7 @@ fn table_exists(conn: &Connection, table: &str) -> bool {
 
 /// Helper to add a column to a table if it doesn't already exist.
 /// Uses ALTER TABLE ADD COLUMN; ignores "duplicate column name" errors.
-fn add_column_if_not_exists(conn: &Connection, table: &str, col_def: &str) -> Result<(), String> {
+fn add_column_if_not_exists(conn: &Connection, table: &str, col_def: &str) -> AppResult<()> {
     let sql = format!("ALTER TABLE {} ADD COLUMN {}", table, col_def);
     match conn.execute(&sql, []) {
         Ok(_) => {
@@ -563,7 +563,7 @@ fn add_column_if_not_exists(conn: &Connection, table: &str, col_def: &str) -> Re
             if e_str.contains("duplicate column name") {
                 Ok(())
             } else {
-                Err(e.to_string())
+                Err(AppError::from(e))
             }
         }
     }
@@ -578,7 +578,7 @@ fn add_column_if_not_exists(conn: &Connection, table: &str, col_def: &str) -> Re
 ///
 /// This function is called *before* the early-return version check so that
 /// missing columns are always repaired.
-pub fn ensure_legacy_columns_exist(conn: &Connection) -> Result<(), String> {
+pub fn ensure_legacy_columns_exist(conn: &Connection) -> AppResult<()> {
     // Ensure the sessions table exists before trying to add columns to it.
     // This handles legacy databases where schema_version was already set to
     // CURRENT_SCHEMA_VERSION but the sessions table was never created.
@@ -589,8 +589,7 @@ pub fn ensure_legacy_columns_exist(conn: &Connection) -> Result<(), String> {
             id INTEGER PRIMARY KEY AUTOINCREMENT
         )",
         [],
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     // -- sessions table --
     if table_exists(conn, "sessions") {
@@ -641,7 +640,7 @@ pub fn ensure_legacy_columns_exist(conn: &Connection) -> Result<(), String> {
 }
 
 /// Run all pending migrations
-pub fn run_migrations(conn: &Connection) -> Result<(), String> {
+pub fn run_migrations(conn: &Connection) -> AppResult<()> {
     let current_version = get_current_version(conn)?;
 
     // Safety net: repair missing columns in legacy databases before the version
@@ -675,18 +674,16 @@ pub fn run_migrations(conn: &Connection) -> Result<(), String> {
 }
 
 /// Get migration history
-pub fn get_migration_history(conn: &Connection) -> Result<Vec<(i32, String, i64)>, String> {
-    let mut stmt = conn
-        .prepare("SELECT version, description, applied_at FROM schema_migrations ORDER BY version")
-        .map_err(|e| e.to_string())?;
+pub fn get_migration_history(conn: &Connection) -> AppResult<Vec<(i32, String, i64)>> {
+    let mut stmt = conn.prepare(
+        "SELECT version, description, applied_at FROM schema_migrations ORDER BY version",
+    )?;
 
-    let rows = stmt
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
-        .map_err(|e| e.to_string())?;
+    let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
 
     let mut history = Vec::new();
     for row in rows {
-        history.push(row.map_err(|e| e.to_string())?);
+        history.push(row?);
     }
 
     Ok(history)

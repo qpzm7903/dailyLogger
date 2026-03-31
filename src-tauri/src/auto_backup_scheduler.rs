@@ -4,6 +4,7 @@
 //! Uses tokio's interval for scheduling and runs backups in the background.
 
 use crate::backup::cleanup_old_auto_backups;
+use crate::errors::{AppError, AppResult};
 use crate::memory_storage::{get_settings_sync, save_settings_sync};
 use chrono::{Local, NaiveDateTime};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -107,14 +108,14 @@ pub fn should_run_backup_now() -> bool {
 }
 
 /// Update last_auto_backup_at timestamp
-pub fn update_last_backup_time() -> Result<(), String> {
+pub fn update_last_backup_time() -> AppResult<()> {
     let mut settings = get_settings_sync()?;
     settings.last_auto_backup_at = Some(Local::now().format("%Y-%m-%dT%H:%M:%S%.f").to_string());
     save_settings_sync(&settings)
 }
 
 /// Run a single auto backup
-pub async fn run_auto_backup() -> Result<(), String> {
+pub async fn run_auto_backup() -> AppResult<()> {
     tracing::info!("Starting auto backup...");
 
     // Run the backup (this creates the backup with auto- prefix internally)
@@ -143,11 +144,11 @@ pub async fn run_auto_backup() -> Result<(), String> {
 /// Tauri command: Trigger a manual auto backup
 #[tauri::command]
 pub async fn trigger_auto_backup() -> Result<(), String> {
-    run_auto_backup().await
+    run_auto_backup().await.map_err(|e| e.to_string())
 }
 
 /// Internal backup creation for auto backup (adds auto- prefix)
-async fn run_auto_backup_internal() -> Result<(), String> {
+async fn run_auto_backup_internal() -> AppResult<()> {
     use std::fs;
     use std::io::{Read, Write};
     use zip::write::SimpleFileOptions;
@@ -158,35 +159,34 @@ async fn run_auto_backup_internal() -> Result<(), String> {
     let target_dir = crate::backup::get_default_backup_dir();
 
     // Ensure backup directory exists
-    fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&target_dir)?;
 
     // Create temp directory
     let temp_dir = tempfile::Builder::new()
         .prefix("dailylogger-auto-backup-")
-        .tempdir()
-        .map_err(|e| e.to_string())?;
+        .tempdir()?;
 
     let data_dir = temp_dir.path().join("data");
     let screenshots_dir = temp_dir.path().join("screenshots");
 
-    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
-    fs::create_dir_all(&screenshots_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&data_dir)?;
+    fs::create_dir_all(&screenshots_dir)?;
 
     // Get database stats with lock
     let record_count = {
-        let guard = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-        let conn = guard.as_ref().ok_or("Database not initialized")?;
+        let guard = DB_CONNECTION.lock()?;
+        let conn = guard
+            .as_ref()
+            .ok_or_else(|| AppError::database("Database not initialized"))?;
 
         // Flush WAL
         let _ = conn.execute_batch("PRAGMA wal_checkpoint(FULL)");
 
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))
-            .map_err(|e| e.to_string())?;
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))?;
 
         let db_path = crate::backup::get_db_path();
         if db_path.exists() {
-            fs::copy(&db_path, data_dir.join("local.db")).map_err(|e| e.to_string())?;
+            fs::copy(&db_path, data_dir.join("local.db"))?;
         }
 
         count as usize
@@ -207,8 +207,8 @@ async fn run_auto_backup_internal() -> Result<(), String> {
     };
 
     let manifest_path = temp_dir.path().join("manifest.json");
-    let manifest_json = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
-    fs::write(&manifest_path, manifest_json).map_err(|e| e.to_string())?;
+    let manifest_json = serde_json::to_string_pretty(&manifest)?;
+    fs::write(&manifest_path, manifest_json)?;
 
     // Generate backup filename with auto- prefix
     let timestamp = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
@@ -216,7 +216,7 @@ async fn run_auto_backup_internal() -> Result<(), String> {
     let backup_path = target_dir.join(&backup_filename);
 
     // Create zip file
-    let file = fs::File::create(&backup_path).map_err(|e| e.to_string())?;
+    let file = fs::File::create(&backup_path)?;
     let mut zip = ZipWriter::new(file);
 
     for entry in walkdir::WalkDir::new(temp_dir.path())
@@ -230,17 +230,16 @@ async fn run_auto_backup_internal() -> Result<(), String> {
                 .expect("walkdir entry should be under temp_dir");
             let zip_path = relative_path.to_string_lossy().replace("\\", "/");
 
-            zip.start_file(&zip_path, SimpleFileOptions::default())
-                .map_err(|e| e.to_string())?;
+            zip.start_file(&zip_path, SimpleFileOptions::default())?;
 
-            let mut file = fs::File::open(path).map_err(|e| e.to_string())?;
+            let mut file = fs::File::open(path)?;
             let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
-            zip.write_all(&buffer).map_err(|e| e.to_string())?;
+            file.read_to_end(&mut buffer)?;
+            zip.write_all(&buffer)?;
         }
     }
 
-    zip.finish().map_err(|e| e.to_string())?;
+    zip.finish()?;
 
     tracing::info!(
         "Auto backup created: {} ({} records, {} screenshots)",

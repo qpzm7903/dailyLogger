@@ -197,6 +197,12 @@ impl From<serde_json::Error> for AppError {
     }
 }
 
+impl From<zip::result::ZipError> for AppError {
+    fn from(err: zip::result::ZipError) -> Self {
+        Self::file_io(format!("Zip error: {}", err))
+    }
+}
+
 impl From<chrono::ParseError> for AppError {
     fn from(err: chrono::ParseError) -> Self {
         Self::validation(format!("Chrono parse error: {}", err))

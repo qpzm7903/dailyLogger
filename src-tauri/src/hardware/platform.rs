@@ -39,7 +39,7 @@ impl ScreenshotProvider for PlatformScreenshotProvider {
         // Note: We need to access the internal function from auto_perception
         // For now, we'll use the monitor module directly
 
-        let monitor_details = crate::monitor::get_monitor_list()?;
+        let monitor_details = crate::monitor::get_monitor_list().map_err(|e| e.to_string())?;
         let monitors =
             xcap::Monitor::all().map_err(|e| format!("Failed to get monitors: {}", e))?;
 
@@ -79,7 +79,7 @@ impl ScreenshotProvider for PlatformScreenshotProvider {
     }
 
     fn get_monitors(&self) -> Result<Vec<MonitorDetail>, String> {
-        crate::monitor::get_monitor_list()
+        crate::monitor::get_monitor_list().map_err(|e| e.to_string())
     }
 }
 

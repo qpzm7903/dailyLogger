@@ -11,7 +11,7 @@ use crate::memory_storage::Settings;
 /// This function retrieves the current application settings.
 /// It wraps the sync function from memory_storage for consistency with the service layer pattern.
 pub fn get_settings_service() -> AppResult<Settings> {
-    Ok(crate::memory_storage::get_settings_sync()?)
+    crate::memory_storage::get_settings_sync()
 }
 
 /// Save settings to the database.
@@ -19,5 +19,5 @@ pub fn get_settings_service() -> AppResult<Settings> {
 /// This function saves the application settings.
 /// It wraps the sync function from memory_storage for consistency with the service layer pattern.
 pub fn save_settings_service(settings: &Settings) -> AppResult<()> {
-    Ok(crate::memory_storage::save_settings_sync(settings)?)
+    crate::memory_storage::save_settings_sync(settings)
 }

@@ -2,6 +2,7 @@
 //!
 //! Provides monitor enumeration and capture functionality for multi-display environments.
 
+use crate::errors::{AppError, AppResult};
 use tauri::command;
 
 // Re-export types for convenience
@@ -10,11 +11,11 @@ pub use crate::monitor_types::{CaptureMode, MonitorDetail, MonitorInfo, MonitorS
 // ─── Platform-specific implementations ───────────────────────────────────────
 
 /// Get list of all connected monitors (all platforms using xcap)
-pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
-    let monitors = xcap::Monitor::all().map_err(|e| e.to_string())?;
+pub fn get_monitor_list() -> AppResult<Vec<MonitorDetail>> {
+    let monitors = xcap::Monitor::all().map_err(|e| AppError::screenshot(e.to_string()))?;
 
     if monitors.is_empty() {
-        return Err("No monitors found".to_string());
+        return Err(AppError::screenshot("No monitors found"));
     }
 
     let result: Vec<MonitorDetail> = monitors
@@ -55,7 +56,7 @@ pub fn get_monitor_list() -> Result<Vec<MonitorDetail>, String> {
 /// Get simplified monitor list for frontend
 #[command]
 pub fn get_monitors() -> Result<Vec<MonitorSummary>, String> {
-    let details = get_monitor_list()?;
+    let details = get_monitor_list().map_err(|e| e.to_string())?;
 
     let summaries: Vec<MonitorSummary> = details
         .iter()
@@ -71,7 +72,7 @@ pub fn get_monitors() -> Result<Vec<MonitorSummary>, String> {
 }
 
 /// Get full monitor info for storage
-pub fn get_monitor_info() -> Result<MonitorInfo, String> {
+pub fn get_monitor_info() -> AppResult<MonitorInfo> {
     let monitors = get_monitor_list()?;
     let count = monitors.len();
 

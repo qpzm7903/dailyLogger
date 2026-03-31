@@ -8,6 +8,8 @@ use rand::Rng;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::errors::{AppError, AppResult};
+
 /// Encrypted key prefix to identify encrypted values
 const ENC_PREFIX: &str = "ENC:";
 
@@ -33,14 +35,14 @@ fn generate_key() -> [u8; 32] {
 
 /// Set file permissions to 600 (owner read/write only) on Unix
 #[cfg(unix)]
-fn set_secure_permissions(path: &std::path::Path) -> Result<(), String> {
+fn set_secure_permissions(path: &std::path::Path) -> AppResult<()> {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
-        .map_err(|e| format!("Failed to set key file permissions: {}", e))
+        .map_err(|e| AppError::file_io(format!("Failed to set key file permissions: {}", e)))
 }
 
 #[cfg(windows)]
-fn set_secure_permissions(_path: &std::path::Path) -> Result<(), String> {
+fn set_secure_permissions(_path: &std::path::Path) -> AppResult<()> {
     // Windows uses ACLs, simplified handling
     Ok(())
 }
@@ -49,29 +51,29 @@ fn set_secure_permissions(_path: &std::path::Path) -> Result<(), String> {
 ///
 /// The key is stored in a file with 600 permissions.
 /// If the file doesn't exist, a new key is generated.
-pub fn get_or_create_encryption_key() -> Result<[u8; 32], String> {
+pub fn get_or_create_encryption_key() -> AppResult<[u8; 32]> {
     // Check if key is already loaded in memory
     {
-        let key_lock = ENCRYPTION_KEY.lock().map_err(|e| e.to_string())?;
+        let key_lock = ENCRYPTION_KEY.lock()?;
         if let Some(key) = key_lock.as_ref() {
             return Ok(*key);
         }
     }
 
     let key_path = get_key_path();
-    let key_dir = key_path.parent().ok_or("Invalid key path")?;
+    let key_dir = key_path
+        .parent()
+        .ok_or_else(|| AppError::internal("Invalid key path"))?;
 
     // Ensure directory exists
-    std::fs::create_dir_all(key_dir)
-        .map_err(|e| format!("Failed to create key directory: {}", e))?;
+    std::fs::create_dir_all(key_dir)?;
 
     let key = if key_path.exists() {
         // Load existing key
-        let key_bytes =
-            std::fs::read(&key_path).map_err(|e| format!("Failed to read key file: {}", e))?;
+        let key_bytes = std::fs::read(&key_path)?;
 
         if key_bytes.len() != 32 {
-            return Err("Invalid key file: expected 32 bytes".to_string());
+            return Err(AppError::validation("Invalid key file: expected 32 bytes"));
         }
 
         let mut key = [0u8; 32];
@@ -80,7 +82,7 @@ pub fn get_or_create_encryption_key() -> Result<[u8; 32], String> {
     } else {
         // Generate new key
         let key = generate_key();
-        std::fs::write(&key_path, key).map_err(|e| format!("Failed to write key file: {}", e))?;
+        std::fs::write(&key_path, key)?;
 
         set_secure_permissions(&key_path)?;
         tracing::info!("Generated new encryption key at {:?}", key_path);
@@ -89,7 +91,7 @@ pub fn get_or_create_encryption_key() -> Result<[u8; 32], String> {
 
     // Cache in memory
     {
-        let mut key_lock = ENCRYPTION_KEY.lock().map_err(|e| e.to_string())?;
+        let mut key_lock = ENCRYPTION_KEY.lock()?;
         *key_lock = Some(key);
     }
 
@@ -104,7 +106,7 @@ pub fn is_encrypted(value: &str) -> bool {
 /// Encrypt an API key
 ///
 /// Returns a Base64-encoded string prefixed with "ENC:"
-pub fn encrypt_api_key(plain: &str) -> Result<String, String> {
+pub fn encrypt_api_key(plain: &str) -> AppResult<String> {
     if plain.is_empty() {
         return Ok(String::new());
     }
@@ -120,7 +122,7 @@ pub fn encrypt_api_key(plain: &str) -> Result<String, String> {
     // Encrypt
     let ciphertext = cipher
         .encrypt(nonce, plain.as_bytes())
-        .map_err(|e| format!("Encryption failed: {}", e))?;
+        .map_err(|e| AppError::internal(format!("Encryption failed: {}", e)))?;
 
     // Combine nonce + ciphertext and encode
     let mut combined = nonce_bytes.to_vec();
@@ -132,7 +134,7 @@ pub fn encrypt_api_key(plain: &str) -> Result<String, String> {
 /// Decrypt an API key
 ///
 /// Takes a Base64-encoded string prefixed with "ENC:" and returns the plain text
-pub fn decrypt_api_key(encrypted: &str) -> Result<String, String> {
+pub fn decrypt_api_key(encrypted: &str) -> AppResult<String> {
     if encrypted.is_empty() {
         return Ok(String::new());
     }
@@ -144,7 +146,7 @@ pub fn decrypt_api_key(encrypted: &str) -> Result<String, String> {
 
     let encrypted_part = encrypted
         .strip_prefix(ENC_PREFIX)
-        .ok_or("Invalid encrypted format")?;
+        .ok_or_else(|| AppError::validation("Invalid encrypted format"))?;
 
     let key = get_or_create_encryption_key()?;
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&key));
@@ -152,10 +154,10 @@ pub fn decrypt_api_key(encrypted: &str) -> Result<String, String> {
     // Decode Base64
     let combined = BASE64
         .decode(encrypted_part)
-        .map_err(|e| format!("Base64 decode failed: {}", e))?;
+        .map_err(|e| AppError::validation(format!("Base64 decode failed: {}", e)))?;
 
     if combined.len() < NONCE_LEN {
-        return Err("Invalid encrypted data: too short".to_string());
+        return Err(AppError::validation("Invalid encrypted data: too short"));
     }
 
     // Split nonce and ciphertext
@@ -165,15 +167,15 @@ pub fn decrypt_api_key(encrypted: &str) -> Result<String, String> {
     // Decrypt
     let plaintext = cipher
         .decrypt(nonce, ciphertext)
-        .map_err(|e| format!("Decryption failed: {}", e))?;
+        .map_err(|e| AppError::internal(format!("Decryption failed: {}", e)))?;
 
-    String::from_utf8(plaintext).map_err(|e| format!("Invalid UTF-8: {}", e))
+    String::from_utf8(plaintext).map_err(|e| AppError::validation(format!("Invalid UTF-8: {}", e)))
 }
 
 /// Migrate a plain text API key to encrypted storage
 ///
 /// Returns true if migration was performed
-pub fn migrate_plain_api_key(plain: &str) -> Result<Option<String>, String> {
+pub fn migrate_plain_api_key(plain: &str) -> AppResult<Option<String>> {
     if plain.is_empty() {
         return Ok(None);
     }
