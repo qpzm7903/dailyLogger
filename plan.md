@@ -9,10 +9,17 @@
 ## 当前进行中的工作
 
 ### v4.5.0: Rust 错误类型统一 (AppError 迁移)
-- 🔄 添加 Mutex/RwLock `PoisonError` → `AppError` 的 `From` 实现
-- 🔄 添加 `lock_db()` 辅助函数，消除 46 处 lock error 样板代码
-- ⬜ 逐步将服务层从 `Result<_, String>` 迁移到 `AppResult<T>`
-- ⬜ 命令层保持 `Result<_, String>` 作为 IPC 边界转换
+- ✅ 添加 Mutex/RwLock `PoisonError` → `AppError` 的 `From` 实现
+- ✅ 添加 `From<AppError> for String` 实现 (IPC 边界转换)
+- ✅ session_service 全量迁移到 AppResult (6 函数)
+- ✅ settings_service 迁移到 AppResult (2 函数)
+- ✅ model_service 迁移到 AppResult (1 函数)
+- ✅ report_service 迁移到 AppResult (6 函数 + offline_queue 适配)
+- ✅ timeline 模块迁移到 AppResult (3 公开函数)
+- 🔄 synthesis 模块迁移 (最大模块, ~30 函数)
+- ⬜ session_manager 迁移
+- ⬜ memory_storage (records, settings, tags) 迁移
+- ⬜ 命令层统一使用 .map_err(|e| e.to_string()) 模式
 
 ### v4.4.3: Bug 修复 (issues #89, #90, #91) ✅ 已发布
 - ✅ 修复 legacy 数据库 sessions 表未创建导致 start_time 列缺失 (issue #89)
