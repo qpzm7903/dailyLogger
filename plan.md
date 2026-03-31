@@ -8,6 +8,15 @@
 
 ## 当前进行中的工作
 
+### v4.6.0: 持续重构 — 消除重复 & AppResult 迁移 🚧 进行中
+- ✅ 消除 session_manager/session_service 重复 (~560 行相同代码)
+  - 将所有类型和逻辑整合到 session_service，删除 session_manager 模块
+  - 更新所有调用者 (capture_service, report_service, synthesis, vision_api)
+- ✅ offline_queue 迁移到 AppResult (7 业务函数 + Tauri 命令包装器)
+- ✅ backup 模块迁移到 AppResult (提取业务逻辑到内部函数，命令层为薄包装器)
+- 🔄 继续迁移其他模块的 Result<_, String> → AppResult (剩余 ~120 处)
+  - capture_service (16), manual_entry (12), ollama (8), slack, dingtalk, notion 等
+
 ### v4.5.0: Rust 错误类型统一 (AppError 迁移) ✅ 已完成
 - ✅ 添加 Mutex/RwLock `PoisonError` → `AppError` 的 `From` 实现
 - ✅ 添加 `From<AppError> for String` 实现 (IPC 边界转换)
