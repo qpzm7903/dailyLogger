@@ -319,10 +319,12 @@ pub async fn generate_custom_report_service(
         ));
     }
 
-    let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| AppError::validation(format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e)))?;
-    let parsed_end = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| AppError::validation(format!("无效的结束日期格式 (需要 YYYY-MM-DD): {}", e)))?;
+    let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e))
+    })?;
+    let parsed_end = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!("无效的结束日期格式 (需要 YYYY-MM-DD): {}", e))
+    })?;
     if parsed_end < parsed_start {
         return Err(AppError::validation("结束日期不能早于起始日期"));
     }
@@ -331,8 +333,10 @@ pub async fn generate_custom_report_service(
     let obsidian_path = settings.get_obsidian_output_path()?;
     let api_config = crate::synthesis::load_api_config(&settings)?;
 
-    let all_records =
-        crate::memory_storage::get_records_by_date_range_sync(start_date.clone(), end_date.clone())?;
+    let all_records = crate::memory_storage::get_records_by_date_range_sync(
+        start_date.clone(),
+        end_date.clone(),
+    )?;
     let records = filter_records_by_settings(all_records, &settings);
     if records.is_empty() {
         return Err(AppError::validation("所选时间范围内无记录"));
@@ -384,14 +388,20 @@ pub async fn compare_reports_service(
         ));
     }
 
-    let parsed_start_a = chrono::NaiveDate::parse_from_str(&start_date_a, "%Y-%m-%d")
-        .map_err(|e| AppError::validation(format!("无效的时段A起始日期格式 (需要 YYYY-MM-DD): {}", e)))?;
-    let parsed_end_a = chrono::NaiveDate::parse_from_str(&end_date_a, "%Y-%m-%d")
-        .map_err(|e| AppError::validation(format!("无效的时段A结束日期格式 (需要 YYYY-MM-DD): {}", e)))?;
-    let parsed_start_b = chrono::NaiveDate::parse_from_str(&start_date_b, "%Y-%m-%d")
-        .map_err(|e| AppError::validation(format!("无效的时段B起始日期格式 (需要 YYYY-MM-DD): {}", e)))?;
-    let parsed_end_b = chrono::NaiveDate::parse_from_str(&end_date_b, "%Y-%m-%d")
-        .map_err(|e| AppError::validation(format!("无效的时段B结束日期格式 (需要 YYYY-MM-DD): {}", e)))?;
+    let parsed_start_a =
+        chrono::NaiveDate::parse_from_str(&start_date_a, "%Y-%m-%d").map_err(|e| {
+            AppError::validation(format!("无效的时段A起始日期格式 (需要 YYYY-MM-DD): {}", e))
+        })?;
+    let parsed_end_a = chrono::NaiveDate::parse_from_str(&end_date_a, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!("无效的时段A结束日期格式 (需要 YYYY-MM-DD): {}", e))
+    })?;
+    let parsed_start_b =
+        chrono::NaiveDate::parse_from_str(&start_date_b, "%Y-%m-%d").map_err(|e| {
+            AppError::validation(format!("无效的时段B起始日期格式 (需要 YYYY-MM-DD): {}", e))
+        })?;
+    let parsed_end_b = chrono::NaiveDate::parse_from_str(&end_date_b, "%Y-%m-%d").map_err(|e| {
+        AppError::validation(format!("无效的时段B结束日期格式 (需要 YYYY-MM-DD): {}", e))
+    })?;
 
     if parsed_end_a < parsed_start_a {
         return Err(AppError::validation("时段A的结束日期不能早于起始日期"));

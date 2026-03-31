@@ -302,9 +302,7 @@ pub async fn analyze_session_service(session_id: i64) -> AppResult<()> {
     let screenshots = crate::memory_storage::get_records_by_session_id(session_id)?;
 
     if screenshots.is_empty() {
-        return Err(AppError::validation(
-            "No pending screenshots in session",
-        ));
+        return Err(AppError::validation("No pending screenshots in session"));
     }
 
     tracing::info!(
@@ -392,9 +390,7 @@ pub fn update_session_user_summary_service(
             "UPDATE sessions SET user_summary = ?1 WHERE id = ?2",
             params![user_summary, session_id],
         )
-        .map_err(|e| {
-            AppError::database(format!("Failed to update session user summary: {}", e))
-        })?;
+        .map_err(|e| AppError::database(format!("Failed to update session user summary: {}", e)))?;
 
     if rows_affected == 0 {
         return Err(AppError::validation(format!(
@@ -409,7 +405,9 @@ pub fn update_session_user_summary_service(
 
 /// Get screenshots for a session
 pub fn get_session_screenshots_service(session_id: i64) -> AppResult<Vec<SessionScreenshot>> {
-    Ok(crate::memory_storage::get_records_by_session_id(session_id)?)
+    Ok(crate::memory_storage::get_records_by_session_id(
+        session_id,
+    )?)
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
