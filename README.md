@@ -223,10 +223,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.4.2
-- 跨平台路径与除零修复：StatisticsPanel 修复单数据点时除零问题，DailySummaryViewer 修复跨平台路径分隔符处理
+**最新版本**: v4.4.3
+- 修复 legacy 数据库 sessions 表未创建导致启动报错 (issue #89)
+- 修复 ReportDropdown 被 backdrop-blur stacking context 遮挡 (issue #90)
+- 修复 Settings 页面输入框和按钮颜色异常 (issue #91)
 
-**v4.4.1**:
+**v4.4.2**:
 - StatisticsPanel SVG viewBox 修复：使用 Vue 动态绑定替代 Mustache 模板语法，确保图表正确缩放
 
 **v4.4.0**:
@@ -253,12 +255,7 @@ git config core.hooksPath .githooks
 **v4.3.1**:
 - Migration 幂等性修复：扩展 sessions.date 修复到 records 和 settings 表的所有扩展列
 
-**v4.3.0**:
-- AI Settings 模板导入/导出：使用 Tauri 文件对话框实现模板文件的保存和加载
-- 新增 i18n 国际化支持（en.json, zh-CN.json）
-
-**v4.2.2**:
-- Migration 修复：处理 legacy sessions 表缺少 date 列的情况
+**v4.3.0** ~ **v4.2.2**: AI Settings 模板导入/导出、i18n 国际化、Migration 幂等性修复、Tailwind CSS v4 升级等
 
 **更早版本**:
 - v4.2.1 ~ v4.0.0: HistoryViewer 虚拟滚动、Tailwind CSS v4 升级、数据库版本迁移机制等
