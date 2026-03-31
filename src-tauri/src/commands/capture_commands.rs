@@ -224,22 +224,7 @@ fn load_capture_settings_internal() -> CaptureSettings {
 }
 
 fn load_work_time_settings_internal() -> WorkTimeSettings {
-    match crate::memory_storage::get_settings_sync() {
-        Ok(s) => WorkTimeSettings {
-            auto_detect_work_time: s.auto_detect_work_time.unwrap_or(true),
-            use_custom_work_time: s.use_custom_work_time.unwrap_or(false),
-            custom_work_time_start: s.custom_work_time_start,
-            custom_work_time_end: s.custom_work_time_end,
-            learned_work_time: s.learned_work_time,
-        },
-        Err(_) => WorkTimeSettings {
-            auto_detect_work_time: true,
-            use_custom_work_time: false,
-            custom_work_time_start: None,
-            custom_work_time_end: None,
-            learned_work_time: None,
-        },
-    }
+    crate::services::capture_service::load_work_time_settings()
 }
 
 fn should_capture_by_work_time_internal() -> bool {

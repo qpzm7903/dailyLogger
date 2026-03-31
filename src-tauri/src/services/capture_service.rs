@@ -401,7 +401,7 @@ pub fn load_capture_settings() -> CaptureSettings {
     }
 }
 
-fn load_work_time_settings() -> WorkTimeSettings {
+pub fn load_work_time_settings() -> WorkTimeSettings {
     match memory_storage::get_settings_sync() {
         Ok(s) => WorkTimeSettings {
             auto_detect_work_time: s.auto_detect_work_time.unwrap_or(true),
