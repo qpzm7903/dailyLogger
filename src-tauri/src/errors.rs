@@ -209,6 +209,18 @@ impl From<chrono::ParseError> for AppError {
     }
 }
 
+impl From<base64::DecodeError> for AppError {
+    fn from(err: base64::DecodeError) -> Self {
+        Self::validation(format!("Base64 decode error: {}", err))
+    }
+}
+
+impl From<image::ImageError> for AppError {
+    fn from(err: image::ImageError) -> Self {
+        Self::validation(format!("Image error: {}", err))
+    }
+}
+
 impl<T> From<std::sync::PoisonError<T>> for AppError {
     fn from(err: std::sync::PoisonError<T>) -> Self {
         Self::internal(format!("Lock poisoned: {}", err))

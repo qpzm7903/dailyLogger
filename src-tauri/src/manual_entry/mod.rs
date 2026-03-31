@@ -1,20 +1,21 @@
+use crate::errors::{AppError, AppResult};
 use crate::memory_storage;
 use tauri::command;
 
 /// Save a quick note from the tray menu (synchronous version for tests)
-pub fn add_quick_note_sync(content: &str) -> Result<i64, String> {
+pub fn add_quick_note_sync(content: &str) -> AppResult<i64> {
     if content.trim().is_empty() {
-        return Err("内容不能为空".to_string());
+        return Err(AppError::validation("内容不能为空"));
     }
 
-    memory_storage::add_record("manual", content, None, None, None).map_err(|e| e.to_string())
+    memory_storage::add_record("manual", content, None, None, None)
 }
 
 /// Save a quick note from the tray menu.
 /// This is called from the tray quick note window.
 #[command]
 pub async fn tray_quick_note(content: String) -> Result<(), String> {
-    add_quick_note_sync(&content)?;
+    add_quick_note_sync(&content).map_err(|e| e.to_string())?;
     tracing::info!(
         "Tray quick note added: {}...",
         &content[..content.len().min(50)]
@@ -24,43 +25,41 @@ pub async fn tray_quick_note(content: String) -> Result<(), String> {
 
 /// Opens the Obsidian folder in the system file manager.
 /// Returns an error message if the path is not configured or invalid.
-pub fn open_obsidian_folder_sync() -> Result<(), String> {
+pub fn open_obsidian_folder_sync() -> AppResult<()> {
     use crate::memory_storage::get_settings_sync;
     use std::path::Path;
 
-    let settings = get_settings_sync().map_err(|e| e.to_string())?;
+    let settings = get_settings_sync()?;
 
     let path_str = settings
         .get_obsidian_output_path()
-        .map_err(|_| "请先在设置中配置 Obsidian 路径".to_string())?;
+        .map_err(|_| AppError::validation("请先在设置中配置 Obsidian 路径"))?;
 
     let path = Path::new(&path_str);
     if !path.exists() {
-        return Err(format!("Obsidian 路径不存在: {}", path_str));
+        return Err(AppError::file_io(format!(
+            "Obsidian 路径不存在: {}",
+            path_str
+        )));
     }
 
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("explorer")
             .arg(&path_str)
-            .spawn()
-            .map_err(|e| e.to_string())?;
+            .spawn()?;
     }
 
     #[cfg(target_os = "macos")]
     {
-        std::process::Command::new("open")
-            .arg(&path_str)
-            .spawn()
-            .map_err(|e| e.to_string())?;
+        std::process::Command::new("open").arg(&path_str).spawn()?;
     }
 
     #[cfg(target_os = "linux")]
     {
         std::process::Command::new("xdg-open")
             .arg(&path_str)
-            .spawn()
-            .map_err(|e| e.to_string())?;
+            .spawn()?;
     }
 
     tracing::info!("Opened Obsidian folder: {}", path_str);
@@ -69,13 +68,13 @@ pub fn open_obsidian_folder_sync() -> Result<(), String> {
 
 #[command]
 pub async fn open_obsidian_folder() -> Result<(), String> {
-    open_obsidian_folder_sync()
+    open_obsidian_folder_sync().map_err(|e| e.to_string())
 }
 
 #[command]
 pub async fn add_quick_note(content: String) -> Result<(), String> {
     if content.trim().is_empty() {
-        return Err("Content cannot be empty".to_string());
+        return Err(AppError::validation("Content cannot be empty").to_string());
     }
 
     memory_storage::add_record("manual", &content, None, None, None).map_err(|e| e.to_string())?;
@@ -120,7 +119,7 @@ fn find_log_files(log_dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 #[command]
 pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
     let log_dir = dirs::data_dir()
-        .ok_or_else(|| "Cannot determine data directory".to_string())?
+        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
         .join("DailyLogger")
         .join("logs");
 
@@ -150,13 +149,13 @@ pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
 #[command]
 pub async fn get_logs_for_export() -> Result<String, String> {
     let log_dir = dirs::data_dir()
-        .ok_or_else(|| "Cannot determine data directory".to_string())?
+        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
         .join("DailyLogger")
         .join("logs");
 
     let log_files = find_log_files(&log_dir);
     if log_files.is_empty() {
-        return Err("Log file does not exist".to_string());
+        return Err(AppError::file_io("Log file does not exist").to_string());
     }
 
     let mut content = String::new();
@@ -172,14 +171,14 @@ pub async fn get_logs_for_export() -> Result<String, String> {
 #[command]
 pub async fn get_log_file_path() -> Result<String, String> {
     let log_dir = dirs::data_dir()
-        .ok_or_else(|| "Cannot determine data directory".to_string())?
+        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
         .join("DailyLogger")
         .join("logs");
 
     log_dir
         .to_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| "Invalid log directory path".to_string())
+        .ok_or_else(|| AppError::file_io("Invalid log directory path").to_string())
 }
 
 /// STAB-001: Log frontend errors to the error log file
@@ -197,7 +196,7 @@ pub async fn log_frontend_error(
     );
 
     let log_dir = dirs::data_dir()
-        .ok_or_else(|| "Cannot determine data directory".to_string())?
+        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
         .join("DailyLogger")
         .join("logs");
 
@@ -361,7 +360,7 @@ mod tests {
         let result = add_quick_note_sync("");
         assert!(result.is_err(), "Empty content should be rejected");
         assert!(
-            result.unwrap_err().contains("内容不能为空"),
+            result.unwrap_err().to_string().contains("内容不能为空"),
             "Error message should indicate empty content"
         );
     }
@@ -422,7 +421,7 @@ mod tests {
         // Settings with no obsidian_path configured
         let result = open_obsidian_folder_sync();
         assert!(result.is_err(), "Missing path should be rejected");
-        let err = result.unwrap_err();
+        let err = result.unwrap_err().to_string();
         assert!(
             err.contains("请先在设置中配置 Obsidian 路径"),
             "Error should mention configuring path, got: {}",
@@ -442,7 +441,7 @@ mod tests {
 
         let result = open_obsidian_folder_sync();
         assert!(result.is_err(), "Empty path should be rejected");
-        let err = result.unwrap_err();
+        let err = result.unwrap_err().to_string();
         assert!(
             err.contains("请先在设置中配置 Obsidian 路径"),
             "Error should mention configuring path, got: {}",
@@ -462,7 +461,7 @@ mod tests {
 
         let result = open_obsidian_folder_sync();
         assert!(result.is_err(), "Whitespace-only path should be rejected");
-        let err = result.unwrap_err();
+        let err = result.unwrap_err().to_string();
         assert!(
             err.contains("请先在设置中配置 Obsidian 路径"),
             "Error should mention configuring path, got: {}",
@@ -482,7 +481,7 @@ mod tests {
 
         let result = open_obsidian_folder_sync();
         assert!(result.is_err(), "Non-existent path should be rejected");
-        let err = result.unwrap_err();
+        let err = result.unwrap_err().to_string();
         assert!(
             err.contains("Obsidian 路径不存在"),
             "Error should mention path does not exist, got: {}",
@@ -508,7 +507,7 @@ mod tests {
         // but we should still verify that the path validation passed.
         // The error, if any, should be about opening the folder, not path validation.
         if result.is_err() {
-            let err = result.unwrap_err();
+            let err = result.unwrap_err().to_string();
             // Should NOT be about path not configured or path not existing
             assert!(
                 !err.contains("请先在设置中配置 Obsidian 路径"),
@@ -620,7 +619,10 @@ mod tests {
 
         let result = open_obsidian_folder_sync();
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Obsidian 路径不存在"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Obsidian 路径不存在"));
     }
 
     // Helper function to set up test database with settings table

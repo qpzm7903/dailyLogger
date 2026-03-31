@@ -53,7 +53,7 @@ pub fn get_default_analysis_prompt() -> String {
 #[tauri::command]
 pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
     // Delegate to service for initialization
-    start_auto_capture_service()?;
+    start_auto_capture_service().map_err(|e| e.to_string())?;
 
     let settings = load_capture_settings_internal();
     let interval_minutes = settings.screenshot_interval;
@@ -152,7 +152,7 @@ pub async fn stop_auto_capture() -> Result<(), String> {
 /// This is a thin command wrapper that delegates to the capture service.
 #[tauri::command]
 pub async fn trigger_capture() -> Result<(), String> {
-    trigger_capture_service().await
+    trigger_capture_service().await.map_err(|e| e.to_string())
 }
 
 /// Take a screenshot and save to disk (no AI analysis).
@@ -160,7 +160,7 @@ pub async fn trigger_capture() -> Result<(), String> {
 /// This is a thin command wrapper that delegates to the capture service.
 #[tauri::command]
 pub async fn take_screenshot() -> Result<String, String> {
-    take_screenshot_service().await
+    take_screenshot_service().await.map_err(|e| e.to_string())
 }
 
 /// Reanalyze a single record.
@@ -168,7 +168,9 @@ pub async fn take_screenshot() -> Result<String, String> {
 /// This is a thin command wrapper that delegates to the capture service.
 #[tauri::command]
 pub async fn reanalyze_record(record_id: i64) -> Result<ScreenAnalysis, String> {
-    reanalyze_record_service(record_id).await
+    reanalyze_record_service(record_id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Reanalyze all records with screenshots from today.
@@ -176,7 +178,9 @@ pub async fn reanalyze_record(record_id: i64) -> Result<ScreenAnalysis, String> 
 /// This is a thin command wrapper that delegates to the capture service.
 #[tauri::command]
 pub async fn reanalyze_today_records() -> Result<ReanalyzeResult, String> {
-    reanalyze_today_records_service().await
+    reanalyze_today_records_service()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Reanalyze all records with screenshots for a specific date.
@@ -184,7 +188,9 @@ pub async fn reanalyze_today_records() -> Result<ReanalyzeResult, String> {
 /// This is a thin command wrapper that delegates to the capture service.
 #[tauri::command]
 pub async fn reanalyze_records_by_date(date: String) -> Result<ReanalyzeResult, String> {
-    reanalyze_records_by_date_service(date).await
+    reanalyze_records_by_date_service(date)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Get quality filter statistics.
@@ -192,7 +198,9 @@ pub async fn reanalyze_records_by_date(date: String) -> Result<ReanalyzeResult, 
 /// This is a thin command wrapper that delegates to the capture service.
 #[tauri::command]
 pub async fn get_quality_filter_stats() -> Result<QualityFilterStats, String> {
-    get_quality_filter_stats_service().await
+    get_quality_filter_stats_service()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Reset quality filter counter.
@@ -200,7 +208,9 @@ pub async fn get_quality_filter_stats() -> Result<QualityFilterStats, String> {
 /// This is a thin command wrapper that delegates to the capture service.
 #[tauri::command]
 pub async fn reset_quality_filter_counter() -> Result<(), String> {
-    reset_quality_filter_counter_service().await
+    reset_quality_filter_counter_service()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

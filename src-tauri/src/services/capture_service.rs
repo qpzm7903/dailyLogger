@@ -9,6 +9,7 @@
 //! SMART-004: Multi-monitor capture support
 //! EXP-002: Screenshot quality filter
 
+use crate::errors::{AppError, AppResult};
 use crate::memory_storage;
 use crate::monitor::get_monitor_list;
 use crate::monitor_types::{CaptureMode, MonitorInfo};
@@ -252,11 +253,10 @@ pub fn get_screenshot_error_message(kind: &ScreenshotErrorKind, original_error: 
 // Fingerprint and Quality Functions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-fn compute_fingerprint(image_base64: &str) -> Result<Vec<u8>, String> {
+fn compute_fingerprint(image_base64: &str) -> AppResult<Vec<u8>> {
     let image_data =
-        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)
-            .map_err(|e| e.to_string())?;
-    let img = image::load_from_memory(&image_data).map_err(|e| e.to_string())?;
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)?;
+    let img = image::load_from_memory(&image_data)?;
     let thumb = img
         .resize_exact(THUMB_SIZE, THUMB_SIZE, image::imageops::FilterType::Nearest)
         .to_luma8();
@@ -278,11 +278,10 @@ fn calc_change_rate(a: &[u8], b: &[u8]) -> f64 {
 
 const QUALITY_THUMB_SIZE: u32 = 32;
 
-fn compute_quality_score(image_base64: &str) -> Result<f64, String> {
+fn compute_quality_score(image_base64: &str) -> AppResult<f64> {
     let image_data =
-        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)
-            .map_err(|e| e.to_string())?;
-    let img = image::load_from_memory(&image_data).map_err(|e| e.to_string())?;
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, image_base64)?;
+    let img = image::load_from_memory(&image_data)?;
     let thumb = img
         .resize_exact(
             QUALITY_THUMB_SIZE,
@@ -483,11 +482,11 @@ pub fn evaluate_and_adjust_threshold() -> Option<(u64, u64)> {
 fn capture_screen_with_mode(
     mode: CaptureMode,
     selected_index: usize,
-) -> Result<(String, MonitorInfo), String> {
+) -> AppResult<(String, MonitorInfo)> {
     let monitor_details = get_monitor_list()?;
-    let monitors = xcap::Monitor::all().map_err(|e| e.to_string())?;
+    let monitors = xcap::Monitor::all().map_err(|e| AppError::screenshot(e.to_string()))?;
     if monitors.is_empty() {
-        return Err("No monitors found".to_string());
+        return Err(AppError::screenshot("No monitors found"));
     }
     let monitor_info = MonitorInfo {
         count: monitor_details.len(),
@@ -517,18 +516,18 @@ fn capture_screen_with_mode(
     Ok((image, monitor_info))
 }
 
-fn capture_single_monitor_xcap(monitors: &[xcap::Monitor], index: usize) -> Result<String, String> {
+fn capture_single_monitor_xcap(monitors: &[xcap::Monitor], index: usize) -> AppResult<String> {
     let monitor = monitors
         .get(index)
-        .ok_or_else(|| format!("Monitor index {} out of bounds", index))?;
+        .ok_or_else(|| AppError::screenshot(format!("Monitor index {} out of bounds", index)))?;
     let image = monitor
         .capture_image()
-        .map_err(|e| format!("Failed to capture monitor {}: {}", index, e))?;
+        .map_err(|e| AppError::screenshot(format!("Failed to capture monitor {}: {}", index, e)))?;
     let mut buffer = Vec::new();
     let mut cursor = std::io::Cursor::new(&mut buffer);
     image
         .write_to(&mut cursor, image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode screenshot: {}", e))?;
+        .map_err(|e| AppError::screenshot(format!("Failed to encode screenshot: {}", e)))?;
     let base64_str = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &buffer);
     Ok(base64_str)
 }
@@ -536,9 +535,9 @@ fn capture_single_monitor_xcap(monitors: &[xcap::Monitor], index: usize) -> Resu
 fn stitch_monitors_xcap(
     monitors: &[xcap::Monitor],
     monitor_details: &[crate::monitor_types::MonitorDetail],
-) -> Result<String, String> {
+) -> AppResult<String> {
     if monitors.is_empty() {
-        return Err("No monitors to stitch".to_string());
+        return Err(AppError::screenshot("No monitors to stitch"));
     }
     let mut captured_images: Vec<(crate::monitor_types::MonitorDetail, image::RgbaImage)> =
         Vec::new();
@@ -546,8 +545,10 @@ fn stitch_monitors_xcap(
         let image_base64 = capture_single_monitor_xcap(monitors, index)?;
         let image_data =
             base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &image_base64)
-                .map_err(|e| format!("Failed to decode captured image: {}", e))?;
-        let img = image::load_from_memory(&image_data).map_err(|e| e.to_string())?;
+                .map_err(|e| {
+                    AppError::screenshot(format!("Failed to decode captured image: {}", e))
+                })?;
+        let img = image::load_from_memory(&image_data)?;
         let rgba_image = img.to_rgba8();
         let detail = monitor_details.get(index).cloned().unwrap_or_else(|| {
             crate::monitor_types::MonitorDetail {
@@ -567,7 +568,7 @@ fn stitch_monitors_xcap(
         let mut buffer = Vec::new();
         let mut cursor = std::io::Cursor::new(&mut buffer);
         img.write_to(&mut cursor, image::ImageFormat::Png)
-            .map_err(|e| format!("Failed to encode stitched image: {}", e))?;
+            .map_err(|e| AppError::screenshot(format!("Failed to encode stitched image: {}", e)))?;
         return Ok(base64::Engine::encode(
             &base64::engine::general_purpose::STANDARD,
             &buffer,
@@ -589,7 +590,7 @@ fn stitch_monitors_xcap(
     let mut cursor = std::io::Cursor::new(&mut buffer);
     stitched
         .write_to(&mut cursor, image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode stitched image: {}", e))?;
+        .map_err(|e| AppError::screenshot(format!("Failed to encode stitched image: {}", e)))?;
     Ok(base64::Engine::encode(
         &base64::engine::general_purpose::STANDARD,
         &buffer,
@@ -618,9 +619,9 @@ fn save_screenshot(image_base64: &str) -> Option<String> {
 async fn analyze_screen(
     settings: &CaptureSettings,
     image_base64: &str,
-) -> Result<ScreenAnalysis, String> {
+) -> AppResult<ScreenAnalysis> {
     if settings.api_key.is_empty() {
-        return Err("API Key 未配置，请先在设置中配置 API Key".to_string());
+        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
     }
     let prompt = settings
         .analysis_prompt
@@ -668,29 +669,31 @@ async fn analyze_screen(
     for header in &settings.custom_headers {
         request = request.header(&header.key, &header.value);
     }
-    let response = request
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
+    let response = request.json(&payload).send().await?;
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(format!(
+        return Err(AppError::network(format!(
             "API request failed with status {}: {}",
             status, body
-        ));
+        )));
     }
-    let response_body: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    let response_body: serde_json::Value = response.json().await?;
     let content = response_body["choices"][0]["message"]["content"]
         .as_str()
-        .ok_or_else(|| format!("Invalid API response format: {:?}", response_body))?;
+        .ok_or_else(|| {
+            AppError::validation(format!("Invalid API response format: {:?}", response_body))
+        })?;
     let content = content.trim();
     let json_start = content.find('{').unwrap_or(0);
     let json_end = content.rfind('}').map(|i| i + 1).unwrap_or(content.len());
     let json_str = &content[json_start..json_end];
-    let analysis: ScreenAnalysis = serde_json::from_str(json_str)
-        .map_err(|e| format!("Failed to parse analysis: {}. Content: {}", e, content))?;
+    let analysis: ScreenAnalysis = serde_json::from_str(json_str).map_err(|e| {
+        AppError::validation(format!(
+            "Failed to parse analysis: {}. Content: {}",
+            e, content
+        ))
+    })?;
     Ok(analysis)
 }
 
@@ -704,13 +707,13 @@ pub fn is_auto_capture_running() -> bool {
 
 /// Service function to start auto capture - validates and initializes capture
 /// Returns early error if API key not configured
-pub fn start_auto_capture_service() -> Result<(), String> {
+pub fn start_auto_capture_service() -> AppResult<()> {
     if AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst) {
         return Ok(());
     }
     let settings = load_capture_settings();
     if settings.api_key.is_empty() {
-        return Err("API 密钥未配置，请在设置中配置".to_string());
+        return Err(AppError::auth("API 密钥未配置，请在设置中配置"));
     }
     set_threshold(settings.max_silent_minutes);
     AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
@@ -724,16 +727,17 @@ pub fn stop_auto_capture_service() {
 }
 
 /// Service function to trigger a single capture
-pub async fn trigger_capture_service() -> Result<(), String> {
+pub async fn trigger_capture_service() -> AppResult<()> {
     capture_and_store().await.map_err(|e| {
-        tracing::error!("Trigger capture failed: {}", e);
-        let kind = classify_screenshot_error(&e);
-        get_screenshot_error_message(&kind, &e)
+        let err_str = e.to_string();
+        tracing::error!("Trigger capture failed: {}", err_str);
+        let kind = classify_screenshot_error(&err_str);
+        AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
     })
 }
 
 /// Service function to take a screenshot and save to disk (no AI analysis)
-pub async fn take_screenshot_service() -> Result<String, String> {
+pub async fn take_screenshot_service() -> AppResult<String> {
     let settings = load_capture_settings();
     let capture_mode = settings
         .capture_mode
@@ -741,14 +745,15 @@ pub async fn take_screenshot_service() -> Result<String, String> {
         .unwrap_or(CaptureMode::Primary);
     let result =
         capture_screen_with_mode(capture_mode, settings.selected_monitor_index).map_err(|e| {
-            tracing::error!("Screenshot capture failed: {}", e);
-            let kind = classify_screenshot_error(&e);
-            get_screenshot_error_message(&kind, &e)
+            let err_str = e.to_string();
+            tracing::error!("Screenshot capture failed: {}", err_str);
+            let kind = classify_screenshot_error(&err_str);
+            AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
         })?;
     let image_base64 = result.0;
     let screenshot_path = save_screenshot(&image_base64).ok_or_else(|| {
         tracing::error!("Failed to save screenshot to disk");
-        "截图保存失败".to_string()
+        AppError::screenshot("截图保存失败")
     })?;
     tracing::info!("Screenshot saved for preview: {}", screenshot_path);
     // Return the path with monitor info
@@ -766,7 +771,7 @@ pub fn get_default_analysis_prompt_service() -> String {
 }
 
 /// Get quality filter stats
-pub async fn get_quality_filter_stats_service() -> Result<QualityFilterStats, String> {
+pub async fn get_quality_filter_stats_service() -> AppResult<QualityFilterStats> {
     let settings = memory_storage::get_settings_sync()?;
     Ok(QualityFilterStats {
         filtered_today: get_filtered_today(),
@@ -776,28 +781,28 @@ pub async fn get_quality_filter_stats_service() -> Result<QualityFilterStats, St
 }
 
 /// Reset quality filter counter
-pub async fn reset_quality_filter_counter_service() -> Result<(), String> {
+pub async fn reset_quality_filter_counter_service() -> AppResult<()> {
     reset_filtered_count();
     Ok(())
 }
 
 /// Reanalyze a single record
-pub async fn reanalyze_record_service(record_id: i64) -> Result<ScreenAnalysis, String> {
+pub async fn reanalyze_record_service(record_id: i64) -> AppResult<ScreenAnalysis> {
     let record = memory_storage::get_record_by_id_sync(record_id)?;
     let screenshot_path = record
         .screenshot_path
         .as_ref()
-        .ok_or_else(|| "Record has no screenshot".to_string())?;
-    let image_data = std::fs::read(screenshot_path).map_err(|e| e.to_string())?;
+        .ok_or_else(|| AppError::validation("Record has no screenshot"))?;
+    let image_data = std::fs::read(screenshot_path)?;
     let image_base64 =
         base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
     let settings = load_capture_settings();
     if settings.api_key.is_empty() {
-        return Err("API Key 未配置，请先在设置中配置 API Key".to_string());
+        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
     }
     tracing::info!("Reanalyzing record {}", record_id);
     let analysis = analyze_screen(&settings, &image_base64).await?;
-    let content_json = serde_json::to_string(&analysis).map_err(|e| e.to_string())?;
+    let content_json = serde_json::to_string(&analysis)?;
     memory_storage::update_record_content_sync(record_id, &content_json)?;
     tracing::info!(
         "Reanalysis complete for record {}: {}",
@@ -808,7 +813,7 @@ pub async fn reanalyze_record_service(record_id: i64) -> Result<ScreenAnalysis, 
 }
 
 /// Reanalyze all records with screenshots from today
-pub async fn reanalyze_today_records_service() -> Result<ReanalyzeResult, String> {
+pub async fn reanalyze_today_records_service() -> AppResult<ReanalyzeResult> {
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
     let records = memory_storage::get_records_by_date_range_sync(today.clone(), today)?;
     let records_with_screenshots: Vec<_> = records
@@ -826,7 +831,7 @@ pub async fn reanalyze_today_records_service() -> Result<ReanalyzeResult, String
     }
     let settings = load_capture_settings();
     if settings.api_key.is_empty() {
-        return Err("API Key 未配置，请先在设置中配置 API Key".to_string());
+        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
     }
     let mut success = 0;
     let mut failed = 0;
@@ -887,12 +892,12 @@ pub async fn reanalyze_today_records_service() -> Result<ReanalyzeResult, String
 }
 
 /// Reanalyze all records with screenshots for a specific date
-pub async fn reanalyze_records_by_date_service(date: String) -> Result<ReanalyzeResult, String> {
+pub async fn reanalyze_records_by_date_service(date: String) -> AppResult<ReanalyzeResult> {
     if chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").is_err() {
-        return Err(format!(
+        return Err(AppError::validation(format!(
             "Invalid date format: {}. Expected YYYY-MM-DD",
             date
-        ));
+        )));
     }
     let records = memory_storage::get_records_by_date_range_sync(date.clone(), date.clone())?;
     let records_with_screenshots: Vec<_> = records
@@ -910,7 +915,7 @@ pub async fn reanalyze_records_by_date_service(date: String) -> Result<Reanalyze
     }
     let settings = load_capture_settings();
     if settings.api_key.is_empty() {
-        return Err("API Key 未配置，请先在设置中配置 API Key".to_string());
+        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
     }
     let mut success = 0;
     let mut failed = 0;
@@ -981,21 +986,21 @@ pub async fn reanalyze_records_by_date_service(date: String) -> Result<Reanalyze
 pub async fn retry_screenshot_analysis_service(
     screenshot_path: &str,
     record_id: i64,
-) -> Result<(), String> {
+) -> AppResult<()> {
     tracing::info!(
         "Retrying screenshot analysis for record {} from {}",
         record_id,
         screenshot_path
     );
-    let image_data = std::fs::read(screenshot_path).map_err(|e| e.to_string())?;
+    let image_data = std::fs::read(screenshot_path)?;
     let image_base64 =
         base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
     let settings = load_capture_settings();
     if settings.api_base_url.is_empty() {
-        return Err("API base URL not configured".to_string());
+        return Err(AppError::auth("API base URL not configured"));
     }
     let analysis = analyze_screen(&settings, &image_base64).await?;
-    let content = serde_json::to_string(&analysis).map_err(|e| e.to_string())?;
+    let content = serde_json::to_string(&analysis)?;
     memory_storage::update_record_content_sync(record_id, &content)?;
     tracing::info!(
         "Successfully updated record {} with analysis result",
@@ -1015,11 +1020,11 @@ pub fn get_work_time_status_service() -> crate::work_time::WorkTimeStatus {
 // Internal Capture Logic
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn capture_and_store() -> Result<(), String> {
+async fn capture_and_store() -> AppResult<()> {
     let settings = load_capture_settings();
 
     if settings.api_key.is_empty() {
-        return Err("API 密钥未配置，请在设置中配置".to_string());
+        return Err(AppError::auth("API 密钥未配置，请在设置中配置"));
     }
 
     let active_window = get_active_window();
@@ -1045,9 +1050,10 @@ async fn capture_and_store() -> Result<(), String> {
 
     let (image_base64, monitor_info) =
         capture_screen_with_mode(capture_mode, settings.selected_monitor_index).map_err(|e| {
-            tracing::error!("Screenshot capture failed: {}", e);
-            let kind = classify_screenshot_error(&e);
-            get_screenshot_error_message(&kind, &e)
+            let err_str = e.to_string();
+            tracing::error!("Screenshot capture failed: {}", err_str);
+            let kind = classify_screenshot_error(&err_str);
+            AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
         })?;
 
     let fingerprint = compute_fingerprint(&image_base64)?;
