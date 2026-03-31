@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-31
-> 当前版本: v4.6.1 ✅ 已发布
+> 当前版本: v4.6.2 ✅ 已发布
 > 项目状态: 507 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
@@ -66,9 +66,8 @@
 - Settings 过度 clone 优化 (Arc<Settings> 或缓存机制) → v4.7.0 规划中
 - report_service 5 个报告生成函数结构相似，可提取通用模板方法
 - i18n: Dashboard/Sidebar/ReportDropdown 仍有 15+ 硬编码中文字符串
-- i18n: 6 个组件硬编码 'zh-CN' 日期格式（尚未使用 dateFormat.ts）
 
-### v4.6.2: Bug 修复 & DRY 收窄 🔄 进行中
+### v4.6.2: Bug 修复 & DRY 收窄 ✅ 已完成
 - ✅ 修复 TimelineWidget 动态 Tailwind 类名 (bg-purple-${n}) 未被 JIT 编译的 bug
 - ✅ 修复 SearchPanel 虚拟滚动 count 非响应式 (改为 getter 函数)
 - ✅ 提取共享 dateFormat.ts 工具函数，7 个组件消除硬编码 'zh-CN'
@@ -256,6 +255,11 @@
 
 ## 最近 10 个已完成版本摘要
 
+### v4.6.2 — Bug 修复 & DRY 收窄 ✅
+- 修复 TimelineWidget 动态 Tailwind 类名 (bg-purple-${n}) 未被 JIT 编译的 bug
+- 修复 SearchPanel 虚拟滚动 count 非响应式 (改为 getter 函数)
+- 提取共享 dateFormat.ts，合并 tagColors.ts，消除 capture_commands 重复
+
 ### v4.6.0 — AppResult 迁移完成 & 消除重复 ✅
 - 消除 session_manager/session_service ~560 行重复代码
 - 全部业务逻辑函数迁移至 AppResult (~120+ 函数)
@@ -297,33 +301,14 @@
 - 使用 Tauri 异步运行时替代 tokio::spawn
 - 解决 Windows 便携版 "there is no reactor running" 启动崩溃问题（issue #84）
 
-### v4.3.4 — Migration 幂等性修复 ✅
-- 移除 batch SQL 中 settings 表的重复 `ALTER TABLE ADD COLUMN` 语句
-- 解决旧版本数据库迁移时出现的 "duplicate column name: summary_model_name" 错误（issue #83）
-
-### v4.3.3 — 代码质量与文档同步 ✅
-- Rust clippy 无警告通过，代码格式检查通过
-- README 与代码功能同步（移除已删除的 GitHub integration 描述）
-- 错误处理与日志链路审查完成，未发现高风险问题
-
-### v4.3.2 — Migration Duplicate Column 修复 ✅
-- 移除 batch SQL 中重复的 `ALTER TABLE records ADD COLUMN` 语句
-- 将扩展列定义移至 `CREATE TABLE IF NOT EXISTS records` 避免二次添加
-- 解决旧版本数据库迁移时出现的 "duplicate column name: monitor_info" 错误（issue #82）
-
-### v4.3.1 — Migration 幂等性修复 ✅
-- 扩展 v4.2.2 的 sessions.date 修复到 records 和 settings 表的所有扩展列
-- 添加幂等的列添加辅助函数，优雅处理 "duplicate column name" 错误
-- 解决旧版本数据库升级时的迁移失败问题（issue #81）
-
-### v4.3.0 — AI Settings 模板导入/导出 ✅
-- 完成 AISettings 模板导入/导出功能
-- 使用 Tauri 文件对话框实现模板文件的保存和加载
-- 新增 i18n 国际化支持（en.json, zh-CN.json）
-
-### v4.2.x - v4.1.x — 维护版本集合 ✅
-- v4.2.0: HistoryViewer 虚拟滚动 (UX-012)，@tanstack/vue-virtual 实现
-- v4.1.1: Timeline 时区转换错误处理修复 + Tailwind CSS v4 升级
+### v4.3.4 及更早版本 ✅
+- v4.3.4: Migration 幂等性修复 (issue #83)
+- v4.3.3: 代码质量与文档同步
+- v4.3.2: Migration Duplicate Column 修复 (issue #82)
+- v4.3.1: Migration 幂等性修复 (issue #81)
+- v4.3.0: AI Settings 模板导入/导出
+- v4.2.x - v4.1.x: HistoryViewer 虚拟滚动、Tailwind CSS v4 升级等
+- 详见 [Releases](https://github.com/qpzm7903/dailyLogger/releases)
 
 ---
 
