@@ -47,32 +47,6 @@ impl BackupInterval {
     }
 }
 
-/// Check if auto backup is enabled in settings
-pub fn is_auto_backup_enabled() -> bool {
-    match get_settings_sync() {
-        Ok(settings) => settings.auto_backup_enabled.unwrap_or(false),
-        Err(_) => false,
-    }
-}
-
-/// Get auto backup interval from settings
-pub fn get_auto_backup_interval() -> BackupInterval {
-    match get_settings_sync() {
-        Ok(settings) => {
-            BackupInterval::from_str(settings.auto_backup_interval.as_deref().unwrap_or("daily"))
-        }
-        Err(_) => BackupInterval::Daily,
-    }
-}
-
-/// Get auto backup retention count from settings
-pub fn get_auto_backup_retention() -> usize {
-    match get_settings_sync() {
-        Ok(settings) => settings.auto_backup_retention.unwrap_or(5).clamp(3, 20) as usize,
-        Err(_) => 5,
-    }
-}
-
 /// Check if backup should run based on last backup time and interval
 pub fn should_run_backup_now() -> bool {
     let settings = match get_settings_sync() {

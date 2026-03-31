@@ -360,51 +360,80 @@ fn parse_window_patterns(json: Option<&str>) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Extract capture-related fields from a Settings reference into CaptureSettings.
+/// Shared by both `load_capture_settings()` and `load_capture_settings_from_arc()`.
+fn capture_settings_from_settings(s: &crate::memory_storage::Settings) -> CaptureSettings {
+    let custom_headers = if let Some(ref headers_json) = s.custom_headers {
+        if !headers_json.is_empty() {
+            serde_json::from_str::<Vec<crate::memory_storage::CustomHeader>>(headers_json)
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        }
+    } else {
+        Vec::new()
+    };
+    CaptureSettings {
+        api_base_url: s.api_base_url.clone().unwrap_or_default(),
+        api_key: s.api_key.clone().unwrap_or_default(),
+        model_name: s.model_name.clone().unwrap_or_else(|| "gpt-4o".to_string()),
+        screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
+        analysis_prompt: s.analysis_prompt.clone(),
+        change_threshold: s.change_threshold.unwrap_or(3) as f64,
+        max_silent_minutes: s.max_silent_minutes.unwrap_or(30) as u64,
+        window_whitelist: parse_window_patterns(s.window_whitelist.as_deref()),
+        window_blacklist: parse_window_patterns(s.window_blacklist.as_deref()),
+        use_whitelist_only: s.use_whitelist_only.unwrap_or(false),
+        capture_mode: s
+            .capture_mode
+            .clone()
+            .unwrap_or_else(|| "primary".to_string()),
+        selected_monitor_index: s.selected_monitor_index.unwrap_or(0) as usize,
+        capture_only_mode: s.capture_only_mode.unwrap_or(false),
+        custom_headers,
+        quality_filter_enabled: s.quality_filter_enabled.unwrap_or(true),
+        quality_filter_threshold: s.quality_filter_threshold.unwrap_or(0.3),
+        proxy_enabled: s.proxy_enabled.unwrap_or(false),
+        proxy_host: s.proxy_host.clone(),
+        proxy_port: s.proxy_port,
+        proxy_username: s.proxy_username.clone(),
+        proxy_password: s.proxy_password.clone(),
+    }
+}
+
 pub fn load_capture_settings() -> CaptureSettings {
     match memory_storage::get_settings_sync() {
-        Ok(arc) => {
-            // Dereference Arc and clone — we extract most fields anyway,
-            // so one struct clone is cheaper than many individual .clone() calls.
-            let s = &*arc;
-            let custom_headers = if let Some(ref headers_json) = s.custom_headers {
-                if !headers_json.is_empty() {
-                    serde_json::from_str::<Vec<crate::memory_storage::CustomHeader>>(headers_json)
-                        .unwrap_or_default()
-                } else {
-                    Vec::new()
-                }
-            } else {
-                Vec::new()
-            };
-            CaptureSettings {
-                api_base_url: s.api_base_url.clone().unwrap_or_default(),
-                api_key: s.api_key.clone().unwrap_or_default(),
-                model_name: s.model_name.clone().unwrap_or_else(|| "gpt-4o".to_string()),
-                screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
-                analysis_prompt: s.analysis_prompt.clone(),
-                change_threshold: s.change_threshold.unwrap_or(3) as f64,
-                max_silent_minutes: s.max_silent_minutes.unwrap_or(30) as u64,
-                window_whitelist: parse_window_patterns(s.window_whitelist.as_deref()),
-                window_blacklist: parse_window_patterns(s.window_blacklist.as_deref()),
-                use_whitelist_only: s.use_whitelist_only.unwrap_or(false),
-                capture_mode: s
-                    .capture_mode
-                    .clone()
-                    .unwrap_or_else(|| "primary".to_string()),
-                selected_monitor_index: s.selected_monitor_index.unwrap_or(0) as usize,
-                capture_only_mode: s.capture_only_mode.unwrap_or(false),
-                custom_headers,
-                quality_filter_enabled: s.quality_filter_enabled.unwrap_or(true),
-                quality_filter_threshold: s.quality_filter_threshold.unwrap_or(0.3),
-                proxy_enabled: s.proxy_enabled.unwrap_or(false),
-                proxy_host: s.proxy_host.clone(),
-                proxy_port: s.proxy_port,
-                proxy_username: s.proxy_username.clone(),
-                proxy_password: s.proxy_password.clone(),
-            }
-        }
+        Ok(arc) => capture_settings_from_settings(&arc),
         Err(_) => CaptureSettings::default(),
     }
+}
+
+/// Load capture settings from a pre-fetched Arc<Settings>, avoiding an extra cache read.
+pub fn load_capture_settings_from_arc(
+    arc: &std::sync::Arc<crate::memory_storage::Settings>,
+) -> CaptureSettings {
+    capture_settings_from_settings(arc)
+}
+
+/// Load work time settings from a pre-fetched Arc<Settings>, avoiding an extra cache read.
+pub fn load_work_time_settings_from_arc(
+    arc: &std::sync::Arc<crate::memory_storage::Settings>,
+) -> WorkTimeSettings {
+    WorkTimeSettings {
+        auto_detect_work_time: arc.auto_detect_work_time.unwrap_or(true),
+        use_custom_work_time: arc.use_custom_work_time.unwrap_or(false),
+        custom_work_time_start: arc.custom_work_time_start.clone(),
+        custom_work_time_end: arc.custom_work_time_end.clone(),
+        learned_work_time: arc.learned_work_time.clone(),
+    }
+}
+
+/// Check if current time is within work hours using a pre-fetched Arc<Settings>.
+pub fn should_capture_by_work_time_from_arc(
+    arc: &std::sync::Arc<crate::memory_storage::Settings>,
+) -> bool {
+    let settings = load_work_time_settings_from_arc(arc);
+    is_in_work_time(&settings)
 }
 
 pub fn load_work_time_settings() -> WorkTimeSettings {
@@ -436,23 +465,27 @@ pub fn should_capture_by_work_time() -> bool {
 /// Evaluate and adjust the silent threshold if needed.
 /// Returns Some((old_threshold, new_threshold)) if an adjustment was made, None otherwise.
 pub fn evaluate_and_adjust_threshold() -> Option<(u64, u64)> {
-    if let Ok(settings) = memory_storage::get_settings_sync() {
-        if !settings.auto_adjust_silent.unwrap_or(true) {
-            tracing::debug!("Auto-adjust silent threshold is disabled by user");
-            return None;
-        }
-        if let Some(paused_until) = &settings.silent_adjustment_paused_until {
-            if let Ok(paused_time) = chrono::DateTime::parse_from_rfc3339(paused_until) {
-                if paused_time > chrono::Utc::now() {
-                    tracing::debug!(
-                        "Silent threshold adjustment is paused until {}",
-                        paused_until
-                    );
-                    return None;
-                }
+    let settings = match memory_storage::get_settings_sync() {
+        Ok(s) => s,
+        Err(_) => return None,
+    };
+
+    if !settings.auto_adjust_silent.unwrap_or(true) {
+        tracing::debug!("Auto-adjust silent threshold is disabled by user");
+        return None;
+    }
+    if let Some(paused_until) = &settings.silent_adjustment_paused_until {
+        if let Ok(paused_time) = chrono::DateTime::parse_from_rfc3339(paused_until) {
+            if paused_time > chrono::Utc::now() {
+                tracing::debug!(
+                    "Silent threshold adjustment is paused until {}",
+                    paused_until
+                );
+                return None;
             }
         }
     }
+
     if !has_sufficient_data() {
         tracing::debug!("Insufficient capture data for threshold adjustment");
         return None;
@@ -465,12 +498,11 @@ pub fn evaluate_and_adjust_threshold() -> Option<(u64, u64)> {
     );
     if new_threshold != old_threshold {
         set_threshold(new_threshold);
-        if let Ok(arc) = memory_storage::get_settings_sync() {
-            let mut settings = (*arc).clone();
-            settings.max_silent_minutes = Some(new_threshold as i32);
-            if let Err(e) = memory_storage::save_settings_sync(&settings) {
-                tracing::error!("Failed to save adjusted threshold: {}", e);
-            }
+        // Reuse the same Arc for the mutation save — avoids a second get_settings_sync() call
+        let mut settings_mut = (*settings).clone();
+        settings_mut.max_silent_minutes = Some(new_threshold as i32);
+        if let Err(e) = memory_storage::save_settings_sync(&settings_mut) {
+            tracing::error!("Failed to save adjusted threshold: {}", e);
         }
         tracing::info!(
             "Silent threshold adjusted from {} to {} minutes",
@@ -735,7 +767,22 @@ pub fn stop_auto_capture_service() {
 
 /// Service function to trigger a single capture
 pub async fn trigger_capture_service() -> AppResult<()> {
-    capture_and_store().await.map_err(|e| {
+    let settings = load_capture_settings();
+    capture_and_store_inner(settings).await.map_err(|e| {
+        let err_str = e.to_string();
+        tracing::error!("Trigger capture failed: {}", err_str);
+        let kind = classify_screenshot_error(&err_str);
+        AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
+    })
+}
+
+/// Service function to trigger a single capture using a pre-fetched Arc<Settings>.
+/// Avoids an extra `get_settings_sync()` call when the caller already has the Arc.
+pub async fn trigger_capture_with_arc(
+    arc: std::sync::Arc<crate::memory_storage::Settings>,
+) -> AppResult<()> {
+    let settings = load_capture_settings_from_arc(&arc);
+    capture_and_store_inner(settings).await.map_err(|e| {
         let err_str = e.to_string();
         tracing::error!("Trigger capture failed: {}", err_str);
         let kind = classify_screenshot_error(&err_str);
@@ -1027,9 +1074,7 @@ pub fn get_work_time_status_service() -> crate::work_time::WorkTimeStatus {
 // Internal Capture Logic
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn capture_and_store() -> AppResult<()> {
-    let settings = load_capture_settings();
-
+async fn capture_and_store_inner(settings: CaptureSettings) -> AppResult<()> {
     if settings.api_key.is_empty() {
         return Err(AppError::auth("API 密钥未配置，请在设置中配置"));
     }

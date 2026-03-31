@@ -14,8 +14,9 @@ use crate::services::capture_service::{
     get_auto_capture_status_service, get_default_analysis_prompt_service,
     get_quality_filter_stats_service, get_work_time_status_service, reanalyze_record_service,
     reanalyze_records_by_date_service, reanalyze_today_records_service,
-    reset_quality_filter_counter_service, start_auto_capture_service, stop_auto_capture_service,
-    take_screenshot_service, trigger_capture_service, CaptureSettings, QualityFilterStats,
+    reset_quality_filter_counter_service, should_capture_by_work_time_from_arc,
+    start_auto_capture_service, stop_auto_capture_service, take_screenshot_service,
+    trigger_capture_service, trigger_capture_with_arc, CaptureSettings, QualityFilterStats,
     ReanalyzeResult, ScreenAnalysis,
 };
 use crate::work_time::WorkTimeStatus;
@@ -60,14 +61,16 @@ pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
 
     // Spawn the capture loop (Tauri-specific, remains in command layer)
     tokio::spawn(async move {
-        // Execute immediately on start
-        if should_capture_by_work_time_internal() {
-            if let Err(e) = trigger_capture_service().await {
-                tracing::error!("Initial capture failed: {}", e);
+        // Execute immediately on start — single Arc<Settings> read for both work time + capture
+        if let Ok(arc) = crate::memory_storage::get_settings_sync() {
+            if should_capture_by_work_time_from_arc(&arc) {
+                if let Err(e) = trigger_capture_with_arc(arc).await {
+                    tracing::error!("Initial capture failed: {}", e);
+                }
+                record_work_time_capture_internal();
+            } else {
+                tracing::debug!("Outside work time, skipping initial capture");
             }
-            record_work_time_capture_internal();
-        } else {
-            tracing::debug!("Outside work time, skipping initial capture");
         }
 
         loop {
@@ -78,9 +81,13 @@ pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
                 break;
             }
 
-            if !should_capture_by_work_time_internal() {
-                tracing::debug!("Outside work time, skipping capture");
-                continue;
+            // Single Arc<Settings> read for work time check + capture
+            if let Ok(arc) = crate::memory_storage::get_settings_sync() {
+                if !should_capture_by_work_time_from_arc(&arc) {
+                    tracing::debug!("Outside work time, skipping capture");
+                    continue;
+                }
+                drop(arc); // Release Arc before capture (capture reads its own Arc)
             }
 
             if let Err(e) = trigger_capture_service().await {
@@ -217,19 +224,8 @@ pub async fn reset_quality_filter_counter() -> Result<(), String> {
 // Internal helpers needed by start_auto_capture command
 // ═══════════════════════════════════════════════════════════════════════════════
 
-use crate::work_time::WorkTimeSettings;
-
 fn load_capture_settings_internal() -> CaptureSettings {
     crate::services::capture_service::load_capture_settings()
-}
-
-fn load_work_time_settings_internal() -> WorkTimeSettings {
-    crate::services::capture_service::load_work_time_settings()
-}
-
-fn should_capture_by_work_time_internal() -> bool {
-    let settings = load_work_time_settings_internal();
-    crate::work_time::is_in_work_time(&settings)
 }
 
 fn record_work_time_capture_internal() {

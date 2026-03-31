@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getVersion } from '@tauri-apps/api/app'
+import { useI18n } from 'vue-i18n'
 import {
   FileText,
   History,
@@ -92,6 +93,7 @@ const emit = defineEmits<{
 }>()
 
 const { activeModal } = useModal()
+const { t } = useI18n()
 
 // Collapsed state
 const isCollapsed = ref(false)
