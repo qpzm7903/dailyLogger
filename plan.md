@@ -1,14 +1,14 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-31
-> 当前版本: v4.4.3 ✅ (已发布)
-> 项目状态: 507 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+> 当前版本: v4.5.0 ✅ (已发布)
+> 项目状态: 512 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
 
 ## 当前进行中的工作
 
-### v4.5.0: Rust 错误类型统一 (AppError 迁移)
+### v4.5.0: Rust 错误类型统一 (AppError 迁移) ✅ 已完成
 - ✅ 添加 Mutex/RwLock `PoisonError` → `AppError` 的 `From` 实现
 - ✅ 添加 `From<AppError> for String` 实现 (IPC 边界转换)
 - ✅ session_service 全量迁移到 AppResult (6 函数)
@@ -19,7 +19,7 @@
 - ✅ synthesis 模块迁移 (最大模块, ~30 函数)
 - ✅ session_manager 迁移
 - ✅ memory_storage (records, tags, mod) 迁移 (~20 函数)
-- ⬜ 命令层统一使用 .map_err(|e| e.to_string()) 模式
+- ✅ 命令层统一使用 .map_err(|e| e.to_string()) 模式 (15 文件)
 
 ### v4.4.3: Bug 修复 (issues #89, #90, #91) ✅ 已发布
 - ✅ 修复 legacy 数据库 sessions 表未创建导致 start_time 列缺失 (issue #89)
@@ -218,6 +218,11 @@
 ---
 
 ## 最近 10 个已完成版本摘要
+
+### v4.5.0 — Rust 错误类型统一 (AppError 迁移) ✅
+- 全量迁移至 AppError/AppResult 结构化错误体系 (~100+ 函数)
+- 命令层统一 `.map_err(|e| e.to_string())` 模式，消除冗余 format! 包装
+- 512 Rust + 1226 前端测试全部通过
 
 ### v4.4.3 — UI 与数据库迁移修复 ✅
 - 修复 legacy 数据库 sessions 表未创建导致启动报错 "no such column: s.start_time" (issue #89)

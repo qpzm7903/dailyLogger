@@ -223,7 +223,12 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.4.3
+**最新版本**: v4.5.0
+- Rust 错误类型统一：全量迁移至 AppError/AppResult 结构化错误体系，~100+ 函数
+- 命令层统一使用 `.map_err(|e| e.to_string())` 模式，消除冗余 format! 包装
+- 512 Rust + 1226 前端测试全部通过
+
+**v4.4.3**:
 - 修复 legacy 数据库 sessions 表未创建导致启动报错 (issue #89)
 - 修复 ReportDropdown 被 backdrop-blur stacking context 遮挡 (issue #90)
 - 修复 Settings 页面输入框和按钮颜色异常 (issue #91)
