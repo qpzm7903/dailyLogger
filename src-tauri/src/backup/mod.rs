@@ -155,8 +155,7 @@ fn create_backup_internal(target_dir: &Path) -> AppResult<BackupResult> {
         // Flush WAL journal before copying
         let _ = conn.execute_batch("PRAGMA wal_checkpoint(FULL)");
 
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))?;
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))?;
 
         // 复制数据库文件（在锁内，防止并发写入导致不一致）
         let db_path = get_db_path();
@@ -604,7 +603,10 @@ mod tests {
 
         let result = get_backup_info_internal(&zip_path);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid backup file"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid backup file"));
     }
 
     #[test]
