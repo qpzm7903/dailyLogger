@@ -767,7 +767,10 @@ pub fn format_records_for_summary(records: &[Record]) -> String {
 
 /// Generate the filename for the daily summary based on settings.
 pub fn generate_summary_filename(settings: &Settings) -> String {
-    let title_format = non_empty_or(settings.summary_title_format.as_deref(), DEFAULT_TITLE_FORMAT);
+    let title_format = non_empty_or(
+        settings.summary_title_format.as_deref(),
+        DEFAULT_TITLE_FORMAT,
+    );
 
     // Replace {date} placeholder and create filename
     let title = format_summary_title(title_format);
@@ -848,7 +851,10 @@ pub fn get_supported_languages() -> Vec<(String, String)> {
 
 /// Generate daily summary filename with language suffix
 pub fn generate_summary_filename_with_lang(settings: &Settings, lang: &str) -> String {
-    let title_format = non_empty_or(settings.summary_title_format.as_deref(), DEFAULT_TITLE_FORMAT);
+    let title_format = non_empty_or(
+        settings.summary_title_format.as_deref(),
+        DEFAULT_TITLE_FORMAT,
+    );
 
     let title = format_summary_title(title_format);
     let suffix = get_language_suffix(lang);
@@ -909,7 +915,8 @@ pub async fn generate_base_daily_summary(
         let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
 
         if let Some(content) = build_session_based_report(&sessions) {
-            let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
+            let prompt_template =
+                non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
             let prompt = prompt_template
                 .replace("{records}", &content)
                 .replace("{github_activity}", "");

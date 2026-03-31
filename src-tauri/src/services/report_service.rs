@@ -114,7 +114,8 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Resul
 
         // SESSION-005: Build session-based report
         if let Some(content) = build_session_based_report(&sessions) {
-            let prompt_template = non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
+            let prompt_template =
+                non_empty_or(settings.summary_prompt.as_deref(), DEFAULT_SUMMARY_PROMPT);
             let prompt = prompt_template
                 .replace("{records}", &content)
                 .replace("{github_activity}", "");
@@ -236,7 +237,10 @@ pub async fn generate_weekly_report_service() -> Result<String, String> {
     }
 
     let records_text = format_records_for_summary(&records);
-    let prompt_template = non_empty_or(settings.weekly_report_prompt.as_deref(), DEFAULT_WEEKLY_REPORT_PROMPT);
+    let prompt_template = non_empty_or(
+        settings.weekly_report_prompt.as_deref(),
+        DEFAULT_WEEKLY_REPORT_PROMPT,
+    );
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary = crate::synthesis::call_llm_api_with_retry(
@@ -283,7 +287,10 @@ pub async fn generate_monthly_report_service() -> Result<String, String> {
     }
 
     let records_text = format_records_by_week(&records);
-    let prompt_template = non_empty_or(settings.monthly_report_prompt.as_deref(), DEFAULT_MONTHLY_REPORT_PROMPT);
+    let prompt_template = non_empty_or(
+        settings.monthly_report_prompt.as_deref(),
+        DEFAULT_MONTHLY_REPORT_PROMPT,
+    );
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary = crate::synthesis::call_llm_api_with_retry(
@@ -344,7 +351,10 @@ pub async fn generate_custom_report_service(
         format_records_for_summary(&records)
     };
 
-    let prompt_template = non_empty_or(settings.custom_report_prompt.as_deref(), DEFAULT_CUSTOM_REPORT_PROMPT);
+    let prompt_template = non_empty_or(
+        settings.custom_report_prompt.as_deref(),
+        DEFAULT_CUSTOM_REPORT_PROMPT,
+    );
     let prompt = prompt_template.replace("{records}", &records_text);
 
     let summary = crate::synthesis::call_llm_api_with_retry(
@@ -432,7 +442,10 @@ pub async fn compare_reports_service(
         format_records_for_summary(&records_b)
     };
 
-    let prompt_template = non_empty_or(settings.comparison_report_prompt.as_deref(), DEFAULT_COMPARISON_REPORT_PROMPT);
+    let prompt_template = non_empty_or(
+        settings.comparison_report_prompt.as_deref(),
+        DEFAULT_COMPARISON_REPORT_PROMPT,
+    );
     let prompt = prompt_template
         .replace("{records_a}", &records_text_a)
         .replace("{records_b}", &records_text_b)
