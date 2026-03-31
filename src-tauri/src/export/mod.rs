@@ -1,8 +1,8 @@
+use crate::errors::AppResult;
+use crate::memory_storage::{self, Record};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::command;
-
-use crate::memory_storage::{self, Record};
 
 /// Export request parameters
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,11 +31,7 @@ pub fn get_export_dir() -> PathBuf {
 }
 
 /// Export records as JSON string
-pub fn export_to_json(
-    records: &[Record],
-    start_date: &str,
-    end_date: &str,
-) -> Result<String, String> {
+pub fn export_to_json(records: &[Record], start_date: &str, end_date: &str) -> AppResult<String> {
     let exported_at = chrono::Utc::now().to_rfc3339();
 
     let json_records: Vec<serde_json::Value> = records
@@ -61,7 +57,7 @@ pub fn export_to_json(
         "records": json_records,
     });
 
-    serde_json::to_string_pretty(&output).map_err(|e| e.to_string())
+    Ok(serde_json::to_string_pretty(&output)?)
 }
 
 /// Default markdown export template
@@ -140,7 +136,7 @@ pub fn export_to_markdown(
     records: &[Record],
     start_date: &str,
     end_date: &str,
-) -> Result<String, String> {
+) -> AppResult<String> {
     export_to_markdown_with_template(records, start_date, end_date, None)
 }
 
@@ -150,7 +146,7 @@ pub fn export_to_markdown_with_template(
     start_date: &str,
     end_date: &str,
     custom_template: Option<&str>,
-) -> Result<String, String> {
+) -> AppResult<String> {
     let exported_at = chrono::Local::now().format("%Y-%m-%d %H:%M").to_string();
     let mut md = String::new();
 
@@ -297,16 +293,19 @@ pub async fn open_export_dir(path: String) -> Result<(), String> {
 /// Tauri command: export records to JSON or Markdown file
 #[command]
 pub async fn export_records(request: ExportRequest) -> Result<ExportResult, String> {
-    let records = memory_storage::get_records_for_export(&request.start_date, &request.end_date)?;
+    let records = memory_storage::get_records_for_export(&request.start_date, &request.end_date)
+        .map_err(|e| e.to_string())?;
 
     let content = match request.format.as_str() {
-        "json" => export_to_json(&records, &request.start_date, &request.end_date)?,
+        "json" => export_to_json(&records, &request.start_date, &request.end_date)
+            .map_err(|e| e.to_string())?,
         "markdown" => export_to_markdown_with_template(
             &records,
             &request.start_date,
             &request.end_date,
             request.custom_template.as_deref(),
-        )?,
+        )
+        .map_err(|e| e.to_string())?,
         _ => return Err(format!("Unsupported export format: {}", request.format)),
     };
 
