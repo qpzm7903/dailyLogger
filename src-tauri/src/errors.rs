@@ -203,6 +203,18 @@ impl From<chrono::ParseError> for AppError {
     }
 }
 
+impl<T> From<std::sync::PoisonError<T>> for AppError {
+    fn from(err: std::sync::PoisonError<T>) -> Self {
+        Self::internal(format!("Lock poisoned: {}", err))
+    }
+}
+
+impl From<AppError> for String {
+    fn from(err: AppError) -> Self {
+        err.to_string()
+    }
+}
+
 // Result type alias for convenience
 pub type AppResult<T> = Result<T, AppError>;
 
@@ -248,5 +260,28 @@ mod tests {
         let json = serde_json::to_string(&err).unwrap();
         assert!(json.contains("database"));
         assert!(json.contains("test error"));
+    }
+
+    #[test]
+    fn test_from_poison_error() {
+        use std::sync::{Arc, Mutex};
+        let lock = Arc::new(Mutex::new(42));
+        // Poison the lock by panicking while holding it
+        let lock_clone = lock.clone();
+        let _ = std::panic::catch_unwind(|| {
+            let _guard = lock_clone.lock().unwrap();
+            panic!("test panic");
+        });
+        // Now trying to lock should give a PoisonError
+        let err: AppError = lock.lock().unwrap_err().into();
+        assert_eq!(err.code, ErrorCode::Internal);
+        assert!(err.message.contains("Lock poisoned"));
+    }
+
+    #[test]
+    fn test_app_error_to_string_conversion() {
+        let err = AppError::database("connection failed");
+        let s: String = err.into();
+        assert_eq!(s, "database: connection failed");
     }
 }

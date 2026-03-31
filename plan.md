@@ -1,14 +1,20 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-31
-> 当前版本: v4.4.2 ✅ (已发布) — v4.4.3 准备中
+> 当前版本: v4.4.3 ✅ (已发布)
 > 项目状态: 507 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
 
 ## 当前进行中的工作
 
-### v4.4.3: Bug 修复 (issues #89, #90, #91) ✅ 已合并待发布
+### v4.5.0: Rust 错误类型统一 (AppError 迁移)
+- 🔄 添加 Mutex/RwLock `PoisonError` → `AppError` 的 `From` 实现
+- 🔄 添加 `lock_db()` 辅助函数，消除 46 处 lock error 样板代码
+- ⬜ 逐步将服务层从 `Result<_, String>` 迁移到 `AppResult<T>`
+- ⬜ 命令层保持 `Result<_, String>` 作为 IPC 边界转换
+
+### v4.4.3: Bug 修复 (issues #89, #90, #91) ✅ 已发布
 - ✅ 修复 legacy 数据库 sessions 表未创建导致 start_time 列缺失 (issue #89)
 - ✅ get_statistics rangeType 参数已修复 (commit 21a40b5, issue #89)
 - ✅ 工作流结果不显示 — 同 root cause 为 sessions 表问题 (issue #89)
@@ -21,12 +27,11 @@
 - ✅ OnboardingModal 全面 i18n 国际化 (中/英双语)
 - ✅ 7 个核心 Modal 添加 ARIA dialog 角色和 Escape 键关闭
 - ✅ 提取 BaseModal 共享组件 (focus trap, ARIA, Escape, backdrop)
-- ✅ 12 个 Modal 迁移到 BaseModal (OnboardingModal 因特殊样式保留原实现)
+- ✅ 13 个 Modal 迁移到 BaseModal (含 OnboardingModal)
 
 ### 未来优化方向 (已识别，待排期)
-- OnboardingModal 迁移到 BaseModal (需支持 surface-0 背景)
-- Rust 错误类型统一 (AppError vs String)
-- Settings 过度 clone 优化 (Arc<Settings>)
+- Settings 过度 clone 优化 (Arc<Settings> 或缓存机制)
+- session_manager / session_service 重复逻辑消除
 
 ---
 
@@ -207,7 +212,7 @@
 
 ## 最近 10 个已完成版本摘要
 
-### v4.4.3 — UI 与数据库迁移修复 ✅ (待发布)
+### v4.4.3 — UI 与数据库迁移修复 ✅
 - 修复 legacy 数据库 sessions 表未创建导致启动报错 "no such column: s.start_time" (issue #89)
 - 修复 ReportDropdown 被 backdrop-blur stacking context 遮挡 (issue #90)
 - 修复 Settings 页面 bg-darker → bg-[var(--color-surface-0)] 颜色问题 (issue #91)
