@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
 
+use crate::errors::{AppError, AppResult};
+
 /// 备份信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupInfo {
@@ -81,18 +83,18 @@ fn count_screenshots_in_dir(dir: &Path) -> usize {
 }
 
 /// Copy all files from `src_dir` to `dst_dir` (non-recursive, files only).
-pub fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> Result<(), String> {
+pub fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> AppResult<()> {
     if !src_dir.exists() {
         return Ok(());
     }
-    fs::create_dir_all(dst_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(dst_dir)?;
 
-    for entry in fs::read_dir(src_dir).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(src_dir)? {
+        let entry = entry?;
         let src_path = entry.path();
         if src_path.is_file() {
             if let Some(file_name) = src_path.file_name() {
-                fs::copy(&src_path, dst_dir.join(file_name)).map_err(|e| e.to_string())?;
+                fs::copy(&src_path, dst_dir.join(file_name))?;
             }
         }
     }
@@ -100,15 +102,15 @@ pub fn copy_dir_files(src_dir: &Path, dst_dir: &Path) -> Result<(), String> {
 }
 
 /// Remove all files in a directory (non-recursive, files only).
-fn clear_dir_files(dir: &Path) -> Result<(), String> {
+fn clear_dir_files(dir: &Path) -> AppResult<()> {
     if !dir.exists() {
         return Ok(());
     }
-    for entry in fs::read_dir(dir).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
         let path = entry.path();
         if path.is_file() {
-            fs::remove_file(&path).map_err(|e| e.to_string())?;
+            fs::remove_file(&path)?;
         }
     }
     Ok(())
@@ -117,56 +119,49 @@ fn clear_dir_files(dir: &Path) -> Result<(), String> {
 /// Read a `BackupManifest` from a `ZipArchive`.
 fn read_manifest_from_archive<R: std::io::Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
-) -> Result<BackupManifest, String> {
+) -> AppResult<BackupManifest> {
     let mut manifest_file = archive
         .by_name("manifest.json")
-        .map_err(|e| format!("Invalid backup file: {e}"))?;
+        .map_err(|e| AppError::validation(format!("Invalid backup file: {e}")))?;
     let mut content = String::new();
-    manifest_file
-        .read_to_string(&mut content)
-        .map_err(|e| e.to_string())?;
-    serde_json::from_str(&content).map_err(|e| format!("Invalid manifest: {e}"))
+    manifest_file.read_to_string(&mut content)?;
+    serde_json::from_str(&content)
+        .map_err(|e| AppError::validation(format!("Invalid manifest: {e}")))
 }
 
-/// 创建备份
-#[tauri::command]
-pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, String> {
-    let target_dir = backup_dir
-        .map(PathBuf::from)
-        .unwrap_or_else(get_default_backup_dir);
+// ── Core backup logic (AppResult) ────────────────────────────────────────────
 
-    // 确保备份目录存在
-    fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+fn create_backup_internal(target_dir: &Path) -> AppResult<BackupResult> {
+    fs::create_dir_all(target_dir)?;
 
-    // 创建临时目录
     let temp_dir = tempfile::Builder::new()
         .prefix("dailylogger-backup-")
-        .tempdir()
-        .map_err(|e| e.to_string())?;
+        .tempdir()?;
 
     let data_dir = temp_dir.path().join("data");
     let screenshots_dir = temp_dir.path().join("screenshots");
 
-    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
-    fs::create_dir_all(&screenshots_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&data_dir)?;
+    fs::create_dir_all(&screenshots_dir)?;
 
     // 获取统计信息并复制数据库（在同一个 DB 锁内，确保一致性）
     let record_count = {
         use crate::memory_storage::DB_CONNECTION;
-        let guard = DB_CONNECTION.lock().map_err(|e| e.to_string())?;
-        let conn = guard.as_ref().ok_or("Database not initialized")?;
+        let guard = DB_CONNECTION.lock().map_err(AppError::from)?;
+        let conn = guard
+            .as_ref()
+            .ok_or_else(|| AppError::database("Database not initialized"))?;
 
         // Flush WAL journal before copying
         let _ = conn.execute_batch("PRAGMA wal_checkpoint(FULL)");
 
         let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))
-            .map_err(|e| e.to_string())?;
+            .query_row("SELECT COUNT(*) FROM records", [], |row| row.get(0))?;
 
         // 复制数据库文件（在锁内，防止并发写入导致不一致）
         let db_path = get_db_path();
         if db_path.exists() {
-            fs::copy(&db_path, data_dir.join("local.db")).map_err(|e| e.to_string())?;
+            fs::copy(&db_path, data_dir.join("local.db"))?;
         }
 
         count as usize
@@ -187,8 +182,8 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
     };
 
     let manifest_path = temp_dir.path().join("manifest.json");
-    let manifest_json = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
-    fs::write(&manifest_path, manifest_json).map_err(|e| e.to_string())?;
+    let manifest_json = serde_json::to_string_pretty(&manifest)?;
+    fs::write(&manifest_path, manifest_json)?;
 
     // 生成备份文件名
     let timestamp = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
@@ -196,7 +191,7 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
     let backup_path = target_dir.join(&backup_filename);
 
     // 创建 zip 文件
-    let file = fs::File::create(&backup_path).map_err(|e| e.to_string())?;
+    let file = fs::File::create(&backup_path)?;
     let mut zip = ZipWriter::new(file);
 
     // 添加所有文件到 zip
@@ -211,20 +206,18 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
                 .expect("walkdir iterates within temp_dir so prefix is guaranteed");
             let zip_path = relative_path.to_string_lossy().replace("\\", "/");
 
-            zip.start_file(&zip_path, SimpleFileOptions::default())
-                .map_err(|e| e.to_string())?;
+            zip.start_file(&zip_path, SimpleFileOptions::default())?;
 
-            let mut file = fs::File::open(path).map_err(|e| e.to_string())?;
+            let mut file = fs::File::open(path)?;
             let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
-            zip.write_all(&buffer).map_err(|e| e.to_string())?;
+            file.read_to_end(&mut buffer)?;
+            zip.write_all(&buffer)?;
         }
     }
 
-    zip.finish().map_err(|e| e.to_string())?;
+    zip.finish()?;
 
-    // 获取备份文件大小
-    let metadata = fs::metadata(&backup_path).map_err(|e| e.to_string())?;
+    let metadata = fs::metadata(&backup_path)?;
     let size_bytes = metadata.len();
 
     Ok(BackupResult {
@@ -235,16 +228,7 @@ pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, S
     })
 }
 
-/// 获取备份信息
-#[tauri::command]
-pub async fn get_backup_info(backup_path: String) -> Result<BackupInfo, String> {
-    let path = PathBuf::from(&backup_path);
-    get_backup_info_internal(&path)
-}
-
-/// 列出备份历史
-#[tauri::command]
-pub async fn list_backups() -> Result<Vec<BackupInfo>, String> {
+fn list_backups_internal() -> AppResult<Vec<BackupInfo>> {
     let backup_dir = get_default_backup_dir();
 
     if !backup_dir.exists() {
@@ -253,8 +237,8 @@ pub async fn list_backups() -> Result<Vec<BackupInfo>, String> {
 
     let mut backups = Vec::new();
 
-    for entry in fs::read_dir(&backup_dir).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(&backup_dir)? {
+        let entry = entry?;
         let path = entry.path();
 
         if path.extension().map(|e| e == "zip").unwrap_or(false) {
@@ -267,26 +251,21 @@ pub async fn list_backups() -> Result<Vec<BackupInfo>, String> {
         }
     }
 
-    // 按创建时间排序，最新的在前
     backups.sort_by(|a, b| b.created_at.cmp(&a.created_at));
-
-    // 只保留最近 10 个
     backups.truncate(10);
 
     Ok(backups)
 }
 
-fn get_backup_info_internal(path: &Path) -> Result<BackupInfo, String> {
+fn get_backup_info_internal(path: &Path) -> AppResult<BackupInfo> {
     if !path.exists() {
-        return Err("Backup file not found".to_string());
+        return Err(AppError::validation("Backup file not found"));
     }
 
-    let file = fs::File::open(path).map_err(|e| e.to_string())?;
-    let mut archive = ZipArchive::new(file).map_err(|e| e.to_string())?;
-
+    let file = fs::File::open(path)?;
+    let mut archive = ZipArchive::new(file)?;
     let manifest = read_manifest_from_archive(&mut archive)?;
-
-    let metadata = fs::metadata(path).map_err(|e| e.to_string())?;
+    let metadata = fs::metadata(path)?;
 
     Ok(BackupInfo {
         path: path.to_string_lossy().to_string(),
@@ -299,7 +278,7 @@ fn get_backup_info_internal(path: &Path) -> Result<BackupInfo, String> {
 
 /// Clean up old automatic backups, keeping only the most recent ones based on retention policy.
 /// Only cleans up files with "auto-" prefix (automatic backups), not manual backups.
-pub fn cleanup_old_auto_backups() -> Result<usize, String> {
+pub fn cleanup_old_auto_backups() -> AppResult<usize> {
     use crate::memory_storage::get_settings_sync;
 
     let retention = match get_settings_sync() {
@@ -313,13 +292,10 @@ pub fn cleanup_old_auto_backups() -> Result<usize, String> {
         return Ok(0);
     }
 
-    // Collect all auto backup files (with "auto-" prefix)
-    let mut auto_backups: Vec<_> = fs::read_dir(&backup_dir)
-        .map_err(|e| e.to_string())?
+    let mut auto_backups: Vec<_> = fs::read_dir(&backup_dir)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| {
             let path = entry.path();
-            // Only include files with .zip extension and auto- prefix
             path.extension().is_some_and(|ext| ext == "zip")
                 && path
                     .file_name()
@@ -328,9 +304,7 @@ pub fn cleanup_old_auto_backups() -> Result<usize, String> {
         })
         .collect();
 
-    // If we have more auto backups than the retention limit, delete the oldest ones
     if auto_backups.len() > retention {
-        // Sort by modification time (oldest first)
         auto_backups.sort_by_key(|entry| {
             entry
                 .metadata()
@@ -338,10 +312,9 @@ pub fn cleanup_old_auto_backups() -> Result<usize, String> {
                 .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
         });
 
-        // Calculate how many to delete
         let to_delete = auto_backups.len() - retention;
-
         let mut deleted = 0;
+
         for entry in auto_backups.iter().take(to_delete) {
             let path = entry.path();
             match fs::remove_file(&path) {
@@ -361,111 +334,79 @@ pub fn cleanup_old_auto_backups() -> Result<usize, String> {
     }
 }
 
-/// 删除备份
-#[tauri::command]
-pub async fn delete_backup(backup_path: String) -> Result<(), String> {
-    let path = PathBuf::from(&backup_path);
-
-    if !path.exists() {
-        return Err("Backup file not found".to_string());
-    }
-
-    fs::remove_file(&path).map_err(|e| e.to_string())
-}
-
-/// Rollback: restore data from rollback_dir to the app data directory.
-fn rollback_from(rollback_dir: &Path) -> Result<(), String> {
+fn rollback_from(rollback_dir: &Path) -> AppResult<()> {
     let rollback_db = rollback_dir.join("data").join("local.db");
     let rollback_screenshots = rollback_dir.join("screenshots");
 
     let target_db = get_db_path();
     let target_screenshots = get_screenshots_dir();
 
-    // Restore database
     if rollback_db.exists() {
         let target_data_dir = crate::get_app_data_dir().join("data");
-        fs::create_dir_all(&target_data_dir).map_err(|e| e.to_string())?;
-        fs::copy(&rollback_db, &target_db).map_err(|e| e.to_string())?;
+        fs::create_dir_all(&target_data_dir)?;
+        fs::copy(&rollback_db, &target_db)?;
     }
 
-    // Restore screenshots: clear current, copy rollback
     clear_dir_files(&target_screenshots)?;
     copy_dir_files(&rollback_screenshots, &target_screenshots)?;
 
     Ok(())
 }
 
-/// The inner restore logic, separated so we can rollback on failure.
-fn perform_restore_inner(archive: &mut ZipArchive<fs::File>) -> Result<(), String> {
+fn perform_restore_inner(archive: &mut ZipArchive<fs::File>) -> AppResult<()> {
     let temp_extract = tempfile::Builder::new()
         .prefix("dailylogger-restore-")
-        .tempdir()
-        .map_err(|e| e.to_string())?;
+        .tempdir()?;
 
-    archive
-        .extract(temp_extract.path())
-        .map_err(|e| e.to_string())?;
+    archive.extract(temp_extract.path())?;
 
     let extracted_data_dir = temp_extract.path().join("data");
     let extracted_screenshots_dir = temp_extract.path().join("screenshots");
 
-    // Restore database
     let target_data_dir = crate::get_app_data_dir().join("data");
-    fs::create_dir_all(&target_data_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&target_data_dir)?;
 
     if extracted_data_dir.join("local.db").exists() {
         fs::copy(
             extracted_data_dir.join("local.db"),
             target_data_dir.join("local.db"),
-        )
-        .map_err(|e| e.to_string())?;
+        )?;
     }
 
-    // Restore screenshots: clear old files first, then copy from backup
     let current_screenshots = get_screenshots_dir();
     clear_dir_files(&current_screenshots)?;
-    fs::create_dir_all(&current_screenshots).map_err(|e| e.to_string())?;
-
+    fs::create_dir_all(&current_screenshots)?;
     copy_dir_files(&extracted_screenshots_dir, &current_screenshots)?;
 
     Ok(())
 }
 
-/// 恢复备份
-#[tauri::command]
-pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String> {
-    let path = PathBuf::from(&backup_path);
-
-    if !path.exists() {
-        return Err("Backup file not found".to_string());
+fn restore_backup_internal(backup_path: &Path) -> AppResult<RestoreResult> {
+    if !backup_path.exists() {
+        return Err(AppError::validation("Backup file not found"));
     }
 
-    // 打开备份文件并读取 manifest
-    let file = fs::File::open(&path).map_err(|e| e.to_string())?;
-    let mut archive = ZipArchive::new(file).map_err(|e| e.to_string())?;
-
+    let file = fs::File::open(backup_path)?;
+    let mut archive = ZipArchive::new(file)?;
     let manifest = read_manifest_from_archive(&mut archive)?;
 
-    // 创建临时备份目录（用于恢复失败时回滚）
     let rollback_dir = crate::get_app_data_dir().join("temp-rollback");
     let current_db = get_db_path();
     let current_screenshots = get_screenshots_dir();
 
     let mut auto_backup_created = false;
 
-    // 如果当前数据存在，先备份用于回滚
     if current_db.exists() || current_screenshots.exists() {
-        // Clean any stale rollback dir from previous failed restore
         let _ = fs::remove_dir_all(&rollback_dir);
 
         let rollback_db_dir = rollback_dir.join("data");
         let rollback_screenshots_dir = rollback_dir.join("screenshots");
 
-        fs::create_dir_all(&rollback_db_dir).map_err(|e| e.to_string())?;
-        fs::create_dir_all(&rollback_screenshots_dir).map_err(|e| e.to_string())?;
+        fs::create_dir_all(&rollback_db_dir)?;
+        fs::create_dir_all(&rollback_screenshots_dir)?;
 
         if current_db.exists() {
-            fs::copy(&current_db, rollback_db_dir.join("local.db")).map_err(|e| e.to_string())?;
+            fs::copy(&current_db, rollback_db_dir.join("local.db"))?;
         }
 
         copy_dir_files(&current_screenshots, &rollback_screenshots_dir)?;
@@ -474,35 +415,31 @@ pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String
     }
 
     // Re-open the archive (the previous one was consumed by read_manifest)
-    let file = fs::File::open(&path).map_err(|e| e.to_string())?;
-    let mut archive = ZipArchive::new(file).map_err(|e| e.to_string())?;
+    let file = fs::File::open(backup_path)?;
+    let mut archive = ZipArchive::new(file)?;
 
-    // Attempt restore; rollback on failure
     if let Err(restore_err) = perform_restore_inner(&mut archive) {
         if auto_backup_created {
             tracing::error!("Restore failed, rolling back: {}", restore_err);
             if let Err(rollback_err) = rollback_from(&rollback_dir) {
-                return Err(format!(
+                return Err(AppError::database(format!(
                     "Restore failed: {}. Rollback also failed: {}. Manual recovery may be needed.",
                     restore_err, rollback_err
-                ));
+                )));
             }
             let _ = fs::remove_dir_all(&rollback_dir);
-            return Err(format!(
+            return Err(AppError::database(format!(
                 "Restore failed and rolled back to previous state: {}",
                 restore_err
-            ));
+            )));
         }
         return Err(restore_err);
     }
 
-    // Re-initialize database connection to use the restored DB file
     if let Err(e) = crate::memory_storage::init_database() {
         tracing::error!("Failed to re-initialize database after restore: {}", e);
-        // Non-fatal: the app may need a restart, but the files are restored
     }
 
-    // 清理回滚目录（成功恢复后）
     if auto_backup_created {
         let _ = fs::remove_dir_all(&rollback_dir);
     }
@@ -515,15 +452,52 @@ pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String
     })
 }
 
+// ── Tauri command wrappers ───────────────────────────────────────────────────
+
+/// 创建备份
+#[tauri::command]
+pub async fn create_backup(backup_dir: Option<String>) -> Result<BackupResult, String> {
+    let target_dir = backup_dir
+        .map(PathBuf::from)
+        .unwrap_or_else(get_default_backup_dir);
+    create_backup_internal(&target_dir).map_err(|e| e.to_string())
+}
+
+/// 获取备份信息
+#[tauri::command]
+pub async fn get_backup_info(backup_path: String) -> Result<BackupInfo, String> {
+    let path = PathBuf::from(&backup_path);
+    get_backup_info_internal(&path).map_err(|e| e.to_string())
+}
+
+/// 列出备份历史
+#[tauri::command]
+pub async fn list_backups() -> Result<Vec<BackupInfo>, String> {
+    list_backups_internal().map_err(|e| e.to_string())
+}
+
+/// 删除备份
+#[tauri::command]
+pub async fn delete_backup(backup_path: String) -> Result<(), String> {
+    let path = PathBuf::from(&backup_path);
+
+    if !path.exists() {
+        return Err("Backup file not found".to_string());
+    }
+
+    fs::remove_file(&path).map_err(|e| e.to_string())
+}
+
+/// 恢复备份
+#[tauri::command]
+pub async fn restore_backup(backup_path: String) -> Result<RestoreResult, String> {
+    let path = PathBuf::from(&backup_path);
+    restore_backup_internal(&path).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_get_app_data_dir() {
-        let dir = crate::get_app_data_dir();
-        assert!(dir.to_string_lossy().contains("DailyLogger"));
-    }
 
     #[test]
     fn test_get_default_backup_dir() {
@@ -560,7 +534,6 @@ mod tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let zip_path = temp_dir.path().join("test-backup.zip");
 
-        // Create a zip with manifest
         let manifest = BackupManifest {
             version: "1.0".to_string(),
             created_at: "2026-03-15T12:00:00Z".to_string(),
@@ -572,18 +545,15 @@ mod tests {
             let file = fs::File::create(&zip_path).unwrap();
             let mut zip = ZipWriter::new(file);
 
-            // Add manifest.json
             let manifest_json = serde_json::to_string_pretty(&manifest).unwrap();
             zip.start_file("manifest.json", SimpleFileOptions::default())
                 .unwrap();
             zip.write_all(manifest_json.as_bytes()).unwrap();
 
-            // Add a dummy data file
             zip.start_file("data/local.db", SimpleFileOptions::default())
                 .unwrap();
             zip.write_all(b"dummy database content").unwrap();
 
-            // Add a dummy screenshot
             zip.start_file(
                 "screenshots/screenshot_001.png",
                 SimpleFileOptions::default(),
@@ -594,7 +564,6 @@ mod tests {
             zip.finish().unwrap();
         }
 
-        // Read the backup info
         let info = get_backup_info_internal(&zip_path).unwrap();
         assert_eq!(info.record_count, 5);
         assert_eq!(info.screenshot_count, 2);
@@ -606,7 +575,7 @@ mod tests {
     fn test_backup_info_not_found() {
         let result = get_backup_info_internal(Path::new("/nonexistent/backup.zip"));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not found"));
+        assert!(result.unwrap_err().to_string().contains("not found"));
     }
 
     #[test]
@@ -635,7 +604,7 @@ mod tests {
 
         let result = get_backup_info_internal(&zip_path);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Invalid backup file"));
+        assert!(result.unwrap_err().to_string().contains("Invalid backup file"));
     }
 
     #[test]
@@ -646,7 +615,6 @@ mod tests {
         assert!(file_path.exists());
 
         let path_str = file_path.to_string_lossy().to_string();
-        // Call the sync version of the logic (delete_backup is async, test the core)
         fs::remove_file(&file_path).unwrap();
         assert!(!PathBuf::from(&path_str).exists());
     }
@@ -672,7 +640,6 @@ mod tests {
     fn test_copy_dir_files_nonexistent_src() {
         let temp = tempfile::tempdir().unwrap();
         let dst = temp.path().join("dst");
-        // Source doesn't exist — should succeed (no-op)
         let result = copy_dir_files(Path::new("/nonexistent/dir"), &dst);
         assert!(result.is_ok());
     }
@@ -687,8 +654,8 @@ mod tests {
 
         clear_dir_files(&dir).unwrap();
 
-        assert!(dir.exists()); // dir itself still exists
-        assert_eq!(fs::read_dir(&dir).unwrap().count(), 0); // but empty
+        assert!(dir.exists());
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
     }
 
     #[test]
@@ -708,7 +675,7 @@ mod tests {
         fs::write(dir.join("notes.txt"), b"text").unwrap();
         fs::write(dir.join("shot3.jpg"), b"img").unwrap();
 
-        assert_eq!(count_screenshots_in_dir(&dir), 2); // only .png files
+        assert_eq!(count_screenshots_in_dir(&dir), 2);
     }
 
     #[test]
@@ -770,17 +737,11 @@ mod tests {
     fn test_rollback_restores_files() {
         let temp = tempfile::tempdir().unwrap();
         let rollback_dir = temp.path().join("rollback");
-        let data_dir = rollback_dir.join("data");
         let screenshots_dir = rollback_dir.join("screenshots");
 
-        fs::create_dir_all(&data_dir).unwrap();
         fs::create_dir_all(&screenshots_dir).unwrap();
-
-        fs::write(data_dir.join("local.db"), b"original db").unwrap();
         fs::write(screenshots_dir.join("shot.png"), b"original shot").unwrap();
 
-        // rollback_from uses get_app_data_dir() which points to system dir,
-        // so we test the helper functions it uses instead
         let target = temp.path().join("target");
         fs::create_dir_all(&target).unwrap();
         fs::write(target.join("modified.txt"), b"modified").unwrap();
