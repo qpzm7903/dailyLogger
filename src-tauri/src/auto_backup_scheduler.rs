@@ -101,7 +101,8 @@ pub fn should_run_backup_now() -> bool {
         }
     };
 
-    let interval = get_auto_backup_interval();
+    let interval =
+        BackupInterval::from_str(settings.auto_backup_interval.as_deref().unwrap_or("daily"));
     let hours_since_last = (Local::now().naive_local() - last_time).num_hours();
 
     hours_since_last >= interval.to_hours() as i64
@@ -299,14 +300,11 @@ pub fn stop_scheduler() {
 /// Main scheduler loop
 async fn run_scheduler_loop() {
     while SCHEDULER_RUNNING.load(Ordering::SeqCst) {
-        // Check if auto backup is enabled
-        if is_auto_backup_enabled() {
-            // Check if we should run a backup now
-            if should_run_backup_now() {
-                tracing::info!("Triggering scheduled auto backup");
-                if let Err(e) = run_auto_backup().await {
-                    tracing::error!("Scheduled auto backup failed: {}", e);
-                }
+        // should_run_backup_now() checks both enabled flag and timing
+        if should_run_backup_now() {
+            tracing::info!("Triggering scheduled auto backup");
+            if let Err(e) = run_auto_backup().await {
+                tracing::error!("Scheduled auto backup failed: {}", e);
             }
         }
 
@@ -319,10 +317,6 @@ async fn run_scheduler_loop() {
 
 /// Check and run backup on startup if needed
 pub async fn check_and_run_startup_backup() {
-    if !is_auto_backup_enabled() {
-        return;
-    }
-
     if should_run_backup_now() {
         tracing::info!("Running startup auto backup check...");
         match run_auto_backup().await {
