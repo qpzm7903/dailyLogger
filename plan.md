@@ -1,21 +1,30 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-03-31
-> 当前版本: v4.5.0 ✅ (已发布)
+> 当前版本: v4.6.0 ✅ (已发布)
 > 项目状态: 512 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
 
 ## 当前进行中的工作
 
-### v4.6.0: 持续重构 — 消除重复 & AppResult 迁移 🚧 进行中
+### v4.6.0: 持续重构 — 消除重复 & AppResult 迁移 ✅ 已完成
 - ✅ 消除 session_manager/session_service 重复 (~560 行相同代码)
   - 将所有类型和逻辑整合到 session_service，删除 session_manager 模块
   - 更新所有调用者 (capture_service, report_service, synthesis, vision_api)
 - ✅ offline_queue 迁移到 AppResult (7 业务函数 + Tauri 命令包装器)
 - ✅ backup 模块迁移到 AppResult (提取业务逻辑到内部函数，命令层为薄包装器)
-- 🔄 继续迁移其他模块的 Result<_, String> → AppResult (剩余 ~120 处)
-  - capture_service (16), manual_entry (12), ollama (8), slack, dingtalk, notion 等
+- ✅ capture_service 迁移到 AppResult (16 函数)
+- ✅ manual_entry 迁移到 AppResult (12 函数)
+- ✅ ollama 迁移到 AppResult (8 函数 + 命令包装器拆分)
+- ✅ slack 迁移到 AppResult (test_slack_connection)
+- ✅ dingtalk 迁移到 AppResult (test_dingtalk_connection)
+- ✅ notion 迁移到 AppResult (已有，格式修正)
+- ✅ lib.rs 迁移到 AppResult (create_http_client, create_http_client_with_proxy, calc_gap_minutes)
+- ✅ services/vision_api 迁移到 AppResult (4 函数)
+- ✅ memory_storage 迁移到 AppResult (get_obsidian/logseq_output_path, get_productivity_trend, 2 辅助函数)
+- ✅ session_service: 移除冗余 .map_err(AppError::from)
+- ✅ AppResult 迁移全部完成 — 所有业务逻辑使用 AppResult，仅 Tauri #[command] 包装器保留 Result<_, String>
 
 ### v4.5.0: Rust 错误类型统一 (AppError 迁移) ✅ 已完成
 - ✅ 添加 Mutex/RwLock `PoisonError` → `AppError` 的 `From` 实现
@@ -228,6 +237,13 @@
 
 ## 最近 10 个已完成版本摘要
 
+### v4.6.0 — AppResult 迁移完成 & 消除重复 ✅
+- 消除 session_manager/session_service ~560 行重复代码
+- 全部业务逻辑函数迁移至 AppResult (~120+ 函数)
+- Tauri 命令层统一 .map_err(|e| e.to_string()) 模式
+- lib.rs create_http_client/calc_gap_minutes 迁移至 AppResult
+- vision_api 4 函数、memory_storage 4 函数迁移至 AppResult
+
 ### v4.5.0 — Rust 错误类型统一 (AppError 迁移) ✅
 - 全量迁移至 AppError/AppResult 结构化错误体系 (~100+ 函数)
 - 命令层统一 `.map_err(|e| e.to_string())` 模式，消除冗余 format! 包装
@@ -287,8 +303,6 @@
 - 新增 i18n 国际化支持（en.json, zh-CN.json）
 
 ### v4.2.x - v4.1.x — 维护版本集合 ✅
-- v4.2.2: 修复 legacy sessions 表缺少 date 列导致的启动失败问题
-- v4.2.1: TimelineWidget 防御性修复，添加 Array.isArray() 检查
 - v4.2.0: HistoryViewer 虚拟滚动 (UX-012)，@tanstack/vue-virtual 实现
 - v4.1.1: Timeline 时区转换错误处理修复 + Tailwind CSS v4 升级
 

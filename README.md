@@ -223,7 +223,13 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.5.0
+**最新版本**: v4.6.0
+- 消除 session_manager/session_service ~560 行重复代码
+- AppResult 迁移完成：全部业务逻辑函数使用结构化错误类型 (~120+ 函数)
+- Tauri 命令层统一 `.map_err(|e| e.to_string())` IPC 边界模式
+- lib.rs/vision_api/memory_storage 服务层全部迁移至 AppResult
+
+**v4.5.0**:
 - Rust 错误类型统一：全量迁移至 AppError/AppResult 结构化错误体系，~100+ 函数
 - 命令层统一使用 `.map_err(|e| e.to_string())` 模式，消除冗余 format! 包装
 - 512 Rust + 1226 前端测试全部通过
@@ -245,22 +251,7 @@ git config core.hooksPath .githooks
 - 启动速度优化：实现懒加载机制、缓冲诊断写入、延迟 Tray 和 Backup Scheduler 初始化 (PERF-007)
 - 数据库迁移修复：修复旧数据库 sessions 表缺失列问题 (issue #85)
 
-**v4.3.5**:
-- Windows 启动修复：使用 Tauri 异步运行时替代 tokio::spawn，解决 Windows 便携版启动崩溃问题 (issue #84)
-
-**v4.3.4**:
-- Migration 幂等性修复：移除 batch SQL 中 settings 表的重复 ALTER TABLE 语句 (issue #83)
-
-**v4.3.3**:
-- 代码质量与文档同步：Rust clippy 无警告通过，代码格式检查通过
-
-**v4.3.2**:
-- Migration 幂等性修复：移除 batch SQL 中重复的 `ALTER TABLE` 语句 (issue #82)
-
-**v4.3.1**:
-- Migration 幂等性修复：扩展 sessions.date 修复到 records 和 settings 表的所有扩展列
-
-**v4.3.0** ~ **v4.2.2**: AI Settings 模板导入/导出、i18n 国际化、Migration 幂等性修复、Tailwind CSS v4 升级等
+**v4.3.0** ~ **v4.3.5**: 启动速度优化、Windows 启动修复、多次 Migration 幂等性修复、AI Settings 模板导入/导出、i18n 国际化
 
 **更早版本**:
 - v4.2.1 ~ v4.0.0: HistoryViewer 虚拟滚动、Tailwind CSS v4 升级、数据库版本迁移机制等
