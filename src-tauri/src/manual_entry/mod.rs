@@ -2,6 +2,11 @@ use crate::errors::{AppError, AppResult};
 use crate::memory_storage;
 use tauri::command;
 
+/// Returns the log directory path: `<app_data_dir>/logs`.
+fn get_log_dir() -> Result<std::path::PathBuf, String> {
+    Ok(crate::get_app_data_dir().join("logs"))
+}
+
 /// Save a quick note from the tray menu (synchronous version for tests)
 pub fn add_quick_note_sync(content: &str) -> AppResult<i64> {
     if content.trim().is_empty() {
@@ -118,11 +123,7 @@ fn find_log_files(log_dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 
 #[command]
 pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
-    let log_dir = dirs::data_dir()
-        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
-        .join("DailyLogger")
-        .join("logs");
-
+    let log_dir = get_log_dir()?;
     let log_files = find_log_files(&log_dir);
     if log_files.is_empty() {
         return Ok(String::new());
@@ -148,11 +149,7 @@ pub async fn get_recent_logs(lines: Option<usize>) -> Result<String, String> {
 /// Get the log file content for export (all log files concatenated)
 #[command]
 pub async fn get_logs_for_export() -> Result<String, String> {
-    let log_dir = dirs::data_dir()
-        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
-        .join("DailyLogger")
-        .join("logs");
-
+    let log_dir = get_log_dir()?;
     let log_files = find_log_files(&log_dir);
     if log_files.is_empty() {
         return Err(AppError::file_io("Log file does not exist").to_string());
@@ -170,10 +167,7 @@ pub async fn get_logs_for_export() -> Result<String, String> {
 /// Get the log directory path
 #[command]
 pub async fn get_log_file_path() -> Result<String, String> {
-    let log_dir = dirs::data_dir()
-        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
-        .join("DailyLogger")
-        .join("logs");
+    let log_dir = get_log_dir()?;
 
     log_dir
         .to_str()
@@ -195,10 +189,7 @@ pub async fn log_frontend_error(
         timestamp, message, source, stack
     );
 
-    let log_dir = dirs::data_dir()
-        .ok_or_else(|| AppError::file_io("Cannot determine data directory").to_string())?
-        .join("DailyLogger")
-        .join("logs");
+    let log_dir = get_log_dir()?;
 
     // Ensure log directory exists
     std::fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;

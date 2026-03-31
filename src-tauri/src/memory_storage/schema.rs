@@ -184,6 +184,10 @@ pub fn init_database() -> AppResult<()> {
         db_path
     ));
     tracing::info!("Database initialized at {:?}", db_path);
+
+    // Invalidate settings cache since DB was (re-)initialized
+    super::invalidate_settings_cache();
+
     Ok(())
 }
 

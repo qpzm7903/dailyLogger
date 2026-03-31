@@ -1,9 +1,29 @@
 use crate::crypto;
 use crate::errors::{AppError, AppResult};
+use once_cell::sync::Lazy;
+use std::sync::RwLock;
 
 use super::{Settings, DB_CONNECTION};
 
+/// In-memory cache for Settings to avoid repeated DB queries.
+/// Write-through: updated on every `save_settings_sync` call.
+static SETTINGS_CACHE: Lazy<RwLock<Option<Settings>>> = Lazy::new(|| RwLock::new(None));
+
+/// Invalidate the settings cache. Called when the database is re-initialized.
+pub fn invalidate_settings_cache() {
+    if let Ok(mut cache) = SETTINGS_CACHE.write() {
+        *cache = None;
+    }
+}
+
 pub fn get_settings_sync() -> AppResult<Settings> {
+    // Fast path: return cached settings if available
+    if let Ok(cache) = SETTINGS_CACHE.read() {
+        if let Some(ref settings) = *cache {
+            return Ok(settings.clone());
+        }
+    }
+
     let db = DB_CONNECTION.lock()?;
     let conn = db
         .as_ref()
@@ -198,6 +218,11 @@ pub fn get_settings_sync() -> AppResult<Settings> {
     } else {
         settings
     };
+
+    // Update cache
+    if let Ok(mut cache) = SETTINGS_CACHE.write() {
+        *cache = Some(settings.clone());
+    }
 
     Ok(settings)
 }
@@ -417,6 +442,11 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
         },
     )
     .map_err(AppError::from)?;
+
+    // Update cache with the saved (decrypted) settings
+    if let Ok(mut cache) = SETTINGS_CACHE.write() {
+        *cache = Some(settings.clone());
+    }
 
     tracing::info!("Settings saved");
     Ok(())
