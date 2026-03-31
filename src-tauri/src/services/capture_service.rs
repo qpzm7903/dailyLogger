@@ -362,7 +362,10 @@ fn parse_window_patterns(json: Option<&str>) -> Vec<String> {
 
 pub fn load_capture_settings() -> CaptureSettings {
     match memory_storage::get_settings_sync() {
-        Ok(s) => {
+        Ok(arc) => {
+            // Dereference Arc and clone — we extract most fields anyway,
+            // so one struct clone is cheaper than many individual .clone() calls.
+            let s = &*arc;
             let custom_headers = if let Some(ref headers_json) = s.custom_headers {
                 if !headers_json.is_empty() {
                     serde_json::from_str::<Vec<crate::memory_storage::CustomHeader>>(headers_json)
@@ -374,17 +377,20 @@ pub fn load_capture_settings() -> CaptureSettings {
                 Vec::new()
             };
             CaptureSettings {
-                api_base_url: s.api_base_url.unwrap_or_default(),
-                api_key: s.api_key.unwrap_or_default(),
-                model_name: s.model_name.unwrap_or_else(|| "gpt-4o".to_string()),
+                api_base_url: s.api_base_url.clone().unwrap_or_default(),
+                api_key: s.api_key.clone().unwrap_or_default(),
+                model_name: s.model_name.clone().unwrap_or_else(|| "gpt-4o".to_string()),
                 screenshot_interval: s.screenshot_interval.unwrap_or(5) as u64,
-                analysis_prompt: s.analysis_prompt,
+                analysis_prompt: s.analysis_prompt.clone(),
                 change_threshold: s.change_threshold.unwrap_or(3) as f64,
                 max_silent_minutes: s.max_silent_minutes.unwrap_or(30) as u64,
                 window_whitelist: parse_window_patterns(s.window_whitelist.as_deref()),
                 window_blacklist: parse_window_patterns(s.window_blacklist.as_deref()),
                 use_whitelist_only: s.use_whitelist_only.unwrap_or(false),
-                capture_mode: s.capture_mode.unwrap_or_else(|| "primary".to_string()),
+                capture_mode: s
+                    .capture_mode
+                    .clone()
+                    .unwrap_or_else(|| "primary".to_string()),
                 selected_monitor_index: s.selected_monitor_index.unwrap_or(0) as usize,
                 capture_only_mode: s.capture_only_mode.unwrap_or(false),
                 custom_headers,
@@ -406,9 +412,9 @@ pub fn load_work_time_settings() -> WorkTimeSettings {
         Ok(s) => WorkTimeSettings {
             auto_detect_work_time: s.auto_detect_work_time.unwrap_or(true),
             use_custom_work_time: s.use_custom_work_time.unwrap_or(false),
-            custom_work_time_start: s.custom_work_time_start,
-            custom_work_time_end: s.custom_work_time_end,
-            learned_work_time: s.learned_work_time,
+            custom_work_time_start: s.custom_work_time_start.clone(),
+            custom_work_time_end: s.custom_work_time_end.clone(),
+            learned_work_time: s.learned_work_time.clone(),
         },
         Err(_) => WorkTimeSettings {
             auto_detect_work_time: true,
@@ -459,7 +465,8 @@ pub fn evaluate_and_adjust_threshold() -> Option<(u64, u64)> {
     );
     if new_threshold != old_threshold {
         set_threshold(new_threshold);
-        if let Ok(mut settings) = memory_storage::get_settings_sync() {
+        if let Ok(arc) = memory_storage::get_settings_sync() {
+            let mut settings = (*arc).clone();
             settings.max_silent_minutes = Some(new_threshold as i32);
             if let Err(e) = memory_storage::save_settings_sync(&settings) {
                 tracing::error!("Failed to save adjusted threshold: {}", e);
