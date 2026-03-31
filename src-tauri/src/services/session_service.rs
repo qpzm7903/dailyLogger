@@ -194,7 +194,7 @@ fn extract_date_from_timestamp(timestamp: &str) -> String {
 
 /// 计算两个时间戳之间的分钟数差
 fn calc_gap_minutes(start: &str, end: &str) -> AppResult<i64> {
-    crate::calc_gap_minutes(start, end).map_err(AppError::from)
+    crate::calc_gap_minutes(start, end)
 }
 
 /// 使用已有连接获取活跃时段

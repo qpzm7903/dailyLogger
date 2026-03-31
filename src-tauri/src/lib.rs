@@ -26,6 +26,7 @@ pub mod timeline;
 pub mod window_info;
 pub mod work_time;
 
+use crate::errors::{AppError, AppResult};
 use once_cell::sync::Lazy;
 use reqwest::{Client, Proxy, Url};
 use std::fs::OpenOptions;
@@ -219,7 +220,7 @@ pub fn is_local_url(url: &str) -> bool {
 /// to bypass system proxy to avoid connection issues when the system has a proxy configured.
 ///
 /// For external URLs, the client uses system proxy settings.
-pub fn create_http_client(target_url: &str, timeout_secs: u64) -> Result<Client, String> {
+pub fn create_http_client(target_url: &str, timeout_secs: u64) -> AppResult<Client> {
     create_http_client_with_proxy(target_url, timeout_secs, None)
 }
 
@@ -254,7 +255,7 @@ pub fn create_http_client_with_proxy(
     target_url: &str,
     timeout_secs: u64,
     proxy_config: Option<ProxyConfig>,
-) -> Result<Client, String> {
+) -> AppResult<Client> {
     let mut builder = Client::builder().timeout(Duration::from_secs(timeout_secs));
 
     // If proxy is explicitly enabled with valid host/port, use the proxy
@@ -304,7 +305,7 @@ pub fn create_http_client_with_proxy(
 
     builder
         .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))
+        .map_err(|e| AppError::internal(format!("Failed to create HTTP client: {}", e)))
 }
 
 /// Returns the application data directory: `<system_data_dir>/DailyLogger`.
@@ -321,14 +322,10 @@ pub fn extract_date(timestamp: &str) -> String {
 }
 
 /// Calculate the gap in minutes between two RFC3339 timestamps.
-pub fn calc_gap_minutes(start: &str, end: &str) -> Result<i64, String> {
+pub fn calc_gap_minutes(start: &str, end: &str) -> AppResult<i64> {
     use chrono::{DateTime, Utc};
-    let start_time: DateTime<Utc> = start
-        .parse()
-        .map_err(|e: chrono::ParseError| format!("Invalid start timestamp: {}", e))?;
-    let end_time: DateTime<Utc> = end
-        .parse()
-        .map_err(|e: chrono::ParseError| format!("Invalid end timestamp: {}", e))?;
+    let start_time: DateTime<Utc> = start.parse()?;
+    let end_time: DateTime<Utc> = end.parse()?;
     Ok(end_time.signed_duration_since(start_time).num_minutes())
 }
 

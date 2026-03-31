@@ -6,6 +6,7 @@
 //!   3. Building multi-image requests
 //!   4. Calling the Vision chat/completions endpoint with retry logic
 
+use crate::errors::AppResult;
 use crate::infrastructure::retry;
 use crate::memory_storage::SessionScreenshot;
 use crate::services::session_service::SessionAnalysisResponse;
@@ -46,9 +47,8 @@ pub const DEFAULT_SESSION_ANALYSIS_PROMPT: &str = r#"你是一个工作分析助
 返回纯 JSON，不要添加任何其他文字。"#;
 
 /// Read and encode screenshot as base64
-pub fn encode_screenshot(path: &str) -> Result<String, String> {
-    let bytes =
-        std::fs::read(path).map_err(|e| format!("Failed to read screenshot {}: {}", path, e))?;
+pub fn encode_screenshot(path: &str) -> AppResult<String> {
+    let bytes = std::fs::read(path)?;
     Ok(base64::Engine::encode(
         &base64::engine::general_purpose::STANDARD,
         &bytes,
@@ -60,7 +60,7 @@ pub fn build_multi_image_request(
     screenshots: &[SessionScreenshot],
     previous_context: Option<&str>,
     config: &crate::synthesis::ApiConfig,
-) -> Result<serde_json::Value, String> {
+) -> AppResult<serde_json::Value> {
     let prompt = DEFAULT_SESSION_ANALYSIS_PROMPT
         .replace("{previous_context}", previous_context.unwrap_or("无"));
 
@@ -93,7 +93,7 @@ pub fn build_multi_image_request(
 pub async fn call_vision_api_batch(
     request: &serde_json::Value,
     config: &crate::synthesis::ApiConfig,
-) -> Result<SessionAnalysisResponse, String> {
+) -> AppResult<SessionAnalysisResponse> {
     let endpoint = format!("{}/chat/completions", config.api_base_url());
     let client =
         crate::create_http_client_with_proxy(&endpoint, 180, Some(config.proxy_config().clone()))?;
@@ -133,7 +133,7 @@ pub async fn call_vision_api_batch(
 
     let response = request_builder.send().await.map_err(|e| {
         tracing::error!("Session analysis API call failed: {}", e);
-        format!("API request failed: {}", e)
+        crate::errors::AppError::network(format!("API request failed: {}", e))
     })?;
 
     let elapsed_ms = start.elapsed().as_millis();
@@ -150,17 +150,17 @@ pub async fn call_vision_api_batch(
                 "elapsed_ms": elapsed_ms,
             })
         );
-        return Err(format!("API error ({}): {}", status, body));
+        return Err(crate::errors::AppError::network(format!(
+            "API error ({}): {}",
+            status, body
+        )));
     }
 
-    let response_json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+    let response_json: serde_json::Value = response.json().await?;
 
     let content = response_json["choices"][0]["message"]["content"]
         .as_str()
-        .ok_or("No content in response")?;
+        .ok_or_else(|| crate::errors::AppError::network("No content in response"))?;
 
     tracing::info!(
         "{}",
@@ -182,8 +182,12 @@ pub async fn call_vision_api_batch(
         content
     };
 
-    let analysis: SessionAnalysisResponse = serde_json::from_str(content)
-        .map_err(|e| format!("Failed to parse analysis JSON: {}. Content: {}", e, content))?;
+    let analysis: SessionAnalysisResponse = serde_json::from_str(content).map_err(|e| {
+        crate::errors::AppError::validation(format!(
+            "Failed to parse analysis JSON: {}. Content: {}",
+            e, content
+        ))
+    })?;
 
     Ok(analysis)
 }
@@ -192,15 +196,17 @@ pub async fn call_vision_api_batch(
 pub async fn call_vision_api_batch_with_retry(
     request: &serde_json::Value,
     config: &crate::synthesis::ApiConfig,
-) -> Result<SessionAnalysisResponse, String> {
-    let mut last_error = String::new();
+) -> AppResult<SessionAnalysisResponse> {
+    let mut last_error = crate::errors::AppError::network("No attempts made");
 
     for attempt in 1..=VISION_MAX_RETRIES {
         match call_vision_api_batch(request, config).await {
             Ok(result) => return Ok(result),
             Err(e) => {
-                last_error = e.clone();
-                if attempt < VISION_MAX_RETRIES && retry::is_retryable_error(&e) {
+                last_error = e;
+                if attempt < VISION_MAX_RETRIES
+                    && retry::is_retryable_error(&last_error.to_string())
+                {
                     let delay = retry::calculate_retry_delay(
                         attempt,
                         VISION_INITIAL_RETRY_DELAY_MS,
@@ -211,7 +217,7 @@ pub async fn call_vision_api_batch_with_retry(
                         attempt,
                         VISION_MAX_RETRIES,
                         delay,
-                        e
+                        last_error
                     );
                     tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
                 }

@@ -211,7 +211,7 @@ pub struct LogseqGraph {
 impl Settings {
     /// Get the effective Obsidian output path.
     /// Checks `obsidian_vaults` for the default vault first, falls back to `obsidian_path`.
-    pub fn get_obsidian_output_path(&self) -> Result<String, String> {
+    pub fn get_obsidian_output_path(&self) -> AppResult<String> {
         // Try obsidian_vaults first
         if let Some(ref vaults_json) = self.obsidian_vaults {
             if let Ok(vaults) = serde_json::from_str::<Vec<ObsidianVault>>(vaults_json) {
@@ -233,12 +233,12 @@ impl Settings {
         self.obsidian_path
             .clone()
             .filter(|p| !p.trim().is_empty())
-            .ok_or_else(|| "Obsidian path not configured".to_string())
+            .ok_or_else(|| AppError::validation("Obsidian path not configured"))
     }
 
     /// INT-002: Get the effective Logseq output path.
     /// Checks `logseq_graphs` for the default graph first.
-    pub fn get_logseq_output_path(&self) -> Result<String, String> {
+    pub fn get_logseq_output_path(&self) -> AppResult<String> {
         // Try logseq_graphs
         if let Some(ref graphs_json) = self.logseq_graphs {
             if let Ok(graphs) = serde_json::from_str::<Vec<LogseqGraph>>(graphs_json) {
@@ -256,7 +256,7 @@ impl Settings {
             }
         }
 
-        Err("Logseq path not configured".to_string())
+        Err(AppError::validation("Logseq path not configured"))
     }
 
     /// VAULT-001: Get vault by name
@@ -757,12 +757,10 @@ pub async fn get_statistics(
     })
 }
 
-/// ANALYTICS-001: Get productivity trend data for week-over-week or month-over-month comparison
-///
-/// # Arguments
-/// * `comparison_type` - One of: "week" (this week vs last week), "month" (this month vs last month)
-#[command]
-pub async fn get_productivity_trend(comparison_type: String) -> Result<ProductivityTrend, String> {
+/// Internal: get productivity trend data
+pub async fn get_productivity_trend_service(
+    comparison_type: String,
+) -> AppResult<ProductivityTrend> {
     let comparison_type_lower = comparison_type.to_lowercase();
 
     // Determine current and previous period ranges
@@ -793,17 +791,17 @@ pub async fn get_productivity_trend(comparison_type: String) -> Result<Productiv
                 )
             }
             _ => {
-                return Err(format!(
+                return Err(AppError::validation(format!(
                     "Invalid comparison_type: {}. Use: 'week' or 'month'",
                     comparison_type
-                ))
+                )))
             }
         };
 
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+    let db = DB_CONNECTION.lock()?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Get counts for current period
     let current_screenshot_count = count_screenshots_in_range(conn, &current_start, &current_end)?;
@@ -853,6 +851,14 @@ pub async fn get_productivity_trend(comparison_type: String) -> Result<Productiv
     })
 }
 
+/// ANALYTICS-001: Get productivity trend data (Tauri command wrapper)
+#[command]
+pub async fn get_productivity_trend(comparison_type: String) -> Result<ProductivityTrend, String> {
+    get_productivity_trend_service(comparison_type)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Calculate comparison between current and previous period
 fn calculate_comparison(current: i64, previous: i64) -> PeriodComparison {
     let change_percent = if previous == 0 {
@@ -886,7 +892,7 @@ fn get_daily_trend_for_period(
     conn: &rusqlite::Connection,
     start: &str,
     end: &str,
-) -> Result<Vec<DailyTrendPoint>, String> {
+) -> AppResult<Vec<DailyTrendPoint>> {
     let start_date = parse_date(&start[..10])?;
     let end_date = parse_date(&end[..10])?;
 
@@ -918,26 +924,22 @@ fn get_peak_hours(
     conn: &rusqlite::Connection,
     start: &str,
     end: &str,
-) -> Result<Vec<HourlyDistribution>, String> {
+) -> AppResult<Vec<HourlyDistribution>> {
     // Query to get hour distribution
-    let mut stmt = conn
-        .prepare(
-            "SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(*) as count
+    let mut stmt = conn.prepare(
+        "SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(*) as count
          FROM records
          WHERE timestamp >= ? AND timestamp <= ?
          GROUP BY hour
          ORDER BY count DESC
          LIMIT 5",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    )?;
 
-    let rows = stmt
-        .query_map([start, end], |row| {
-            let hour: i64 = row.get(0)?;
-            let count: i64 = row.get(1)?;
-            Ok((hour, count))
-        })
-        .map_err(|e| format!("Failed to query: {}", e))?;
+    let rows = stmt.query_map([start, end], |row| {
+        let hour: i64 = row.get(0)?;
+        let count: i64 = row.get(1)?;
+        Ok((hour, count))
+    })?;
 
     let mut distributions: Vec<HourlyDistribution> = Vec::new();
     let mut total_count: i64 = 0;
