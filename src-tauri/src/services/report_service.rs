@@ -21,6 +21,7 @@ pub use crate::synthesis::{
     translate_report, write_report_to_logseq, write_report_to_obsidian, ApiConfig,
 };
 
+use crate::errors::{AppError, AppResult};
 use crate::synthesis::{
     non_empty_or, DEFAULT_COMPARISON_REPORT_PROMPT, DEFAULT_CUSTOM_REPORT_PROMPT,
     DEFAULT_MONTHLY_REPORT_PROMPT, DEFAULT_SUMMARY_PROMPT, DEFAULT_WEEKLY_REPORT_PROMPT,
@@ -43,7 +44,7 @@ fn write_report_to_all_destinations(
     summary: &str,
     report_label: &str,
     update_settings: Option<&dyn Fn(&mut crate::memory_storage::Settings, &str)>,
-) -> Result<String, String> {
+) -> AppResult<String> {
     let path_str = write_report_to_obsidian(obsidian_path, filename, summary)?;
 
     // INT-002: Also write to Logseq if configured
@@ -64,8 +65,7 @@ fn write_report_to_all_destinations(
     if let Some(updater) = update_settings {
         let mut updated_settings = settings.clone();
         updater(&mut updated_settings, &path_str);
-        crate::memory_storage::save_settings_sync(&updated_settings)
-            .map_err(|e| format!("Failed to update settings: {}", e))?;
+        crate::memory_storage::save_settings_sync(&updated_settings)?;
     }
 
     tracing::info!("{} generated: {}", report_label, path_str);
@@ -76,22 +76,22 @@ fn write_report_to_all_destinations(
 ///
 /// # Arguments
 /// * `vault_name` - Optional vault name to use. If None, uses default vault or auto-detection.
-pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Result<String, String> {
+pub async fn generate_daily_summary_service(vault_name: Option<String>) -> AppResult<String> {
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
             &crate::offline_queue::OfflineTaskType::DailySummary,
             "{}",
             None,
         );
-        return Err("当前处于离线状态，日报生成已加入队列，网络恢复后将自动处理".to_string());
+        return Err(AppError::network(
+            "当前处于离线状态，日报生成已加入队列，网络恢复后将自动处理",
+        ));
     }
 
-    let settings = crate::memory_storage::get_settings_sync()
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
+    let settings = crate::memory_storage::get_settings_sync()?;
     let auto_detect = settings.auto_detect_vault_by_window.unwrap_or(false);
     let obsidian_path = settings.get_effective_vault(vault_name.as_deref(), auto_detect)?;
-    let api_config = crate::synthesis::load_api_config(&settings)
-        .map_err(|e| format!("Failed to load API config: {}", e))?;
+    let api_config = crate::synthesis::load_api_config(&settings)?;
 
     // SESSION-005: Try session-based approach first
     let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
@@ -141,12 +141,11 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Resul
     }
 
     // Legacy record-based approach (when no sessions)
-    let all_records = crate::memory_storage::get_today_records_sync()
-        .map_err(|e| format!("Failed to get today's records: {}", e))?;
+    let all_records = crate::memory_storage::get_today_records_sync()?;
     let records = filter_records_by_settings(all_records, &settings);
 
     if records.is_empty() {
-        return Err("今日无记录".to_string());
+        return Err(AppError::validation("今日无记录"));
     }
 
     let records_text = format_records_for_summary(&records);
@@ -175,17 +174,15 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> Resul
 }
 
 /// Generate multilingual daily summary - report generation service
-pub async fn generate_multilingual_daily_summary_service(
-    target_lang: String,
-) -> Result<String, String> {
+pub async fn generate_multilingual_daily_summary_service(target_lang: String) -> AppResult<String> {
     if !crate::network_status::is_online() {
-        return Err("当前处于离线状态，多语言日报生成需要网络连接".to_string());
+        return Err(AppError::network(
+            "当前处于离线状态，多语言日报生成需要网络连接",
+        ));
     }
 
-    let settings = crate::memory_storage::get_settings_sync()
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
-    let api_config = crate::synthesis::load_api_config(&settings)
-        .map_err(|e| format!("Failed to load API config: {}", e))?;
+    let settings = crate::memory_storage::get_settings_sync()?;
+    let api_config = crate::synthesis::load_api_config(&settings)?;
 
     // Get the default (Chinese) summary first
     let summary = generate_base_daily_summary(&settings, &api_config).await?;
@@ -212,28 +209,27 @@ pub async fn generate_multilingual_daily_summary_service(
 }
 
 /// Generate weekly report - REPORT-001 service
-pub async fn generate_weekly_report_service() -> Result<String, String> {
+pub async fn generate_weekly_report_service() -> AppResult<String> {
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
             &crate::offline_queue::OfflineTaskType::WeeklyReport,
             "{}",
             None,
         );
-        return Err("当前处于离线状态，周报生成已加入队列，网络恢复后将自动处理".to_string());
+        return Err(AppError::network(
+            "当前处于离线状态，周报生成已加入队列，网络恢复后将自动处理",
+        ));
     }
 
-    let settings = crate::memory_storage::get_settings_sync()
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
+    let settings = crate::memory_storage::get_settings_sync()?;
     let obsidian_path = settings.get_obsidian_output_path()?;
-    let api_config = crate::synthesis::load_api_config(&settings)
-        .map_err(|e| format!("Failed to load API config: {}", e))?;
+    let api_config = crate::synthesis::load_api_config(&settings)?;
 
     let week_start_day = settings.weekly_report_day.unwrap_or(0);
-    let all_records = crate::memory_storage::get_week_records_sync(week_start_day)
-        .map_err(|e| format!("Failed to get week records: {}", e))?;
+    let all_records = crate::memory_storage::get_week_records_sync(week_start_day)?;
     let records = filter_records_by_settings(all_records, &settings);
     if records.is_empty() {
-        return Err("本周无记录".to_string());
+        return Err(AppError::validation("本周无记录"));
     }
 
     let records_text = format_records_for_summary(&records);
@@ -263,27 +259,26 @@ pub async fn generate_weekly_report_service() -> Result<String, String> {
 }
 
 /// Generate monthly report - REPORT-002 service
-pub async fn generate_monthly_report_service() -> Result<String, String> {
+pub async fn generate_monthly_report_service() -> AppResult<String> {
     if !crate::network_status::is_online() {
         let _ = crate::offline_queue::enqueue_task(
             &crate::offline_queue::OfflineTaskType::MonthlyReport,
             "{}",
             None,
         );
-        return Err("当前处于离线状态，月报生成已加入队列，网络恢复后将自动处理".to_string());
+        return Err(AppError::network(
+            "当前处于离线状态，月报生成已加入队列，网络恢复后将自动处理",
+        ));
     }
 
-    let settings = crate::memory_storage::get_settings_sync()
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
+    let settings = crate::memory_storage::get_settings_sync()?;
     let obsidian_path = settings.get_obsidian_output_path()?;
-    let api_config = crate::synthesis::load_api_config(&settings)
-        .map_err(|e| format!("Failed to load API config: {}", e))?;
+    let api_config = crate::synthesis::load_api_config(&settings)?;
 
-    let all_records = crate::memory_storage::get_month_records_sync()
-        .map_err(|e| format!("Failed to get month records: {}", e))?;
+    let all_records = crate::memory_storage::get_month_records_sync()?;
     let records = filter_records_by_settings(all_records, &settings);
     if records.is_empty() {
-        return Err("本月无记录".to_string());
+        return Err(AppError::validation("本月无记录"));
     }
 
     let records_text = format_records_by_week(&records);
@@ -317,31 +312,30 @@ pub async fn generate_custom_report_service(
     start_date: String,
     end_date: String,
     report_name: Option<String>,
-) -> Result<String, String> {
+) -> AppResult<String> {
     if !crate::network_status::is_online() {
-        return Err("当前处于离线状态，报告生成需要网络连接。请检查网络连接后重试。".to_string());
+        return Err(AppError::network(
+            "当前处于离线状态，报告生成需要网络连接。请检查网络连接后重试。",
+        ));
     }
 
     let parsed_start = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-        .map_err(|e| format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
+        .map_err(|e| AppError::validation(format!("无效的起始日期格式 (需要 YYYY-MM-DD): {}", e)))?;
     let parsed_end = chrono::NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-        .map_err(|e| format!("无效的结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
+        .map_err(|e| AppError::validation(format!("无效的结束日期格式 (需要 YYYY-MM-DD): {}", e)))?;
     if parsed_end < parsed_start {
-        return Err("结束日期不能早于起始日期".to_string());
+        return Err(AppError::validation("结束日期不能早于起始日期"));
     }
 
-    let settings = crate::memory_storage::get_settings_sync()
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
+    let settings = crate::memory_storage::get_settings_sync()?;
     let obsidian_path = settings.get_obsidian_output_path()?;
-    let api_config = crate::synthesis::load_api_config(&settings)
-        .map_err(|e| format!("Failed to load API config: {}", e))?;
+    let api_config = crate::synthesis::load_api_config(&settings)?;
 
     let all_records =
-        crate::memory_storage::get_records_by_date_range_sync(start_date.clone(), end_date.clone())
-            .map_err(|e| format!("Failed to get records: {}", e))?;
+        crate::memory_storage::get_records_by_date_range_sync(start_date.clone(), end_date.clone())?;
     let records = filter_records_by_settings(all_records, &settings);
     if records.is_empty() {
-        return Err("所选时间范围内无记录".to_string());
+        return Err(AppError::validation("所选时间范围内无记录"));
     }
 
     let day_count = (parsed_end - parsed_start).num_days() + 1;
@@ -383,49 +377,47 @@ pub async fn compare_reports_service(
     end_date_a: String,
     start_date_b: String,
     end_date_b: String,
-) -> Result<String, String> {
+) -> AppResult<String> {
     if !crate::network_status::is_online() {
-        return Err("当前处于离线状态，报告生成需要网络连接。请检查网络连接后重试。".to_string());
+        return Err(AppError::network(
+            "当前处于离线状态，报告生成需要网络连接。请检查网络连接后重试。",
+        ));
     }
 
     let parsed_start_a = chrono::NaiveDate::parse_from_str(&start_date_a, "%Y-%m-%d")
-        .map_err(|e| format!("无效的时段A起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
+        .map_err(|e| AppError::validation(format!("无效的时段A起始日期格式 (需要 YYYY-MM-DD): {}", e)))?;
     let parsed_end_a = chrono::NaiveDate::parse_from_str(&end_date_a, "%Y-%m-%d")
-        .map_err(|e| format!("无效的时段A结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
+        .map_err(|e| AppError::validation(format!("无效的时段A结束日期格式 (需要 YYYY-MM-DD): {}", e)))?;
     let parsed_start_b = chrono::NaiveDate::parse_from_str(&start_date_b, "%Y-%m-%d")
-        .map_err(|e| format!("无效的时段B起始日期格式 (需要 YYYY-MM-DD): {}", e))?;
+        .map_err(|e| AppError::validation(format!("无效的时段B起始日期格式 (需要 YYYY-MM-DD): {}", e)))?;
     let parsed_end_b = chrono::NaiveDate::parse_from_str(&end_date_b, "%Y-%m-%d")
-        .map_err(|e| format!("无效的时段B结束日期格式 (需要 YYYY-MM-DD): {}", e))?;
+        .map_err(|e| AppError::validation(format!("无效的时段B结束日期格式 (需要 YYYY-MM-DD): {}", e)))?;
 
     if parsed_end_a < parsed_start_a {
-        return Err("时段A的结束日期不能早于起始日期".to_string());
+        return Err(AppError::validation("时段A的结束日期不能早于起始日期"));
     }
     if parsed_end_b < parsed_start_b {
-        return Err("时段B的结束日期不能早于起始日期".to_string());
+        return Err(AppError::validation("时段B的结束日期不能早于起始日期"));
     }
 
-    let settings = crate::memory_storage::get_settings_sync()
-        .map_err(|e| format!("Failed to get settings: {}", e))?;
+    let settings = crate::memory_storage::get_settings_sync()?;
     let obsidian_path = settings.get_obsidian_output_path()?;
-    let api_config = crate::synthesis::load_api_config(&settings)
-        .map_err(|e| format!("Failed to load API config: {}", e))?;
+    let api_config = crate::synthesis::load_api_config(&settings)?;
 
     let all_records_a = crate::memory_storage::get_records_by_date_range_sync(
         start_date_a.clone(),
         end_date_a.clone(),
-    )
-    .map_err(|e| format!("Failed to get period A records: {}", e))?;
+    )?;
     let all_records_b = crate::memory_storage::get_records_by_date_range_sync(
         start_date_b.clone(),
         end_date_b.clone(),
-    )
-    .map_err(|e| format!("Failed to get period B records: {}", e))?;
+    )?;
 
     let records_a = filter_records_by_settings(all_records_a, &settings);
     let records_b = filter_records_by_settings(all_records_b, &settings);
 
     if records_a.is_empty() && records_b.is_empty() {
-        return Err("两个时间段内均无记录".to_string());
+        return Err(AppError::validation("两个时间段内均无记录"));
     }
 
     let day_count_a = (parsed_end_a - parsed_start_a).num_days() + 1;
