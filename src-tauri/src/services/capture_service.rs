@@ -12,7 +12,7 @@
 use crate::memory_storage;
 use crate::monitor::get_monitor_list;
 use crate::monitor_types::{CaptureMode, MonitorInfo};
-use crate::session_manager::detect_or_create_session;
+use crate::services::session_service::detect_or_create_session;
 use crate::silent_tracker::{
     calculate_optimal_silent_minutes, current_threshold, has_sufficient_data, record_capture,
     set_threshold, CaptureReason,

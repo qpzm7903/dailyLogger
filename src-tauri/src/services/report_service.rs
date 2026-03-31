@@ -94,23 +94,25 @@ pub async fn generate_daily_summary_service(vault_name: Option<String>) -> AppRe
     let api_config = crate::synthesis::load_api_config(&settings)?;
 
     // SESSION-005: Try session-based approach first
-    let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+    let sessions = crate::services::session_service::get_today_sessions_sync().unwrap_or_default();
 
     if !sessions.is_empty() {
         // SESSION-005 AC#4: Auto-analyze pending/ended sessions before generating report
         for session in &sessions {
-            if session.status == crate::session_manager::SessionStatus::Active
-                || session.status == crate::session_manager::SessionStatus::Ended
+            if session.status == crate::services::session_service::SessionStatus::Active
+                || session.status == crate::services::session_service::SessionStatus::Ended
             {
                 tracing::info!("Auto-analyzing session {} before daily summary", session.id);
-                if let Err(e) = crate::session_manager::analyze_session(session.id).await {
+                if let Err(e) = crate::services::session_service::analyze_session(session.id).await
+                {
                     tracing::warn!("Failed to analyze session {}: {}", session.id, e);
                 }
             }
         }
 
         // Re-fetch sessions after analysis
-        let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+        let sessions =
+            crate::services::session_service::get_today_sessions_sync().unwrap_or_default();
 
         // SESSION-005: Build session-based report
         if let Some(content) = build_session_based_report(&sessions) {

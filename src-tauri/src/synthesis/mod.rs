@@ -7,7 +7,7 @@ use crate::errors::{AppError, AppResult};
 use crate::infrastructure::retry;
 
 use crate::memory_storage::{self, Record, Settings};
-use crate::session_manager::{Session, SessionStatus};
+use crate::services::session_service::{Session, SessionStatus};
 use crate::slack;
 
 // STAB-001: Retry configuration for AI API calls
@@ -905,18 +905,20 @@ pub async fn generate_base_daily_summary(
     api_config: &ApiConfig,
 ) -> AppResult<String> {
     // Try session-based approach first
-    let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+    let sessions = crate::services::session_service::get_today_sessions_sync().unwrap_or_default();
 
     if !sessions.is_empty() {
         for session in &sessions {
             if session.status == SessionStatus::Active || session.status == SessionStatus::Ended {
-                if let Err(e) = crate::session_manager::analyze_session(session.id).await {
+                if let Err(e) = crate::services::session_service::analyze_session(session.id).await
+                {
                     tracing::warn!("Failed to analyze session {}: {}", session.id, e);
                 }
             }
         }
 
-        let sessions = crate::session_manager::get_today_sessions_sync().unwrap_or_default();
+        let sessions =
+            crate::services::session_service::get_today_sessions_sync().unwrap_or_default();
 
         if let Some(content) = build_session_based_report(&sessions) {
             let prompt_template =
@@ -1805,7 +1807,7 @@ pub fn get_quarter_range() -> (String, String) {
 #[cfg(test)]
 mod session_summary_tests {
     use super::*;
-    use crate::session_manager::{Session, SessionStatus};
+    use crate::services::session_service::{Session, SessionStatus};
 
     fn create_test_session(
         id: i64,

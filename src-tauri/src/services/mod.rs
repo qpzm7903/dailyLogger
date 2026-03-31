@@ -29,8 +29,9 @@ pub use model_service::get_model_info_service;
 
 // Service functions from session_service
 pub use session_service::{
-    analyze_session_service, get_session_screenshots_service, get_today_sessions_service,
-    update_session_user_summary_service,
+    analyze_session, analyze_session_service, detect_or_create_session, end_current_session,
+    get_session_screenshots_service, get_today_sessions_service, get_today_sessions_sync,
+    update_session_user_summary_service, Session, SessionAnalysisResponse, SessionStatus,
 };
 
 // Service functions from settings_service

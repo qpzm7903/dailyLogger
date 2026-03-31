@@ -17,10 +17,86 @@ use rusqlite::{params, OptionalExtension};
 
 // ── Data Types ────────────────────────────────────────────────────────────────
 
-// Re-export session types from session_manager (canonical definitions)
-pub use crate::session_manager::{
-    ScreenshotAnalysis, Session, SessionAnalysisResponse, SessionStatus,
-};
+/// SESSION-002: Per-screenshot analysis result from AI
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ScreenshotAnalysis {
+    pub timestamp: String,
+    pub current_focus: String,
+    pub active_software: String,
+    pub context_keywords: Vec<String>,
+    pub tags: Vec<String>,
+}
+
+/// SESSION-002: Session batch analysis response from AI
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SessionAnalysisResponse {
+    pub per_screenshot_analysis: Vec<ScreenshotAnalysis>,
+    pub session_summary: String,
+    pub context_for_next: String,
+}
+
+/// 工作时段状态
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum SessionStatus {
+    #[default]
+    Active, // 正在进行中
+    Ended,    // 已结束
+    Analyzed, // 已分析
+}
+
+impl From<String> for SessionStatus {
+    fn from(s: String) -> Self {
+        match s.to_lowercase().as_str() {
+            "active" => SessionStatus::Active,
+            "ended" => SessionStatus::Ended,
+            "analyzed" => SessionStatus::Analyzed,
+            _ => SessionStatus::Active,
+        }
+    }
+}
+
+impl From<SessionStatus> for String {
+    fn from(status: SessionStatus) -> Self {
+        match status {
+            SessionStatus::Active => "active".to_string(),
+            SessionStatus::Ended => "ended".to_string(),
+            SessionStatus::Analyzed => "analyzed".to_string(),
+        }
+    }
+}
+
+/// 工作时段结构体
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Session {
+    pub id: i64,
+    pub date: String,                     // YYYY-MM-DD
+    pub start_time: String,               // RFC3339
+    pub end_time: Option<String>,         // RFC3339, None = ongoing
+    pub ai_summary: Option<String>,       // AI 生成的时段摘要
+    pub user_summary: Option<String>,     // 用户自写的时段摘要
+    pub context_for_next: Option<String>, // 传递给下一时段分析的上下文
+    pub status: SessionStatus,
+    #[serde(default)]
+    pub screenshot_count: Option<i64>, // 时段内的截图数量
+}
+
+impl Default for Session {
+    fn default() -> Self {
+        let now = Local::now();
+        Self {
+            id: 0,
+            date: now.format("%Y-%m-%d").to_string(),
+            start_time: now.to_rfc3339(),
+            end_time: None,
+            ai_summary: None,
+            user_summary: None,
+            context_for_next: None,
+            status: SessionStatus::Active,
+            screenshot_count: None,
+        }
+    }
+}
 
 // ── Session CRUD Operations ───────────────────────────────────────────────────
 
@@ -406,6 +482,18 @@ pub fn update_session_user_summary_service(
 /// Get screenshots for a session
 pub fn get_session_screenshots_service(session_id: i64) -> AppResult<Vec<SessionScreenshot>> {
     crate::memory_storage::get_records_by_session_id(session_id)
+}
+
+// ── Convenience aliases (consumed by other service modules) ───────────────────
+
+/// Alias used by report_service and synthesis
+pub fn get_today_sessions_sync() -> AppResult<Vec<Session>> {
+    get_today_sessions_service()
+}
+
+/// Alias used by report_service and synthesis
+pub async fn analyze_session(session_id: i64) -> AppResult<()> {
+    analyze_session_service(session_id).await
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

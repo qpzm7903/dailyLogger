@@ -1,4 +1,4 @@
-//! Vision API helpers shared by session_service and session_manager.
+//! Vision API helpers shared by session_service.
 //!
 //! Encapsulates the common pattern of:
 //!   1. Loading API config (model, headers, proxy)
@@ -8,7 +8,7 @@
 
 use crate::infrastructure::retry;
 use crate::memory_storage::SessionScreenshot;
-use crate::session_manager::SessionAnalysisResponse;
+use crate::services::session_service::SessionAnalysisResponse;
 
 // STAB-001: Retry configuration for Vision API calls
 const VISION_MAX_RETRIES: u32 = 3;
