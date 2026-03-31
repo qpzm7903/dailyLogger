@@ -532,11 +532,7 @@ pub fn format_records_by_week(records: &[Record]) -> String {
                 })
                 .unwrap_or_else(|_| "unknown".to_string());
 
-            let source = if record.source_type == "auto" {
-                "🖥️ 自动感知"
-            } else {
-                "⚡ 闪念"
-            };
+            let source = crate::source_type_label(&record.source_type);
 
             output.push_str(&format!("- [{}] {}: {}\n", time, source, record.content));
         }
@@ -640,11 +636,7 @@ fn get_session_records_for_summary(session_id: i64) -> AppResult<Vec<(String, St
             .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
             .unwrap_or_else(|_| "unknown".to_string());
         // Source icon
-        let source = if record.source_type == "auto" {
-            "🖥️ 自动感知"
-        } else {
-            "⚡ 闪念"
-        };
+        let source = crate::source_type_label(&record.source_type);
         result.push((time, source.to_string(), display_content.clone()));
     }
 
@@ -748,11 +740,7 @@ pub fn format_records_for_summary(records: &[Record]) -> String {
                 .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
                 .unwrap_or_else(|_| "unknown".to_string());
 
-            let source = if r.source_type == "auto" {
-                "🖥️ 自动感知"
-            } else {
-                "⚡ 闪念"
-            };
+            let source = crate::source_type_label(&r.source_type);
 
             // SESSION-003: Prefer user_notes over content
             let display_content = r

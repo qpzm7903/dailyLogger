@@ -321,6 +321,15 @@ pub fn extract_date(timestamp: &str) -> String {
     timestamp.split('T').next().unwrap_or(timestamp).to_string()
 }
 
+/// Get the source type label for display in reports and exports.
+pub fn source_type_label(source_type: &str) -> &'static str {
+    if source_type == "auto" {
+        "🖥️ 自动感知"
+    } else {
+        "⚡ 闪念"
+    }
+}
+
 /// Calculate the gap in minutes between two RFC3339 timestamps.
 pub fn calc_gap_minutes(start: &str, end: &str) -> AppResult<i64> {
     use chrono::{DateTime, Utc};

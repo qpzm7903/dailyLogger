@@ -496,5 +496,8 @@ pub fn init_test_database(conn: &Connection) -> AppResult<()> {
     let _ = conn.execute("DELETE FROM settings WHERE id != 1", []);
     let _ = conn.execute("INSERT OR IGNORE INTO settings (id) VALUES (1)", []);
 
+    // Invalidate settings cache so tests get fresh settings from the new DB
+    super::invalidate_settings_cache();
+
     Ok(())
 }

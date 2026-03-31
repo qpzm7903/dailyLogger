@@ -177,6 +177,14 @@ pub struct ThresholdAdjustment {
     pub reason: String,
 }
 
+/// Validate that API key is configured, returning a standardized error if not.
+fn require_api_key(settings: &CaptureSettings) -> AppResult<()> {
+    if settings.api_key.is_empty() {
+        return Err(AppError::auth("API 密钥未配置，请在设置中配置"));
+    }
+    Ok(())
+}
+
 // STAB-001 AC5: Screenshot error classification
 #[derive(Debug, Clone, PartialEq)]
 pub enum ScreenshotErrorKind {
@@ -659,9 +667,7 @@ async fn analyze_screen(
     settings: &CaptureSettings,
     image_base64: &str,
 ) -> AppResult<ScreenAnalysis> {
-    if settings.api_key.is_empty() {
-        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
-    }
+    require_api_key(settings)?;
     let prompt = settings
         .analysis_prompt
         .as_deref()
@@ -751,9 +757,7 @@ pub fn start_auto_capture_service() -> AppResult<()> {
         return Ok(());
     }
     let settings = load_capture_settings();
-    if settings.api_key.is_empty() {
-        return Err(AppError::auth("API 密钥未配置，请在设置中配置"));
-    }
+    require_api_key(&settings)?;
     set_threshold(settings.max_silent_minutes);
     AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
     Ok(())
@@ -851,9 +855,7 @@ pub async fn reanalyze_record_service(record_id: i64) -> AppResult<ScreenAnalysi
     let image_base64 =
         base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
     let settings = load_capture_settings();
-    if settings.api_key.is_empty() {
-        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
-    }
+    require_api_key(&settings)?;
     tracing::info!("Reanalyzing record {}", record_id);
     let analysis = analyze_screen(&settings, &image_base64).await?;
     let content_json = serde_json::to_string(&analysis)?;
@@ -884,9 +886,7 @@ pub async fn reanalyze_today_records_service() -> AppResult<ReanalyzeResult> {
         });
     }
     let settings = load_capture_settings();
-    if settings.api_key.is_empty() {
-        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
-    }
+    require_api_key(&settings)?;
     let mut success = 0;
     let mut failed = 0;
     let mut errors = Vec::new();
@@ -968,9 +968,7 @@ pub async fn reanalyze_records_by_date_service(date: String) -> AppResult<Reanal
         });
     }
     let settings = load_capture_settings();
-    if settings.api_key.is_empty() {
-        return Err(AppError::auth("API Key 未配置，请先在设置中配置 API Key"));
-    }
+    require_api_key(&settings)?;
     let mut success = 0;
     let mut failed = 0;
     let mut errors = Vec::new();
@@ -1075,9 +1073,7 @@ pub fn get_work_time_status_service() -> crate::work_time::WorkTimeStatus {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async fn capture_and_store_inner(settings: CaptureSettings) -> AppResult<()> {
-    if settings.api_key.is_empty() {
-        return Err(AppError::auth("API 密钥未配置，请在设置中配置"));
-    }
+    require_api_key(&settings)?;
 
     let active_window = get_active_window();
 

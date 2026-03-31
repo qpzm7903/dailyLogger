@@ -103,11 +103,7 @@ fn render_record_with_template(record: &Record, template: &str) -> String {
         .map(|dt| dt.with_timezone(&chrono::Local).format("%H:%M").to_string())
         .unwrap_or_else(|_| "unknown".to_string());
 
-    let source_icon = if record.source_type == "auto" {
-        "🖥️ 自动感知"
-    } else {
-        "⚡ 闪念"
-    };
+    let source_icon = crate::source_type_label(&record.source_type);
 
     let content_indented: String = record
         .content
