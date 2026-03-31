@@ -8,7 +8,7 @@ use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
-use crate::errors::AppResult;
+use crate::errors::{AppError, AppResult};
 use crate::memory_storage::{Record, DB_CONNECTION};
 
 /// A single event on the timeline.
@@ -90,7 +90,7 @@ fn generate_preview(content: &str, max_len: usize) -> String {
 fn parse_timestamp(timestamp: &str) -> AppResult<DateTime<Local>> {
     DateTime::parse_from_rfc3339(timestamp)
         .map(|dt| dt.with_timezone(&Local))
-        .map_err(|e| e.into())
+        .map_err(AppError::from)
 }
 
 /// Convert records to timeline events.
@@ -158,36 +158,36 @@ fn calculate_work_time_estimate(hour_groups: &[TimelineHourGroup]) -> f64 {
 }
 
 /// Get timeline data for a specific date.
-pub fn get_timeline_data_for_date(date: &str) -> Result<TimelineData, String> {
-    let db = DB_CONNECTION
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let conn = db.as_ref().ok_or("Database not initialized")?;
+pub fn get_timeline_data_for_date(date: &str) -> AppResult<TimelineData> {
+    let db = DB_CONNECTION.lock().map_err(AppError::from)?;
+    let conn = db
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
 
     // Parse date and create time range
     let target_date = chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid date format: {}", e))?;
+        .map_err(|e| AppError::validation(format!("Invalid date format: {}", e)))?;
 
     // Helper function to safely convert NaiveDateTime to UTC RFC3339 string
-    fn naive_to_utc_rfc3339(dt: chrono::NaiveDateTime) -> Result<String, String> {
+    fn naive_to_utc_rfc3339(dt: chrono::NaiveDateTime) -> AppResult<String> {
         let local_dt = dt
             .and_local_timezone(Local)
             .single()
-            .ok_or_else(|| "Ambiguous or invalid local timezone".to_string())?;
+            .ok_or_else(|| AppError::internal("Ambiguous or invalid local timezone"))?;
         Ok(local_dt.with_timezone(&chrono::Utc).to_rfc3339())
     }
 
     let start_time = {
-        let dt = target_date
-            .and_hms_opt(0, 0, 0)
-            .ok_or_else(|| format!("Invalid start time for date: {}", date))?;
+        let dt = target_date.and_hms_opt(0, 0, 0).ok_or_else(|| {
+            AppError::validation(format!("Invalid start time for date: {}", date))
+        })?;
         naive_to_utc_rfc3339(dt)?
     };
 
     let end_time = {
         let dt = target_date
             .and_hms_opt(23, 59, 59)
-            .ok_or_else(|| format!("Invalid end time for date: {}", date))?;
+            .ok_or_else(|| AppError::validation(format!("Invalid end time for date: {}", date)))?;
         naive_to_utc_rfc3339(dt)?
     };
 
@@ -199,7 +199,7 @@ pub fn get_timeline_data_for_date(date: &str) -> Result<TimelineData, String> {
              WHERE timestamp >= ?1 AND timestamp <= ?2
              ORDER BY timestamp ASC",
         )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to prepare query: {}", e)))?;
 
     let records = stmt
         .query_map(params![start_time, end_time], |row| {
@@ -216,9 +216,9 @@ pub fn get_timeline_data_for_date(date: &str) -> Result<TimelineData, String> {
                 analysis_status: row.get(9)?,
             })
         })
-        .map_err(|e| format!("Failed to query records: {}", e))?
+        .map_err(|e| AppError::database(format!("Failed to query records: {}", e)))?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect records: {}", e))?;
+        .map_err(|e| AppError::database(format!("Failed to collect records: {}", e)))?;
 
     // Convert to timeline
     let events = records_to_events(records);
@@ -237,7 +237,7 @@ pub fn get_timeline_data_for_date(date: &str) -> Result<TimelineData, String> {
 }
 
 /// Get timeline data for today.
-pub fn get_today_timeline_data() -> Result<TimelineData, String> {
+pub fn get_today_timeline_data() -> AppResult<TimelineData> {
     let today = Local::now().format("%Y-%m-%d").to_string();
     get_timeline_data_for_date(&today)
 }
@@ -246,14 +246,16 @@ pub fn get_today_timeline_data() -> Result<TimelineData, String> {
 pub fn get_timeline_data_for_range(
     start_date: &str,
     end_date: &str,
-) -> Result<Vec<TimelineData>, String> {
+) -> AppResult<Vec<TimelineData>> {
     let start = chrono::NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid start date format: {}", e))?;
+        .map_err(|e| AppError::validation(format!("Invalid start date format: {}", e)))?;
     let end = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
-        .map_err(|e| format!("Invalid end date format: {}", e))?;
+        .map_err(|e| AppError::validation(format!("Invalid end date format: {}", e)))?;
 
     if start > end {
-        return Err("Start date must be before or equal to end date".to_string());
+        return Err(AppError::validation(
+            "Start date must be before or equal to end date",
+        ));
     }
 
     let mut result = Vec::new();
@@ -267,7 +269,7 @@ pub fn get_timeline_data_for_range(
         }
         current = current
             .checked_add_days(chrono::Days::new(1))
-            .ok_or("Date overflow")?;
+            .ok_or_else(|| AppError::validation("Date overflow"))?;
     }
 
     Ok(result)
@@ -280,13 +282,13 @@ pub fn get_timeline_data_for_range(
 /// Tauri command to get timeline data for today.
 #[command]
 pub fn get_timeline_today() -> Result<TimelineData, String> {
-    get_today_timeline_data()
+    get_today_timeline_data().map_err(|e| e.to_string())
 }
 
 /// Tauri command to get timeline data for a specific date.
 #[command]
 pub fn get_timeline_for_date(date: String) -> Result<TimelineData, String> {
-    get_timeline_data_for_date(&date)
+    get_timeline_data_for_date(&date).map_err(|e| e.to_string())
 }
 
 /// Tauri command to get timeline data for a date range.
@@ -295,7 +297,7 @@ pub fn get_timeline_for_range(
     start_date: String,
     end_date: String,
 ) -> Result<Vec<TimelineData>, String> {
-    get_timeline_data_for_range(&start_date, &end_date)
+    get_timeline_data_for_range(&start_date, &end_date).map_err(|e| e.to_string())
 }
 
 // ============================================================================
