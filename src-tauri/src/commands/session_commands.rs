@@ -20,7 +20,7 @@ use crate::services::session_service::{
 /// No business logic is implemented here - only error mapping.
 #[tauri::command]
 pub async fn get_today_sessions() -> Result<Vec<Session>, String> {
-    get_today_sessions_service()
+    get_today_sessions_service().map_err(|e| e.to_string())
 }
 
 /// Analyze a session's screenshots in batch using Vision API
@@ -29,7 +29,9 @@ pub async fn get_today_sessions() -> Result<Vec<Session>, String> {
 /// The service handles screenshot collection, API calls, retries, and result storage.
 #[tauri::command]
 pub async fn analyze_session(session_id: i64) -> Result<(), String> {
-    analyze_session_service(session_id).await
+    analyze_session_service(session_id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Get screenshots for a session
@@ -37,7 +39,7 @@ pub async fn analyze_session(session_id: i64) -> Result<(), String> {
 /// This is a thin command wrapper that delegates to the session service.
 #[tauri::command]
 pub async fn get_session_screenshots(session_id: i64) -> Result<Vec<SessionScreenshot>, String> {
-    get_session_screenshots_service(session_id)
+    get_session_screenshots_service(session_id).map_err(|e| e.to_string())
 }
 
 /// Update user summary for a session
@@ -49,4 +51,5 @@ pub async fn update_session_user_summary(
     user_summary: Option<String>,
 ) -> Result<(), String> {
     update_session_user_summary_service(session_id, user_summary.as_deref())
+        .map_err(|e| e.to_string())
 }
