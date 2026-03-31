@@ -3,26 +3,18 @@
 //! This module contains the business logic for querying AI model information.
 //! Commands should delegate to these service functions rather than implementing logic directly.
 
+use crate::errors::AppResult;
 use crate::memory_storage::ModelInfo;
 
 /// Get model information including context window from an OpenAI-compatible API.
 ///
 /// This function handles the HTTP communication with the model API to retrieve
 /// model metadata such as context window size.
-///
-/// # Arguments
-/// * `api_base_url` - Base URL of the API (e.g., "https://api.openai.com/v1")
-/// * `api_key` - API key for authentication
-/// * `model_name` - Name of the model to query (e.g., "gpt-4o")
-///
-/// # Returns
-/// * `Ok(ModelInfo)` with model details on success
-/// * `Err(String)` with error message on failure
 pub async fn get_model_info_service(
     api_base_url: String,
     api_key: String,
     model_name: String,
-) -> Result<ModelInfo, String> {
+) -> AppResult<ModelInfo> {
     // OpenAI compatible API /models endpoint
     let url = if api_base_url.ends_with('/') {
         format!("{}models/{}", api_base_url, model_name)

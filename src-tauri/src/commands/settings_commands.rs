@@ -13,7 +13,7 @@ use crate::services::settings_service::{get_settings_service, save_settings_serv
 /// No business logic is implemented here - only error mapping.
 #[tauri::command]
 pub async fn get_settings() -> Result<Settings, String> {
-    get_settings_service()
+    get_settings_service().map_err(|e| e.to_string())
 }
 
 /// Save application settings
@@ -22,5 +22,5 @@ pub async fn get_settings() -> Result<Settings, String> {
 /// No business logic is implemented here - only error mapping.
 #[tauri::command]
 pub async fn save_settings(settings: Settings) -> Result<(), String> {
-    save_settings_service(&settings)
+    save_settings_service(&settings).map_err(|e| e.to_string())
 }

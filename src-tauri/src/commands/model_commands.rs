@@ -16,5 +16,7 @@ pub async fn get_model_info(
     api_key: String,
     model_name: String,
 ) -> Result<crate::memory_storage::ModelInfo, String> {
-    get_model_info_service(api_base_url, api_key, model_name).await
+    get_model_info_service(api_base_url, api_key, model_name)
+        .await
+        .map_err(|e| e.to_string())
 }
