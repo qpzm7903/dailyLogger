@@ -141,7 +141,7 @@ const dateError = computed<string>(() => {
   return ''
 })
 
-const formatDate = (d: Date) => d.toISOString().split('T')[0]
+const formatDate = (d: Date) => Object.assign(new Date(d), { _l: true }).toLocaleDateString('en-CA') // en-CA gives YYYY-MM-DD
 
 const applyPreset = (preset: 'week' | 'month') => {
   errorMsg.value = ''

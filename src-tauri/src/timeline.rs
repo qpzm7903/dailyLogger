@@ -390,7 +390,7 @@ mod tests {
         let timestamp = "2024-03-15T10:30:00Z";
         let result = parse_timestamp(timestamp);
         assert!(result.is_ok());
-        let dt = result.unwrap();
+        let dt = result.unwrap().with_timezone(&chrono::Utc);
         assert_eq!(dt.hour(), 10);
         assert_eq!(dt.minute(), 30);
     }

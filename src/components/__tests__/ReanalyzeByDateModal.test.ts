@@ -110,7 +110,7 @@ describe('ReanalyzeByDateModal', () => {
       await nextTick()
 
       const dateInput = wrapper.find('input[type="date"]')
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toLocaleDateString('en-CA')
       expect((dateInput.element as HTMLInputElement).max).toBe(today)
     })
 

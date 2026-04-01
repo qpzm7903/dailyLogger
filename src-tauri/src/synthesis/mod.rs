@@ -972,10 +972,7 @@ mod tests {
             auto_detect_vault_by_window: None,
             comparison_report_prompt: None,
             logseq_graphs: None,
-            notion_api_key: None,
-            notion_database_id: None,
-            slack_webhook_url: None,
-            dingtalk_webhook_url: None,
+
             capture_only_mode: None,
             custom_headers: None,
             quality_filter_enabled: None,
@@ -1938,10 +1935,7 @@ mod benchmarks {
             auto_detect_vault_by_window: None,
             comparison_report_prompt: None,
             logseq_graphs: None,
-            notion_api_key: None,
-            notion_database_id: None,
-            slack_webhook_url: None,
-            dingtalk_webhook_url: None,
+
             capture_only_mode: None,
             custom_headers: None,
             quality_filter_enabled: None,

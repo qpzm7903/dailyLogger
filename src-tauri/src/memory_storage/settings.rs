@@ -46,7 +46,7 @@ pub fn get_settings_sync() -> AppResult<Arc<Settings>> {
                 weekly_report_prompt, weekly_report_day, last_weekly_report_path,
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
                 last_monthly_report_path, obsidian_vaults,
-                auto_detect_vault_by_window,
+                auto_detect_vault_by_window, comparison_report_prompt,
                 logseq_graphs, capture_only_mode, custom_headers,
                 quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
                 proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,

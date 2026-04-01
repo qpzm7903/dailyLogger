@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
-> 最后更新: 2026-03-31
-> 项目状态: 507 Rust + 1226 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+> 最后更新: 2026-04-01
+> 项目状态: 484 Rust + 1220 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
 
 ---
 
@@ -76,6 +76,13 @@
 - ✅ 移除 auto_backup_scheduler 3 个未使用的 settings 访问器函数
 - ✅ 移除 capture_commands 2 个废弃的 internal helper 函数
 - ✅ Sidebar.vue i18n: 硬编码"设置"改为 t('header.settings')
+
+### v4.6.3: 移除冗余集成与测试修复 ✅ 已完成
+- ✅ 移除 Notion、Slack、DingTalk 集成模块及相关依赖
+- ✅ 前端同步移除相关 UI 配置入口与多语言翻译 (zh/en)
+- ✅ 修复 settings 数据库迁移期间比较列丢失导致的诸多测试 panic
+- ✅ 彻底修复 timeline 和 stats 的时区断言缺陷 (UTC vs Local 测试)
+- ✅ 替代 `toISOString().split('T')[0]` 采用 `toLocaleDateString`，修复前端日历月末/跨年边界的 Flakes
 
 ### v4.6.2: Bug 修复 & DRY 收窄 ✅ 已完成
 - ✅ 修复 TimelineWidget 动态 Tailwind 类名 (bg-purple-${n}) 未被 JIT 编译的 bug

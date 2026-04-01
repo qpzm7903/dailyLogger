@@ -327,7 +327,7 @@ pub fn get_today_stats_sync() -> AppResult<TodayStats> {
     // Query busiest hour if there are records
     let (busiest_hour, busiest_hour_count) = if total > 0 {
         conn.query_row(
-            "SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(*) as cnt
+            "SELECT CAST(strftime('%H', datetime(timestamp, 'localtime')) AS INTEGER) as hour, COUNT(*) as cnt
             FROM records
             WHERE timestamp >= ?1
             GROUP BY hour

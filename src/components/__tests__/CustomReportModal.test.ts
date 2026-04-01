@@ -59,7 +59,7 @@ describe('CustomReportModal - REPORT-003', () => {
     const startVal = dateInputs[0].element.value
     const endVal = dateInputs[1].element.value
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date().toLocaleDateString('en-CA')
     expect(endVal).toBe(today)
 
     // Start should be 13 days before today
