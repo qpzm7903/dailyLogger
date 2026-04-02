@@ -22,7 +22,7 @@ Status: done
 - Given 用户在设置中配置了窗口白名单 ["VS Code", "IntelliJ IDEA"]
 - When 当前活动窗口不在白名单中
 - Then 跳过本次捕获，不记录、不调用 AI
-- Given 用户在设置中配置了窗口黑名单 ["浏览器", "Slack"]
+- Given 用户在设置中配置了窗口黑名单 ["浏览器", "聊天工具"]
 - When 当前活动窗口在黑名单中
 - Then 跳过本次捕获
 - Given 白名单和黑名单都未配置

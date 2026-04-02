@@ -25,7 +25,6 @@ export type ModalId =
   | 'tagCloud'
   | 'export'
   | 'timeline'
-  | 'pluginPanel'
   | 'reportHistory'
   | 'offlineQueue'
   | 'reanalyzeByDate'

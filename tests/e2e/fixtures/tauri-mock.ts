@@ -226,17 +226,6 @@ const DEFAULT_MOCKS: Record<string, (args?: unknown) => unknown> = {
   get_timeline_for_date: () => [] as TimelineEntry[],
   get_timeline_for_range: () => [] as TimelineEntry[],
 
-  // Plugins
-  list_discovered_plugins: () => [],
-  enable_plugin: () => 'ok',
-  disable_plugin: () => 'ok',
-  open_plugins_directory: () => 'ok',
-
-  // Integrations
-  test_notion_connection: () => true,
-  test_github_connection: () => true,
-  test_slack_connection: () => true,
-
   // Model Info
   get_model_info: () => ({
     analysis_model: 'gpt-4o',
@@ -247,14 +236,6 @@ const DEFAULT_MOCKS: Record<string, (args?: unknown) => unknown> = {
   get_offline_queue_status: () => Factory.createOfflineQueueStatus(),
   process_offline_queue: () => 'ok',
 
-  // Fine Tuning
-  prepare_training_data: () => '/path/to/training.jsonl',
-  start_fine_tuning: () => 'job-123',
-  get_default_fine_tuning_config: () => ({
-    model: 'gpt-3.5-turbo',
-    n_epochs: 3,
-    batch_size: 4,
-  }),
 };
 
 // ============================================
@@ -418,7 +399,6 @@ export function getMockInjectionScript(overrides: MockOverrides = {}): string {
             },
             get_timeline_today: () => [],
             get_timeline_for_date: () => [],
-            list_discovered_plugins: () => [],
             get_model_info: () => ({ analysis_model: 'gpt-4o', report_model: 'gpt-4o' }),
             get_all_tags: () => [],
             get_tag_colors: () => ({}),
@@ -431,7 +411,6 @@ export function getMockInjectionScript(overrides: MockOverrides = {}): string {
             get_tags_for_records: () => ({}),
             get_records_by_manual_tags: () => [],
             get_default_tag_categories: () => [],
-            list_discovered_plugins: () => [],
             get_model_info: () => ({ analysis_model: 'gpt-4o', report_model: 'gpt-4o' }),
             'plugin:event|listen': () => (() => { return () => {}; })(),
             'plugin:global-shortcut|register': () => 'ok',

@@ -60,40 +60,6 @@
       </div>
     </div>
 
-    <!-- Logseq Graphs -->
-    <div>
-      <label class="text-xs text-[var(--color-text-secondary)] block mb-2">{{ $t('settings.logseqGraphs') }}</label>
-      <!-- Graph list -->
-      <div v-for="(graph, index) in graphs" :key="graph.path"
-        class="flex items-center gap-2 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-3 py-2 mb-2">
-        <button @click="setDefaultGraph(index)" class="text-xs shrink-0"
-          :class="graph.is_default ? 'text-primary font-bold' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'">
-          {{ graph.is_default ? '★' : '☆' }}
-        </button>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm text-[var(--color-text-primary)] truncate">{{ graph.name }}</div>
-          <div class="text-xs text-[var(--color-text-muted)] truncate">{{ graph.path }}</div>
-        </div>
-        <button @click="removeGraph(index)" class="text-[var(--color-text-muted)] hover:text-red-400 text-xs shrink-0">✕</button>
-      </div>
-      <div v-if="graphs.length === 0" class="text-xs text-[var(--color-text-muted)] py-2 mb-2">
-        {{ $t('settings.noGraphConfigured') }}
-      </div>
-      <!-- Add graph form -->
-      <div class="flex gap-2">
-        <input v-model="newGraphName" type="text" :placeholder="$t('common.name')"
-          class="w-1/3 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
-        <input v-model="newGraphPath" type="text" :placeholder="$t('common.path')"
-          class="flex-1 bg-[var(--color-surface-0)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-primary focus:outline-none" />
-        <button @click="addGraph" :disabled="!newGraphName.trim() || !newGraphPath.trim()"
-          class="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 disabled:opacity-30 rounded-lg text-xs text-primary transition-colors shrink-0">
-          {{ $t('common.add') }}
-        </button>
-      </div>
-    </div>
-
-
-
     <!-- Debug Tools -->
     <div>
       <h3 class="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{{ $t('settings.debugTools') }}</h3>
@@ -126,18 +92,11 @@ interface Vault {
   window_patterns?: string[]
 }
 
-interface Graph {
-  name: string
-  path: string
-  is_default?: boolean
-}
-
 interface Props {
   settings: {
     auto_detect_vault_by_window: boolean
   }
   vaults: Vault[]
-  graphs: Graph[]
 }
 
 const props = defineProps<Props>()
@@ -146,7 +105,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'update:settings', value: Props['settings']): void
   (e: 'update:vaults', value: Vault[]): void
-  (e: 'update:graphs', value: Graph[]): void
 }>()
 
 // Composables
@@ -155,15 +113,10 @@ const { t } = useI18n()
 // Local state
 const localSettings = ref({ ...props.settings })
 const localVaults = ref<Vault[]>([...props.vaults])
-const localGraphs = ref<Graph[]>([...props.graphs])
 
 // Input state
 const newVaultName = ref('')
 const newVaultPath = ref('')
-const newGraphName = ref('')
-const newGraphPath = ref('')
-
-
 
 // Export state
 const isExportingLogs = ref(false)
@@ -183,10 +136,6 @@ watch(() => props.vaults, (newVal) => {
   isUpdatingFromProps = true
   localVaults.value = [...newVal]
   nextTick(() => { isUpdatingFromProps = false })
-}, { deep: true })
-
-watch(() => props.graphs, (newVal) => {
-  localGraphs.value = [...newVal]
 }, { deep: true })
 
 // Watch for local changes and emit
@@ -243,33 +192,6 @@ watch(localVaults, (newVal) => {
     emit('update:vaults', [...newVal])
   }
 }, { deep: true })
-
-// Graph management methods
-function addGraph() {
-  if (newGraphName.value.trim() && newGraphPath.value.trim()) {
-    localGraphs.value.push({
-      name: newGraphName.value.trim(),
-      path: newGraphPath.value.trim(),
-      is_default: localGraphs.value.length === 0
-    })
-    emit('update:graphs', [...localGraphs.value])
-    newGraphName.value = ''
-    newGraphPath.value = ''
-  }
-}
-
-function removeGraph(index: number) {
-  localGraphs.value.splice(index, 1)
-  emit('update:graphs', [...localGraphs.value])
-}
-
-function setDefaultGraph(index: number) {
-  localGraphs.value.forEach((g, i) => {
-    g.is_default = i === index
-  })
-  emit('update:graphs', [...localGraphs.value])
-}
-
 
 // Export logs
 async function exportLogs() {

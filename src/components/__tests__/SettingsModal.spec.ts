@@ -309,7 +309,7 @@ describe('SettingsModal', () => {
     it('displays blacklist tags from settings', async () => {
       invoke.mockResolvedValueOnce({
         ...defaultSettings,
-        window_blacklist: '["浏览器", "Slack"]'
+        window_blacklist: '["浏览器", "聊天软件"]'
       })
 
       const wrapper = mount(SettingsModal, {
@@ -330,7 +330,7 @@ describe('SettingsModal', () => {
       // Check blacklist tags are rendered
       const html = wrapper.html()
       expect(html).toContain('浏览器')
-      expect(html).toContain('Slack')
+      expect(html).toContain('聊天软件')
     })
 
     it('can add whitelist tag', async () => {

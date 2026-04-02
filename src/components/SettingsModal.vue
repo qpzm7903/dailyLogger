@@ -59,10 +59,8 @@
           v-if="activeTab === 'output'"
           :settings="outputSettings"
           :vaults="vaults"
-          :graphs="graphs"
           @update:settings="updateOutputSettings"
           @update:vaults="vaults = $event"
-          @update:graphs="graphs = $event"
         />
       </div>
 
@@ -264,12 +262,6 @@ interface Vault {
   is_default?: boolean
 }
 
-interface Graph {
-  name: string
-  path: string
-  is_default?: boolean
-}
-
 interface Template {
   id: string
   name: string
@@ -329,11 +321,6 @@ const settings = ref({
   is_ollama: false,
   obsidian_vaults: '[]',
   auto_detect_vault_by_window: false,
-  logseq_graphs: '[]',
-  notion_api_key: null as string | null,
-  notion_database_id: null as string | null,
-  slack_webhook_url: null as string | null,
-  dingtalk_webhook_url: null as string | null,
   custom_headers: '[]',
   proxy_enabled: false,
   proxy_host: '',
@@ -387,10 +374,6 @@ const captureSettings = computed(() => ({
 }))
 
 const outputSettings = computed(() => ({
-  notion_api_key: settings.value.notion_api_key as string | null,
-  notion_database_id: settings.value.notion_database_id as string | null,
-  slack_webhook_url: settings.value.slack_webhook_url as string | null,
-  dingtalk_webhook_url: settings.value.dingtalk_webhook_url as string | null,
   auto_detect_vault_by_window: settings.value.auto_detect_vault_by_window ?? false
 }))
 
@@ -399,7 +382,6 @@ const whitelistTags = ref<string[]>([])
 const blacklistTags = ref<string[]>([])
 const tagCategoriesText = ref('')
 const vaults = ref<Vault[]>([])
-const graphs = ref<Graph[]>([])
 const monitors = ref<Monitor[]>([])
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -442,10 +424,6 @@ function updateCaptureSettings(newSettings: typeof captureSettings.value) {
 }
 
 function updateOutputSettings(newSettings: typeof outputSettings.value) {
-  settings.value.notion_api_key = newSettings.notion_api_key
-  settings.value.notion_database_id = newSettings.notion_database_id
-  settings.value.slack_webhook_url = newSettings.slack_webhook_url
-  settings.value.dingtalk_webhook_url = newSettings.dingtalk_webhook_url
   settings.value.auto_detect_vault_by_window = newSettings.auto_detect_vault_by_window
 }
 
@@ -485,7 +463,6 @@ const hasUnsavedChanges = computed(() => {
   const currentSnapshot = JSON.stringify({
     settings: settings.value,
     vaults: vaults.value,
-    graphs: graphs.value,
     whitelistTags: whitelistTags.value,
     blacklistTags: blacklistTags.value,
     tagCategoriesText: tagCategoriesText.value
@@ -525,7 +502,6 @@ async function loadSettings() {
     if (vaults.value.length === 0 && settings.value.obsidian_path) {
       vaults.value = [{ name: 'Default', path: settings.value.obsidian_path, is_default: true }]
     }
-    try { graphs.value = JSON.parse(settings.value.logseq_graphs || '[]') } catch { graphs.value = [] }
     try { whitelistTags.value = JSON.parse(settings.value.window_whitelist || '[]') } catch { whitelistTags.value = [] }
     try { blacklistTags.value = JSON.parse(settings.value.window_blacklist || '[]') } catch { blacklistTags.value = [] }
     try { tagCategoriesText.value = JSON.parse(settings.value.tag_categories || '[]').join('\n') } catch { tagCategoriesText.value = '' }
@@ -557,7 +533,6 @@ async function loadSettings() {
     initialSettings.value = JSON.stringify({
       settings: settings.value,
       vaults: vaults.value,
-      graphs: graphs.value,
       whitelistTags: whitelistTags.value,
       blacklistTags: blacklistTags.value,
       tagCategoriesText: tagCategoriesText.value
@@ -579,8 +554,7 @@ async function saveSettings() {
       window_blacklist: JSON.stringify(blacklistTags.value),
       tag_categories: JSON.stringify(tagCategoriesText.value.split('\n').map(t => t.trim()).filter(t => t.length > 0)),
       obsidian_vaults: JSON.stringify(vaults.value),
-      obsidian_path: vaults.value.find(v => v.is_default)?.path || vaults.value[0]?.path || settings.value.obsidian_path || '',
-      logseq_graphs: JSON.stringify(graphs.value)
+      obsidian_path: vaults.value.find(v => v.is_default)?.path || vaults.value[0]?.path || settings.value.obsidian_path || ''
     }
 
     await settingsActions.saveSettings(settingsToSave as unknown as Partial<Settings>)

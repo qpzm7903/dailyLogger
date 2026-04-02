@@ -13,9 +13,9 @@
 
 产品负责人 Weiyicheng 在日常使用 DailyLogger 过程中发现两个结构性问题：
 
-### 问题 A：GitHub 集成与实际使用场景不符
+### 问题 A：外部统计集成与实际使用场景不符
 
-用户明确声明不使用 GitHub。INT-003A/B 共计 **1,360+ 行代码**（866 行 Rust + 181 行 Vue + 313 行测试）在项目中没有任何实际价值，增加维护负担和包体积，在 Dashboard 占据 UI 空间。
+用户明确声明不使用这类外部统计功能。相关实现共计 **1,360+ 行代码**（866 行 Rust + 181 行 Vue + 313 行测试）在项目中没有任何实际价值，增加维护负担和包体积，在 Dashboard 占据 UI 空间。
 
 ### 问题 B：单张截图分析的根本性设计缺陷
 
@@ -40,7 +40,7 @@
 | Epic | 当前状态 | 变更 |
 |------|---------|------|
 | Epic 1-5 | ✅ 已完成 | 代码保留，无直接改动 |
-| Epic 6 (集成扩展) | ✅ 已完成 | **移除 GitHub 集成代码**（INT-003A/B）；Notion/Logseq/Slack/DingTalk 保留 |
+| Epic 6 (集成扩展) | ✅ 已完成 | **先移除外部统计集成代码**；其余第三方集成当时暂保留，后续版本已全部清理 |
 | Epic 7 (核心体验) | ✅ 已完成 | EXP-003（记录重分析）概念被新架构吸收并扩展 |
 | **Epic 8（新增）** | 📋 新建 | **工作时段感知分析** — 核心分析管线重设计 |
 
@@ -50,25 +50,25 @@
 |------|---------|---------|
 | PRD | Section 6.1 重写（分离捕获与分析）；新增 Section 6.7（工作时段管理） | 重大 |
 | Architecture | Section 3.1 流程重写；Section 5 新增 sessions 表；Section 2.2 新增 session_manager 模块 | 重大 |
-| Epics | 新增 Epic 8（5 个 Stories）；Epic 6 标记 GitHub 已移除 | 中等 |
-| 代码 | auto_perception 重构；新增 session_manager 模块；移除 github.rs | 重大 |
-| UI | 移除 GitHubStatsPanel；新增 SessionView；ScreenshotGallery 按时段分组 | 中等 |
+| Epics | 新增 Epic 8（5 个 Stories）；Epic 6 标记外部统计集成已移除 | 中等 |
+| 代码 | auto_perception 重构；新增 session_manager 模块；移除外部统计模块 | 重大 |
+| UI | 移除外部统计面板；新增 SessionView；ScreenshotGallery 按时段分组 | 中等 |
 
 ### 技术影响
 
-**移除清单（GitHub）**：
+**移除清单（外部统计集成）**：
 
 | 文件 | 行数 | 操作 |
 |------|------|------|
-| `src-tauri/src/github.rs` | 866 | 删除 |
-| `src/components/GitHubStatsPanel.vue` | 181 | 删除 |
-| `src/components/__tests__/GitHubStatsPanel.test.ts` | 313 | 删除 |
-| `src-tauri/src/main.rs` | 2 行 | 移除 command 注册 |
-| `src-tauri/src/lib.rs` | 1 行 | 移除 `pub mod github` |
-| `src-tauri/src/synthesis/mod.rs` | ~30 行 | 移除 GitHub 活动集成 |
-| `src/components/layout/Dashboard.vue` | ~5 行 | 移除 GitHubStatsPanel 引用 |
-| `src/components/settings/OutputSettings.vue` | ~35 行 | 移除 GitHub 配置区域 |
-| `src/types/tauri.ts` | ~20 行 | 移除 GitHub 类型定义 |
+| 外部统计后端模块 | 866 | 删除 |
+| 外部统计前端面板 | 181 | 删除 |
+| 外部统计前端测试 | 313 | 删除 |
+| 命令注册 | 2 行 | 移除相关 command |
+| 模块导出 | 1 行 | 移除相关 `pub mod` |
+| `src-tauri/src/synthesis/mod.rs` | ~30 行 | 移除外部活动聚合逻辑 |
+| `src/components/layout/Dashboard.vue` | ~5 行 | 移除外部统计面板引用 |
+| `src/components/settings/OutputSettings.vue` | ~35 行 | 移除外部统计配置区域 |
+| `src/types/tauri.ts` | ~20 行 | 移除外部统计类型定义 |
 | **总计** | **~1,453 行** | **删除** |
 
 **重构范围（分析管线）**：
@@ -98,7 +98,7 @@
 
 | 维度 | 评级 | 说明 |
 |------|------|------|
-| 工作量 | Medium-High | GitHub 移除简单；分析管线重构需 3-4 个 Sprint Stories |
+| 工作量 | Medium-High | 外部统计集成移除简单；分析管线重构需 3-4 个 Sprint Stories |
 | 风险 | Medium | 分析管线是核心路径，需要完善的测试覆盖 |
 | 时间线影响 | 1 个 Sprint | 可在一个 Sprint 内完成全部变更 |
 | 用户价值 | 极高 | 直接解决"分析不准确"这一核心体验痛点 |
@@ -107,11 +107,11 @@
 
 ## 第4节：变更提案详情
 
-### 变更 A：移除 GitHub 集成
+### 变更 A：移除外部统计集成
 
 **操作**：删除上述移除清单中的全部文件和代码引用。
 
-**数据库字段处理**：`github_token` 和 `github_repositories` 字段保留在 schema 中（避免破坏现有数据库文件的兼容性），但不在 UI 中暴露，后续版本可通过 migration 清理。
+**数据库字段处理**：保留遗留外部平台字段以维持旧数据库文件兼容性，但不在 UI 中暴露，后续版本可通过 migration 清理。
 
 ---
 
@@ -218,7 +218,7 @@ ALTER TABLE records ADD COLUMN analysis_status TEXT DEFAULT 'pending';
 | SESSION-003 | 分析结果用户编辑 | P0 | 3pts | 截图级：编辑 user_notes；时段级：编辑 user_summary；前端 UI（ScreenshotModal 编辑、SessionView 编辑）；日报和 UI 优先展示用户内容 |
 | SESSION-004 | 手动触发分析 | P1 | 2pts | 用户选择时间范围或指定时段手动触发分析；复用 SESSION-002 的分析管线 |
 | SESSION-005 | 日报生成适配 | P1 | 3pts | synthesis 模块改为基于时段分析结果生成日报；优先使用 user_summary；按时段组织内容而非按时间线平铺 |
-| CLEAN-001 | 移除 GitHub 集成 | P0 | 2pts | 删除 github.rs、GitHubStatsPanel.vue 及所有引用；移除 synthesis 中的 GitHub 活动集成 |
+| CLEAN-001 | 移除外部统计集成 | P0 | 2pts | 删除外部统计模块与面板及所有引用；移除 synthesis 中的相关活动聚合逻辑 |
 
 **Story 依赖关系**：
 ```
@@ -322,7 +322,7 @@ CLEAN-001 (独立，无依赖)
 
 | 阶段 | Story | 负责 | 前置条件 |
 |------|-------|------|---------|
-| 1 | CLEAN-001 — 移除 GitHub 集成 | Developer | 无 |
+| 1 | CLEAN-001 — 移除外部统计集成 | Developer | 无 |
 | 2 | SESSION-001 — 捕获解耦 + 时段管理 | Developer | 无 |
 | 3 | SESSION-002 — 时段批量分析 | Developer | SESSION-001 完成 |
 | 4 | SESSION-003 — 用户编辑 UI | Developer | SESSION-001 完成 |
@@ -333,7 +333,7 @@ CLEAN-001 (独立，无依赖)
 
 ### 成功标准
 
-- [ ] GitHub 相关代码完全移除，CI 通过
+- [ ] 外部统计相关代码完全移除，CI 通过
 - [ ] 截图捕获不再触发即时 AI 分析
 - [ ] 时段检测和自动分析正常工作
 - [ ] 用户可编辑截图级和时段级分析结果
@@ -346,7 +346,7 @@ CLEAN-001 (独立，无依赖)
 本次变更为 **MAJOR** 版本（v3.0.0），因为：
 - 核心分析管线架构变更
 - 数据库 schema 新增表和字段
-- 移除已有功能（GitHub 集成）
+- 移除已有功能（外部统计集成）
 
 ---
 

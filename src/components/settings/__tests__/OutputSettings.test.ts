@@ -22,18 +22,6 @@ const mockT = vi.fn((key: string) => {
     'settings.outputConfig': 'Output Configuration',
     'settings.obsidianVaults': 'Obsidian Vaults',
     'settings.noVaultConfigured': 'No vault configured',
-    'settings.logseqGraphs': 'Logseq Graphs',
-    'settings.noGraphConfigured': 'No graph configured',
-    'settings.notionIntegration': 'Notion Integration',
-    'settings.notionApiKey': 'Notion API Key',
-    'settings.notionApiKeyPlaceholder': 'secret_...',
-    'settings.notionDatabaseId': 'Database ID',
-    'settings.notionDatabaseIdPlaceholder': 'xxx...',
-    'settings.notionHint': 'Configure Notion to export reports',
-    'settings.slackNotification': 'Slack Notification',
-    'settings.slackWebhookUrl': 'Slack Webhook URL',
-    'settings.slackWebhookPlaceholder': 'https://hooks.slack.com/...',
-    'settings.slackHint': 'Send reports to Slack',
     'settings.debugTools': 'Debug Tools',
     'settings.exportLogs': 'Export Logs',
     'settings.exporting': 'Exporting...',
@@ -61,8 +49,7 @@ describe('OutputSettings', () => {
     },
     vaults: [
       { name: 'Personal', path: '/Users/test/Documents/Personal', is_default: true }
-    ],
-    graphs: []
+    ]
   }
 
   beforeEach(() => {
@@ -85,13 +72,6 @@ describe('OutputSettings', () => {
       expect(wrapper.text()).toContain('Obsidian Vaults')
     })
 
-    it('renders Logseq graphs section', () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      expect(wrapper.text()).toContain('Logseq Graphs')
-    })
-
-
-
     it('renders debug tools section', () => {
       const wrapper = mount(OutputSettings, { props: defaultProps })
       expect(wrapper.text()).toContain('Debug Tools')
@@ -101,11 +81,6 @@ describe('OutputSettings', () => {
       const wrapper = mount(OutputSettings, { props: defaultProps })
       expect(wrapper.text()).toContain('Personal')
       expect(wrapper.text()).toContain('/Users/test/Documents/Personal')
-    })
-
-    it('renders no graph configured message when empty', () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      expect(wrapper.text()).toContain('No graph configured')
     })
 
     it('renders add vault form', () => {
@@ -173,47 +148,6 @@ describe('OutputSettings', () => {
     })
   })
 
-  // === Graph Management ===
-  describe('graph management', () => {
-    it('adds new graph', async () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-
-      const inputs = wrapper.findAll('input[type="text"]')
-      // Find graph inputs (second set of name/path inputs)
-      const nameInputs = inputs.filter(i => i.attributes('placeholder') === 'Name')
-      const pathInputs = inputs.filter(i => i.attributes('placeholder') === 'Path')
-
-      if (nameInputs.length > 1 && pathInputs.length > 1) {
-        await nameInputs[1].setValue('MyGraph')
-        await pathInputs[1].setValue('/Users/test/Logseq/MyGraph')
-
-        const addButtons = wrapper.findAll('button').filter(b => b.text() === 'Add')
-        await addButtons[1]?.trigger('click')
-      }
-
-      const emitted = wrapper.emitted('update:graphs')
-      expect(emitted).toBeTruthy()
-    })
-
-    it('removes graph when clicked', async () => {
-      const wrapper = mount(OutputSettings, {
-        props: {
-          ...defaultProps,
-          graphs: [{ name: 'MyGraph', path: '/path' }]
-        }
-      })
-
-      const removeButtons = wrapper.findAll('button').filter(b => b.text() === '✕')
-      // The last remove button should be for the graph
-      await removeButtons[removeButtons.length - 1]?.trigger('click')
-
-      const emitted = wrapper.emitted('update:graphs')
-      expect(emitted).toBeTruthy()
-    })
-  })
-
-
-
   // === Export Logs ===
   describe('export logs', () => {
     it('exports logs when button clicked', async () => {
@@ -267,17 +201,5 @@ describe('OutputSettings', () => {
       expect((wrapper.vm as any).localVaults[0].name).toBe('NewVault')
     })
 
-    it('updates local graphs when props change', async () => {
-      const wrapper = mount(OutputSettings, { props: defaultProps })
-      await wrapper.setProps({
-        ...defaultProps,
-        graphs: [
-          { name: 'NewGraph', path: '/new/graph' }
-        ]
-      })
-
-      expect((wrapper.vm as any).localGraphs.length).toBe(1)
-      expect((wrapper.vm as any).localGraphs[0].name).toBe('NewGraph')
-    })
   })
 })

@@ -29,7 +29,7 @@ src/components/settings/
 ├── BasicSettings.vue           # 基础设置（API 配置、模型选择、测试连接）
 ├── AISettings.vue              # AI 设置（分析模型、报告模型、Prompt 配置）
 ├── CaptureSettings.vue         # 截图设置（间隔、静默检测、窗口过滤、多显示器）
-├── OutputSettings.vue          # 输出设置（Obsidian、Logseq、Notion、Slack）
+├── OutputSettings.vue          # 输出设置（Obsidian、数据备份恢复）
 └── shared/
     ├── SettingSection.vue      # 通用设置区块容器
     └── types.ts                # 共享类型定义
@@ -60,7 +60,7 @@ interface SettingsEmits {
 | BasicSettings | API Base URL、API Key、模型选择、测试连接、Ollama 模型管理、语言切换 | ~255 |
 | AISettings | 分析模型配置、报告模型配置、Prompt 配置、标签分类配置 | ~182 |
 | CaptureSettings | 截图间隔、智能静默检测、窗口过滤、多显示器选择 | ~346 |
-| OutputSettings | Obsidian Vault、Logseq、Notion、Slack、数据备份恢复 | ~173 |
+| OutputSettings | Obsidian Vault、数据备份恢复 | ~173 |
 
 ## 接口定义
 

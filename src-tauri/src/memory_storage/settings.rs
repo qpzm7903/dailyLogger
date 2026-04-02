@@ -47,7 +47,7 @@ pub fn get_settings_sync() -> AppResult<Arc<Settings>> {
                 monthly_report_prompt, custom_report_prompt, last_custom_report_path,
                 last_monthly_report_path, obsidian_vaults,
                 auto_detect_vault_by_window, comparison_report_prompt,
-                logseq_graphs, capture_only_mode, custom_headers,
+                capture_only_mode, custom_headers,
                 quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
                 proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,
                 test_model_name, onboarding_completed, language,
@@ -115,7 +115,6 @@ pub fn get_settings_sync() -> AppResult<Arc<Settings>> {
                     .get::<_, Option<i32>>("auto_detect_vault_by_window")?
                     .map(|v| v != 0),
                 comparison_report_prompt: row.get("comparison_report_prompt")?,
-                logseq_graphs: row.get("logseq_graphs")?,
                 capture_only_mode: row
                     .get::<_, Option<i32>>("capture_only_mode")?
                     .map(|v| v != 0),
@@ -332,7 +331,6 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
             obsidian_vaults = :obsidian_vaults,
             auto_detect_vault_by_window = :auto_detect_vault_by_window,
             comparison_report_prompt = :comparison_report_prompt,
-            logseq_graphs = :logseq_graphs,
             capture_only_mode = :capture_only_mode,
             custom_headers = :custom_headers,
             quality_filter_enabled = :quality_filter_enabled,
@@ -393,7 +391,6 @@ pub fn save_settings_sync(settings: &Settings) -> AppResult<()> {
             ":obsidian_vaults": settings.obsidian_vaults,
             ":auto_detect_vault_by_window": settings.auto_detect_vault_by_window.map(|v| if v { 1 } else { 0 }),
             ":comparison_report_prompt": settings.comparison_report_prompt,
-            ":logseq_graphs": settings.logseq_graphs,
             ":capture_only_mode": settings.capture_only_mode.map(|v| if v { 1 } else { 0 }),
             ":custom_headers": encrypted_custom_headers,
             ":quality_filter_enabled": settings.quality_filter_enabled.map(|v| if v { 1 } else { 0 }),

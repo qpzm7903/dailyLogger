@@ -18,7 +18,7 @@ pub use crate::synthesis::{
     get_default_comparison_report_prompt, get_default_custom_report_prompt,
     get_default_monthly_report_prompt, get_default_summary_prompt,
     get_default_weekly_report_prompt, get_supported_languages, translate_report,
-    write_report_to_logseq, write_report_to_obsidian, ApiConfig,
+    write_report_to_obsidian, ApiConfig,
 };
 
 use crate::errors::{AppError, AppResult};
@@ -27,9 +27,8 @@ use crate::synthesis::{
     DEFAULT_MONTHLY_REPORT_PROMPT, DEFAULT_SUMMARY_PROMPT, DEFAULT_WEEKLY_REPORT_PROMPT,
 };
 
-/// Write a generated report to all configured destinations (Obsidian, Logseq,
-/// Notion, Slack/DingTalk), optionally persist the path in settings, and return
-/// the Obsidian file path.
+/// Write a generated report to the configured destination (Obsidian),
+/// optionally persist the path in settings, and return the Obsidian file path.
 ///
 /// `obsidian_path` - The Obsidian output path to write to.
 /// `update_settings` is called with a mutable reference to a cloned settings
@@ -46,9 +45,6 @@ fn write_report_to_all_destinations(
     update_settings: Option<&dyn Fn(&mut crate::memory_storage::Settings, &str)>,
 ) -> AppResult<String> {
     let path_str = write_report_to_obsidian(obsidian_path, filename, summary)?;
-
-    // INT-002: Also write to Logseq if configured
-    write_report_to_logseq(settings, filename, summary);
 
     // Persist last-report-path in settings
     if let Some(updater) = update_settings {

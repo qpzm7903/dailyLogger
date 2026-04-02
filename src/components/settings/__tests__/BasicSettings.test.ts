@@ -67,7 +67,6 @@ const mockT = vi.fn((key: string, params?: Record<string, unknown>) => {
     'settings.ollamaModelsNotFound': 'No models found on Ollama server',
     'settings.ollamaModelsFound': 'Found {count} models',
     'settings.createCustomModel': 'Create Custom Model',
-    'settings.fineTuning': 'Fine-tuning',
     'settings.language': 'Language',
     'settings.languageEn': 'English',
     'settings.languageZhCN': '简体中文',

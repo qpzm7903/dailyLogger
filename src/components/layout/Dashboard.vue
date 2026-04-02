@@ -510,8 +510,15 @@ const getWindowIcon = (processName?: string): string => {
   if (name.includes('firefox')) return '🦊'
   if (name.includes('edge') || name.includes('msedge')) return '🌊'
   if (name.includes('safari')) return '🧭'
-  if (name.includes('slack') || name.includes('discord') || name.includes('teams')) return '💬'
-  if (name.includes('wechat') || name.includes('微信')) return '💬'
+  if (
+    name.includes('chat') ||
+    name.includes('message') ||
+    name.includes('messenger') ||
+    name.includes('wechat') ||
+    name.includes('微信')
+  ) {
+    return '💬'
+  }
   if (name.includes('terminal') || name.includes('cmd') || name.includes('bash') || name.includes('powershell')) return '⌨️'
   if (name.includes('word') || name.includes('excel') || name.includes('powerpoint')) return '📊'
   return '🖥️'

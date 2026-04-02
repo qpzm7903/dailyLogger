@@ -25,7 +25,6 @@ function setupInvoke(overrides = {}) {
       return val instanceof Error ? Promise.reject(val) : Promise.resolve(val)
     }
     if (cmd === 'get_settings') return Promise.resolve({})
-    if (cmd === 'list_discovered_plugins') return Promise.resolve([])
     return Promise.resolve()
   })
 }

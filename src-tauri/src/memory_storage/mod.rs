@@ -91,8 +91,6 @@ pub struct Settings {
     pub auto_detect_vault_by_window: Option<bool>,
     // REPORT-004: 对比报告配置
     pub comparison_report_prompt: Option<String>,
-    // INT-002: Logseq 导出支持
-    pub logseq_graphs: Option<String>, // JSON: [{"name":"x","path":"y","is_default":true}]
     // FEAT-006: 仅截图模式 (#65)
     pub capture_only_mode: Option<bool>, // Only capture screenshots without AI analysis
     // AI-006: 自定义 API Headers (#68)
@@ -193,14 +191,6 @@ pub struct ObsidianVault {
     pub window_patterns: Option<Vec<String>>,
 }
 
-/// INT-002: Logseq graph entry for multi-graph support
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LogseqGraph {
-    pub name: String,
-    pub path: String,
-    pub is_default: bool,
-}
-
 impl Settings {
     /// Get the effective Obsidian output path.
     /// Checks `obsidian_vaults` for the default vault first, falls back to `obsidian_path`.
@@ -227,29 +217,6 @@ impl Settings {
             .clone()
             .filter(|p| !p.trim().is_empty())
             .ok_or_else(|| AppError::validation("Obsidian path not configured"))
-    }
-
-    /// INT-002: Get the effective Logseq output path.
-    /// Checks `logseq_graphs` for the default graph first.
-    pub fn get_logseq_output_path(&self) -> AppResult<String> {
-        // Try logseq_graphs
-        if let Some(ref graphs_json) = self.logseq_graphs {
-            if let Ok(graphs) = serde_json::from_str::<Vec<LogseqGraph>>(graphs_json) {
-                if let Some(default_graph) = graphs.iter().find(|g| g.is_default) {
-                    if !default_graph.path.trim().is_empty() {
-                        return Ok(default_graph.path.clone());
-                    }
-                }
-                // If no default, use the first graph
-                if let Some(first_graph) = graphs.first() {
-                    if !first_graph.path.trim().is_empty() {
-                        return Ok(first_graph.path.clone());
-                    }
-                }
-            }
-        }
-
-        Err(AppError::validation("Logseq path not configured"))
     }
 
     /// VAULT-001: Get vault by name

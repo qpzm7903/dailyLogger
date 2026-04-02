@@ -481,7 +481,7 @@ mod tests {
             title: "VS Code - main.rs".to_string(),
             process_name: "Code".to_string(),
         };
-        let blacklist = vec!["浏览器".to_string(), "Slack".to_string()];
+        let blacklist = vec!["浏览器".to_string(), "聊天工具".to_string()];
         // Window not in blacklist
         assert!(should_capture_by_window(&window, &[], &blacklist, false));
     }

@@ -556,49 +556,33 @@ fn call_llm_api(config: &ApiConfig, ...) {
 
 ---
 
-### 12. Notion 集成模块
+### 12. 报告输出模块
 
-**notion.rs** - Notion API 集成
+**synthesis/mod.rs + services/report_service.rs** - 本地报告生成与输出
 ```rust
 // 核心函数
-pub async fn write_report_to_notion()  // 将报告写入 Notion 数据库
-pub fn test_notion_connection()        // 测试连接
-pub fn is_notion_configured()          // 检查配置状态
-
-// Markdown 转换
-pub fn markdown_to_notion_blocks()     // Markdown → Notion Blocks
-fn chunk_blocks()                      // 分块处理（100 blocks/请求）
-async fn get_title_property_name()     // 自动检测标题属性名
+pub async fn generate_daily_summary()     // 生成日报 Markdown
+pub async fn generate_weekly_report()     // 生成周报 Markdown
+pub async fn generate_monthly_report()    // 生成月报 Markdown
+fn write_report_to_obsidian()             // 写入配置的 Obsidian Vault
 ```
 
-**Markdown 到 Notion Block 转换**:
+**输出设计要点**:
 
-| Markdown | Notion Block Type |
-|----------|------------------|
-| `# H1` | `heading_1` |
-| `## H2` | `heading_2` |
-| `### H3` | `heading_3` |
-| `- item` | `bulleted_list_item` |
-| `1. item` | `numbered_list_item` |
-| ``` code ``` | `code` |
-| `> quote` | `quote` |
-| `**bold**` | `annotations.bold = true` |
-| `*italic*` | `annotations.italic = true` |
-| `` `code` `` | `annotations.code = true` |
+| 能力 | 说明 |
+|------|------|
+| Markdown 生成 | 日报、周报、月报统一走本地 Markdown 输出链路 |
+| 路径解析 | 基于设置解析 Vault 与目标目录 |
+| 失败隔离 | 写出失败记录日志，不阻塞主流程 |
+| 本地优先 | 不依赖外部平台 API，降低维护复杂度 |
 
 **实现细节**:
-- 使用 `pulldown-cmark` crate 解析 Markdown
-- `RichTextBuilder` 模式处理行内格式（bold/italic/code）
-- 分块上传：每批最多 100 blocks（Notion API 限制）
-- 自动检测数据库标题属性名（支持 Name/Title/标题/名称）
+- 输出文件名由日期范围和模板统一生成
+- Obsidian 写出沿用本地文件系统能力，无网络依赖
 - 错误处理使用 `tracing::warn!` 记录日志
-
-**API 限制处理**:
-- 单次 `append_block_children` 请求最多 100 blocks
-- Rich text 单个元素最多 2000 字符
-- 自动截断超长内容
+- 通过设置层控制是否启用输出及目标路径
 
 ---
 
 **文档更新**: 2026-03-22
-**版本**: 3.0.0 (分析管线重设计: 工作时段感知分析; 移除 GitHub 集成)
+**版本**: 3.0.0 (分析管线重设计: 工作时段感知分析; 移除非核心第三方集成)

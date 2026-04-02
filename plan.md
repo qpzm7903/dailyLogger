@@ -1,7 +1,7 @@
 # DailyLogger 项目规划
 
 > 最后更新: 2026-04-01
-> 项目状态: 484 Rust + 1220 前端测试全部通过 ✅ | CI 全部通过 ✅ | 无待处理 issue
+> 项目状态: 第三方集成残留清理已完成 | 484 Rust + 1220 前端测试通过 ✅ | typecheck / fmt / clippy 通过 ✅
 
 ---
 
@@ -16,12 +16,10 @@
 - ✅ capture_service 迁移到 AppResult (16 函数)
 - ✅ manual_entry 迁移到 AppResult (12 函数)
 - ✅ ollama 迁移到 AppResult (8 函数 + 命令包装器拆分)
-- ✅ slack 迁移到 AppResult (test_slack_connection)
-- ✅ dingtalk 迁移到 AppResult (test_dingtalk_connection)
-- ✅ notion 迁移到 AppResult (已有，格式修正)
+- ✅ legacy 输出/通知模块完成 AppResult 迁移（后续已移除）
 - ✅ lib.rs 迁移到 AppResult (create_http_client, create_http_client_with_proxy, calc_gap_minutes)
 - ✅ services/vision_api 迁移到 AppResult (4 函数)
-- ✅ memory_storage 迁移到 AppResult (get_obsidian/logseq_output_path, get_productivity_trend, 2 辅助函数)
+- ✅ memory_storage 迁移到 AppResult (get_obsidian_output_path, get_productivity_trend, 2 辅助函数)
 - ✅ session_service: 移除冗余 .map_err(AppError::from)
 - ✅ AppResult 迁移全部完成 — 所有业务逻辑使用 AppResult，仅 Tauri #[command] 包装器保留 Result<_, String>
 
@@ -78,8 +76,13 @@
 - ✅ Sidebar.vue i18n: 硬编码"设置"改为 t('header.settings')
 
 ### v4.6.3: 移除冗余集成与测试修复 ✅ 已完成
-- ✅ 移除 Notion、Slack、DingTalk 集成模块及相关依赖
+- ✅ 移除已废弃第三方输出/通知集成模块及相关依赖
 - ✅ 前端同步移除相关 UI 配置入口与多语言翻译 (zh/en)
+- ✅ 清理 settings/schema/test fixture/README 中的残留集成字段与文案
+- ✅ 清理废弃插件面板、模型微调与旧测试工厂中的死代码残影
+- ✅ 移除 Logseq 输出能力及其前后端设置、写出链路与测试残留
+- ✅ 去除运行时代码中的 Slack 样例与 specs 中过期的第三方输出描述
+- ✅ 删除 `_bmad-output` / `readiness_check` 中已下线第三方集成的历史残影，并收敛汇总文档表述
 - ✅ 修复 settings 数据库迁移期间比较列丢失导致的诸多测试 panic
 - ✅ 彻底修复 timeline 和 stats 的时区断言缺陷 (UTC vs Local 测试)
 - ✅ 替代 `toISOString().split('T')[0]` 采用 `toLocaleDateString`，修复前端日历月末/跨年边界的 Flakes
@@ -328,4 +331,3 @@
 - 详见 [Releases](https://github.com/qpzm7903/dailyLogger/releases)
 
 ---
-

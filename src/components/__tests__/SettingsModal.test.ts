@@ -87,7 +87,7 @@ vi.mock('./settings', () => ({
   OutputSettings: {
     name: 'OutputSettings',
     template: '<div class="output-settings-mock" data-testid="output-settings"></div>',
-    props: ['settings', 'vaults', 'graphs'],
+    props: ['settings', 'vaults'],
   },
 }))
 
@@ -276,7 +276,6 @@ describe('SettingsModal', () => {
       wrapper.vm.initialSettings = JSON.stringify({
         settings: { model_name: 'gpt-4' },
         vaults: [],
-        graphs: [],
         whitelistTags: [],
         blacklistTags: [],
         tagCategoriesText: '',

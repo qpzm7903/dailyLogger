@@ -319,40 +319,6 @@ pub fn write_report_to_obsidian(
     Ok(output_path.to_string_lossy().to_string())
 }
 
-/// INT-002: Write report content to Logseq output directory if configured.
-/// Logseq stores user-created pages in the `pages` folder inside the graph root.
-/// Returns Some(path) if written successfully, None if Logseq not configured.
-pub fn write_report_to_logseq(
-    settings: &memory_storage::Settings,
-    filename: &str,
-    content: &str,
-) -> Option<String> {
-    match settings.get_logseq_output_path() {
-        Ok(logseq_path) => {
-            // Logseq convention: pages go in the `pages` subdirectory
-            let output_dir = PathBuf::from(&logseq_path).join("pages");
-            if let Err(e) = std::fs::create_dir_all(&output_dir) {
-                tracing::warn!("Failed to create Logseq pages directory: {}", e);
-                return None;
-            }
-
-            let output_path = output_dir.join(filename);
-            match std::fs::write(&output_path, content) {
-                Ok(_) => {
-                    let path_str = output_path.to_string_lossy().to_string();
-                    tracing::info!("Report also written to Logseq: {}", path_str);
-                    Some(path_str)
-                }
-                Err(e) => {
-                    tracing::warn!("Failed to write report to Logseq: {}", e);
-                    None
-                }
-            }
-        }
-        Err(_) => None, // Logseq not configured, silently skip
-    }
-}
-
 /// Return the custom value if Some and non-empty, otherwise fall back to default.
 pub(crate) fn non_empty_or<'a>(custom: Option<&'a str>, default: &'a str) -> &'a str {
     custom.filter(|s| !s.is_empty()).unwrap_or(default)
@@ -971,8 +937,6 @@ mod tests {
             obsidian_vaults: None,
             auto_detect_vault_by_window: None,
             comparison_report_prompt: None,
-            logseq_graphs: None,
-
             capture_only_mode: None,
             custom_headers: None,
             quality_filter_enabled: None,
@@ -1552,134 +1516,6 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    // ── Tests for write_report_to_logseq (INT-002) ──
-
-    #[test]
-    fn write_report_to_logseq_creates_file_in_pages_folder() {
-        let dir = std::env::temp_dir().join("dailylogger_test_write_logseq");
-        let _ = std::fs::remove_dir_all(&dir);
-
-        // Create settings with logseq_graphs configured
-        // Use serde_json to properly escape Windows paths (backslashes)
-        let mut settings = create_settings_with_include_manual(true);
-        let graph_path = dir.to_str().unwrap().to_string();
-        let graphs_json = serde_json::to_string(&[serde_json::json!({
-            "name": "Test",
-            "path": graph_path,
-            "is_default": true
-        })])
-        .unwrap();
-        settings.logseq_graphs = Some(graphs_json);
-
-        let path = write_report_to_logseq(&settings, "test-report.md", "# Report\nContent");
-        assert!(path.is_some());
-        let path = path.unwrap();
-
-        // File should be in pages subdirectory
-        assert!(path.contains("pages"));
-        assert!(std::path::Path::new(&path).exists());
-        let content = std::fs::read_to_string(&path).unwrap();
-        assert_eq!(content, "# Report\nContent");
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn write_report_to_logseq_creates_pages_directory() {
-        let dir = std::env::temp_dir().join("dailylogger_test_logseq_pages");
-        let _ = std::fs::remove_dir_all(&dir);
-
-        // Create settings with logseq_graphs configured
-        // Use serde_json to properly escape Windows paths (backslashes)
-        let mut settings = create_settings_with_include_manual(true);
-        let graph_path = dir.to_str().unwrap().to_string();
-        let graphs_json = serde_json::to_string(&[serde_json::json!({
-            "name": "Test",
-            "path": graph_path,
-            "is_default": true
-        })])
-        .unwrap();
-        settings.logseq_graphs = Some(graphs_json);
-
-        let path = write_report_to_logseq(&settings, "daily-report.md", "# Daily\n");
-        assert!(path.is_some());
-
-        // Verify pages folder was created
-        let pages_dir = std::path::Path::new(&dir).join("pages");
-        assert!(pages_dir.exists());
-        assert!(std::path::Path::new(path.unwrap().as_str()).exists());
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn write_report_to_logseq_returns_none_when_not_configured() {
-        let settings = create_settings_with_include_manual(true);
-        // logseq_graphs is None by default
-        let result = write_report_to_logseq(&settings, "test.md", "# Content");
-        assert!(result.is_none());
-    }
-
-    /// INT-002: Additional edge case tests for Logseq export
-    #[test]
-    fn write_report_to_logseq_with_empty_path_returns_none() {
-        let mut settings = create_settings_with_include_manual(true);
-        // Graph with empty path should be skipped
-        settings.logseq_graphs =
-            Some(r#"[{"name":"Empty","path":"","is_default":true}]"#.to_string());
-        let result = write_report_to_logseq(&settings, "test.md", "# Content");
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn write_report_to_logseq_with_whitespace_path_returns_none() {
-        let mut settings = create_settings_with_include_manual(true);
-        // Graph with whitespace-only path should be skipped
-        settings.logseq_graphs =
-            Some(r#"[{"name":"Whitespace","path":"   ","is_default":true}]"#.to_string());
-        let result = write_report_to_logseq(&settings, "test.md", "# Content");
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn write_report_to_logseq_falls_back_to_first_graph() {
-        let dir = std::env::temp_dir().join("dailylogger_test_logseq_fallback");
-        let _ = std::fs::remove_dir_all(&dir);
-
-        let mut settings = create_settings_with_include_manual(true);
-        let graph_path = dir.to_str().unwrap().to_string();
-        let graphs_json = serde_json::to_string(&[
-            serde_json::json!({
-                "name": "First",
-                "path": graph_path,
-                "is_default": false
-            }),
-            serde_json::json!({
-                "name": "Second",
-                "path": "/nonexistent",
-                "is_default": false
-            }),
-        ])
-        .unwrap();
-        settings.logseq_graphs = Some(graphs_json);
-
-        // Should use first graph when no default is set
-        let result = write_report_to_logseq(&settings, "test-fallback.md", "# Test");
-        assert!(result.is_some());
-        let path = result.unwrap();
-        assert!(path.contains("First") || path.contains("dailylogger_test_logseq_fallback"));
-
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn get_logseq_output_path_with_multiple_graphs_selects_default() {
-        let mut settings = create_settings_with_include_manual(true);
-        settings.logseq_graphs = Some(
-            r#"[{"name":"Personal","path":"/logseq/personal","is_default":false},{"name":"Work","path":"/logseq/work","is_default":true}]"#.to_string(),
-        );
-        // Should select the graph with is_default=true, not the first one
-        assert_eq!(settings.get_logseq_output_path().unwrap(), "/logseq/work");
-    }
-
     // NOTE: Performance benchmark tests moved to dedicated `mod benchmarks` below (CORE-008)
 }
 
@@ -1934,8 +1770,6 @@ mod benchmarks {
             obsidian_vaults: None,
             auto_detect_vault_by_window: None,
             comparison_report_prompt: None,
-            logseq_graphs: None,
-
             capture_only_mode: None,
             custom_headers: None,
             quality_filter_enabled: None,
@@ -2169,34 +2003,6 @@ mod benchmarks {
         settings.obsidian_vaults = Some("[]".to_string());
         settings.obsidian_path = None;
         assert!(settings.get_obsidian_output_path().is_err());
-    }
-
-    /// INT-002: get_logseq_output_path resolves graph path for report generation
-    #[test]
-    fn get_logseq_output_path_resolves_graph_for_reports() {
-        let mut settings = create_settings_with_include_manual(true);
-
-        // With graphs configured, should use default graph
-        settings.logseq_graphs =
-            Some(r#"[{"name":"Work","path":"/logseq/work","is_default":true}]"#.to_string());
-        assert_eq!(settings.get_logseq_output_path().unwrap(), "/logseq/work");
-
-        // With no default, should use first graph
-        settings.logseq_graphs = Some(
-            r#"[{"name":"Personal","path":"/logseq/personal","is_default":false}]"#.to_string(),
-        );
-        assert_eq!(
-            settings.get_logseq_output_path().unwrap(),
-            "/logseq/personal"
-        );
-
-        // With empty graphs, should error
-        settings.logseq_graphs = Some("[]".to_string());
-        assert!(settings.get_logseq_output_path().is_err());
-
-        // With no graphs configured, should error
-        settings.logseq_graphs = None;
-        assert!(settings.get_logseq_output_path().is_err());
     }
 
     /// REPORT-004: comparison report filename generation

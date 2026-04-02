@@ -202,17 +202,6 @@ impl Migration {
                         "obsidian_vaults TEXT DEFAULT '[]'",
                     )?;
                     add_column_if_not_exists(conn, "settings", "comparison_report_prompt TEXT")?;
-                    add_column_if_not_exists(conn, "settings", "logseq_graphs TEXT DEFAULT '[]'")?;
-                    add_column_if_not_exists(conn, "settings", "notion_api_key TEXT")?;
-                    add_column_if_not_exists(conn, "settings", "notion_database_id TEXT")?;
-                    add_column_if_not_exists(conn, "settings", "github_token TEXT")?;
-                    add_column_if_not_exists(
-                        conn,
-                        "settings",
-                        "github_repositories TEXT DEFAULT '[]'",
-                    )?;
-                    add_column_if_not_exists(conn, "settings", "slack_webhook_url TEXT")?;
-                    add_column_if_not_exists(conn, "settings", "dingtalk_webhook_url TEXT")?;
                     add_column_if_not_exists(
                         conn,
                         "settings",
@@ -403,14 +392,13 @@ fn get_migrations() -> Vec<Migration> {
             -- selected_monitor_index, tag_categories, is_ollama, weekly_report_prompt,
             -- weekly_report_day, last_weekly_report_path, monthly_report_prompt,
             -- last_monthly_report_path, custom_report_prompt, last_custom_report_path,
-            -- obsidian_vaults, comparison_report_prompt, logseq_graphs, notion_api_key,
-            -- notion_database_id, github_token, github_repositories, slack_webhook_url,
-            -- dingtalk_webhook_url, capture_only_mode, custom_headers, quality_filter_enabled,
-            -- quality_filter_threshold, session_gap_minutes, proxy_enabled, proxy_host,
-            -- proxy_port, proxy_username, proxy_password, test_model_name, onboarding_completed,
-            -- language, preferred_language, supported_languages, auto_backup_enabled,
-            -- auto_backup_interval, auto_backup_retention, last_auto_backup_at,
-            -- auto_detect_vault_by_window, custom_export_template
+            -- obsidian_vaults, comparison_report_prompt, capture_only_mode, custom_headers,
+            -- quality_filter_enabled, quality_filter_threshold, session_gap_minutes,
+            -- proxy_enabled, proxy_host, proxy_port, proxy_username, proxy_password,
+            -- test_model_name, onboarding_completed, language, preferred_language,
+            -- supported_languages, auto_backup_enabled, auto_backup_interval,
+            -- auto_backup_retention, last_auto_backup_at, auto_detect_vault_by_window,
+            -- custom_export_template
 
             -- manual_tags table
             CREATE TABLE IF NOT EXISTS manual_tags (

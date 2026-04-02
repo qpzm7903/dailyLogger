@@ -4,7 +4,7 @@
 - errors.rs: 统一错误类型设计
 - crypto/mod.rs: 加密模块安全
 - backup/mod.rs: 备份与恢复机制
-- slack.rs, notion.rs, dingtalk.rs: 网络集成
+- 本地输出与外部依赖边界: 错误隔离、配置校验、失败回退
 - capture_service.rs: 截图服务
 - migration.rs: 数据库迁移
 - ollama.rs: Ollama 集成

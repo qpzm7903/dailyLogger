@@ -154,8 +154,15 @@ const getWindowIcon = (processName?: string) => {
   if (name.includes('safari')) return '🧭'
 
   // Communication
-  if (name.includes('slack') || name.includes('discord') || name.includes('teams')) return '💬'
-  if (name.includes('wechat') || name.includes('微信')) return '💬'
+  if (
+    name.includes('chat') ||
+    name.includes('message') ||
+    name.includes('messenger') ||
+    name.includes('wechat') ||
+    name.includes('微信')
+  ) {
+    return '💬'
+  }
 
   // Terminal
   if (name.includes('terminal') || name.includes('cmd') || name.includes('bash') || name.includes('powershell')) return '⌨️'

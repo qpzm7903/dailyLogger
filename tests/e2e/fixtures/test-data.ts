@@ -12,10 +12,6 @@ import type {
   BackupResult,
   OllamaModel,
   TimelineEntry,
-  GitHubStats,
-  PluginInfo,
-  NotionDatabase,
-  SlackChannel,
 } from '../../../src/types/tauri';
 
 // ============================================
@@ -32,15 +28,13 @@ export function createSettings(overrides: Partial<Settings> = {}): Settings {
     obsidian_path: '',
     auto_capture_enabled: false,
     last_summary_path: null,
-    silence_detection_enabled: false,
-    silence_threshold: 60,
-    window_filter_enabled: false,
-    window_filter_mode: 'whitelist',
-    window_filter_list: [],
-    multi_monitor_mode: 'primary',
-    custom_prompt: '',
-    default_obsidian_vault: undefined,
-    obsidian_vaults: [],
+    window_whitelist: '[]',
+    window_blacklist: '[]',
+    use_whitelist_only: false,
+    capture_mode: 'primary',
+    obsidian_vaults: '[]',
+    custom_headers: '[]',
+    proxy_enabled: false,
     onboarding_completed: true,
     ...overrides,
   };
@@ -158,60 +152,6 @@ export function createTimelineEntry(overrides: Partial<TimelineEntry> = {}): Tim
     source_type: 'manual',
     screenshot_path: null,
     tags: [],
-    ...overrides,
-  };
-}
-
-// ============================================
-// GitHub Stats Factory
-// ============================================
-
-export function createGitHubStats(overrides: Partial<GitHubStats> = {}): GitHubStats {
-  return {
-    total_commits: 10,
-    total_prs: 2,
-    total_issues: 5,
-    work_hours: 8,
-    repositories: [],
-    ...overrides,
-  };
-}
-
-// ============================================
-// Plugin Factory
-// ============================================
-
-export function createPluginInfo(overrides: Partial<PluginInfo> = {}): PluginInfo {
-  return {
-    name: 'test-plugin',
-    version: '1.0.0',
-    description: 'A test plugin',
-    enabled: false,
-    ...overrides,
-  };
-}
-
-// ============================================
-// Notion Factory
-// ============================================
-
-export function createNotionDatabase(overrides: Partial<NotionDatabase> = {}): NotionDatabase {
-  return {
-    id: 'database-id-123',
-    title: 'Test Database',
-    ...overrides,
-  };
-}
-
-// ============================================
-// Slack Factory
-// ============================================
-
-export function createSlackChannel(overrides: Partial<SlackChannel> = {}): SlackChannel {
-  return {
-    id: 'C12345678',
-    name: 'general',
-    is_private: false,
     ...overrides,
   };
 }

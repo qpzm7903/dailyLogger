@@ -115,9 +115,7 @@ settings        -- 设置表（不受影响）
 - 自动截图捕获
 - 手动记录
 - AI 日报/周报/月报生成
-- Obsidian/Logseq/Notion 导出
-- GitHub 工时统计
-- Slack 通知
+- Obsidian 导出
 - 全文搜索
 - 数据备份/恢复
 

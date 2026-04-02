@@ -63,11 +63,6 @@ export interface Settings {
   obsidian_vaults?: string // JSON: ObsidianVault[]
   auto_detect_vault_by_window?: boolean
 
-  // Other integrations (INT-001, INT-002, INT-003, INT-004)
-  logseq_graphs?: string // JSON: LogseqGraph[]
-  github_token?: string
-  github_repositories?: string // JSON: Vec<String>
-
   // Feature flags
   capture_only_mode?: boolean // FEAT-006
   quality_filter_enabled?: boolean // EXP-002
@@ -255,18 +250,6 @@ export interface BackupResult {
   path: string
   filename: string
 }
-
-// ============================================
-// Plugin Types
-// ============================================
-
-export interface PluginInfo {
-  name: string
-  version: string
-  description: string
-  enabled: boolean
-}
-
 
 // ============================================
 // Ollama Types
