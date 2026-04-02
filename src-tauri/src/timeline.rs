@@ -56,34 +56,30 @@ pub struct TimelineData {
 
 /// Generate preview text from content.
 fn generate_preview(content: &str, max_len: usize) -> String {
+    fn truncate_preview(text: &str, max_len: usize) -> String {
+        let char_count = text.chars().count();
+        if char_count > max_len {
+            let truncated: String = text.chars().take(max_len).collect();
+            format!("{}...", truncated)
+        } else {
+            text.to_string()
+        }
+    }
+
     // Try to extract meaningful preview from JSON content
     if let Ok(json) = serde_json::from_str::<serde_json::Value>(content) {
         // For screenshot analysis, get the summary
         if let Some(summary) = json.get("summary").and_then(|s| s.as_str()) {
-            let truncated = if summary.len() > max_len {
-                format!("{}...", &summary[..max_len])
-            } else {
-                summary.to_string()
-            };
-            return truncated;
+            return truncate_preview(summary, max_len);
         }
         // For manual notes, get the note text
         if let Some(note) = json.get("note").and_then(|n| n.as_str()) {
-            let truncated = if note.len() > max_len {
-                format!("{}...", &note[..max_len])
-            } else {
-                note.to_string()
-            };
-            return truncated;
+            return truncate_preview(note, max_len);
         }
     }
 
     // Fallback: truncate raw content
-    if content.len() > max_len {
-        format!("{}...", &content[..max_len])
-    } else {
-        content.to_string()
-    }
+    truncate_preview(content, max_len)
 }
 
 /// Parse timestamp string to DateTime.
@@ -337,6 +333,23 @@ mod tests {
         let content = "Short text";
         let preview = generate_preview(content, 80);
         assert_eq!(preview, "Short text");
+    }
+
+    #[test]
+    fn test_generate_preview_truncates_multibyte_json_summary_without_panic() {
+        let summary = "检查 DailyLogger 软件功能，便携版自动记录是否正常";
+        let content = format!(r#"{{"summary":"{}"}}"#, summary);
+        let preview = generate_preview(&content, 12);
+        let expected = format!("{}...", summary.chars().take(12).collect::<String>());
+        assert_eq!(preview, expected);
+    }
+
+    #[test]
+    fn test_generate_preview_truncates_multibyte_raw_content_without_panic() {
+        let content = r#"{"active_software":"DailyLogger, Chrome","context_keywords":["DailyLogger","便携版","自动记录"],"current_focus":"检查 DailyLogger 软件功能","tags":["开发"]}"#;
+        let preview = generate_preview(content, 80);
+        let expected: String = format!("{}...", content.chars().take(80).collect::<String>());
+        assert_eq!(preview, expected);
     }
 
     #[test]

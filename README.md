@@ -207,7 +207,10 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.6.6
+**最新版本**: v4.6.7
+- 修复时间线预览在截断包含中文的 JSON/原始内容时按字节切片导致的闪退，Windows 便携版不再因 UTF-8 字符边界 panic 退出 (issue #96)
+
+**v4.6.6**:
 - 自动记录现在真正支持“截图后立即分析 / 仅截图延迟分析”两种模式，按 `capture_only_mode` 生效
 - 修复自动记录链路始终只保存截图、不触发 AI 分析的问题
 - 手动“🤖 分析”与自动记录分离，避免被“仅截图模式”误影响
