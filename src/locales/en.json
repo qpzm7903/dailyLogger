@@ -116,14 +116,15 @@
     "loadFailed": "Failed to load records: {error}",
     "loadMoreFailed": "Failed to load more: {error}",
     "recordDeleted": "Record deleted",
-    "deleteFailed": "Delete failed: {error}"
+    "deleteFailed": "Delete failed: {error}",
+    "activeTagFilter": "Tag: {name}"
   },
   "tagCloud": {
     "title": "Tag Cloud",
     "clickToFilter": "Click a tag to filter records",
     "clearFilter": "Clear Filter",
     "loading": "Loading...",
-    "noTagsHint": "No tags yet. You can add tags to records in history.",
+    "noTagsHint": "No tags yet. Tags appear after AI analysis or manual tagging.",
     "deleteTag": "Delete Tag",
     "confirmDeleteMessage": "Are you sure you want to delete tag \"{name}\"?",
     "deleteWarning": "This tag will be removed from all associated records.",

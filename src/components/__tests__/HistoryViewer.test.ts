@@ -302,10 +302,10 @@ describe('HistoryViewer', () => {
     const wrapper = mountComponent({ initialTag })
     await flushPromises()
 
-    expect(wrapper.vm.selectedTags).toEqual([initialTag])
-    expect(invoke).toHaveBeenCalledWith('get_records_by_manual_tags', expect.objectContaining({
-      tagIds: [1]
-    }))
+    expect(wrapper.vm.selectedCloudTag).toEqual(initialTag)
+    expect(invoke).toHaveBeenCalledWith('get_records_by_tag', {
+      tag: 'work'
+    })
   })
 
   it('loads more records on scroll to bottom', async () => {

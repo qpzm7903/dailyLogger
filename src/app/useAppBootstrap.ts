@@ -250,6 +250,17 @@ export function useAppBootstrap(options: BootstrapOptions): UseAppBootstrapRetur
 
     // Load settings, language, records, and tag colors
     const settings = await loadSettings()
+    if (settings?.auto_capture_enabled) {
+      try {
+        await invoke('start_auto_capture')
+        autoCaptureEnabled.value = true
+        updateAutoCaptureEnabled(true)
+      } catch (err) {
+        console.error('Failed to resume auto capture on startup:', err)
+        autoCaptureEnabled.value = false
+        updateAutoCaptureEnabled(false)
+      }
+    }
     await loadLanguageFromBackend()
     await loadTodayRecords()
     await fetchTagColors()

@@ -190,6 +190,40 @@ describe('App.vue - State Management', () => {
     expect(wrapper.vm.autoCaptureEnabled).toBe(true)
     expect(wrapper.vm.summaryPath).toBe('/path/to/summary.md')
   })
+
+  it('resumes auto capture on startup when enabled in settings', async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === 'get_settings') {
+        return Promise.resolve({
+          auto_capture_enabled: true,
+          last_summary_path: ''
+        })
+      }
+      if (cmd === 'start_auto_capture') {
+        return Promise.resolve()
+      }
+      if (cmd === 'get_today_records') {
+        return Promise.resolve([])
+      }
+      if (cmd === 'get_network_status' || cmd === 'check_network_status') {
+        return Promise.resolve(true)
+      }
+      if (cmd === 'get_offline_queue_status') {
+        return Promise.resolve({ pending_count: 0 })
+      }
+      return Promise.resolve()
+    })
+
+    mount(App, {
+      global: { stubs: commonStubs }
+    })
+
+    await waitFor(() =>
+      invoke.mock.calls.some(([cmd]) => cmd === 'start_auto_capture')
+    )
+
+    expect(invoke).toHaveBeenCalledWith('start_auto_capture')
+  })
 })
 
 describe('App.vue - Modal Management', () => {

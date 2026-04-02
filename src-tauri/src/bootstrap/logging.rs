@@ -232,7 +232,7 @@ pub fn setup_logging() -> Option<WorkerGuard> {
 
             tracing_subscriber::registry()
                 .with(EnvFilter::new("info"))
-                .with(fmt::layer().with_writer(non_blocking))
+                .with(fmt::layer().with_ansi(false).with_writer(non_blocking))
                 .with(fmt::layer().with_writer(std::io::stdout))
                 .init();
 

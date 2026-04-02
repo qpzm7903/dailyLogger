@@ -1,5 +1,5 @@
 <template>
-  <BaseModal @close="$emit('close')" contentClass="w-[90vw] max-w-lg overflow-hidden flex flex-col">
+  <BaseModal @close="$emit('close')" content-class="w-[90vw] max-w-lg overflow-hidden flex flex-col">
     <!-- Header -->
     <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h3 class="text-lg font-semibold">{{ t('tagCloud.title') }}</h3>
@@ -12,7 +12,7 @@
           <span class="text-sm text-[var(--color-text-secondary)]">{{ t('tagCloud.clickToFilter') }}</span>
           <button
             v-if="selectedTag"
-            @click="selectedTag = null"
+            @click="clearSelection"
             class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           >
             {{ t('tagCloud.clearFilter') }}
@@ -35,39 +35,12 @@
               'px-3 py-1.5 rounded-full transition-all flex items-center gap-2',
               getTagSize(tag),
               selectedTag?.id === tag.id ? 'ring-2 ring-white' : '',
-              getTagColor(tag.color)
+              getTagColor(tag.name)
             ]"
           >
             <span>{{ tag.name }}</span>
             <span class="text-xs opacity-70">{{ tag.usage_count || 0 }}</span>
           </button>
-        </div>
-      </div>
-
-      <!-- Delete confirmation -->
-      <div
-        v-if="tagToDelete"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
-      >
-        <div class="bg-dark rounded-xl p-6 max-w-sm border border-[var(--color-border)]">
-          <h3 class="text-lg font-semibold mb-4">{{ t('tagCloud.deleteTag') }}</h3>
-          <p class="text-[var(--color-text-muted)] mb-2">{{ t('tagCloud.confirmDeleteMessage', { name: tagToDelete.name }) }}</p>
-          <p class="text-sm text-yellow-500 mb-6">{{ t('tagCloud.deleteWarning') }}</p>
-          <div class="flex justify-end gap-3">
-            <button
-              @click="tagToDelete = null"
-              class="px-4 py-2 bg-[var(--color-action-secondary)] text-white rounded hover:bg-[var(--color-surface-2)] transition-colors"
-            >
-              {{ t('tagCloud.cancel') }}
-            </button>
-            <button
-              @click="confirmDelete"
-              :disabled="isDeleting"
-              class="px-4 py-2 bg-red-500 text-[var(--color-text-primary)] rounded hover:bg-red-400 transition-colors disabled:opacity-50"
-            >
-              {{ isDeleting ? t('tagCloud.deleting') : t('tagCloud.delete') }}
-            </button>
-          </div>
         </div>
       </div>
   </BaseModal>
@@ -77,12 +50,14 @@
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
-import { showSuccess, showError } from '../stores/toast'
-import { getColorClassInteractive } from '../utils/tagColors'
-import { tagActions } from '../features/records/actions'
+import { showError } from '../stores/toast'
+import { getTagColorClass } from '../utils/tagColors'
 import type { Tag } from '../types/tauri'
 
-interface TagWithUsage extends Tag {
+interface TagCloudTag {
+  id: number
+  name: string
+  color: string
   usage_count?: number
 }
 
@@ -90,30 +65,26 @@ const { t } = useI18n()
 const emit = defineEmits<{(e: 'tagSelected', tag: Tag | null): void; (e: 'close'): void}>()
 
 // State
-const tags = ref<TagWithUsage[]>([])
+const tags = ref<TagCloudTag[]>([])
 const isLoading = ref(false)
-const selectedTag = ref<TagWithUsage | null>(null)
-const tagToDelete = ref<TagWithUsage | null>(null)
-const isDeleting = ref(false)
+const selectedTag = ref<TagCloudTag | null>(null)
 
 // Get tag size based on usage count
-function getTagSize(tag: TagWithUsage) {
+function getTagSize(tag: TagCloudTag) {
   const count = tag.usage_count || 0
   if (count >= 10) return 'text-base'
   if (count >= 5) return 'text-sm'
   return 'text-xs'
 }
 
-// Get tag color classes - uses unified color system
-function getTagColor(color: string) {
-  return getColorClassInteractive(color)
+function getTagColor(tagName: string) {
+  return getTagColorClass(tagName)
 }
 
-// Load all tags
 async function loadTags() {
   isLoading.value = true
   try {
-    tags.value = await invoke<TagWithUsage[]>('get_all_manual_tags')
+    tags.value = await invoke<TagCloudTag[]>('get_tag_cloud_tags')
   } catch (e) {
     showError(t('tagCloud.loadFailed', { error: e }))
   } finally {
@@ -121,47 +92,31 @@ async function loadTags() {
   }
 }
 
-// Toggle select tag
-function toggleSelect(tag: TagWithUsage) {
+function toSelectedTag(tag: TagCloudTag): Tag {
+  return {
+    id: tag.id,
+    name: tag.name,
+    color: tag.color,
+    category_id: null,
+  }
+}
+
+function clearSelection() {
+  selectedTag.value = null
+  emit('tagSelected', null)
+}
+
+function toggleSelect(tag: TagCloudTag) {
   if (selectedTag.value?.id === tag.id) {
-    selectedTag.value = null
-    emit('tagSelected', null)
+    clearSelection()
   } else {
     selectedTag.value = tag
-    emit('tagSelected', tag)
+    emit('tagSelected', toSelectedTag(tag))
   }
 }
 
-// Request delete
-function requestDelete(tag: TagWithUsage) {
-  tagToDelete.value = tag
-}
-
-// Confirm delete
-async function confirmDelete() {
-  if (!tagToDelete.value) return
-
-  isDeleting.value = true
-  try {
-    await tagActions.deleteManualTag(tagToDelete.value.id)
-    tags.value = tags.value.filter(t => t.id !== tagToDelete.value!.id)
-    if (selectedTag.value?.id === tagToDelete.value.id) {
-      selectedTag.value = null
-      emit('tagSelected', null)
-    }
-    showSuccess(t('tagCloud.tagDeleted'))
-  } catch (e) {
-    showError(t('tagCloud.deleteFailed', { error: e }))
-  } finally {
-    isDeleting.value = false
-    tagToDelete.value = null
-  }
-}
-
-// Expose methods for parent components
 defineExpose({
   loadTags,
-  requestDelete
 })
 
 onMounted(loadTags)

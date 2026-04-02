@@ -85,6 +85,8 @@ const levels: LevelOption[] = [
   { key: 'ERROR', label: 'ERROR', activeClass: 'bg-red-900/60 text-red-300' },
 ]
 
+const ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;?]*[ -/]*[@-~]/g
+
 const filteredLines = computed(() => {
   if (activelevels.value.size === 3) return rawLines.value
   return rawLines.value.filter(line => {
@@ -120,11 +122,13 @@ const scrollToBottom = async () => {
   }
 }
 
+const stripAnsi = (line: string): string => line.replace(ANSI_ESCAPE_PATTERN, '')
+
 const loadLogs = async () => {
   loading.value = true
   try {
     const content = await invoke<string>('get_recent_logs', { lines: 500 })
-    rawLines.value = content ? content.split('\n') : []
+    rawLines.value = content ? content.split('\n').map(stripAnsi) : []
     await scrollToBottom()
   } catch (err) {
     rawLines.value = [t('logViewer.loadFailed', { error: err })]

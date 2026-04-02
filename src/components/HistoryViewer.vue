@@ -49,6 +49,17 @@
 
       <!-- Tag Filter -->
       <div class="px-6 py-3 border-b border-[var(--color-border)]">
+        <div v-if="selectedCloudTag" class="flex items-center gap-2 mb-3">
+          <span class="text-sm text-[var(--color-text-secondary)]">
+            {{ t('historyViewer.activeTagFilter', { name: selectedCloudTag.name }) }}
+          </span>
+          <button
+            @click="clearCloudTagFilter"
+            class="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+          >
+            {{ t('tagCloud.clearFilter') }}
+          </button>
+        </div>
         <TagFilter
           ref="tagFilterRef"
           v-model="selectedTags"
@@ -218,6 +229,7 @@ const startDate = ref('')
 const endDate = ref('')
 const sourceType = ref<'auto' | 'manual' | null>(null)
 const selectedTags = ref<Tag[]>([])
+const selectedCloudTag = ref<Tag | null>(null)
 const records = ref<LogRecord[]>([])
 const recordTags = ref<Record<number, Tag[]>>({}) // Map of record id to tags
 const isLoading = ref(false)
@@ -253,16 +265,16 @@ onMounted(() => {
   endDate.value = formatDate(end)
   startDate.value = formatDate(start)
 
-  // Apply initial tag filter from TagCloud selection (FIX-003)
-  if (props.initialTag) {
-    selectedTags.value = [props.initialTag]
-  }
+  selectedCloudTag.value = props.initialTag ?? null
 
   loadRecords()
 })
 
 // Watch for tag filter changes
 watch(selectedTags, () => {
+  if (selectedTags.value.length > 0) {
+    selectedCloudTag.value = null
+  }
   loadRecords()
 }, { deep: true })
 
@@ -287,6 +299,20 @@ function truncateContent(content: string) {
   }
 }
 
+function matchesCurrentFilters(record: LogRecord) {
+  const recordDate = record.timestamp.slice(0, 10)
+  const matchesDate =
+    (!startDate.value || recordDate >= startDate.value) &&
+    (!endDate.value || recordDate <= endDate.value)
+  const matchesSource = !sourceType.value || record.source_type === sourceType.value
+  return matchesDate && matchesSource
+}
+
+function clearCloudTagFilter() {
+  selectedCloudTag.value = null
+  loadRecords()
+}
+
 async function loadRecords() {
   isLoading.value = true
   page.value = 0
@@ -295,8 +321,14 @@ async function loadRecords() {
   hasMore.value = true
 
   try {
-    // If tags are selected, use tag-based filtering
-    if (selectedTags.value.length > 0) {
+    if (selectedCloudTag.value) {
+      const result = await invoke<LogRecord[]>('get_records_by_tag', {
+        tag: selectedCloudTag.value.name
+      })
+
+      records.value = result.filter(matchesCurrentFilters)
+      hasMore.value = false
+    } else if (selectedTags.value.length > 0) {
       const tagIds = selectedTags.value.map(t => t.id)
       const result = await invoke<LogRecord[]>('get_records_by_manual_tags', {
         tagIds: tagIds,
@@ -351,7 +383,7 @@ function getRecordTags(recordId: number) {
 
 async function loadMoreRecords() {
   if (isLoadingMore.value || !hasMore.value) return
-  if (selectedTags.value.length > 0) return // Tag-based query doesn't support pagination
+  if (selectedCloudTag.value || selectedTags.value.length > 0) return // Tag-based query doesn't support pagination
 
   isLoadingMore.value = true
   page.value += 1

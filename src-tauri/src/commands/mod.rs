@@ -47,6 +47,7 @@ pub use crate::memory_storage::{
     get_records_by_manual_tags,
     get_records_by_tag,
     get_statistics,
+    get_tag_cloud_tags,
     get_tags_for_record,
     get_tags_for_records,
     // Records

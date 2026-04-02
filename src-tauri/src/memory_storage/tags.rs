@@ -22,6 +22,16 @@ pub struct ManualTag {
     pub usage_count: Option<i64>,
 }
 
+/// 标签云显示结构体
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TagCloudTag {
+    pub id: i64,
+    pub name: String,
+    pub color: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage_count: Option<i64>,
+}
+
 /// 记录与标签关联信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecordTagInfo {
@@ -40,6 +50,81 @@ pub const DEFAULT_TAG_CATEGORIES: &[&str] = &[
 pub const PRESET_TAG_COLORS: [&str; 8] = [
     "blue", "green", "yellow", "red", "purple", "pink", "cyan", "orange",
 ];
+
+#[derive(Debug, Deserialize)]
+struct ContentTags {
+    tags: Option<Vec<String>>,
+}
+
+fn normalize_tag_name(tag: &str) -> Option<String> {
+    let trimmed = tag.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn extract_tags_from_record_sources(stored_tags: Option<&str>, content: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut result = Vec::new();
+
+    if let Some(tag_str) = stored_tags {
+        if let Ok(tags) = serde_json::from_str::<Vec<String>>(tag_str) {
+            for tag in tags {
+                if let Some(normalized) = normalize_tag_name(&tag) {
+                    if seen.insert(normalized.clone()) {
+                        result.push(normalized);
+                    }
+                }
+            }
+        }
+    }
+
+    if let Ok(parsed) = serde_json::from_str::<ContentTags>(content) {
+        if let Some(tags) = parsed.tags {
+            for tag in tags {
+                if let Some(normalized) = normalize_tag_name(&tag) {
+                    if seen.insert(normalized.clone()) {
+                        result.push(normalized);
+                    }
+                }
+            }
+        }
+    }
+
+    result
+}
+
+fn tag_name_to_color(tag_name: &str) -> String {
+    match tag_name {
+        "开发" => "blue".to_string(),
+        "会议" => "purple".to_string(),
+        "写作" => "green".to_string(),
+        "学习" => "yellow".to_string(),
+        "研究" => "cyan".to_string(),
+        "沟通" => "orange".to_string(),
+        "规划" => "pink".to_string(),
+        "文档" => "indigo".to_string(),
+        "测试" => "red".to_string(),
+        "设计" => "teal".to_string(),
+        _ => {
+            let mut hash = 0u64;
+            for byte in tag_name.as_bytes() {
+                hash = hash.wrapping_mul(31).wrapping_add(*byte as u64);
+            }
+            PRESET_TAG_COLORS[(hash as usize) % PRESET_TAG_COLORS.len()].to_string()
+        }
+    }
+}
+
+fn tag_name_to_id(tag_name: &str) -> i64 {
+    let mut hash = 0u64;
+    for byte in tag_name.as_bytes() {
+        hash = hash.wrapping_mul(131).wrapping_add(*byte as u64);
+    }
+    (hash & (i64::MAX as u64)) as i64
+}
 
 // ─── Tag Query Functions ────────────────────────────────────────────────────────
 
@@ -60,26 +145,64 @@ pub fn get_all_tags() -> AppResult<Vec<String>> {
         .as_ref()
         .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    let mut stmt =
-        conn.prepare("SELECT DISTINCT tags FROM records WHERE tags IS NOT NULL AND tags != '[]'")?;
-
-    let tag_strings: Vec<String> = stmt
-        .query_map([], |row| row.get(0))?
-        .filter_map(|r| r.ok())
-        .collect();
-
-    // Parse JSON arrays and collect unique tags
     let mut unique_tags = HashSet::new();
-    for tag_str in tag_strings {
-        if let Ok(tags) = serde_json::from_str::<Vec<String>>(&tag_str) {
-            for tag in tags {
-                unique_tags.insert(tag);
-            }
+    let mut stmt = conn.prepare("SELECT tags, content FROM records ORDER BY timestamp DESC")?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok((row.get::<_, Option<String>>(0)?, row.get::<_, String>(1)?))
+    })?;
+
+    for row in rows {
+        let (stored_tags, content) = row?;
+        for tag in extract_tags_from_record_sources(stored_tags.as_deref(), &content) {
+            unique_tags.insert(tag);
         }
     }
 
     let mut result: Vec<String> = unique_tags.into_iter().collect();
     result.sort();
+    Ok(result)
+}
+
+/// Get tag cloud data from record tags (AI tags + stored tags).
+#[command]
+pub fn get_tag_cloud_tags() -> AppResult<Vec<TagCloudTag>> {
+    let db_guard = DB_CONNECTION.lock()?;
+    let conn = db_guard
+        .as_ref()
+        .ok_or_else(|| AppError::database("Database not initialized"))?;
+
+    let mut counts: HashMap<String, i64> = HashMap::new();
+    let mut stmt = conn.prepare("SELECT tags, content FROM records ORDER BY timestamp DESC")?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok((row.get::<_, Option<String>>(0)?, row.get::<_, String>(1)?))
+    })?;
+
+    for row in rows {
+        let (stored_tags, content) = row?;
+        for tag in extract_tags_from_record_sources(stored_tags.as_deref(), &content) {
+            *counts.entry(tag).or_insert(0) += 1;
+        }
+    }
+
+    let mut result: Vec<TagCloudTag> = counts
+        .into_iter()
+        .map(|(name, usage_count)| TagCloudTag {
+            id: tag_name_to_id(&name),
+            color: tag_name_to_color(&name),
+            name,
+            usage_count: Some(usage_count),
+        })
+        .collect();
+
+    result.sort_by(|a, b| {
+        b.usage_count
+            .unwrap_or(0)
+            .cmp(&a.usage_count.unwrap_or(0))
+            .then_with(|| a.name.cmp(&b.name))
+    });
+
     Ok(result)
 }
 
@@ -91,11 +214,9 @@ pub fn get_records_by_tag(tag: String) -> AppResult<Vec<Record>> {
         .as_ref()
         .ok_or_else(|| AppError::database("Database not initialized"))?;
 
-    // Get all records with tags and filter in Rust (SQLite doesn't handle JSON arrays well)
     let mut stmt = conn.prepare(
         "SELECT id, timestamp, source_type, content, screenshot_path, monitor_info, tags, user_notes, session_id, analysis_status
          FROM records
-         WHERE tags IS NOT NULL
          ORDER BY timestamp DESC",
     )?;
 
@@ -115,13 +236,7 @@ pub fn get_records_by_tag(tag: String) -> AppResult<Vec<Record>> {
             })
         })?
         .filter_map(|r| r.ok())
-        .filter(|r| {
-            r.tags
-                .as_ref()
-                .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok())
-                .map(|tags| tags.contains(&tag))
-                .unwrap_or(false)
-        })
+        .filter(|r| extract_tags_from_record_sources(r.tags.as_deref(), &r.content).contains(&tag))
         .collect();
 
     Ok(records)
@@ -687,6 +802,25 @@ mod tests {
 
     #[test]
     #[serial]
+    fn get_all_tags_includes_tags_from_content_when_tags_column_missing() {
+        setup_test_db();
+
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"dev work","tags":["开发","研究"]}"#,
+            None,
+            None,
+            None,
+        );
+
+        let tags = get_all_tags().unwrap();
+        assert_eq!(tags.len(), 2, "Should extract tags from content JSON");
+        assert!(tags.contains(&"开发".to_string()));
+        assert!(tags.contains(&"研究".to_string()));
+    }
+
+    #[test]
+    #[serial]
     fn get_records_by_tag_returns_matching_records() {
         setup_test_db();
 
@@ -726,6 +860,35 @@ mod tests {
 
     #[test]
     #[serial]
+    fn get_records_by_tag_matches_content_tags_when_tags_column_missing() {
+        setup_test_db();
+
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"research","tags":["研究","学习"]}"#,
+            None,
+            None,
+            None,
+        );
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"meeting","tags":["会议"]}"#,
+            None,
+            None,
+            None,
+        );
+
+        let records = get_records_by_tag("研究".to_string()).unwrap();
+        assert_eq!(
+            records.len(),
+            1,
+            "Should match tag parsed from content JSON"
+        );
+        assert!(records[0].content.contains("research"));
+    }
+
+    #[test]
+    #[serial]
     fn get_records_by_tag_returns_empty_for_nonexistent_tag() {
         setup_test_db();
 
@@ -757,6 +920,35 @@ mod tests {
             records.is_empty(),
             "Should return empty when no records have tags"
         );
+    }
+
+    #[test]
+    #[serial]
+    fn get_tag_cloud_tags_returns_usage_counts_for_record_tags() {
+        setup_test_db();
+
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"dev","tags":["开发","测试"]}"#,
+            None,
+            None,
+            None,
+        );
+        let _ = add_record(
+            "auto",
+            r#"{"current_focus":"dev 2"}"#,
+            None,
+            None,
+            Some(r#"["开发"]"#),
+        );
+
+        let tags = get_tag_cloud_tags().unwrap();
+        let dev_tag = tags.iter().find(|tag| tag.name == "开发").unwrap();
+        let test_tag = tags.iter().find(|tag| tag.name == "测试").unwrap();
+
+        assert_eq!(dev_tag.usage_count, Some(2));
+        assert_eq!(test_tag.usage_count, Some(1));
+        assert_eq!(dev_tag.color, "blue");
     }
 
     // ── Tests for DATA-003: Manual Tag System ──

@@ -116,14 +116,15 @@
     "loadFailed": "加载记录失败: {error}",
     "loadMoreFailed": "加载更多失败: {error}",
     "recordDeleted": "记录已删除",
-    "deleteFailed": "删除失败: {error}"
+    "deleteFailed": "删除失败: {error}",
+    "activeTagFilter": "当前标签: {name}"
   },
   "tagCloud": {
     "title": "标签云",
     "clickToFilter": "点击标签筛选记录",
     "clearFilter": "清除筛选",
     "loading": "加载中...",
-    "noTagsHint": "暂无标签，可在历史记录中为记录添加标签",
+    "noTagsHint": "暂无标签，AI 分析或手动打标后会显示在这里",
     "deleteTag": "删除标签",
     "confirmDeleteMessage": "确定要删除标签 \"{name}\" 吗？",
     "deleteWarning": "该标签将从所有关联记录中移除。",

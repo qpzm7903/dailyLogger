@@ -125,6 +125,20 @@ describe('LogViewer', () => {
       })
     })
 
+    it('strips ansi escape sequences before rendering logs', async () => {
+      const { invoke } = await import('@tauri-apps/api/core')
+      vi.mocked(invoke).mockResolvedValue('\u001b[2m2024-01-01\u001b[0m \u001b[32mINFO\u001b[0m Clean log')
+
+      const wrapper = mount(LogViewer)
+
+      await vi.waitFor(() => {
+        expect(wrapper.text()).toContain('2024-01-01 INFO Clean log')
+      })
+
+      expect(wrapper.text()).not.toContain('\u001b[2m')
+      expect(wrapper.text()).not.toContain('\u001b[32m')
+    })
+
     it('shows error message when loading fails', async () => {
       const { invoke } = await import('@tauri-apps/api/core')
       vi.mocked(invoke).mockRejectedValue(new Error('File not found'))

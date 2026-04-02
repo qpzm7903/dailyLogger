@@ -242,6 +242,7 @@ import { showError, showSuccess } from '../stores/toast'
 import { useI18n } from 'vue-i18n'
 import { BasicSettings, AISettings, CaptureSettings, OutputSettings } from './settings'
 import type { Settings } from '../types/tauri'
+import type { Locale } from '../i18n'
 import { settingsActions } from '../features/settings/actions'
 import BaseModal from './BaseModal.vue'
 
@@ -327,7 +328,12 @@ const settings = ref({
   proxy_port: 8080,
   proxy_username: '',
   proxy_password: '',
-  test_model_name: ''
+  test_model_name: '',
+  language: 'en',
+  auto_backup_enabled: false,
+  auto_backup_interval: 'daily',
+  auto_backup_retention: 5,
+  last_auto_backup_at: ''
 })
 
 // Derived state for sub-components
@@ -341,7 +347,12 @@ const basicSettings = computed(() => ({
   proxy_port: settings.value.proxy_port,
   proxy_username: settings.value.proxy_username,
   proxy_password: settings.value.proxy_password,
-  test_model_name: settings.value.test_model_name
+  test_model_name: settings.value.test_model_name,
+  language: (settings.value.language === 'zh-CN' ? 'zh-CN' : 'en') as Locale,
+  auto_backup_enabled: settings.value.auto_backup_enabled,
+  auto_backup_interval: settings.value.auto_backup_interval,
+  auto_backup_retention: settings.value.auto_backup_retention,
+  last_auto_backup_at: settings.value.last_auto_backup_at
 }))
 
 const aiSettings = computed(() => ({
@@ -397,6 +408,11 @@ function updateBasicSettings(newSettings: {
   proxy_username?: string
   proxy_password?: string
   test_model_name?: string
+  language?: string
+  auto_backup_enabled?: boolean
+  auto_backup_interval?: string
+  auto_backup_retention?: number
+  last_auto_backup_at?: string
 }) {
   settings.value.api_base_url = newSettings.api_base_url
   settings.value.api_key = newSettings.api_key
@@ -408,6 +424,11 @@ function updateBasicSettings(newSettings: {
   settings.value.proxy_username = newSettings.proxy_username ?? settings.value.proxy_username
   settings.value.proxy_password = newSettings.proxy_password ?? settings.value.proxy_password
   settings.value.test_model_name = newSettings.test_model_name ?? settings.value.test_model_name
+  settings.value.language = newSettings.language ?? settings.value.language
+  settings.value.auto_backup_enabled = newSettings.auto_backup_enabled ?? settings.value.auto_backup_enabled
+  settings.value.auto_backup_interval = newSettings.auto_backup_interval ?? settings.value.auto_backup_interval
+  settings.value.auto_backup_retention = newSettings.auto_backup_retention ?? settings.value.auto_backup_retention
+  settings.value.last_auto_backup_at = newSettings.last_auto_backup_at ?? settings.value.last_auto_backup_at
 }
 
 function updateAISettings(newSettings: typeof aiSettings.value) {

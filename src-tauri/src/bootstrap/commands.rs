@@ -32,6 +32,7 @@ pub fn register_commands(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
         daily_logger_lib::memory_storage::search_records,
         daily_logger_lib::memory_storage::get_default_tag_categories,
         daily_logger_lib::memory_storage::get_all_tags,
+        daily_logger_lib::memory_storage::get_tag_cloud_tags,
         daily_logger_lib::memory_storage::get_records_by_tag,
         // DATA-003: Manual tag system
         daily_logger_lib::memory_storage::create_manual_tag,
