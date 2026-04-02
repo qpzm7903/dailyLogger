@@ -415,6 +415,23 @@ describe('ScreenshotModal - FEAT-001 Reanalyze', () => {
     const disabledButton = wrapper.find('button:disabled')
     expect(disabledButton.exists()).toBe(true)
   })
+
+  it('hides reanalyze button for preview-only screenshots', async () => {
+    const previewRecord = {
+      ...mockRecord,
+      id: 0,
+      content: ''
+    }
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: previewRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    expect(wrapper.text()).toContain('This screenshot is only a preview')
+    expect(wrapper.text()).not.toContain('Reanalyze')
+  })
 })
 
 describe('ScreenshotModal - FEAT-005 User Notes', () => {
@@ -512,6 +529,24 @@ describe('ScreenshotModal - FEAT-005 User Notes', () => {
     expect(showToast).toHaveBeenCalled()
     const toastCall = showToast.mock.calls[0]
     expect(toastCall[1].type).toBe('error')
+  })
+
+  it('disables notes editing for preview-only screenshots', async () => {
+    const previewRecord = {
+      ...mockRecord,
+      id: 0,
+      content: ''
+    }
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: previewRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    const textarea = wrapper.find('textarea')
+    expect(textarea.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).not.toContain('Save')
   })
 })
 

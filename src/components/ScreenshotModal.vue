@@ -49,7 +49,7 @@
           <div class="flex items-center justify-between mb-2">
             <label class="text-sm text-[var(--color-text-secondary)]">{{ t('screenshotModal.userNotes') }}</label>
             <button
-              v-if="userNotes !== originalUserNotes"
+              v-if="isPersistedRecord && userNotes !== originalUserNotes"
               @click="saveUserNotes"
               :disabled="isSavingNotes"
               class="px-3 py-1 text-xs rounded-md transition-colors"
@@ -62,15 +62,20 @@
           </div>
           <textarea
             v-model="userNotes"
-            :placeholder="t('screenshotModal.userNotesPlaceholder')"
-            class="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-lg p-3 text-sm text-[var(--color-text-secondary)] resize-none focus:outline-none focus:border-blue-500"
+            :disabled="!isPersistedRecord"
+            :placeholder="isPersistedRecord ? t('screenshotModal.userNotesPlaceholder') : t('screenshotModal.previewOnlyUserNotes')"
+            class="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-lg p-3 text-sm text-[var(--color-text-secondary)] resize-none focus:outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
             rows="3"
           ></textarea>
         </div>
 
         <!-- FEAT-001: Reanalyze Button -->
-        <div class="mt-4 flex justify-end">
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <p v-if="!isPersistedRecord" class="text-xs text-[var(--color-text-muted)]">
+            {{ t('screenshotModal.previewOnlyHint') }}
+          </p>
           <button
+            v-if="isPersistedRecord"
             @click="handleReanalyze"
             :disabled="isReanalyzing"
             class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -111,6 +116,7 @@ const isReanalyzing = ref(false)
 const userNotes = ref(props.record.user_notes || '')
 const originalUserNotes = ref(props.record.user_notes || '')
 const isSavingNotes = ref(false)
+const isPersistedRecord = computed(() => props.record.id > 0)
 
 const formatTime = (timestamp: string) => {
   const date = new Date(timestamp)
@@ -187,7 +193,7 @@ const loadScreenshot = async () => {
 
 // FEAT-001: Handle reanalyze
 const handleReanalyze = async () => {
-  if (isReanalyzing.value) return
+  if (isReanalyzing.value || !isPersistedRecord.value) return
 
   isReanalyzing.value = true
   try {
@@ -211,7 +217,7 @@ const handleReanalyze = async () => {
 
 // FEAT-005: Save user notes
 const saveUserNotes = async () => {
-  if (isSavingNotes.value) return
+  if (isSavingNotes.value || !isPersistedRecord.value) return
 
   isSavingNotes.value = true
   try {

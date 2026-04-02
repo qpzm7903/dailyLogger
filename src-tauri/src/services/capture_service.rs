@@ -846,6 +846,13 @@ pub async fn reset_quality_filter_counter_service() -> AppResult<()> {
 
 /// Reanalyze a single record
 pub async fn reanalyze_record_service(record_id: i64) -> AppResult<ScreenAnalysis> {
+    if record_id <= 0 {
+        return Err(AppError::validation(format!(
+            "Invalid record id for reanalysis: {}",
+            record_id
+        )));
+    }
+
     let record = memory_storage::get_record_by_id_sync(record_id)?;
     let screenshot_path = record
         .screenshot_path

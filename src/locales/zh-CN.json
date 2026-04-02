@@ -218,6 +218,8 @@
     "reanalyzeFailed": "重新分析失败: {error}",
     "userNotes": "用户备注",
     "userNotesPlaceholder": "为此截图添加备注...",
+    "previewOnlyUserNotes": "预览截图暂不支持保存备注",
+    "previewOnlyHint": "这张截图仅用于预览，未保存到工作流记录中。请使用主界面的“分析”按钮创建记录。",
     "save": "保存",
     "saving": "保存中...",
     "notesSaved": "备注已保存",

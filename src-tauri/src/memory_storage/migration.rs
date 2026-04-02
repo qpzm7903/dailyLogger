@@ -8,6 +8,7 @@
 
 use crate::errors::{AppError, AppResult};
 use rusqlite::{params, Connection};
+use std::collections::HashSet;
 use std::time::SystemTime;
 
 /// Current schema version - increment when adding new migrations
@@ -533,6 +534,191 @@ fn table_exists(conn: &Connection, table: &str) -> bool {
     .unwrap_or(false)
 }
 
+#[derive(Debug, Clone)]
+struct TableColumnInfo {
+    name: String,
+    not_null: bool,
+    default_value: Option<String>,
+    is_primary_key: bool,
+}
+
+fn get_table_columns(conn: &Connection, table: &str) -> AppResult<Vec<TableColumnInfo>> {
+    let sql = format!("PRAGMA table_info({})", table);
+    let mut stmt = conn.prepare(&sql)?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok(TableColumnInfo {
+            name: row.get(1)?,
+            not_null: row.get::<_, i64>(3)? != 0,
+            default_value: row.get(4)?,
+            is_primary_key: row.get::<_, i64>(5)? != 0,
+        })
+    })?;
+
+    rows.collect::<Result<Vec<_>, _>>().map_err(AppError::from)
+}
+
+/// Rebuild legacy sessions tables that contain unsupported required columns.
+///
+/// Some historical builds shipped a `sessions.user_id` column that is not part of
+/// the current schema but remains `NOT NULL` with no default. New inserts then
+/// fail even though the application never writes that column anymore.
+fn normalize_sessions_table_if_needed(conn: &Connection) -> AppResult<()> {
+    if !table_exists(conn, "sessions") {
+        return Ok(());
+    }
+
+    let columns = get_table_columns(conn, "sessions")?;
+    if columns.is_empty() {
+        return Ok(());
+    }
+
+    let supported_columns: HashSet<&str> = [
+        "id",
+        "date",
+        "start_time",
+        "end_time",
+        "ai_summary",
+        "user_summary",
+        "context_for_next",
+        "status",
+    ]
+    .into_iter()
+    .collect();
+
+    let unsupported_required_columns = columns
+        .iter()
+        .filter(|column| {
+            !supported_columns.contains(column.name.as_str())
+                && column.not_null
+                && column.default_value.is_none()
+                && !column.is_primary_key
+        })
+        .map(|column| column.name.clone())
+        .collect::<Vec<_>>();
+
+    if unsupported_required_columns.is_empty() {
+        return Ok(());
+    }
+
+    tracing::warn!(
+        "Legacy repair: rebuilding sessions table to drop unsupported required columns: {}",
+        unsupported_required_columns.join(", ")
+    );
+
+    let column_names: HashSet<&str> = columns.iter().map(|column| column.name.as_str()).collect();
+    let id_expr = if column_names.contains("id") {
+        "id".to_string()
+    } else {
+        "rowid".to_string()
+    };
+    let date_expr = if column_names.contains("date") {
+        "COALESCE(date, '')".to_string()
+    } else {
+        "''".to_string()
+    };
+    let start_time_expr = if column_names.contains("start_time") {
+        "COALESCE(start_time, '')".to_string()
+    } else {
+        "''".to_string()
+    };
+    let end_time_expr = if column_names.contains("end_time") {
+        "end_time".to_string()
+    } else {
+        "NULL".to_string()
+    };
+    let ai_summary_expr = if column_names.contains("ai_summary") {
+        "ai_summary".to_string()
+    } else {
+        "NULL".to_string()
+    };
+    let user_summary_expr = if column_names.contains("user_summary") {
+        "user_summary".to_string()
+    } else {
+        "NULL".to_string()
+    };
+    let context_for_next_expr = if column_names.contains("context_for_next") {
+        "context_for_next".to_string()
+    } else {
+        "NULL".to_string()
+    };
+    let status_expr = if column_names.contains("status") {
+        "COALESCE(status, 'active')".to_string()
+    } else {
+        "'active'".to_string()
+    };
+
+    let foreign_keys_enabled = conn
+        .query_row("PRAGMA foreign_keys", [], |row| row.get::<_, i64>(0))
+        .unwrap_or(1);
+
+    if foreign_keys_enabled != 0 {
+        conn.execute("PRAGMA foreign_keys = OFF", [])?;
+    }
+
+    conn.execute("BEGIN IMMEDIATE", [])?;
+
+    let result = (|| {
+        conn.execute("DROP TABLE IF EXISTS sessions__normalized", [])?;
+        conn.execute("DROP INDEX IF EXISTS idx_sessions_date", [])?;
+        conn.execute(
+            "CREATE TABLE sessions__normalized (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                start_time TEXT NOT NULL,
+                end_time TEXT,
+                ai_summary TEXT,
+                user_summary TEXT,
+                context_for_next TEXT,
+                status TEXT DEFAULT 'active'
+            )",
+            [],
+        )?;
+
+        let copy_sql = format!(
+            "INSERT INTO sessions__normalized (
+                id, date, start_time, end_time, ai_summary, user_summary, context_for_next, status
+            )
+            SELECT {}, {}, {}, {}, {}, {}, {}, {}
+            FROM sessions",
+            id_expr,
+            date_expr,
+            start_time_expr,
+            end_time_expr,
+            ai_summary_expr,
+            user_summary_expr,
+            context_for_next_expr,
+            status_expr
+        );
+        conn.execute(&copy_sql, [])?;
+        conn.execute("DROP TABLE sessions", [])?;
+        conn.execute("ALTER TABLE sessions__normalized RENAME TO sessions", [])?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date)",
+            [],
+        )?;
+
+        Ok(())
+    })();
+
+    match result {
+        Ok(()) => {
+            conn.execute("COMMIT", [])?;
+            if foreign_keys_enabled != 0 {
+                conn.execute("PRAGMA foreign_keys = ON", [])?;
+            }
+            Ok(())
+        }
+        Err(e) => {
+            conn.execute("ROLLBACK", []).ok();
+            if foreign_keys_enabled != 0 {
+                conn.execute("PRAGMA foreign_keys = ON", []).ok();
+            }
+            Err(e)
+        }
+    }
+}
+
 /// Helper to add a column to a table if it doesn't already exist.
 /// Uses ALTER TABLE ADD COLUMN; ignores "duplicate column name" errors.
 fn add_column_if_not_exists(conn: &Connection, table: &str, col_def: &str) -> AppResult<()> {
@@ -627,6 +813,15 @@ pub fn ensure_legacy_columns_exist(conn: &Connection) -> AppResult<()> {
     Ok(())
 }
 
+/// Repair legacy schema drift before normal migrations run.
+///
+/// This first normalizes incompatible legacy tables, then fills in any missing
+/// columns required by the current application schema.
+pub fn repair_legacy_schema(conn: &Connection) -> AppResult<()> {
+    normalize_sessions_table_if_needed(conn)?;
+    ensure_legacy_columns_exist(conn)
+}
+
 /// Run all pending migrations
 pub fn run_migrations(conn: &Connection) -> AppResult<()> {
     let current_version = get_current_version(conn)?;
@@ -635,7 +830,7 @@ pub fn run_migrations(conn: &Connection) -> AppResult<()> {
     // check can short-circuit.  This fixes the upgrade path for users whose
     // older builds already set schema_version = CURRENT_SCHEMA_VERSION but
     // whose actual table schemas are incomplete.
-    ensure_legacy_columns_exist(conn)?;
+    repair_legacy_schema(conn)?;
 
     let migrations = get_migrations();
 
@@ -841,5 +1036,66 @@ mod tests {
         // Columns still present
         assert!(column_exists(&conn, "sessions", "start_time"));
         assert!(column_exists(&conn, "sessions", "status"));
+    }
+
+    #[test]
+    fn test_repair_legacy_schema_rebuilds_sessions_with_unknown_required_column() {
+        use rusqlite::Connection;
+        use tempfile::NamedTempFile;
+
+        let temp_file = NamedTempFile::new().unwrap();
+        let conn = Connection::open(temp_file.path()).unwrap();
+
+        conn.execute_batch(
+            "CREATE TABLE sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL DEFAULT '',
+                start_time TEXT NOT NULL DEFAULT '',
+                end_time TEXT,
+                ai_summary TEXT,
+                user_summary TEXT,
+                context_for_next TEXT,
+                status TEXT DEFAULT 'active',
+                user_id TEXT NOT NULL
+            );
+            INSERT INTO sessions (date, start_time, end_time, status, user_id)
+            VALUES ('2026-04-02', '2026-04-02T08:00:00Z', '2026-04-02T09:00:00Z', 'ended', 'legacy-user');
+            CREATE TABLE records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                screenshot_path TEXT,
+                session_id INTEGER REFERENCES sessions(id)
+            );
+            CREATE TABLE settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                api_key TEXT
+            );
+            INSERT INTO settings (id) VALUES (1);",
+        )
+        .unwrap();
+
+        assert!(column_exists(&conn, "sessions", "user_id"));
+
+        repair_legacy_schema(&conn).unwrap();
+
+        assert!(!column_exists(&conn, "sessions", "user_id"));
+
+        let session_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM sessions", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(session_count, 1);
+
+        conn.execute(
+            "INSERT INTO sessions (date, start_time, status) VALUES (?1, ?2, 'active')",
+            params!["2026-04-03", "2026-04-03T10:00:00Z"],
+        )
+        .unwrap();
+
+        let session_count_after_insert: i64 = conn
+            .query_row("SELECT COUNT(*) FROM sessions", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(session_count_after_insert, 2);
     }
 }

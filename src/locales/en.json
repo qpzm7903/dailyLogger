@@ -218,6 +218,8 @@
     "reanalyzeFailed": "Reanalysis failed: {error}",
     "userNotes": "User Notes",
     "userNotesPlaceholder": "Add notes for this screenshot...",
+    "previewOnlyUserNotes": "Notes are unavailable for preview-only screenshots",
+    "previewOnlyHint": "This screenshot is only a preview and has not been saved as a workflow record yet. Use the main Analyze button to create a record.",
     "save": "Save",
     "saving": "Saving...",
     "notesSaved": "Notes saved",

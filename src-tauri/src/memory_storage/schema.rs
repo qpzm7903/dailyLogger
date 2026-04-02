@@ -72,9 +72,10 @@ pub fn init_database() -> AppResult<()> {
             current_version
         );
         // Safety net: legacy databases may report version = CURRENT_SCHEMA_VERSION
-        // but still be missing columns (e.g. sessions.start_time).  Run the column
-        // check regardless of version so upgrades are always repaired.
-        migration::ensure_legacy_columns_exist(&conn)?;
+        // but still have schema drift (missing columns or incompatible extra
+        // required columns such as sessions.user_id). Run the repair pass
+        // regardless of version so upgrades are always repaired.
+        migration::repair_legacy_schema(&conn)?;
     } else if migrations_exist && current_version < CURRENT_SCHEMA_VERSION {
         // Migrations recorded but version behind - this shouldn't happen normally
         // but we can recover by running migrations

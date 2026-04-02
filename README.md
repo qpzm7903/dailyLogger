@@ -207,7 +207,11 @@ git config core.hooksPath .githooks
 
 查看 [Releases](https://github.com/qpzm7903/dailyLogger/releases) 获取完整更新日志。
 
-**最新版本**: v4.6.3
+**最新版本**: v4.6.4
+- 修复旧数据库 `sessions` 表残留未知必填列时，新建时段失败导致“分析”报截图捕获失败的问题 (issue #94)
+- 修复仅截图预览场景错误暴露“重新分析”和备注保存入口，避免 `Record with id 0 not found` (issue #94)
+
+**v4.6.3**:
 - 移除已废弃的第三方输出/通知集成模块及相关依赖
 - 清理设置状态、测试基座与文档中的残留集成入口
 - 修复 settings 数据库迁移期间比较列丢失导致的测试 panic
