@@ -28,8 +28,10 @@ export class MainPage {
     // Header - 使用实际的元素选择器
     this.header = page.locator('header');
     this.quickNoteButton = page.locator('button:has-text("记录")').first();
-    // Settings button is now in the Sidebar (UX-3 sidebar upgrade)
-    this.settingsButton = page.locator('aside button').filter({ hasText: '设置' }).or(page.locator('aside button[title="设置"]'));
+    this.settingsButton = page
+      .locator('[data-testid="settings-button"]')
+      .or(page.locator('aside button').filter({ hasText: /设置|Settings/ }))
+      .or(page.locator('aside button[title="设置"], aside button[title="Settings"]'));
     this.reportDropdown = page.locator('.report-dropdown, [class*="report"]').first();
 
     // 内容区域 - 今日工作流区域

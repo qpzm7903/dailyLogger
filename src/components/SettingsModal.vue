@@ -1,5 +1,5 @@
 <template>
-  <BaseModal backdrop="light" content-class="w-[700px] max-h-[85vh] overflow-hidden flex flex-col" @close="handleClose">
+  <BaseModal data-testid="settings-modal" backdrop="light" content-class="w-[700px] max-h-[85vh] overflow-hidden flex flex-col" @close="handleClose">
     <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
       <h2 class="text-lg font-semibold">{{ $t('settings.title') }}</h2>
       <button @click="handleClose" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>

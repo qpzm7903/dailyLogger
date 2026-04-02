@@ -41,6 +41,7 @@
     <div class="flex flex-col items-center gap-1">
       <button
         @click="emit('open', 'settings')"
+        data-testid="settings-button"
         :class="[
           'rounded-xl flex items-center justify-center transition-all duration-200',
           'hover:bg-[var(--color-action-neutral)]/50 hover:-translate-y-0.5 hover:shadow-lg',

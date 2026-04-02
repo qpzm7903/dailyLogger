@@ -6,8 +6,11 @@
 import { test, expect } from '../fixtures/base-test';
 
 test.describe('设置流程', () => {
-  // Settings button is now in the Sidebar (UX-3 sidebar upgrade)
-  const getSettingsButton = (page: any) => page.locator('aside button').filter({ hasText: '设置' }).or(page.locator('aside button[title="设置"]'));
+  const getSettingsButton = (page: any) =>
+    page
+      .locator('[data-testid="settings-button"]')
+      .or(page.locator('aside button').filter({ hasText: /设置|Settings/ }))
+      .or(page.locator('aside button[title="设置"], aside button[title="Settings"]'));
 
   test('打开设置弹窗', async ({ page }) => {
     await page.goto('/');

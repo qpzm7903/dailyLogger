@@ -107,9 +107,9 @@ export async function openQuickNoteModal(page: Page) {
  */
 export async function openSettingsModal(page: Page) {
   // 点击设置按钮
-  await page.click('[data-testid="settings-button"], button:has([class*="settings"]), button:has-text("设置"), button[aria-label*="设置"]');
+  await page.click('[data-testid="settings-button"], button:has([class*="settings"]), button:has-text("设置"), button:has-text("Settings"), button[aria-label*="设置"], button[aria-label*="Settings"]');
   // 等待弹窗出现
-  await page.waitForSelector('[data-testid="settings-modal"], .modal:has-text("设置")', {
+  await page.waitForSelector('[data-testid="settings-modal"], .modal:has-text("设置"), .modal:has-text("Settings")', {
     timeout: 5000,
   });
 }
