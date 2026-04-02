@@ -377,6 +377,7 @@ describe('ScreenshotModal - FEAT-001 Reanalyze', () => {
     expect(wrapper.emitted('updated')).toBeTruthy()
     const updatedEvent = wrapper.emitted('updated')[0][0]
     expect(updatedEvent.content).toBe(JSON.stringify(newAnalysis))
+    expect(updatedEvent.analysis_status).toBe('analyzed')
   })
 
   it('shows error toast when reanalyze fails', async () => {
@@ -606,6 +607,27 @@ describe('ScreenshotModal - General', () => {
 
     expect(wrapper.html()).toContain('Working on Rust code')
     expect(wrapper.html()).toContain('VSCode')
+  })
+
+  it('shows pending status for delayed-analysis records', async () => {
+    const pendingRecord = {
+      ...mockRecord,
+      analysis_status: 'pending' as const,
+      content: JSON.stringify({
+        current_focus: '待分析',
+        active_software: 'Code',
+        context_keywords: [],
+        offline_pending: true
+      })
+    }
+
+    const wrapper = mount(ScreenshotModal, {
+      props: { record: pendingRecord },
+      global: { stubs: {} }
+    })
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Pending')
   })
 
   it('displays window icon for VSCode', async () => {

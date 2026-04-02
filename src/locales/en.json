@@ -207,6 +207,7 @@
     "loading": "Loading...",
     "window": "Window",
     "analyzed": "Analyzed",
+    "pending": "Pending",
     "screenshotOnly": "Screenshot Only",
     "noAIAnalysis": "No AI Analysis",
     "currentFocus": "Current Focus",

@@ -207,6 +207,7 @@
     "loading": "加载中...",
     "window": "窗口",
     "analyzed": "已分析",
+    "pending": "待分析",
     "screenshotOnly": "仅截图预览",
     "noAIAnalysis": "未进行 AI 分析",
     "currentFocus": "当前焦点",

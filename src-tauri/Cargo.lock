@@ -1017,7 +1017,7 @@ dependencies = [
 
 [[package]]
 name = "daily-logger"
-version = "4.6.5"
+version = "4.6.6"
 dependencies = [
  "aes-gcm",
  "anyhow",

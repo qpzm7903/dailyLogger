@@ -36,8 +36,8 @@
         <div class="mt-4 p-4 bg-[var(--color-surface-0)] rounded-lg">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs text-[var(--color-text-muted)]">{{ formatTime(record.timestamp) }}</span>
-            <span class="text-xs text-[var(--color-text-muted)]" :class="{ 'text-blue-400': record.content }">
-              {{ record.content ? '🖥️ ' + t('screenshotModal.analyzed') : '📸 ' + t('screenshotModal.screenshotOnly') }}
+            <span class="text-xs text-[var(--color-text-muted)]" :class="{ 'text-blue-400': isAnalyzed }">
+              {{ statusLabel }}
             </span>
           </div>
           <p v-if="record.content" class="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap">{{ parseContent(record.content) }}</p>
@@ -102,6 +102,10 @@ import BaseModal from './BaseModal.vue'
 
 const { t, locale } = useI18n()
 
+type ScreenContent = ScreenAnalysis & {
+  offline_pending?: boolean
+}
+
 const props = defineProps<{
   record: LogRecord
 }>()
@@ -117,6 +121,30 @@ const userNotes = ref(props.record.user_notes || '')
 const originalUserNotes = ref(props.record.user_notes || '')
 const isSavingNotes = ref(false)
 const isPersistedRecord = computed(() => props.record.id > 0)
+const parsedRecordContent = computed<ScreenContent | null>(() => {
+  if (!props.record.content) return null
+  try {
+    return JSON.parse(props.record.content) as ScreenContent
+  } catch {
+    return null
+  }
+})
+const isPendingAnalysis = computed(() => {
+  if (!props.record.content) return false
+  if (props.record.analysis_status === 'pending') return true
+  return parsedRecordContent.value?.current_focus === '待分析'
+    || parsedRecordContent.value?.offline_pending === true
+})
+const isAnalyzed = computed(() => Boolean(props.record.content) && !isPendingAnalysis.value)
+const statusLabel = computed(() => {
+  if (!props.record.content) {
+    return '📸 ' + t('screenshotModal.screenshotOnly')
+  }
+  if (isPendingAnalysis.value) {
+    return '⏳ ' + t('screenshotModal.pending')
+  }
+  return '🖥️ ' + t('screenshotModal.analyzed')
+})
 
 const formatTime = (timestamp: string) => {
   const date = new Date(timestamp)
@@ -124,23 +152,16 @@ const formatTime = (timestamp: string) => {
 }
 
 const parseContent = (content: string) => {
-  try {
-    const parsed = JSON.parse(content) as ScreenAnalysis
-    return `${t('screenshotModal.currentFocus')}: ${parsed.current_focus}\n${t('screenshotModal.activeSoftware')}: ${parsed.active_software}\n${t('screenshotModal.keywords')}: ${parsed.context_keywords?.join(', ') || t('screenshotModal.none')}`
-  } catch {
+  const parsed = parsedRecordContent.value
+  if (!parsed && content) {
     return content
   }
+  return `${t('screenshotModal.currentFocus')}: ${parsed?.current_focus || t('screenshotModal.pending')}\n${t('screenshotModal.activeSoftware')}: ${parsed?.active_software || t('screenshotModal.none')}\n${t('screenshotModal.keywords')}: ${parsed?.context_keywords?.join(', ') || t('screenshotModal.none')}`
 }
 
 // SMART-001 Task 6: Extract window info from content JSON
 const windowInfo = computed<ScreenAnalysis['active_window'] | null>(() => {
-  if (!props.record.content) return null
-  try {
-    const parsed = JSON.parse(props.record.content) as ScreenAnalysis
-    return parsed.active_window || null
-  } catch {
-    return null
-  }
+  return parsedRecordContent.value?.active_window || null
 })
 
 // SMART-001 Task 6: Get icon based on process name
@@ -202,7 +223,8 @@ const handleReanalyze = async () => {
     // Update the record content
     const updatedRecord = {
       ...props.record,
-      content: JSON.stringify(analysis)
+      content: JSON.stringify(analysis),
+      analysis_status: 'analyzed' as const
     }
 
     showToast(t('screenshotModal.reanalyzeSuccess'), { type: 'success' })

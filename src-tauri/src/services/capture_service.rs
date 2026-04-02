@@ -177,6 +177,12 @@ pub struct ThresholdAdjustment {
     pub reason: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CaptureTriggerSource {
+    Auto,
+    Manual,
+}
+
 /// Validate that API key is configured, returning a standardized error if not.
 fn require_api_key(settings: &CaptureSettings) -> AppResult<()> {
     if settings.api_key.is_empty() {
@@ -750,14 +756,16 @@ pub fn is_auto_capture_running() -> bool {
     AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst)
 }
 
-/// Service function to start auto capture - validates and initializes capture
-/// Returns early error if API key not configured
+/// Service function to start auto capture - validates and initializes capture.
+/// Auto mode only requires an API key when immediate analysis is enabled.
 pub fn start_auto_capture_service() -> AppResult<()> {
     if AUTO_CAPTURE_RUNNING.load(Ordering::SeqCst) {
         return Ok(());
     }
     let settings = load_capture_settings();
-    require_api_key(&settings)?;
+    if should_analyze_immediately(&settings, CaptureTriggerSource::Auto) {
+        require_api_key(&settings)?;
+    }
     set_threshold(settings.max_silent_minutes);
     AUTO_CAPTURE_RUNNING.store(true, Ordering::SeqCst);
     Ok(())
@@ -772,12 +780,44 @@ pub fn stop_auto_capture_service() {
 /// Service function to trigger a single capture
 pub async fn trigger_capture_service() -> AppResult<()> {
     let settings = load_capture_settings();
-    capture_and_store_inner(settings).await.map_err(|e| {
-        let err_str = e.to_string();
-        tracing::error!("Trigger capture failed: {}", err_str);
-        let kind = classify_screenshot_error(&err_str);
-        AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
-    })
+    require_api_key(&settings)?;
+    capture_and_store_inner(settings, CaptureTriggerSource::Manual)
+        .await
+        .map_err(|e| {
+            let err_str = e.to_string();
+            tracing::error!("Trigger capture failed: {}", err_str);
+            let kind = classify_screenshot_error(&err_str);
+            AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
+        })
+}
+
+/// Service function to trigger a single auto capture using current settings.
+pub async fn trigger_auto_capture_service() -> AppResult<()> {
+    let settings = load_capture_settings();
+    capture_and_store_inner(settings, CaptureTriggerSource::Auto)
+        .await
+        .map_err(|e| {
+            let err_str = e.to_string();
+            tracing::error!("Auto trigger capture failed: {}", err_str);
+            let kind = classify_screenshot_error(&err_str);
+            AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
+        })
+}
+
+/// Service function to trigger a single auto capture using a pre-fetched Arc<Settings>.
+/// Avoids an extra `get_settings_sync()` call when the caller already has the Arc.
+pub async fn trigger_auto_capture_with_arc(
+    arc: std::sync::Arc<crate::memory_storage::Settings>,
+) -> AppResult<()> {
+    let settings = load_capture_settings_from_arc(&arc);
+    capture_and_store_inner(settings, CaptureTriggerSource::Auto)
+        .await
+        .map_err(|e| {
+            let err_str = e.to_string();
+            tracing::error!("Auto trigger capture failed: {}", err_str);
+            let kind = classify_screenshot_error(&err_str);
+            AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
+        })
 }
 
 /// Service function to trigger a single capture using a pre-fetched Arc<Settings>.
@@ -786,12 +826,15 @@ pub async fn trigger_capture_with_arc(
     arc: std::sync::Arc<crate::memory_storage::Settings>,
 ) -> AppResult<()> {
     let settings = load_capture_settings_from_arc(&arc);
-    capture_and_store_inner(settings).await.map_err(|e| {
-        let err_str = e.to_string();
-        tracing::error!("Trigger capture failed: {}", err_str);
-        let kind = classify_screenshot_error(&err_str);
-        AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
-    })
+    require_api_key(&settings)?;
+    capture_and_store_inner(settings, CaptureTriggerSource::Manual)
+        .await
+        .map_err(|e| {
+            let err_str = e.to_string();
+            tracing::error!("Trigger capture failed: {}", err_str);
+            let kind = classify_screenshot_error(&err_str);
+            AppError::screenshot(get_screenshot_error_message(&kind, &err_str))
+        })
 }
 
 /// Service function to take a screenshot and save to disk (no AI analysis)
@@ -865,7 +908,8 @@ pub async fn reanalyze_record_service(record_id: i64) -> AppResult<ScreenAnalysi
     require_api_key(&settings)?;
     tracing::info!("Reanalyzing record {}", record_id);
     let analysis = analyze_screen(&settings, &image_base64).await?;
-    let content_json = serde_json::to_string(&analysis)?;
+    let content_json =
+        build_analyzed_content(&analysis, None, None, None, Some(record.content.as_str()))?;
     memory_storage::update_record_content_sync(record_id, &content_json)?;
     tracing::info!(
         "Reanalysis complete for record {}: {}",
@@ -916,7 +960,13 @@ pub async fn reanalyze_today_records_service() -> AppResult<ReanalyzeResult> {
             base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
         match analyze_screen(&settings, &image_base64).await {
             Ok(analysis) => {
-                let content_json = match serde_json::to_string(&analysis) {
+                let content_json = match build_analyzed_content(
+                    &analysis,
+                    None,
+                    None,
+                    None,
+                    Some(record.content.as_str()),
+                ) {
                     Ok(json) => json,
                     Err(e) => {
                         failed += 1;
@@ -998,7 +1048,13 @@ pub async fn reanalyze_records_by_date_service(date: String) -> AppResult<Reanal
             base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_data);
         match analyze_screen(&settings, &image_base64).await {
             Ok(analysis) => {
-                let content_json = match serde_json::to_string(&analysis) {
+                let content_json = match build_analyzed_content(
+                    &analysis,
+                    None,
+                    None,
+                    None,
+                    Some(record.content.as_str()),
+                ) {
                     Ok(json) => json,
                     Err(e) => {
                         failed += 1;
@@ -1058,8 +1114,10 @@ pub async fn retry_screenshot_analysis_service(
     if settings.api_base_url.is_empty() {
         return Err(AppError::auth("API base URL not configured"));
     }
+    let record = memory_storage::get_record_by_id_sync(record_id)?;
     let analysis = analyze_screen(&settings, &image_base64).await?;
-    let content = serde_json::to_string(&analysis)?;
+    let content =
+        build_analyzed_content(&analysis, None, None, None, Some(record.content.as_str()))?;
     memory_storage::update_record_content_sync(record_id, &content)?;
     tracing::info!(
         "Successfully updated record {} with analysis result",
@@ -1079,8 +1137,87 @@ pub fn get_work_time_status_service() -> crate::work_time::WorkTimeStatus {
 // Internal Capture Logic
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn capture_and_store_inner(settings: CaptureSettings) -> AppResult<()> {
-    require_api_key(&settings)?;
+fn should_analyze_immediately(
+    settings: &CaptureSettings,
+    trigger_source: CaptureTriggerSource,
+) -> bool {
+    match trigger_source {
+        CaptureTriggerSource::Manual => true,
+        CaptureTriggerSource::Auto => !settings.capture_only_mode,
+    }
+}
+
+fn build_pending_content(
+    active_window: &ActiveWindow,
+    monitor_info: &MonitorInfo,
+    capture_mode: CaptureMode,
+) -> String {
+    serde_json::json!({
+        "current_focus": "待分析",
+        "active_software": active_window.process_name,
+        "context_keywords": [],
+        "active_window": {
+            "title": active_window.title,
+            "process_name": active_window.process_name
+        },
+        "monitor_info": {
+            "count": monitor_info.count,
+            "capture_mode": capture_mode.to_string()
+        },
+        "offline_pending": true
+    })
+    .to_string()
+}
+
+fn extract_content_field(content: Option<&str>, field: &str) -> Option<serde_json::Value> {
+    let content = content?;
+    let parsed = serde_json::from_str::<serde_json::Value>(content).ok()?;
+    parsed.get(field).cloned()
+}
+
+fn build_analyzed_content(
+    analysis: &ScreenAnalysis,
+    active_window: Option<&ActiveWindow>,
+    monitor_info: Option<&MonitorInfo>,
+    capture_mode: Option<CaptureMode>,
+    existing_content: Option<&str>,
+) -> AppResult<String> {
+    let mut value = serde_json::to_value(analysis)?;
+    let object = value
+        .as_object_mut()
+        .ok_or_else(|| AppError::validation("Invalid analysis result"))?;
+
+    let active_window_value = if let Some(window) = active_window {
+        Some(serde_json::json!({
+            "title": window.title,
+            "process_name": window.process_name
+        }))
+    } else {
+        extract_content_field(existing_content, "active_window")
+    };
+    if let Some(window) = active_window_value {
+        object.insert("active_window".to_string(), window);
+    }
+
+    let monitor_info_value = match (monitor_info, capture_mode) {
+        (Some(info), Some(mode)) => Some(serde_json::json!({
+            "count": info.count,
+            "capture_mode": mode.to_string()
+        })),
+        _ => extract_content_field(existing_content, "monitor_info"),
+    };
+    if let Some(monitor) = monitor_info_value {
+        object.insert("monitor_info".to_string(), monitor);
+    }
+
+    Ok(serde_json::to_string(&value)?)
+}
+
+async fn capture_and_store_inner(
+    settings: CaptureSettings,
+    trigger_source: CaptureTriggerSource,
+) -> AppResult<()> {
+    let should_analyze = should_analyze_immediately(&settings, trigger_source);
 
     let active_window = get_active_window();
 
@@ -1143,26 +1280,14 @@ async fn capture_and_store_inner(settings: CaptureSettings) -> AppResult<()> {
 
     let screenshot_path = save_screenshot(&image_base64);
 
-    tracing::info!("Capture mode: saving screenshot without immediate AI analysis");
+    tracing::info!(
+        "Capture mode: screenshot saved, immediate_analysis={}",
+        should_analyze
+    );
 
     let current_timestamp = Utc::now().to_rfc3339();
     let session_id = detect_or_create_session(&current_timestamp)?;
-
-    let content = serde_json::json!({
-        "current_focus": "待分析",
-        "active_software": active_window.process_name,
-        "context_keywords": [],
-        "active_window": {
-            "title": active_window.title,
-            "process_name": active_window.process_name
-        },
-        "monitor_info": {
-            "count": monitor_info.count,
-            "capture_mode": capture_mode.to_string()
-        },
-        "offline_pending": true
-    })
-    .to_string();
+    let content = build_pending_content(&active_window, &monitor_info, capture_mode);
 
     let monitor_info_json = serde_json::to_string(&monitor_info).ok();
 
@@ -1181,5 +1306,88 @@ async fn capture_and_store_inner(settings: CaptureSettings) -> AppResult<()> {
         session_id
     );
 
+    if should_analyze {
+        require_api_key(&settings)?;
+        let analysis = analyze_screen(&settings, &image_base64).await?;
+        let content_json = build_analyzed_content(
+            &analysis,
+            Some(&active_window),
+            Some(&monitor_info),
+            Some(capture_mode),
+            Some(content.as_str()),
+        )?;
+        memory_storage::update_record_content_sync(record_id, &content_json)?;
+        tracing::debug!(
+            "Screenshot analyzed immediately for record_id={}",
+            record_id
+        );
+    }
+
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manual_capture_always_analyzes_even_in_capture_only_mode() {
+        let settings = CaptureSettings {
+            capture_only_mode: true,
+            ..CaptureSettings::default()
+        };
+
+        assert!(should_analyze_immediately(
+            &settings,
+            CaptureTriggerSource::Manual
+        ));
+    }
+
+    #[test]
+    fn auto_capture_respects_capture_only_mode() {
+        let settings = CaptureSettings {
+            capture_only_mode: true,
+            ..CaptureSettings::default()
+        };
+
+        assert!(!should_analyze_immediately(
+            &settings,
+            CaptureTriggerSource::Auto
+        ));
+    }
+
+    #[test]
+    fn analyzed_content_keeps_existing_window_metadata() {
+        let analysis = ScreenAnalysis {
+            current_focus: "Reviewing code".to_string(),
+            active_software: "VS Code".to_string(),
+            context_keywords: vec!["rust".to_string()],
+            active_window: None,
+            tags: None,
+        };
+        let existing_content = serde_json::json!({
+            "current_focus": "待分析",
+            "active_window": {
+                "title": "main.rs - VS Code",
+                "process_name": "Code"
+            },
+            "monitor_info": {
+                "count": 1,
+                "capture_mode": "primary"
+            }
+        })
+        .to_string();
+
+        let enriched =
+            build_analyzed_content(&analysis, None, None, None, Some(existing_content.as_str()))
+                .expect("build analyzed content");
+        let parsed: serde_json::Value =
+            serde_json::from_str(&enriched).expect("parse analyzed content");
+
+        assert_eq!(
+            parsed["active_window"]["title"].as_str(),
+            Some("main.rs - VS Code")
+        );
+        assert_eq!(parsed["monitor_info"]["count"].as_u64(), Some(1));
+    }
 }

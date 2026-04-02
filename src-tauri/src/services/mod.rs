@@ -46,6 +46,6 @@ pub use capture_service::{
     reanalyze_records_by_date_service, reanalyze_today_records_service, reset_filtered_count,
     reset_quality_filter_counter_service, retry_screenshot_analysis_service,
     should_capture_by_work_time, start_auto_capture_service, stop_auto_capture_service,
-    take_screenshot_service, trigger_capture_service, CaptureSettings, QualityFilterStats,
-    ReanalyzeResult, ScreenAnalysis, ThresholdAdjustment,
+    take_screenshot_service, trigger_auto_capture_service, trigger_capture_service,
+    CaptureSettings, QualityFilterStats, ReanalyzeResult, ScreenAnalysis, ThresholdAdjustment,
 };

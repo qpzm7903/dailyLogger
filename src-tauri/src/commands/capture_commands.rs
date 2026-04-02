@@ -16,8 +16,8 @@ use crate::services::capture_service::{
     reanalyze_records_by_date_service, reanalyze_today_records_service,
     reset_quality_filter_counter_service, should_capture_by_work_time_from_arc,
     start_auto_capture_service, stop_auto_capture_service, take_screenshot_service,
-    trigger_capture_service, trigger_capture_with_arc, CaptureSettings, QualityFilterStats,
-    ReanalyzeResult, ScreenAnalysis,
+    trigger_auto_capture_service, trigger_auto_capture_with_arc, trigger_capture_service,
+    CaptureSettings, QualityFilterStats, ReanalyzeResult, ScreenAnalysis,
 };
 use crate::work_time::WorkTimeStatus;
 use std::time::Duration;
@@ -64,7 +64,7 @@ pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
         // Execute immediately on start — single Arc<Settings> read for both work time + capture
         if let Ok(arc) = crate::memory_storage::get_settings_sync() {
             if should_capture_by_work_time_from_arc(&arc) {
-                if let Err(e) = trigger_capture_with_arc(arc).await {
+                if let Err(e) = trigger_auto_capture_with_arc(arc).await {
                     tracing::error!("Initial capture failed: {}", e);
                 }
                 record_work_time_capture_internal();
@@ -90,7 +90,7 @@ pub async fn start_auto_capture(app: tauri::AppHandle) -> Result<(), String> {
                 drop(arc); // Release Arc before capture (capture reads its own Arc)
             }
 
-            if let Err(e) = trigger_capture_service().await {
+            if let Err(e) = trigger_auto_capture_service().await {
                 tracing::error!("Auto capture failed: {}", e);
             } else {
                 record_work_time_capture_internal();
