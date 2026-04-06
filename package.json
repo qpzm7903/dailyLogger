@@ -44,7 +44,7 @@
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.9.0",
     "autoprefixer": "^10.4.27",
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.28.0",
     "jsdom": "^29.0.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
